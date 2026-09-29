@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Annotated
+
 import typer
 
 from codementor import __version__
+from codementor.models.schemas import export_schemas
 
 app = typer.Typer(name="codementor", no_args_is_help=True, add_completion=False)
 
@@ -22,3 +26,18 @@ def main(
     ),
 ) -> None:
     """CodeMentor AI — kodu düzeltmeyen, sorgulatan mentor."""
+
+
+schema_app = typer.Typer(name="schema", no_args_is_help=True, help="JSON şema işlemleri.")
+app.add_typer(schema_app)
+
+
+@schema_app.command("export")
+def schema_export(
+    out: Annotated[Path, typer.Option("--out", help="Şemaların yazılacağı dizin.")] = Path(
+        "schemas"
+    ),
+) -> None:
+    """Rapor ve LLM çıktı modellerinin JSON şemalarını üretir."""
+    for path in export_schemas(out):
+        typer.echo(f"yazıldı: {path}")

@@ -1,0 +1,41 @@
+{
+  "$id": "llm_socratic.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Geçiş B çıktısı: Sokratik yönlendirme soruları.",
+  "properties": {
+    "guiding_questions": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "title": "Guiding Questions",
+      "type": "array"
+    },
+    "key_flaw_concept": {
+      "maxLength": 80,
+      "title": "Key Flaw Concept",
+      "type": "string"
+    },
+    "next_step_hint": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Next Step Hint"
+    }
+  },
+  "required": [
+    "key_flaw_concept",
+    "guiding_questions"
+  ],
+  "title": "LLMSocraticOutput",
+  "type": "object"
+}

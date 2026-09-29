@@ -1,0 +1,151 @@
+{
+  "$defs": {
+    "AuditCategory": {
+      "enum": [
+        "memory_safety",
+        "resource_leak",
+        "undefined_behavior",
+        "garbage_collection",
+        "performance",
+        "engine_best_practice",
+        "edge_case",
+        "input_handling",
+        "design"
+      ],
+      "title": "AuditCategory",
+      "type": "string"
+    },
+    "LLMComplexity": {
+      "additionalProperties": false,
+      "properties": {
+        "agreement": {
+          "enum": [
+            "agrees",
+            "conflicts",
+            "no_hint"
+          ],
+          "title": "Agreement",
+          "type": "string"
+        },
+        "optimal_time_target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Optimal Time Target"
+        },
+        "reasoning_steps": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Reasoning Steps",
+          "type": "array"
+        },
+        "space_complexity": {
+          "title": "Space Complexity",
+          "type": "string"
+        },
+        "time_complexity": {
+          "description": "Ham metin; K5 normalize eder",
+          "title": "Time Complexity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reasoning_steps",
+        "time_complexity",
+        "space_complexity",
+        "optimal_time_target",
+        "agreement"
+      ],
+      "title": "LLMComplexity",
+      "type": "object"
+    },
+    "LLMFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/AuditCategory"
+        },
+        "description": {
+          "maxLength": 400,
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Satırdan birebir alıntı",
+          "maxLength": 200,
+          "title": "Evidence",
+          "type": "string"
+        },
+        "line_end": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line End"
+        },
+        "line_start": {
+          "minimum": 1,
+          "title": "Line Start",
+          "type": "integer"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        }
+      },
+      "required": [
+        "category",
+        "severity",
+        "line_start",
+        "evidence",
+        "description"
+      ],
+      "title": "LLMFinding",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "title": "Severity",
+      "type": "string"
+    }
+  },
+  "$id": "llm_analysis.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Geçiş A çıktısı: karmaşıklık + statik analizin kaçırdığı bulgular.",
+  "properties": {
+    "additional_findings": {
+      "items": {
+        "$ref": "#/$defs/LLMFinding"
+      },
+      "maxItems": 10,
+      "title": "Additional Findings",
+      "type": "array"
+    },
+    "complexity": {
+      "$ref": "#/$defs/LLMComplexity"
+    }
+  },
+  "required": [
+    "complexity",
+    "additional_findings"
+  ],
+  "title": "LLMAnalysisOutput",
+  "type": "object"
+}

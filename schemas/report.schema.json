@@ -1,0 +1,554 @@
+{
+  "$defs": {
+    "AuditCategory": {
+      "enum": [
+        "memory_safety",
+        "resource_leak",
+        "undefined_behavior",
+        "garbage_collection",
+        "performance",
+        "engine_best_practice",
+        "edge_case",
+        "input_handling",
+        "design"
+      ],
+      "title": "AuditCategory",
+      "type": "string"
+    },
+    "CompilationBlock": {
+      "additionalProperties": false,
+      "description": "Ön doğrulama sonucu: durum + tanılar.",
+      "properties": {
+        "diagnostics": {
+          "items": {
+            "$ref": "#/$defs/Diagnostic"
+          },
+          "title": "Diagnostics",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/CompilationStatus"
+        }
+      },
+      "required": [
+        "status",
+        "diagnostics"
+      ],
+      "title": "CompilationBlock",
+      "type": "object"
+    },
+    "CompilationStatus": {
+      "enum": [
+        "passed",
+        "warning",
+        "failed",
+        "skipped"
+      ],
+      "title": "CompilationStatus",
+      "type": "string"
+    },
+    "ComplexityResult": {
+      "additionalProperties": false,
+      "properties": {
+        "agreement": {
+          "enum": [
+            "agrees",
+            "conflicts",
+            "no_hint"
+          ],
+          "title": "Agreement",
+          "type": "string"
+        },
+        "confidence": {
+          "title": "Confidence",
+          "type": "number"
+        },
+        "display_time": {
+          "description": "Gösterim, ör. \"O(n²)\"",
+          "title": "Display Time",
+          "type": "string"
+        },
+        "is_optimal": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Soru bağlamı yoksa null",
+          "title": "Is Optimal"
+        },
+        "optimal_time_target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Optimal Time Target"
+        },
+        "reasoning_steps": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasoning Steps",
+          "type": "array"
+        },
+        "space_complexity": {
+          "title": "Space Complexity",
+          "type": "string"
+        },
+        "static_hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Static Hint"
+        },
+        "time_complexity": {
+          "description": "Kanonik Big-O, ör. \"n^2\"",
+          "title": "Time Complexity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "time_complexity",
+        "space_complexity",
+        "display_time",
+        "reasoning_steps",
+        "is_optimal",
+        "optimal_time_target",
+        "static_hint",
+        "agreement",
+        "confidence"
+      ],
+      "title": "ComplexityResult",
+      "type": "object"
+    },
+    "Diagnostic": {
+      "additionalProperties": false,
+      "description": "Ayrıştırıcı/derleyici tanısı (K1).",
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Column"
+        },
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "note"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "tool": {
+          "enum": [
+            "tree-sitter",
+            "gcc",
+            "clang",
+            "roslyn"
+          ],
+          "title": "Tool",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool",
+        "severity",
+        "line",
+        "column",
+        "message"
+      ],
+      "title": "Diagnostic",
+      "type": "object"
+    },
+    "Difficulty": {
+      "enum": [
+        "very_easy",
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "Engine": {
+      "enum": [
+        "none",
+        "unity",
+        "unreal"
+      ],
+      "title": "Engine",
+      "type": "string"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "description": "Rapordaki tek bulgu; statik kural, LLM ya da ikisinin birleşimi.",
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/AuditCategory"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence": {
+          "title": "Evidence",
+          "type": "string"
+        },
+        "id": {
+          "description": "Rapor içi kimlik, ör. \"F-001\"",
+          "title": "Id",
+          "type": "string"
+        },
+        "line_end": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Line End"
+        },
+        "line_start": {
+          "title": "Line Start",
+          "type": "integer"
+        },
+        "rule_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Statik kural kimliği, ör. \"UNITY-GC-001\"",
+          "title": "Rule Id"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "source": {
+          "$ref": "#/$defs/FindingSource"
+        }
+      },
+      "required": [
+        "id",
+        "rule_id",
+        "category",
+        "severity",
+        "line_start",
+        "line_end",
+        "evidence",
+        "description",
+        "source",
+        "confidence"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "FindingSource": {
+      "enum": [
+        "static",
+        "llm",
+        "confirmed"
+      ],
+      "title": "FindingSource",
+      "type": "string"
+    },
+    "Language": {
+      "enum": [
+        "c",
+        "cpp",
+        "csharp"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "ReportMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "cache_hit": {
+          "title": "Cache Hit",
+          "type": "boolean"
+        },
+        "degraded": {
+          "title": "Degraded",
+          "type": "boolean"
+        },
+        "early_exit": {
+          "title": "Early Exit",
+          "type": "boolean"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Model"
+        },
+        "prompt_version": {
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Provider"
+        },
+        "repair_attempts": {
+          "title": "Repair Attempts",
+          "type": "integer"
+        },
+        "rules_version": {
+          "title": "Rules Version",
+          "type": "string"
+        },
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "stage_latency_ms": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Stage Latency Ms",
+          "type": "object"
+        },
+        "tokens_in": {
+          "title": "Tokens In",
+          "type": "integer"
+        },
+        "tokens_out": {
+          "title": "Tokens Out",
+          "type": "integer"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "prompt_version",
+        "rules_version",
+        "schema_version",
+        "tokens_in",
+        "tokens_out",
+        "stage_latency_ms",
+        "early_exit",
+        "cache_hit",
+        "degraded",
+        "repair_attempts",
+        "warnings"
+      ],
+      "title": "ReportMeta",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SocraticResult": {
+      "additionalProperties": false,
+      "properties": {
+        "guiding_questions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Guiding Questions",
+          "type": "array"
+        },
+        "hint_level": {
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Hint Level",
+          "type": "integer"
+        },
+        "key_flaw_concept": {
+          "title": "Key Flaw Concept",
+          "type": "string"
+        },
+        "leak_check": {
+          "enum": [
+            "passed",
+            "regenerated",
+            "dropped_questions",
+            "skipped"
+          ],
+          "title": "Leak Check",
+          "type": "string"
+        },
+        "next_step_hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Step Hint"
+        }
+      },
+      "required": [
+        "key_flaw_concept",
+        "hint_level",
+        "guiding_questions",
+        "next_step_hint",
+        "leak_check"
+      ],
+      "title": "SocraticResult",
+      "type": "object"
+    }
+  },
+  "$id": "report.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Bir analizin tam sonucu.",
+  "properties": {
+    "analysis_id": {
+      "description": "ULID",
+      "title": "Analysis Id",
+      "type": "string"
+    },
+    "compilation": {
+      "$ref": "#/$defs/CompilationBlock"
+    },
+    "complexity": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ComplexityResult"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "difficulty": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Difficulty"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "engine": {
+      "$ref": "#/$defs/Engine"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "language": {
+      "$ref": "#/$defs/Language"
+    },
+    "meta": {
+      "$ref": "#/$defs/ReportMeta"
+    },
+    "question_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Question Id"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "socratic": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SocraticResult"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "analysis_id",
+    "created_at",
+    "language",
+    "engine",
+    "question_id",
+    "difficulty",
+    "compilation",
+    "complexity",
+    "findings",
+    "socratic",
+    "meta"
+  ],
+  "title": "AnalysisReport",
+  "type": "object"
+}
