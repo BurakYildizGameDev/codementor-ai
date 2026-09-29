@@ -20,6 +20,9 @@ test-compiler:
 schema:
 	uv run codementor schema export --out schemas/
 
+rules-doc:
+	uv run codementor rules doc --out docs/rules-catalog.md
+
 check: lint typecheck test
 
-.PHONY: setup lint typecheck test roslyn-check test-compiler schema check
+.PHONY: setup lint typecheck test roslyn-check test-compiler schema rules-doc check
