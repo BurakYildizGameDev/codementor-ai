@@ -59,30 +59,49 @@ class RulesSettings(BaseModel):
 
 
 class ProviderConfig(BaseModel):
+    """Bir LLM sağlayıcısının ayarları (mimari §5.5, §17); anahtarın kendisi değil, adı tutulur."""
+
     base_url: str | None = None
     model: str = ""
     api_key_env: str | None = None
-    num_ctx: int | None = None
-    temperature: float | None = None
+    num_ctx: int | None = Field(default=None, ge=512)
+    temperature: float | None = Field(default=None, ge=0, le=2)
     seed: int | None = None
-    timeout_s: int = 120
+    max_tokens: int | None = Field(default=None, ge=1)
+    timeout_s: int = Field(default=60, ge=1)  # bulut: 60 sn (mimari §5.5.3)
+
+
+# Alt sınıflar, TOML'da bölüm kısmen verildiğinde de sağlayıcıya özgü varsayılanları korur.
+class OllamaConfig(ProviderConfig):
+    base_url: str | None = "http://127.0.0.1:11434"
+    num_ctx: int | None = Field(default=16384, ge=512)
+    timeout_s: int = Field(default=120, ge=1)  # yerel: 120 sn
+
+
+class OpenAIConfig(ProviderConfig):
+    base_url: str | None = "https://api.openai.com/v1"
+    api_key_env: str | None = "OPENAI_API_KEY"
+
+
+class DeepSeekConfig(ProviderConfig):
+    base_url: str | None = "https://api.deepseek.com"
+    api_key_env: str | None = "DEEPSEEK_API_KEY"
+
+
+class AnthropicConfig(ProviderConfig):
+    base_url: str | None = "https://api.anthropic.com"
+    api_key_env: str | None = "ANTHROPIC_API_KEY"
+    max_tokens: int | None = Field(default=16000, ge=1)  # düşünme de bu bütçeden harcar
 
 
 class ProvidersSettings(BaseModel):
     default: str = "ollama"
     fallback: list[str] = Field(default_factory=list)
-    ollama: ProviderConfig = Field(
-        default_factory=lambda: ProviderConfig(base_url="http://127.0.0.1:11434")
-    )
-    openai: ProviderConfig = Field(
-        default_factory=lambda: ProviderConfig(api_key_env="OPENAI_API_KEY")
-    )
-    deepseek: ProviderConfig = Field(
-        default_factory=lambda: ProviderConfig(api_key_env="DEEPSEEK_API_KEY")
-    )
-    anthropic: ProviderConfig = Field(
-        default_factory=lambda: ProviderConfig(api_key_env="ANTHROPIC_API_KEY")
-    )
+    max_retries: int = Field(default=2, ge=0, le=5)  # yalnızca ağ/429/5xx (mimari §5.5.3)
+    ollama: OllamaConfig = Field(default_factory=OllamaConfig)
+    openai: OpenAIConfig = Field(default_factory=OpenAIConfig)
+    deepseek: DeepSeekConfig = Field(default_factory=DeepSeekConfig)
+    anthropic: AnthropicConfig = Field(default_factory=AnthropicConfig)
 
 
 class Settings(BaseSettings):

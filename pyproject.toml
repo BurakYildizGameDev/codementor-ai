@@ -14,6 +14,8 @@ dependencies = [
     "tree-sitter-c>=0.24",
     "tree-sitter-cpp>=0.23",
     "tree-sitter-c-sharp>=0.23",
+    "httpx>=0.28.1",
+    "structlog>=26.1.0",
 ]
 
 [project.scripts]
@@ -26,6 +28,7 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "types-pyyaml>=6.0",
+    "respx>=0.23.1",
 ]
 
 [build-system]
@@ -58,7 +61,7 @@ warn_required_dynamic_aliases = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers -m \"not live\""
 markers = [
     "live: gerçek sağlayıcı API'sine çıkan testler (ağ gerektirir)",
     "compiler: gerçek derleyici (gcc/clang/dotnet) gerektiren testler; araç yoksa atlanır",

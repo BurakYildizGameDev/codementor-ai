@@ -25,6 +25,7 @@ disabled = []               # ör. ["CPP-OWN-001"]; kural kataloğu: docs/rules-
 [providers]
 default = "ollama"
 fallback = ["deepseek"]
+max_retries = 2              # yalnızca ağ/429/5xx hatalarında (4xx hemen hata)
 
 [providers.ollama]
 base_url = "http://127.0.0.1:11434"
@@ -40,9 +41,11 @@ api_key_env = "OPENAI_API_KEY"
 
 [providers.deepseek]
 base_url = "https://api.deepseek.com"
+timeout_s = 60
 model = ""
 api_key_env = "DEEPSEEK_API_KEY"
 
 [providers.anthropic]
-model = ""
+model = ""                   # ör. güncel Claude model kimliği
 api_key_env = "ANTHROPIC_API_KEY"
+# temperature/seed verme: güncel Claude modelleri temperature'ı reddediyor (ADR-0011)
