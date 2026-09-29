@@ -6,7 +6,8 @@
 | 0 | ✅ | faz/0-iskelet | 2026-09-29 | Claude Code / — |
 | 1 | ✅ | faz/1-modeller | 2026-09-29 | Claude Code / — |
 | 2 | ✅ | faz/2-soru-bankasi | 2026-09-29 | Claude Code / — |
-| 3 | ⏳ | | | |
+| 3 | ✅ | faz/3-tier0 | 2026-09-29 | Claude Code / kod-denetci |
+| 4 | ⏳ | | | |
 
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
@@ -73,7 +74,36 @@
 **Bu fazda öğrendiğim:**
 - Git Bash heredoc'larında `\n` kaçışları Python betiğine ulaşmadan bozulabiliyor; çok satırlı düzenlemeler Edit aracıyla daha güvenli.
 
+## Faz 3 — Notlar
+**Yapılanlar:**
+- `ingest/normalize.py`: UTF-8/BOM, CRLF/CR → LF, NUL ve geçersiz Unicode reddi, satır/bayt sınırları (config `limits`), yalnızca `\n` ile satır bölme, sağa hizalı numaralı görünüm, SHA-256. `ingest/errors.py`: `IngestError` + `CodeTooLargeError` (413), `EmptyCodeError`, `InvalidEncodingError`, `LanguageDetectionError` (422).
+- `ingest/detect.py`: ağırlıklı sinyallerle motor (Unity/Unreal) ve dil tespiti; ipucu önceliği; C kararı tree-sitter dilbilgisiyle doğrulanır; Java reddedilir.
+- `analysis/lexical.py`: tek geçişli yorum/metin maskeleme ve parantez eşleme. `analysis/parsers.py`: iş parçacığı başına `Parser` önbelleği, doğrusal zamanlı Unreal makro nötrleştirme, `TreeCursor` tabanlı `iter_nodes`.
+- `validation/tier0.py`: ERROR/MISSING → `Diagnostic` (1 tabanlı satır, karakter kolonu), kapanmamış blok özeti, C# `;` boşluğu sezgisi, üst sınır 20. `validation/policy.py`: §5.2.4 Tier 0 satırı.
+- Modeller: `LanguageHint`, `Detection`, `NormalizedCode` (`request.py`), `Tier0Result`, `PolicyDecision` (`validation.py`); motor→dil kuralı `enums.required_language/check_engine_language`'e taşındı.
+- 30 fixture (`tests/fixtures/tier0/`), 573 test.
+**Alınan kararlar (ve neden):**
+- **tree-sitter `<0.26` sabitlendi.** 0.26.0 Python bağlaması, ERROR içeren büyük ağaçları `Node.children` ile gezerken Windows'ta erişim ihlaliyle çöküyor ve heap'i bozuyor (çökme sonradan alakasız yerlerde, ör. YAML okurken çıkıyordu). 0.25.2'de yok. Alt süreçte çalışan `test_tree_sitter_binding_is_memory_safe` sürüm yükseltmesinde bunu yakalar. Tüm gezintiler `iter_nodes` (TreeCursor) ile.
+- Unreal makroları ayrıştırmadan önce **aynı uzunlukta boşlukla** değiştirilir; satır ve karakter kolonları kaymaz. Makrolar ve parantezler yorum/metin maskelenmiş kopyada aranır.
+- Numaralı görünüm: numara genişliği = toplam satır sayısının basamak sayısı. U+2028 gibi görünmez satır ayırıcılar görünümde ` ` olarak kaçışlanır (sahte satır numarası enjeksiyonu; §12).
+- Kolonlar karakter cinsinden ve **ayrıştırılan (nötrleştirilmiş) metin** üzerinden hesaplanır.
+- Eksik `;` (MISSING) önceki kod simgesinin hemen arkasında raporlanır; tree-sitter onu araya giren yorumların arkasına koyuyordu.
+- Dosya sonunda kapanmamış blok: tree-sitter'ın blok başına koyduğu dev ERROR yerine son satırda "Satır N ile başlayan blok kapanmamış" mesajı; üst sınırda asla düşmez.
+- Hiç dil işareti taşımayan kod 422 döner (mimari: "belirsizse kullanıcıya sorulur").
+- Deney betiği (`scripts/ts_probe.py`) repoya eklenmedi; aynı güvenceyi testler veriyor.
+**Mimariden sapmalar (ADR linki):** yok. `normalize` imzası geriye uyumlu genişletildi (`raw: str | bytes`, `limits=`).
+**Denetim (kod-denetci):** Yüksek ×2 (makro nötrleştirmede O(n²) DoS: 40 KB girdide 4–7 s; eksik `;` yorum satırında raporlanıyordu ve bir fixture işareti bunu gizliyordu), Orta ×6 (C tarzı C++ C sanılıyordu; string içeriği sahte sinyal üretiyordu; tek surrogate 500 veriyordu; yorum regex'i karesel; makro argümanındaki yorum/basamak ayırıcısı sahte hata; iki fixture işareti yanlış satırda), Düşük ×10. Hepsi düzeltildi ve testlendi; D2 ve D9 aşağıda "Sonraya"da.
+**Açık sorular:**
+- `make` hâlâ yok; kontroller `uv run ...` ile çalıştırıldı.
+- Erken çıkıştaki Sokratik şablon mesajları (§5.2.4) bu fazın çıktısı değil; Faz 10'da rapor oluşturmayla ele alınmalı.
+**Bu fazda öğrendiğim:**
+- Yerel eklenti (C) çökmeleri Python'da yanıltıcıdır: heap bozulması, belirtiyi tamamen ilgisiz bir modülde gösterebilir. Yalıtılmış betiklerle ikiye bölerek ve sürüm karşılaştırarak kök nedene inmek gerekir.
+- `ruff --fix` (UP037), `from __future__ import annotations` açıkken yerel değişkendeki `Literal["x"]` tırnaklarını silebiliyor; `Literal` tipleri modül düzeyinde takma adla tanımlanmalı.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
+- Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
+- `mask_non_code` C++ ham metinlerini (`R"(...)"`) tanımıyor; içlerinde `"` geçerse maskeleme erken biter (öğrenci kodunda nadir).
 - Faz 5: `call_costs.yaml` içindeki amortize `1*` gösterimi `parse_bigo`'ya verilmeden önce `*` ayıklanmalı (ya da `BigO`'ya `amortized` bayrağı). Faz 2'de soru bankası için `removesuffix("*")` yaklaşımı kullanıldı; ortak bir yardımcıya taşınabilir.
 - `data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.
 - Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.

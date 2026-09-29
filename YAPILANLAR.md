@@ -98,4 +98,44 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 ### Testler (358 test, hepsi geçiyor)
 - `test_question_bank.py`, `test_checklists.py`, `test_question_data.py`, `test_cli_questions.py`.
 
-**Commit'ler:** `b079c87` modeller ve yükleyiciler · `663002e` 14 soru ve 5 kontrol listesi · `859602c` CLI komutları · dokümanlar (bu commit)
+**Commit'ler:** `b079c87` modeller ve yükleyiciler · `663002e` 14 soru ve 5 kontrol listesi · `859602c` CLI komutları · `1ab14bc` dokümanlar
+
+---
+
+## Faz 3 — Normalizasyon ve Tier 0 Ön Doğrulama ✅
+
+**Dal:** `faz/3-tier0` · **Mimari:** §5.1, §5.2.1, §5.2.4, §12
+
+### Normalizasyon (`ingest/normalize.py`)
+- UTF-8'e çözme, BOM atma; çözülemeyen bayt, NUL ve geçersiz Unicode reddi (API'de 422).
+- CRLF ve tek CR → LF; sekmeler korunur; satırlar yalnızca `\n` ile bölünür (tree-sitter ile aynı numaralar).
+- Satır/bayt sınırları config'den (600 satır / 40 KB) → `CodeTooLargeError` (413).
+- LLM'e giden sağa hizalı numaralı görünüm (`  9 | kod`); görünmez satır ayırıcılar kaçışlanır.
+- SHA-256 (önbellek anahtarı için).
+
+### Dil ve motor tespiti (`ingest/detect.py`)
+- Unity (`using UnityEngine`, `MonoBehaviour` ...) ve Unreal (`UCLASS`, `GENERATED_BODY`, `CoreMinimal.h` ...) önce; sonra C / C++ / C#.
+- Sinyaller yorum ve metin içerikleri maskelenmiş kodda aranır (`printf("=>")` C#'a benzemez).
+- Yalnızca C başlığı kullanan "C tarzı C++" tree-sitter dilbilgisiyle doğrulanıp C++'a düzeltilir; Java reddedilir.
+- Kullanıcının verdiği dil/motor her zaman kazanır; belirsiz kod 422 ile kullanıcıya sorulur.
+
+### tree-sitter katmanı (`analysis/`)
+- `parsers.py`: iş parçacığı başına önbelleklenmiş ayrıştırıcılar; `TreeCursor` ile güvenli gezinti.
+- Unreal makroları (`UCLASS(...)`, `UPROPERTY(...)`, `*_API` ...) ayrıştırmadan önce aynı uzunlukta boşlukla nötrleştirilir; satır/kolon kaymaz.
+- `lexical.py`: tek geçişli (doğrusal süre) yorum/metin maskeleme ve parantez eşleme.
+
+### Tier 0 ön doğrulama (`validation/`)
+- `tier0.py`: ERROR/MISSING düğümleri → Türkçe mesajlı tanı; 1 tabanlı satır, karakter cinsinden kolon.
+- Eksik `;` doğru satırda; dosya sonunda kapanmamış blok için "Satır N ile başlayan blok kapanmamış" mesajı.
+- `policy.py`: sözdizimi hatası → `FAILED` ve erken çıkış; temiz → devam.
+- 600 satırlık dosyada 1–4 ms (sınır 50 ms).
+
+### Önemli olaylar
+- **tree-sitter 0.26.0 çöküyordu:** hatalı büyük dosyalarda Windows'ta bellek ihlali ve heap bozulması. Sürüm `<0.26` sabitlendi; alt süreçte çalışan regresyon testi eklendi.
+- **Kod denetimi (`kod-denetci`):** Yüksek ×2 (makro nötrleştirmede DoS, yorumdan önce eksik `;`un yanlış satırda raporlanması), Orta ×6, Düşük ×10 bulgu düzeltildi.
+
+### Testler (573 test, hepsi geçiyor)
+- 30 fixture: `tests/fixtures/tier0/{c,cpp,csharp}/{valid,invalid}/` (2 Unity, 3 Unreal dahil).
+- `test_normalize.py`, `test_detect.py`, `test_lexical.py`, `test_parsers.py`, `test_tier0.py`, `test_policy.py`.
+
+**Commit'ler:** `27a7874` tree-sitter ve makro nötrleştirme · `8360805` normalizasyon ve dil tespiti · `78d1824` Tier 0 ve politika · dokümanlar (bu commit)
