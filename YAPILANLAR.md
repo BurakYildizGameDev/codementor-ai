@@ -39,7 +39,7 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 - LLM şemaları ile rapor şeması ayrı modüllerde (§6.1); LLM şemalarında sistem alanı yok.
 - Tüm şemalarda `additionalProperties: false`.
 
-### Big-O ayrıştırıcı (`models/bigo.py`)
+### Big-O ayrıştırıcı (`models/bigo.py`, `_bigo_algebra.py`, `_bigo_parser.py`)
 - Regex yığını yerine tokenizer + özyinelemeli ayrıştırıcı.
 - `parse_bigo(str) -> BigO`; `BigO.canonical` (`n^2`), `BigO.display` (`O(n²)`), `same_class()`, `<`, `<=`, `>`, `>=`.
 - Desteklenen yazımlar: `O(...)`, büyük/küçük harf, üst simgeler (`²`, `¹⁰`, `ⁿ`), `* · × ⋅` ve bitişik çarpım (`nlogn`), `log` / `lg` / `ln`, log tabanları (`log2`, `log_2`, `log₂`), `log^k n`, `sqrt`, kesirli üs, `c^n`, `n!`, sabite bölme, toplam.
@@ -56,5 +56,5 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 - `tests/unit/test_schema_export.py` — 3 dosya, deterministik çıktı, commit edilen şemaların güncelliği.
 - `tests/golden/` — §6.5 örnek raporu doğrulama ve gidiş-dönüş.
 
-### Açık konu
-- `bigo.py` 582 satır (> 400). Bölme önerisi PROGRESS.md'de, onay bekliyor.
+### Refactor
+- `bigo.py` 400 satır sınırı için bölündü: `bigo.py` (dışa açık API), `_bigo_algebra.py` (terim cebiri + biçim), `_bigo_parser.py` (tokenizer + ayrıştırıcı).

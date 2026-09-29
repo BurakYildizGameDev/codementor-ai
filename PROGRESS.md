@@ -37,7 +37,7 @@
 - `schemas/` commit edilir (Web UI tipleri bundan üretilecek); `test_committed_schemas_up_to_date` model–şema kaymasını yakalar.
 **Mimariden sapmalar (ADR linki):** yok. (`models/_base.py` ve `models/schemas.py` §16'da listelenmeyen yardımcı modüller.)
 **Açık sorular:**
-- `bigo.py` 582 satır (>400). Öneri: `_bigo_tokens.py` (tokenizer+ayrıştırıcı) ve `_bigo_algebra.py` (terim cebiri+biçim) olarak bölmek; `bigo.py` yalnızca `BigO`/hatalar/`parse_bigo`. Onay bekliyor.
+- ~~`bigo.py` 582 satır (>400)~~ → çözüldü: `bigo.py` (API, 155) + `_bigo_algebra.py` (terim cebiri/biçim, 177) + `_bigo_parser.py` (tokenizer/ayrıştırıcı, 291). Dışa açık API değişmedi.
 - `make` hâlâ yok (Faz 0'dan); kontroller `uv run ...` ile çalıştırıldı.
 - Windows konsolunda (cp1254) `O(n²)` çıktısı bozuk görünüyor; yalnızca görüntü sorunu (`PYTHONIOENCODING=utf-8` ile düzelir).
 **Bu fazda öğrendiğim:**
