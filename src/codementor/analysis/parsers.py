@@ -61,6 +61,11 @@ class ParsedSource:
     text: str
 
 
+def get_language(language: Language) -> TSLanguage:
+    """Dilin tree-sitter dilbilgisi (sorgu derlemek için)."""
+    return _LANGUAGES[language]
+
+
 def get_parser(language: Language) -> Parser:
     """Bu iş parçacığına ait, önbelleklenmiş `Parser`."""
     cache: dict[Language, Parser] | None = getattr(_local, "parsers", None)
