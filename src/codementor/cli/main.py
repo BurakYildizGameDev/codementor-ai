@@ -8,6 +8,7 @@ from typing import Annotated
 import typer
 
 from codementor import __version__
+from codementor.cli.questions import questions_app
 from codementor.models.schemas import export_schemas
 
 app = typer.Typer(name="codementor", no_args_is_help=True, add_completion=False)
@@ -30,6 +31,7 @@ def main(
 
 schema_app = typer.Typer(name="schema", no_args_is_help=True, help="JSON şema işlemleri.")
 app.add_typer(schema_app)
+app.add_typer(questions_app)
 
 
 @schema_app.command("export")

@@ -40,6 +40,13 @@ class PipelineSettings(BaseModel):
     use_cache: bool = True
 
 
+class DataSettings(BaseModel):
+    """Veri dizinleri; göreli yollar çalışma dizinine göredir."""
+
+    questions_dir: Path = Path("data/questions")
+    checklists_dir: Path = Path("data/checklists")
+
+
 class ProviderConfig(BaseModel):
     base_url: str | None = None
     model: str = ""
@@ -79,6 +86,7 @@ class Settings(BaseSettings):
     limits: LimitsSettings = Field(default_factory=LimitsSettings)
     validation: ValidationSettings = Field(default_factory=ValidationSettings)
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
+    data: DataSettings = Field(default_factory=DataSettings)
     providers: ProvidersSettings = Field(default_factory=ProvidersSettings)
 
     @classmethod
