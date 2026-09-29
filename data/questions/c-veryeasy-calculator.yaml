@@ -1,0 +1,30 @@
+id: c-veryeasy-calculator
+version: 1
+language: c
+engine: none
+difficulty: very_easy
+title: "Durum makineli dört işlem hesap makinesi"
+prompt: |
+  Kullanıcıdan sırayla bir sayı, bir işlem (+, -, *, /) ve ikinci bir sayı alan,
+  sonucu yazdıran ve kullanıcı çıkmak isteyene kadar tekrar eden bir hesap makinesi
+  yazın. Program "ilk sayı bekleniyor", "işlem bekleniyor", "ikinci sayı bekleniyor"
+  gibi durumlar arasında geçiş yapan bir durum makinesi olarak kurulmalı.
+  Kullanıcı sayı yerine harf girerse program kilitlenmemeli veya sonsuz döngüye
+  girmemeli; bir hata mesajı gösterip aynı adımı yeniden sormalı.
+constraints:
+  - "Sıfıra bölme anlamlı bir mesajla reddedilmeli"
+  - "Geçersiz bir girişten sonra program bir sonraki girişi doğru okuyabilmeli"
+  - "Yalnızca standart C kütüphanesi kullanılmalı ve davranış tüm platformlarda aynı olmalı"
+expected:
+  time: { per_operation: "1" }
+  space: "1"
+concept_tags: [state-machine, input-validation, stdin, undefined-behavior]
+checklist_extra:
+  - "Giriş fonksiyonunun dönüş değeri hiç kontrol ediliyor mu?"
+  - "Hatalı girişten sonra tamponda kalan karakterler nasıl temizleniyor?"
+  - "Bölen sıfır mı diye işlemden önce mi bakılıyor?"
+reference_solution_path: private/solutions/c-veryeasy-calculator.c
+hint_ladder:
+  1: "Kullanıcı sayı yerine 'abc' yazdığında giriş fonksiyonu ne döndürüyor ve 'abc' nereye gidiyor?"
+  2: "Okunamayan karakterler giriş tamponunda kalırsa bir sonraki okuma denemesi neyle karşılaşır?"
+  3: "Bu kavramlar 'giriş fonksiyonunun dönüş değerini doğrulama' ve 'giriş tamponunu taşınabilir şekilde boşaltma' olarak bilinir."

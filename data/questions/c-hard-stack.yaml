@@ -1,0 +1,29 @@
+# Mimari §7.1'deki örnek soru.
+id: c-hard-stack
+version: 1
+language: c
+engine: none
+difficulty: hard
+title: "Dinamik büyüyen yığın (stack)"
+prompt: |
+  push, pop, peek ve destroy işlemlerini destekleyen, kapasitesi dolduğunda
+  iki katına çıkan bir int yığını yazın. Pointer aritmetiği kullanın.
+  Yığın milyonlarca eleman tutabilmeli; bellek yetersiz kaldığında program
+  çökmek yerine hatayı çağırana bildirmeli.
+constraints:
+  - "push amortize O(1) olmalı"
+  - "Bellek sızıntısı olmamalı"
+  - "Boş yığında pop ve peek tanımlı bir hata sonucu döndürmeli"
+expected:
+  time: { push: "1*", pop: "1", peek: "1" }
+  space: "n"
+concept_tags: [pointer-arithmetic, realloc, amortized-analysis, memory-safety]
+checklist_extra:
+  - "realloc dönüşü NULL ise orijinal pointer kaybediliyor mu?"
+  - "Boş yığında pop çağrısı nasıl ele alınıyor?"
+  - "Kapasite büyütmede taşma (overflow) kontrolü var mı?"
+reference_solution_path: private/solutions/c-hard-stack.c
+hint_ladder:
+  1: "Belleği büyütürken eski veriye ne oluyor?"
+  2: "realloc başarısız olduğunda elinde hangi pointer kalıyor?"
+  3: "Bu kavram 'geçici pointer ile güvenli realloc' olarak bilinir."

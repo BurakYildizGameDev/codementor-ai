@@ -1,0 +1,28 @@
+id: unreal-medium-actor-component
+version: 1
+language: cpp
+engine: unreal
+difficulty: medium
+title: "Can yenileme bileşeni"
+prompt: |
+  Bir aktöre eklenebilen `UHealthRegenComponent` yazın. Bileşen, sahibinin canını
+  son hasardan 3 saniye sonra başlayarak saniyede belirli bir miktar yenilemeli ve
+  can dolunca durmalı. Sahnede bu bileşene sahip yüzlerce aktör bulunabilir ve
+  çoğu zaman bu aktörlerin canı zaten dolu olacak.
+constraints:
+  - "Canı dolu olan aktörler kare başına işlem maliyeti oluşturmamalı"
+  - "Yenileme miktarı kare hızından bağımsız olmalı"
+  - "Yenileme hızı ve bekleme süresi editörden ayarlanabilmeli"
+expected:
+  time: { per_frame: "1" }
+  space: "1"
+concept_tags: [actor-component, tick, performance, lifecycle]
+checklist_extra:
+  - "Bileşen hiç iş yapmadığı karelerde de güncelleniyor mu?"
+  - "Yenileme DeltaTime ile ölçekleniyor mu?"
+  - "Hasar alındığında bekleme süresi nasıl yeniden başlatılıyor?"
+reference_solution_path: private/solutions/unreal-medium-actor-component.cpp
+hint_ladder:
+  1: "Canı dolu 300 aktörün bileşeni her karede ne yapıyor?"
+  2: "Bir bileşenin her kare güncellenmesi ne zaman gerekli, ne zaman değil? Bunu kim kontrol ediyor?"
+  3: "Bu kavramlar 'Tick'i koşula bağlı açıp kapatma' ve 'zamanlayıcı tabanlı güncelleme' olarak bilinir."

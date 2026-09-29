@@ -1,0 +1,37 @@
+# C++ kontrol listesi (mimari §8.3). Unreal isteklerinde unreal.yaml ile birlikte kullanılır.
+version: 1
+applies_to: { language: cpp }
+items:
+  - id: CPP-CL-001
+    text: "Her kaynağın (bellek, dosya, kilit) sahibi açık mı; sahiplik tek bir nesnede toplanıyor mu?"
+    tags: [core]
+  - id: CPP-CL-002
+    text: "İstisna fırlatılırsa ya da erken dönülürse kaynaklar yine serbest kalıyor mu?"
+    tags: [core]
+  - id: CPP-CL-003
+    text: "Sınıf kaynak yönetiyorsa kopyalama, taşıma ve yıkıcı birbiriyle tutarlı mı (Rule of Zero/Three/Five)?"
+    tags: [raii, rule-of-zero, rule-of-five, ownership]
+  - id: CPP-CL-004
+    text: "Kopya atama kendine atamada (a = a) ve taşınmış (moved-from) nesnede doğru çalışıyor mu?"
+    tags: [rule-of-five, move-semantics]
+  - id: CPP-CL-005
+    text: "Çıplak new/delete yerine ömrü otomatik yöneten bir tür kullanılabilir mi?"
+    tags: [raii, ownership, smart-pointers]
+  - id: CPP-SP-001
+    text: "shared_ptr ile birbirini tutan nesneler sahiplik döngüsü (reference cycle) oluşturuyor mu?"
+    tags: [smart-pointers, cyclic-reference, trees]
+  - id: CPP-CL-006
+    text: "Ebeveyn veya geri referanslar sahiplik almadan mı tutuluyor; tutulan nesnenin ömrü garanti altında mı?"
+    tags: [trees, ownership, smart-pointers]
+  - id: CPP-UB-001
+    text: "Kapsayıcıdan eleman silindikten veya eklendikten sonra eski iterator, referans ya da pointer kullanılıyor mu?"
+    tags: [iterator-invalidation, data-structures, lru-cache]
+  - id: CPP-CL-007
+    text: "Hash tablosu ile ikinci bir yapı birlikte kullanılıyorsa ikisi her işlemden (ekleme, güncelleme, çıkarma) sonra senkron mu?"
+    tags: [hash-map, lru-cache, data-structures]
+  - id: CPP-CL-008
+    text: "Kapasite 0 veya 1 gibi sınır değerlerde davranış tanımlı ve doğru mu?"
+    tags: [edge-cases, lru-cache]
+  - id: CPP-CL-009
+    text: "Büyük nesneler gereksiz yere değerle kopyalanıyor mu (parametre, dönüş, aralık tabanlı for)?"
+    tags: [performance, move-semantics]

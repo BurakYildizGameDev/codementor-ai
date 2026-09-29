@@ -1,0 +1,28 @@
+id: c-medium-linked-list
+version: 1
+language: c
+engine: none
+difficulty: medium
+title: "Tek yönlü bağlı liste: ekleme, silme, temizleme"
+prompt: |
+  Tam sayı tutan tek yönlü bir bağlı liste yazın. Şu işlemler olmalı: başa ekleme,
+  sona ekleme, verilen değere sahip ilk düğümü silme, listeyi yazdırma ve listedeki
+  tüm düğümleri serbest bırakma. Silinmek istenen değer listenin başında, ortasında
+  veya sonunda olabilir ya da hiç bulunmayabilir; liste boş da olabilir.
+constraints:
+  - "Program sonunda hiçbir bellek sızıntısı olmamalı"
+  - "Serbest bırakılmış belleğe hiçbir koşulda erişilmemeli"
+  - "n liste uzunluğu olmak üzere silme işlemi O(n) olmalı"
+expected:
+  time: { push_front: "1", push_back: "n", remove: "n", destroy: "n" }
+  space: "n"
+concept_tags: [linked-list, pointers, use-after-free, dangling-pointer, memory-safety]
+checklist_extra:
+  - "Silinen düğüm serbest bırakıldıktan sonra next alanı okunuyor mu?"
+  - "Baş düğüm silindiğinde çağıranın elindeki baş pointer güncelleniyor mu?"
+  - "Temizleme döngüsü serbest bıraktığı düğümden ilerlemeye çalışıyor mu?"
+reference_solution_path: private/solutions/c-medium-linked-list.c
+hint_ladder:
+  1: "Bir düğümü serbest bıraktıktan hemen sonra o düğüme ait hangi bilgiye hâlâ ihtiyacınız var?"
+  2: "Baş düğüm silindiğinde fonksiyonun dışındaki değişken hangi adresi göstermeye devam ediyor?"
+  3: "Bu kavramlar 'serbest bırakma sonrası kullanım (use-after-free)' ve 'sarkan pointer (dangling pointer)' olarak bilinir."

@@ -1,0 +1,28 @@
+# C# kontrol listesi (mimari §8.3). Unity isteklerinde unity.yaml ile birlikte kullanılır.
+version: 1
+applies_to: { language: csharp }
+items:
+  - id: CS-CL-001
+    text: "Sık çalışan kod yollarında gereksiz heap tahsisi (geçici liste, string, closure, boxing) var mı?"
+    tags: [core]
+  - id: CS-CL-002
+    text: "null ve boş girdi durumları ele alınıyor mu?"
+    tags: [core]
+  - id: CS-CL-003
+    text: "Döngüde string birleştirme her yinelemede yeni bir nesne üretip önceki içeriği kopyalıyor mu?"
+    tags: [string-building, allocation, gc]
+  - id: CS-CL-004
+    text: "Ayrıştırma sırasında alt dizgiler (Substring, Split) her alan için yeni nesneler oluşturuyor mu?"
+    tags: [parsing, zero-allocation, allocation]
+  - id: CS-CL-005
+    text: "Yığında (stack) yaşayan veya bir tamponun dilimine bakan veriler, geçerli oldukları kapsamın dışına taşınıyor mu?"
+    tags: [span, memory-safety]
+  - id: CS-CL-006
+    text: "Geçersiz veya yarım biçimli girdide ayrıştırıcı istisna mı fırlatıyor, yoksa başarısızlığı anlamlı bir sonuçla mı bildiriyor?"
+    tags: [parsing, input-validation]
+  - id: CS-CL-007
+    text: "Koleksiyonda varlık kontrolü veya arama her seferinde doğrusal tarama mı yapıyor?"
+    tags: [data-structures, performance]
+  - id: CS-CL-008
+    text: "LINQ zincirleri sık çalışan yollarda gizli tahsis ve tekrarlı numaralandırma yapıyor mu?"
+    tags: [gc, hot-path, allocation]

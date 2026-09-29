@@ -1,0 +1,43 @@
+# C kontrol listesi (mimari §8.3). LLM'e enjekte edilir; öğrenciye gösterilmez.
+version: 1
+applies_to: { language: c }
+items:
+  - id: C-CL-001
+    text: "Her dinamik tahsis, hata dönüşleri dahil tüm çıkış yollarında serbest bırakılıyor mu?"
+    tags: [core]
+  - id: C-CL-002
+    text: "Dizi ve tampon erişimlerinde sınırlar her yolda kontrol ediliyor mu?"
+    tags: [core]
+  - id: C-CL-003
+    text: "Giriş fonksiyonlarının (scanf, fgets) dönüş değeri kontrol ediliyor mu; hatalı girişten sonra tamponda kalan veri nasıl temizleniyor?"
+    tags: [input-validation, stdin]
+  - id: C-CL-004
+    text: "Standartta tanımsız davranış olan bir çağrıya (ör. giriş akışında fflush) güveniliyor mu?"
+    tags: [undefined-behavior, stdin]
+  - id: C-CL-005
+    text: "Durum makinesi tüm geçersiz girişlerde tanımlı bir duruma dönüyor mu; sonsuz döngüye girebilecek bir durum var mı?"
+    tags: [state-machine, input-validation]
+  - id: C-CL-006
+    text: "Döngü koşulunda her yinelemede yeniden hesaplanan pahalı bir ifade (ör. strlen) var mı?"
+    tags: [loop-invariant, performance, strings]
+  - id: C-CL-007
+    text: "Boş girdi, tek elemanlı girdi ve NULL pointer gibi sınır durumları ele alınıyor mu?"
+    tags: [edge-cases, strings, linked-list]
+  - id: C-CL-008
+    text: "Serbest bırakılan bir pointer sonradan okunuyor ya da başka bir yerde hâlâ tutuluyor mu (use-after-free, sarkan pointer)?"
+    tags: [use-after-free, dangling-pointer, linked-list, memory-safety]
+  - id: C-CL-009
+    text: "Liste başı veya sonu değiştiğinde çağıranın elindeki pointer güncelleniyor mu; bağlantılar hangi sırayla değiştiriliyor?"
+    tags: [linked-list, pointers]
+  - id: C-CL-010
+    text: "realloc başarısız olduğunda eski blok ve içindeki veri korunuyor mu?"
+    tags: [realloc, dynamic-memory, memory-safety]
+  - id: C-CL-011
+    text: "Boyut hesaplamalarında (kapasite * 2, n * sizeof(T)) tamsayı taşması mümkün mü?"
+    tags: [realloc, dynamic-memory, pointer-arithmetic]
+  - id: C-CL-012
+    text: "Pointer aritmetiğiyle ulaşılan her adres tahsis edilen bloğun içinde kalıyor mu?"
+    tags: [pointer-arithmetic, memory-safety]
+  - id: C-CL-013
+    text: "Büyüme stratejisi amortize sabit maliyet sağlıyor mu, yoksa her eklemede yeniden tahsis mi yapılıyor?"
+    tags: [amortized-analysis, dynamic-memory]

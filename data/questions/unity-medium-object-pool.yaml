@@ -1,0 +1,28 @@
+id: unity-medium-object-pool
+version: 1
+language: csharp
+engine: unity
+difficulty: medium
+title: "Seri atış yapan silah için mermi yönetimi"
+prompt: |
+  Saniyede 20 mermi atabilen bir silah yazın. Her mermi düz bir çizgide ilerlemeli,
+  bir şeye çarptığında veya 3 saniye sonra sahneden kalkmalı. Sahnede aynı anda
+  yüzlerce mermi olabilir ve oyun mobil cihazlarda da uzun süreli ateş sırasında
+  takılmadan (kare atlamadan) çalışmalı.
+constraints:
+  - "Uzun süreli ateşte kare süresinde periyodik sıçramalar olmamalı"
+  - "Her merminin hızı, kalan ömrü ve konumu yalnızca kendi atışına göre belirlenmeli"
+  - "k sahnede aynı anda bulunan mermi sayısı olmak üzere, kare başına güncelleme maliyeti O(k) olmalı"
+expected:
+  time: { fire: "1", update: "k" }
+  space: "k"
+concept_tags: [object-pooling, instantiate, gc, lifecycle]
+checklist_extra:
+  - "Her atışta yeni nesne oluşturulup her çarpmada yok ediliyor mu?"
+  - "Tekrar kullanılan bir merminin hızı, zamanlayıcısı ve görünürlüğü sıfırlanıyor mu?"
+  - "Mermi sayısı sınırına ulaşıldığında ne oluyor?"
+reference_solution_path: private/solutions/unity-medium-object-pool.cs
+hint_ladder:
+  1: "Bir dakikalık ateş boyunca kaç mermi nesnesi oluşturulup yok ediliyor?"
+  2: "Sahneden kalkan bir merminin nesnesi gerçekten yok edilmek zorunda mı?"
+  3: "Bu kavram 'nesne havuzu (object pooling)' olarak bilinir."

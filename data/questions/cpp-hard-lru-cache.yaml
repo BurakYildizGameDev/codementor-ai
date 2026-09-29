@@ -1,0 +1,29 @@
+id: cpp-hard-lru-cache
+version: 1
+language: cpp
+engine: none
+difficulty: hard
+title: "Sabit kapasiteli LRU önbellek"
+prompt: |
+  int anahtarları std::string değerlerle eşleyen, sabit kapasiteli bir LRU
+  (en uzun süredir kullanılmayan) önbellek sınıfı yazın. `get(key)` değeri
+  döndürmeli (yoksa boş bir sonuç), `put(key, value)` ekleme veya güncelleme
+  yapmalı. Kapasite dolduğunda en uzun süredir erişilmeyen öğe çıkarılmalı.
+  Hem `get` hem `put` bir erişim sayılır.
+constraints:
+  - "get ve put ortalama O(1) olmalı"
+  - "Kapasite 0 ve 1 için davranış tanımlı olmalı"
+  - "Önbellek hiçbir işlem dizisinden sonra tutarsız duruma düşmemeli"
+expected:
+  time: { get: "1", put: "1" }
+  space: "n"
+concept_tags: [lru-cache, hash-map, iterator-invalidation, data-structures]
+checklist_extra:
+  - "Bir öğe öne taşındığında önceden saklanmış konum bilgileri hâlâ geçerli mi?"
+  - "Çıkarılan öğe yardımcı yapıdan da siliniyor mu?"
+  - "Var olan bir anahtara put yapıldığında kullanım sırası güncelleniyor mu?"
+reference_solution_path: private/solutions/cpp-hard-lru-cache.cpp
+hint_ladder:
+  1: "Bir öğenin kullanım sırasını güncellediğinizde, onu bulmak için sakladığınız bilgiye ne oluyor?"
+  2: "Kapsayıcıda bir eleman silindiğinde veya taşındığında hangi iterator'lar geçerliliğini yitirir?"
+  3: "Bu kavram 'iterator geçersizleşmesi (iterator invalidation)' olarak bilinir; her kapsayıcının bu konudaki garantisi farklıdır."

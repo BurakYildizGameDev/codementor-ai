@@ -1,0 +1,30 @@
+id: unity-easy-trigger-events
+version: 1
+language: csharp
+engine: unity
+difficulty: easy
+title: "Tetikleyici bölgeler ve bildirim yayını"
+prompt: |
+  Oyuncu belirli bir bölgeye girdiğinde kapı açan, çıktığında kapatan bir sistem
+  yazın. Bölge (`ZoneTrigger`) girildiğini ve çıkıldığını bildirmeli; kapı (`Door`)
+  ve bir ses bileşeni (`AudioCue`) bu bildirimleri dinleyerek tepki vermeli.
+  Bölge, onu dinleyen nesneleri doğrudan tanımamalı. Sahnedeki kapılar oyun
+  sırasında devre dışı bırakılıp yeniden etkinleştirilebilir veya yok edilebilir.
+constraints:
+  - "Bölgeyi yalnızca oyuncu tetikleyebilmeli"
+  - "Yok edilen veya devre dışı bırakılan dinleyiciler hata ya da sızıntı üretmemeli"
+  - "Bölge ile dinleyiciler arasında doğrudan bağımlılık olmamalı"
+  - "k bölgeyi dinleyen nesne sayısı olmak üzere bir bildirimin maliyeti O(k) olmalı"
+expected:
+  time: { notify: "k" }
+  space: "k"
+concept_tags: [events, subscriptions, lifecycle, triggers]
+checklist_extra:
+  - "Dinleyici devre dışı kaldığında aboneliği kaldırılıyor mu?"
+  - "Bölgeye giren nesnenin oyuncu olup olmadığı kontrol ediliyor mu?"
+  - "Aynı dinleyici birden fazla kez abone olabiliyor mu?"
+reference_solution_path: private/solutions/unity-easy-trigger-events.cs
+hint_ladder:
+  1: "Kapı nesnesi yok edildikten sonra bölge tekrar tetiklenirse ne olur?"
+  2: "Bir nesne bildirimleri dinlemeye başladığında, dinlemeyi ne zaman ve nerede bırakması gerekir?"
+  3: "Bu kavramlar 'aboneliği nesnenin yaşam döngüsüyle eşleştirme' ve 'sarkan dinleyici (lapsed listener)' olarak bilinir."

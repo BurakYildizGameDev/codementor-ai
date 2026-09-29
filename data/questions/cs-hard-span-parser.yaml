@@ -1,0 +1,30 @@
+id: cs-hard-span-parser
+version: 1
+language: csharp
+engine: none
+difficulty: hard
+title: "Tahsis yapmayan CSV satır ayrıştırıcı"
+prompt: |
+  Virgülle ayrılmış bir satırdan (örneğin "42,3.14,merhaba,-7") alanları okuyan
+  bir ayrıştırıcı yazın. Çağıran, i. alanı int, double veya metin olarak
+  isteyebilmeli. Ayrıştırıcı saniyede milyonlarca satır işleyen bir günlük (log)
+  hattında kullanılacak; bu yüzden satır başına yönetilen yığında (managed heap)
+  yeni nesne oluşturmamalı. Hatalı alanlar istisna fırlatılmadan raporlanmalı.
+constraints:
+  - "Sayısal alanlar okunurken heap tahsisi olmamalı; yalnızca metin alanı açıkça istenirse yeni string oluşturulabilir"
+  - "Hatalı sayısal alan istisna fırlatmamalı; başarı veya başarısızlık döndürülmeli"
+  - "Satır uzunluğu n için ayrıştırma O(n) olmalı"
+  - "Boş alanlar ve satır sonundaki fazladan virgül tanımlı şekilde ele alınmalı"
+expected:
+  time: { parse_line: "n" }
+  space: "1"
+concept_tags: [parsing, span, zero-allocation, input-validation]
+checklist_extra:
+  - "Alanlar ayrılırken her biri için yeni string oluşuyor mu?"
+  - "Sayısal dönüşüm, metin alt dizisi üretmeden yapılabiliyor mu?"
+  - "Kültüre bağlı ondalık ayırıcı (3,14 ve 3.14) nasıl ele alınıyor?"
+reference_solution_path: private/solutions/cs-hard-span-parser.cs
+hint_ladder:
+  1: "Bir alanı sayıya çevirmek için önce onu ayrı bir string olarak kopyalamanız gerekiyor mu?"
+  2: "Orijinal satırın bir bölümüne, onu kopyalamadan 'bakmanın' hangi yolları var?"
+  3: "Bu kavramlar 'bellek dilimi (slice) üzerinde çalışma' ve 'sıfır tahsisli ayrıştırma' olarak bilinir."

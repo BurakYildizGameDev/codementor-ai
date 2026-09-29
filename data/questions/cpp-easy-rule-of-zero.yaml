@@ -1,0 +1,29 @@
+id: cpp-easy-rule-of-zero
+version: 1
+language: cpp
+engine: none
+difficulty: easy
+title: "Kaynak sahibi bir sınıf: dinamik tampon"
+prompt: |
+  Çalışma zamanında boyutu belirlenen bir double tamponunu yöneten `Buffer`
+  sınıfı yazın. Sınıf kopyalanabilmeli, taşınabilmeli, bir fonksiyondan değer
+  olarak döndürülebilmeli ve `std::vector<Buffer>` içinde saklanabilmeli.
+  Kopyalar birbirinden bağımsız olmalı: birinde yapılan değişiklik diğerini
+  etkilememeli. `size()`, `operator[]` ve `resize(n)` işlemlerini de sağlayın.
+constraints:
+  - "Hiçbir kullanım senaryosunda çift serbest bırakma veya sızıntı olmamalı"
+  - "Kopyalama derin kopya olmalı"
+  - "Taşınan nesne güvenle yok edilebilmeli ve yeniden atanabilmeli"
+expected:
+  time: { copy: "n", move: "1", access: "1" }
+  space: "n"
+concept_tags: [raii, rule-of-zero, rule-of-five, ownership]
+checklist_extra:
+  - "Sınıf ham pointer tutuyorsa derleyicinin ürettiği kopya yapıcı ne yapar?"
+  - "Kopya atama kendine atamada (a = a) doğru çalışıyor mu?"
+  - "Özel üye fonksiyonlardan biri yazıldıysa diğerleri de düşünülmüş mü?"
+reference_solution_path: private/solutions/cpp-easy-rule-of-zero.cpp
+hint_ladder:
+  1: "Bir Buffer kopyalandığında iki nesne aynı belleği mi paylaşıyor?"
+  2: "Kopyalardan biri yok edildiğinde diğerinin gösterdiği bellek ne durumda kalıyor?"
+  3: "Bu kavramlar 'Rule of Three/Five' ve kaynak yönetimini standart türlere bırakan 'Rule of Zero' olarak bilinir."

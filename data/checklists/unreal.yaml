@@ -1,0 +1,31 @@
+# Unreal Engine kontrol listesi (mimari §8.3).
+version: 1
+applies_to: { language: cpp, engine: unreal }
+items:
+  - id: UE-CL-001
+    text: "Tick gerçekten gerekli mi; gerekmiyorsa kapatılıyor ya da aralığı artırılıyor mu?"
+    tags: [core]
+  - id: UE-CL-002
+    text: "UObject türevi referanslar çöp toplayıcının görebileceği şekilde tutuluyor mu?"
+    tags: [core]
+  - id: UE-PERF-001
+    text: "Tick içinde döngü, arama veya tahsis gibi ağır işler yapılıyor mu?"
+    tags: [tick, actor-component, performance]
+  - id: UE-PTR-001
+    text: "Zayıf veya ham referanslar kullanılmadan önce geçerlilikleri (IsValid) kontrol ediliyor mu?"
+    tags: [tobjectptr, gc-roots, actor-component]
+  - id: UE-CL-003
+    text: "Boyutu önceden bilinen TArray'ler için kapasite önceden ayrılıyor mu?"
+    tags: [tarray, reserve, performance]
+  - id: UE-CL-004
+    text: "TArray/TMap içindeki UObject pointer'ları çöp toplayıcı tarafından izleniyor mu?"
+    tags: [tarray, gc-roots, uproperty]
+  - id: UE-CL-005
+    text: "Bileşen BeginPlay/EndPlay'de kaynaklarını ve zamanlayıcılarını düzgün başlatıp temizliyor mu?"
+    tags: [actor-component, lifecycle]
+  - id: UE-CL-006
+    text: "Ham UObject* üyeler yerine TObjectPtr kullanımı değerlendirilmiş mi?"
+    tags: [tobjectptr, uproperty]
+  - id: UE-CL-007
+    text: "Kare hızına bağlı hesaplamalar DeltaTime ile ölçekleniyor mu?"
+    tags: [tick, actor-component]

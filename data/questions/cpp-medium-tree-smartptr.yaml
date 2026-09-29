@@ -1,0 +1,28 @@
+id: cpp-medium-tree-smartptr
+version: 1
+language: cpp
+engine: none
+difficulty: medium
+title: "Ebeveynini bilen dosya sistemi ağacı"
+prompt: |
+  Bir dosya sistemi ağacını temsil eden `Node` sınıfı yazın. Her düğümün bir adı,
+  sıfır veya daha fazla çocuğu ve (kök hariç) bir ebeveyni olsun. Şu işlemleri
+  destekleyin: çocuk ekleme, bir alt ağacı kaldırma ve bir düğümden köke kadar
+  tam yolu (`/usr/local/bin` gibi) üretme. Ağacın kökü yok edildiğinde tüm
+  düğümler otomatik olarak serbest kalmalı.
+constraints:
+  - "Kodda elle delete çağrısı olmamalı"
+  - "Kök yok edildiğinde hiçbir düğüm bellekte kalmamalı"
+  - "Yol üretimi derinlik d için O(d) olmalı"
+expected:
+  time: { add_child: "1", path: "d" }
+  space: "n"
+concept_tags: [smart-pointers, ownership, cyclic-reference, trees]
+checklist_extra:
+  - "Çocuk ile ebeveyn birbirini aynı tür sahiplikle mi tutuyor?"
+  - "Kaldırılan bir alt ağacın düğümleri eski ebeveyne erişmeye çalışabilir mi?"
+reference_solution_path: private/solutions/cpp-medium-tree-smartptr.cpp
+hint_ladder:
+  1: "Kökü yok ettiğinizde her düğümü kim serbest bırakıyor; bir düğümü hâlâ 'tutan' başka bir nesne kalıyor mu?"
+  2: "Çocuk ebeveynini, ebeveyn de çocuğunu sahiplenirse hangisi önce yok edilebilir?"
+  3: "Bu kavramlar 'döngüsel sahiplik (reference cycle)' ve 'sahiplenmeyen geri referans' olarak bilinir."

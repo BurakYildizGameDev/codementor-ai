@@ -1,0 +1,31 @@
+# Unity kontrol listesi (mimari §8.3).
+version: 1
+applies_to: { language: csharp, engine: unity }
+items:
+  - id: UNITY-CL-001
+    text: "Update/FixedUpdate/LateUpdate içinde her karede tekrarlanan tahsis veya pahalı arama var mı?"
+    tags: [core]
+  - id: UNITY-CL-003
+    text: "Bileşen ve nesne referansları her karede aranmak yerine bir kez alınıp saklanıyor mu?"
+    tags: [core]
+  - id: UNITY-SO-001
+    text: "ScriptableObject alanları çalışma zamanında değiştiriliyor mu? Editörde bu değişiklik kalıcıdır."
+    tags: [scriptableobject, data]
+  - id: UNITY-CL-002
+    text: "Coroutine'ler nesne devre dışı kaldığında durduruluyor mu?"
+    tags: [coroutine, lifecycle]
+  - id: UNITY-CL-004
+    text: "event/Action aboneliklerinin her biri OnDisable veya OnDestroy'da kaldırılıyor mu?"
+    tags: [events, subscriptions, lifecycle]
+  - id: UNITY-CL-005
+    text: "Tetikleyici olayları beklenmeyen nesneler için de çalışıyor mu; tetikleyen nesne filtreleniyor mu?"
+    tags: [triggers, events]
+  - id: UNITY-CL-006
+    text: "Sık oluşturulup yok edilen nesnelerin Instantiate/Destroy maliyeti ve GC baskısı düşünülmüş mü?"
+    tags: [object-pooling, instantiate, gc]
+  - id: UNITY-CL-007
+    text: "Tekrar kullanılan nesnelerin durumu (konum, hız, zamanlayıcı, abonelik) her kullanımdan önce sıfırlanıyor mu?"
+    tags: [object-pooling, lifecycle]
+  - id: UNITY-CL-008
+    text: "UI yalnızca veri değiştiğinde mi güncelleniyor, yoksa her karede yeniden mi kuruluyor?"
+    tags: [ui, hot-path, events]

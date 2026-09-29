@@ -1,0 +1,30 @@
+id: unreal-hard-tarray-gc
+version: 1
+language: cpp
+engine: unreal
+difficulty: hard
+title: "Dalga tabanlı düşman oluşturucu"
+prompt: |
+  Her dalgada önceden bilinen sayıda düşman aktörü oluşturan bir `AWaveSpawner`
+  aktörü yazın. Oluşturucu o anda hayatta olan düşmanları bir dizide tutmalı,
+  düşman türlerine göre sayaçları bir eşlemede (map) saklamalı ve bir düşman
+  öldüğünde onu diziden çıkarmalı. Dalga temizlenince bir sonraki dalga başlamalı.
+  Oyun saatlerce açık kalabilir ve düşmanlar başka sistemler tarafından da yok
+  edilebilir.
+constraints:
+  - "Yok edilmiş bir düşmana hiçbir koşulda erişilmemeli"
+  - "k dalgadaki düşman sayısı olmak üzere dalga başlatma O(k) olmalı ve gereksiz yeniden bellek tahsisi yapmamalı"
+  - "Oluşturucunun tuttuğu referanslar motorun çöp toplayıcısıyla tutarlı olmalı"
+expected:
+  time: { spawn_wave: "k", remove_enemy: "k" }
+  space: "k"
+concept_tags: [tarray, reserve, gc-roots, uproperty, tobjectptr]
+checklist_extra:
+  - "Düşmanları tutan dizi çöp toplayıcıya görünür mü?"
+  - "Dalga boyutu önceden bilindiğine göre dizi büyürken kaç kez yeniden tahsis yapılıyor?"
+  - "Başka bir sistem düşmanı yok ettiğinde dizideki referans ne durumda kalıyor?"
+reference_solution_path: private/solutions/unreal-hard-tarray-gc.cpp
+hint_ladder:
+  1: "Çöp toplayıcı, sizin dizinizde tutulan düşmanları 'kullanımda' olarak görebiliyor mu?"
+  2: "Dalga boyutu baştan bilindiğine göre dizi eleman eklendikçe kaç kez büyüyor ve her büyümede ne oluyor?"
+  3: "Bu kavramlar 'UPROPERTY ile GC kökü oluşturma' ve 'kapasiteyi önceden ayırma (Reserve)' olarak bilinir."

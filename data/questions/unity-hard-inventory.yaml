@@ -1,0 +1,28 @@
+id: unity-hard-inventory
+version: 1
+language: csharp
+engine: unity
+difficulty: hard
+title: "ScriptableObject tabanlı envanter ve UI senkronizasyonu"
+prompt: |
+  Öğeleri bir ScriptableObject'te tanımlanan bir envanter sistemi yazın. Oyuncu öğe
+  ekleyip çıkarabilmeli; envanter değiştiğinde UI slotları güncellenmeli. Aynı öğe
+  birden fazla eklenirse yığın sayısı artmalı. Envanter 200'den fazla öğeyle de
+  akıcı çalışmalı.
+constraints:
+  - "UI yalnızca envanter değiştiğinde güncellenmeli"
+  - "Oyun modundan çıkınca başlangıç verisi bozulmamalı"
+  - "Kare başına gereksiz bellek tahsisi olmamalı"
+expected:
+  time: { add: "1", refresh_ui: "n" }
+  space: "n"
+concept_tags: [scriptableobject, gc, hot-path, ui, data-structures]
+checklist_extra:
+  - "Envanter verisi çalışma zamanında doğrudan SO asset'i üzerinde mi değiştiriliyor?"
+  - "Bir öğenin varlık kontrolü her seferinde tüm listeyi mi tarıyor?"
+  - "UI slotları her güncellemede yeniden mi oluşturuluyor?"
+reference_solution_path: private/solutions/unity-hard-inventory.cs
+hint_ladder:
+  1: "Oyun modundan çıktığınızda envanter asset'inin içeriğine ne oluyor?"
+  2: "UI'ı güncelleyen kod hangi sıklıkla çalışıyor ve her seferinde ne oluşturuyor?"
+  3: "Bu kavramlar 'SO verisinin çalışma zamanı kopyası' ve 'olay güdümlü UI güncellemesi' olarak bilinir."

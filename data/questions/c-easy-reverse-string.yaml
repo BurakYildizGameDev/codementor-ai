@@ -1,0 +1,28 @@
+id: c-easy-reverse-string
+version: 1
+language: c
+engine: none
+difficulty: easy
+title: "Bir metni yerinde ters çevirme"
+prompt: |
+  `void reverse(char *s)` imzasıyla, verilen null ile sonlanan metni ek bir dizi
+  kullanmadan, aynı bellek alanı üzerinde ters çeviren bir fonksiyon yazın.
+  Fonksiyonu boş metin, tek karakterli metin, çift ve tek uzunluklu metinler ve
+  yüz bin karakterlik bir metinle deneyen bir main fonksiyonu da ekleyin.
+constraints:
+  - "Ek bir tampon ayrılmamalı"
+  - "Metin uzunluğu n için çalışma süresi doğrusal olmalı"
+  - "NULL pointer güvenli şekilde ele alınmalı"
+expected:
+  time: { reverse: "n" }
+  space: "1"
+concept_tags: [strings, loop-invariant, performance, edge-cases]
+checklist_extra:
+  - "Döngü koşulunda her yinelemede metnin uzunluğu yeniden mi hesaplanıyor?"
+  - "Boş metin ve NULL için fonksiyon ne yapıyor?"
+  - "Ortadaki karakter tek uzunluklu metinlerde kendisiyle mi yer değiştiriyor, bu bir sorun mu?"
+reference_solution_path: private/solutions/c-easy-reverse-string.c
+hint_ladder:
+  1: "Döngünüz her tur başında hangi değeri yeniden hesaplıyor ve bunun maliyeti ne?"
+  2: "Döngü boyunca metnin uzunluğu değişiyor mu? Değişmiyorsa onu kaç kez hesaplamak gerekir?"
+  3: "Bu kavram 'döngüde değişmeyen ifadeyi döngü dışına alma' (loop-invariant code motion) olarak bilinir."
