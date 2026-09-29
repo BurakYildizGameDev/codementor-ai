@@ -1168,6 +1168,9 @@ mode = "two_pass"            # two_pass | single_pass
 max_repair_attempts = 1
 use_cache = true
 
+[rules]
+disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]
+
 [providers]
 default = "ollama"
 fallback = ["deepseek"]

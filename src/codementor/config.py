@@ -52,6 +52,12 @@ class DataSettings(BaseModel):
     call_costs_file: Path = Path("data/call_costs.yaml")
 
 
+class RulesSettings(BaseModel):
+    """Statik kural motoru (mimari §5.3.3); kurallar kimlikle tek tek kapatılabilir."""
+
+    disabled: list[str] = Field(default_factory=list)
+
+
 class ProviderConfig(BaseModel):
     base_url: str | None = None
     model: str = ""
@@ -92,6 +98,7 @@ class Settings(BaseSettings):
     validation: ValidationSettings = Field(default_factory=ValidationSettings)
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
     data: DataSettings = Field(default_factory=DataSettings)
+    rules: RulesSettings = Field(default_factory=RulesSettings)
     providers: ProvidersSettings = Field(default_factory=ProvidersSettings)
 
     @classmethod

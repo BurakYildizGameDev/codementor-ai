@@ -43,3 +43,12 @@ def test_cli_override_beats_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CODEMENTOR_LIMITS__MAX_LINES", "10")
     settings = load_settings(limits={"max_lines": 5})
     assert settings.limits.max_lines == 5
+
+
+def test_rules_disabled_from_toml(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = tmp_path / "codementor.toml"
+    path.write_text('[rules]\ndisabled = ["C-BUF-001", "UE-GC-001"]\n')
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(path))
+    assert load_settings().rules.disabled == ["C-BUF-001", "UE-GC-001"]
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(tmp_path / "yok.toml"))
+    assert load_settings().rules.disabled == []
