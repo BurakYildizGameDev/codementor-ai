@@ -1,0 +1,10 @@
+<stdin>:5:9: error: cannot initialize a variable of type 'int' with an lvalue of type 'const char[2]'
+    5 |     int x = "a";
+      |         ^   ~~~
+<stdin>:6:9: warning: unused variable 'y' [-Wunused-variable]
+    6 |     int y = 0;
+      |         ^
+<stdin>:9:12: error: no member named 'size' in 'Point'
+    9 |     return p.size();
+      |            ~ ^
+1 warning and 2 errors generated.

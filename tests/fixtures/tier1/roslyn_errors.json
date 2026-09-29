@@ -1,0 +1,1 @@
+[{"line":5,"column":22,"severity":"error","id":"CS1002","message":"; expected"},{"line":9,"column":1,"severity":"error","id":"CS1513","message":"} expected"},{"line":2,"column":2,"severity":"warning","id":"CS1030","message":"#warning: 'todo'"}]

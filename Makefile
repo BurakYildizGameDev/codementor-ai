@@ -11,6 +11,9 @@ typecheck:
 test:
 	uv run pytest -m "not live"
 
+roslyn-check:
+	dotnet build tools/roslyn-check -c Release -o tools/roslyn-check/out
+
 test-compiler:
 	uv run pytest -m compiler
 
@@ -19,4 +22,4 @@ schema:
 
 check: lint typecheck test
 
-.PHONY: setup lint typecheck test test-compiler schema check
+.PHONY: setup lint typecheck test roslyn-check test-compiler schema check

@@ -1,0 +1,13 @@
+<stdin>: In function 'main':
+<stdin>:3:13: error: initialization of 'int' from 'char *' makes integer from pointer without a cast [-Wint-conversion]
+    3 |     int x = "a";
+      |             ^~~
+<stdin>:4:9: warning: unused variable 'y' [-Wunused-variable]
+    4 |     int y;
+      |         ^
+<stdin>:7:6: error: conflicting types for 'f'; have 'int(void)'
+    7 | int  f(void) { return 0; }
+      |      ^
+<stdin>:6:6: note: previous definition of 'f' with type 'void(void)'
+    6 | void f(void) {}
+      |      ^

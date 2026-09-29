@@ -1,0 +1,4 @@
+<stdin>:1:10: fatal error: 'WaveSpawner.h' file not found
+    1 | #include "WaveSpawner.h"
+      |          ^~~~~~~~~~~~~~~
+1 error generated.

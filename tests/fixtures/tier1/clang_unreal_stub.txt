@@ -1,0 +1,12 @@
+In file included from <built-in>:1:
+C:\repo\data\stubs\ue_stubs.h:12:9: warning: 'check' macro redefined [-Wmacro-redefined]
+   12 | #define check(expr) ((void)(expr))
+      |         ^
+<stdin>:24:5: error: use of undeclared identifier 'Super'
+   24 |     Super::BeginPlay();
+      |     ^
+<stdin>:18:7: error: variable has incomplete type 'class MYGAME_API'
+   18 | class MYGAME_API AWaveSpawner : public AActor
+      |       ^
+/usr/include/c++/13/bits/stl_vector.h:100:3: note: in instantiation of member function requested here
+2 errors generated.

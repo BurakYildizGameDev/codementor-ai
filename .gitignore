@@ -13,3 +13,8 @@ dist/
 build/
 *.egg-info/
 node_modules/
+
+# Roslyn aracı derleme çıktıları (make roslyn-check)
+tools/roslyn-check/bin/
+tools/roslyn-check/obj/
+tools/roslyn-check/out/
