@@ -43,7 +43,7 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "N", "PT"]
 # Türkçe docstring/yorum/mesajlar için
-allowed-confusables = ["ı"]
+allowed-confusables = ["ı", "×"]  # × : öğrenciye dönük ipucu gerekçelerinde çarpım
 
 [tool.mypy]
 python_version = "3.12"
