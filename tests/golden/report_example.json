@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "analysis_id": "01J9ZK4M8Q3W6Y2T5R7N1B0C9D",
+  "created_at": "2026-09-29T10:15:02Z",
+  "language": "csharp",
+  "engine": "unity",
+  "question_id": "unity-hard-inventory",
+  "difficulty": "hard",
+  "compilation": { "status": "passed", "diagnostics": [] },
+  "complexity": {
+    "time_complexity": "n^2",
+    "space_complexity": "n",
+    "display_time": "O(n²)",
+    "reasoning_steps": [
+      "RefreshUI içindeki foreach (satır 31) envanterdeki n öğe üzerinde döner.",
+      "Döngü içinde List.Contains (satır 33) her çağrıda O(n) arama yapar.",
+      "İç içe doğrusal işlemler O(n²) verir."
+    ],
+    "is_optimal": false,
+    "optimal_time_target": "n",
+    "static_hint": "n^2",
+    "agreement": "agrees",
+    "confidence": 0.92
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "rule_id": "UNITY-GC-001",
+      "category": "garbage_collection",
+      "severity": "high",
+      "line_start": 14,
+      "line_end": null,
+      "evidence": "var slots = new List<Slot>();",
+      "description": "Update her karede yeni bir List tahsis ediyor; bu GC baskısı ve kare atlamaları üretir.",
+      "source": "confirmed",
+      "confidence": 0.95
+    }
+  ],
+  "socratic": {
+    "key_flaw_concept": "GC Spike / Hot-path allocation",
+    "hint_level": 1,
+    "guiding_questions": [
+      "14. satırdaki liste her karede yeniden oluşturuluyor. Bu listenin içeriği kareler arasında gerçekten değişiyor mu?",
+      "Envanterde bir öğenin var olup olmadığını kontrol etmek için her seferinde tüm listeyi taramak yerine hangi veri yapısı kullanılabilir?"
+    ],
+    "next_step_hint": null,
+    "leak_check": "passed"
+  },
+  "meta": {
+    "provider": "ollama",
+    "model": "qwen2.5-coder:7b",
+    "prompt_version": "v1+3fa9c2d1",
+    "rules_version": "1.0.0",
+    "schema_version": "1.0",
+    "tokens_in": 2140,
+    "tokens_out": 412,
+    "stage_latency_ms": { "normalize": 2, "tier0": 6, "tier1": 840, "facts": 14, "llm_a": 9120, "verify": 3, "llm_b": 4210 },
+    "early_exit": false,
+    "cache_hit": false,
+    "degraded": false,
+    "repair_attempts": 0,
+    "warnings": []
+  }
+}
