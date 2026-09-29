@@ -30,7 +30,6 @@ class LimitsSettings(BaseModel):
 
 class ValidationSettings(BaseModel):
     tier1_enabled: bool = True
-    sandbox_image: str = "codementor-sandbox:1"
     compile_timeout_s: int = Field(default=10, ge=1)
 
 

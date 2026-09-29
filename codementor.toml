@@ -3,8 +3,7 @@ max_lines = 600
 max_bytes = 40960
 
 [validation]
-tier1_enabled = true
-sandbox_image = "codementor-sandbox:1"
+tier1_enabled = true         # derleyici kuruluysa kullanılır; yoksa SKIPPED (ADR-0009)
 compile_timeout_s = 10
 
 [pipeline]

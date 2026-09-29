@@ -7,7 +7,7 @@
 | 1 | ✅ | faz/1-modeller | 2026-09-29 | Claude Code / — |
 | 2 | ✅ | faz/2-soru-bankasi | 2026-09-29 | Claude Code / — |
 | 3 | ✅ | faz/3-tier0 | 2026-09-29 | Claude Code / kod-denetci |
-| 4 | ⏳ | | | |
+| 4 | ⏳ (yeniden tanımlandı: Docker'sız yerel derleyici, ADR-0009) | faz/4-tier1 | | |
 
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
@@ -99,6 +99,13 @@
 **Bu fazda öğrendiğim:**
 - Yerel eklenti (C) çökmeleri Python'da yanıltıcıdır: heap bozulması, belirtiyi tamamen ilgisiz bir modülde gösterebilir. Yalıtılmış betiklerle ikiye bölerek ve sürüm karşılaştırarak kök nedene inmek gerekir.
 - `ruff --fix` (UP037), `from __future__ import annotations` açıkken yerel değişkendeki `Literal["x"]` tırnaklarını silebiliyor; `Literal` tipleri modül düzeyinde takma adla tanımlanmalı.
+
+## Mimari karar — Docker zorunluluğu kaldırıldı (ADR-0009, 2026-09-29)
+**Karar:** Docker hiçbir yerde zorunlu değil. Tier 1, makinede kuruluysa gcc/clang ve `dotnet` (Roslyn) araçlarını doğrudan alt süreç olarak çalıştırır; yoksa `SKIPPED`. Docker yalnızca opsiyonel dağıtım paketlemesi (Faz 13).
+**Neden:** Geliştirme makinesinde Docker yok (Windows); kurulum eşiği yüksek; derleyiciler yalnızca sözdizimi/tip denetimi yaptığı için (kod çalıştırılmıyor, ADR-0005) süreç düzeyi önlemler yeterli.
+**Güvenlik önlemleri (§5.2.3 yeni):** yalnızca stdin; include koruması (mutlak yol, `..`, sürücü, `\`, `#include MACRO`, `#embed`, `__has_include` → `SKIPPED`); boş geçici çalışma dizini; temizlenmiş ortam; zaman aşımı + süreç ağacını öldürme; çıktı sınırı; POSIX rlimit / Windows Job Object. Paylaşılan sunucuda Tier 1 kapatılması önerilir.
+**Değişenler:** `docs/adr/0009-docker-yerine-yerel-derleyici.md`; `mimari.md` §3, §5.2.2–5.2.4, §9, §12, §15–20, §22–23; `UYGULAMA_PLANI.md` §3.1, komutlar, Faz 4 (yeniden yazıldı), Faz 13, sorun giderme, zaman çizelgesi; `pytest` işareti `sandbox` → `compiler`; `Makefile` `test-sandbox` → `test-compiler`; CI ve AGENTS.md komutları; config'ten `validation.sandbox_image` kaldırıldı.
+**Bu makinede:** Docker ve gcc/clang yok; `dotnet` 10.0.103 var → Faz 4'te C# (Roslyn) Tier 1 yerelde test edilebilir, C/C++ `compiler` testleri atlanır (CI'da çalışır).
 
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.

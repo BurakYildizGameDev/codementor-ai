@@ -9,14 +9,14 @@ typecheck:
 	uv run mypy src/
 
 test:
-	uv run pytest -m "not live and not sandbox"
+	uv run pytest -m "not live"
 
-test-sandbox:
-	uv run pytest -m sandbox
+test-compiler:
+	uv run pytest -m compiler
 
 schema:
 	uv run codementor schema export --out schemas/
 
 check: lint typecheck test
 
-.PHONY: setup lint typecheck test test-sandbox schema check
+.PHONY: setup lint typecheck test test-compiler schema check

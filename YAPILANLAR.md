@@ -138,4 +138,19 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 - 30 fixture: `tests/fixtures/tier0/{c,cpp,csharp}/{valid,invalid}/` (2 Unity, 3 Unreal dahil).
 - `test_normalize.py`, `test_detect.py`, `test_lexical.py`, `test_parsers.py`, `test_tier0.py`, `test_policy.py`.
 
-**Commit'ler:** `27a7874` tree-sitter ve makro nötrleştirme · `8360805` normalizasyon ve dil tespiti · `78d1824` Tier 0 ve politika · dokümanlar (bu commit)
+**Commit'ler:** `27a7874` tree-sitter ve makro nötrleştirme · `8360805` normalizasyon ve dil tespiti · `78d1824` Tier 0 ve politika · `525b41d` dokümanlar
+
+---
+
+## Mimari karar — Docker zorunluluğu kaldırıldı (ADR-0009) ✅
+
+**Dal:** `adr/0009-docker-yok`
+
+- **Karar:** Docker hiçbir yerde zorunlu değil. Tier 1 derleyici denetimi, makinede kuruluysa gcc/clang ve `dotnet` (Roslyn) ile doğrudan çalışır; kurulu değilse `SKIPPED` olur ve sistem Tier 0 ile devam eder. Docker yalnızca opsiyonel dağıtım paketlemesi olarak kaldı.
+- **Güvenlik:** Konteyner yerine süreç düzeyi önlemler — kod yalnızca stdin ile, tehlikeli `#include`'lar derleyiciden önce engellenir, boş geçici çalışma dizini, temizlenmiş ortam, zaman aşımı, çıktı ve bellek sınırları. Kullanıcı kodu hâlâ hiç çalıştırılmıyor.
+- **Güncellenenler:**
+  - `docs/adr/0009-docker-yerine-yerel-derleyici.md` (yeni)
+  - `docs/mimari.md`: Tier 1 tasarımı, güvenlik tablosu, test stratejisi, dizin yapısı, config, dağıtım, ADR listesi
+  - `docs/UYGULAMA_PLANI.md`: kurulum gereksinimleri, komutlar, **Faz 4 yeniden yazıldı** ("Tier 1 Yerel Derleyici"), Faz 13, zaman çizelgesi
+  - Test işareti `sandbox` → `compiler`; `make test-compiler`; CI ve AGENTS.md komutları; config'ten `sandbox_image` kaldırıldı
+- **Durum:** Yalnızca karar ve dokümanlar; Faz 4'ün kodu henüz yazılmadı.

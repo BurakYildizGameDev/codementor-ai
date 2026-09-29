@@ -25,8 +25,8 @@ Web: Vite + React + TypeScript.
 - Kurulum:        uv sync
 - Lint:           uv run ruff check . && uv run ruff format --check .
 - Tip kontrolü:   uv run mypy src/
-- Test:           uv run pytest -m "not live and not sandbox"
-- Sandbox testi:  uv run pytest -m sandbox
+- Test:           uv run pytest -m "not live"
+- Derleyici testi: uv run pytest -m compiler   (gcc/clang/dotnet yoksa atlanır; Docker gerekmez, ADR-0009)
 - Hepsi:          make check
 
 ## Kod stili

@@ -66,8 +66,10 @@ Pratik akış:
 | Python | 3.12+ | `python3 --version` |
 | uv | güncel | `uv --version` |
 | Git | 2.40+ | `git --version` |
-| Docker | 24+ | `docker run hello-world` |
-| gcc / clang | herhangi güncel | `gcc --version` |
+| gcc / clang | opsiyonel (Tier 1 C/C++ için) | `gcc --version` |
+| .NET SDK | opsiyonel (Tier 1 C# için) | `dotnet --version` |
+
+Docker **gerekmez** (ADR-0009). Derleyiciler kurulu değilse Tier 1 `SKIPPED` olur; sistem Tier 0 ile çalışır.
 | Node.js | 20+ (Web UI ve Claude Code npm kurulumu için) | `node --version` |
 | Ollama | güncel | `ollama --version` |
 
@@ -167,8 +169,8 @@ Web: Vite + React + TypeScript.
 - Kurulum:        uv sync
 - Lint:           uv run ruff check . && uv run ruff format --check .
 - Tip kontrolü:   uv run mypy src/
-- Test:           uv run pytest -m "not live and not sandbox"
-- Sandbox testi:  uv run pytest -m sandbox
+- Test:           uv run pytest -m "not live"
+- Derleyici testi: uv run pytest -m compiler   (araç yoksa atlanır)
 - Hepsi:          make check
 
 ## Kod stili
@@ -270,8 +272,9 @@ Kontrol listesi:
 2. Kapsam: fazın dışında dosya değişmiş mi? (git diff main --stat)
 3. Testler: her kural için pozitif + negatif fixture var mı? Testler gerçekten
    davranışı mı doğruluyor, yoksa sadece çalışıyor mu?
-4. Güvenlik: kullanıcı kodu prompt'a sınırlayıcısız giriyor mu? Sandbox bayrakları
-   eksik mi? Gizli anahtar loglanıyor mu?
+4. Güvenlik: kullanıcı kodu prompt'a sınırlayıcısız giriyor mu? Tier 1 yerel
+   yürütme önlemleri (include koruması, stdin, zaman aşımı) eksik mi? Gizli anahtar
+   loglanıyor mu?
 5. Tip güvenliği: Any, type: ignore, cast kullanımı gerekçeli mi?
 6. Hata yönetimi: sessizce yutulan istisna var mı?
 
@@ -363,7 +366,7 @@ Her faz için aynı 9 adım:
 | 1 | Veri modelleri ve Big-O ayrıştırıcı | 1.5 gün | 0 | 6 |
 | 2 | Soru bankası ve kontrol listeleri | 1 gün | 1 | 7, 8.3 |
 | 3 | Normalizasyon ve Tier 0 | 1.5 gün | 1 | 5.1, 5.2.1 |
-| 4 | Tier 1 sandbox derleyici | 2 gün | 3 | 5.2.2–5.2.4, 12 |
+| 4 | Tier 1 yerel derleyici (Docker'sız) | 2 gün | 3 | 5.2.2–5.2.4, 12 |
 | 5 | Olgu çıkarımı ve karmaşıklık ipucu | 3 gün | 3 | 5.3.1, 5.3.2 |
 | 6 | Kural motoru ve 20 kural | 3 gün | 5 | 5.3.3, 8 |
 | 7 | Sağlayıcı adaptörleri | 2.5 gün | 1 | 5.5 |
@@ -372,7 +375,7 @@ Her faz için aynı 9 adım:
 | 10 | Pipeline, CLI, depolama | 2.5 gün | 9 | 4, 10, 11 |
 | 11 | REST API ve SSE | 1.5 gün | 10 | 9 |
 | 12 | Eval altyapısı ve veri seti | 4 gün | 10 | 14 |
-| 13 | Web UI, Docker, dokümantasyon | 3 gün | 11, 12 | 5.7, 18, 23 |
+| 13 | Web UI, kurulum, dokümantasyon | 3 gün | 11, 12 | 5.7, 18, 23 |
 
 Faz 7, Faz 3–6 ile paralel yürütülebilir (farklı dallar, farklı dosyalar).
 
@@ -398,7 +401,7 @@ Faz 7, Faz 3–6 ile paralel yürütülebilir (farklı dallar, farklı dosyalar)
 - [ ] `uv sync && make check` temiz makinede yeşil
 - [ ] `uv run codementor --version` sürüm basıyor
 - [ ] Config: env değişkeni TOML değerini eziyor (testle kanıtlı)
-- [ ] pytest işaretleri tanımlı: `live`, `sandbox`, `slow`
+- [ ] pytest işaretleri tanımlı: `live`, `compiler`, `slow` (`sandbox` → `compiler`, ADR-0009)
 - [ ] CI GitHub'da yeşil
 
 **Görev metni**
@@ -406,7 +409,7 @@ Faz 7, Faz 3–6 ile paralel yürütülebilir (farklı dallar, farklı dosyalar)
 docs/UYGULAMA_PLANI.md Faz 0'ı uygula. Mimari §16 dizin yapısını ve §17
 konfigürasyon öncelik sırasını (CLI > env > codementor.toml > varsayılan) kullan.
 Bu fazda iş mantığı YOK: yalnızca iskelet, config, CLI girişi, Makefile, CI.
-mypy --strict ve ruff baştan açık olsun. pytest işaretleri: live, sandbox, slow.
+mypy --strict ve ruff baştan açık olsun. pytest işaretleri: live, compiler, slow.
 Config için env değişkeninin TOML'u ezdiğini doğrulayan test yaz.
 ```
 
@@ -574,57 +577,60 @@ uv run pytest tests/unit/test_tier0.py -v
 
 ---
 
-### Faz 4 — Tier 1 Sandbox Derleyici
+### Faz 4 — Tier 1 Yerel Derleyici (Docker'sız)
 
-**Süre:** 2 gün · **Dal:** `faz/4-sandbox` · **Mimari:** §5.2.2–5.2.4, §12
+**Süre:** 2 gün · **Dal:** `faz/4-tier1` · **Mimari:** §5.2.2–5.2.4, §12 · **ADR:** 0009
 
-**Amaç:** Docker sandbox'ında derleyici sözdizimi kontrolü ve erken çıkış politikasının tamamı.
+**Amaç:** Makinede kurulu derleyicilerle (Docker olmadan) opsiyonel sözdizimi/tip denetimi ve erken çıkış politikasının tamamı. Araç yoksa sistem Tier 0 ile sorunsuz devam eder.
 
 **Çıktılar**
-- `sandbox/Dockerfile` (gcc, g++, clang; opsiyonel .NET SDK; root olmayan kullanıcı; `ue_stubs.h`)
-- `sandbox/ue_stubs.h` (§5.2.2 listesi)
-- `sandbox/roslyn-check/` (.NET konsol; stdin → JSON tanı) — opsiyonel ama önerilir
-- `validation/sandbox.py` (§5.2.3 bayraklarıyla `docker run`, stdin, timeout)
-- `validation/diagnostics.py` (gcc/clang çıktı ayrıştırıcı)
-- `validation/tier1.py`, `validation/policy.py` (tam tablo)
-- `make sandbox-image`
-- Güvenlik testleri: ağ erişimi yok, `/etc/shadow` include edilemiyor/okunamıyor, sonsuz şablon açılımı zaman aşımına uğruyor
+- `validation/toolchain.py`: araç keşfi — `PATH`'te `gcc`/`g++`/`clang`/`clang++`; `dotnet` + derlenmiş `tools/roslyn-check`; sonuç önbelleklenir, `/health/ready` için özet verir
+- `validation/include_guard.py`: §5.2.3 include koruması (maskelenmiş kodda; `analysis/lexical.py` yeniden kullanılır)
+- `validation/runner.py`: güvenli alt süreç — stdin, boş geçici `cwd`, temizlenmiş ortam, duvar saati zaman aşımı + süreç ağacını öldürme, çıktı sınırı, POSIX rlimit / Windows Job Object
+- `validation/diagnostics.py`: gcc/clang `file:line:col: severity: message` ayrıştırıcı + Roslyn JSON
+- `validation/tier1.py`, `validation/policy.py` (§5.2.4 tam tablo)
+- `data/stubs/ue_stubs.h` (§5.2.2 listesi)
+- `tools/roslyn-check/` (.NET konsol; `CSharpSyntaxTree.ParseText`; stdin → JSON tanı; dosya sistemine erişmez)
+- `make test-compiler`
 
 **Kabul kriterleri**
-- [ ] `docker run` komutu §5.2.3'teki **tüm** bayrakları içeriyor (testte komut listesi doğrulanıyor)
-- [ ] Kod stdin ile gidiyor; host dizini bağlanmıyor
-- [ ] C/C++ tip hatası (tree-sitter'ın görmediği) Tier 1'de yakalanıyor → `FAILED`
-- [ ] Geçerli Unreal fixture'ı stub ile `PASSED` veya `WARNING`, asla `FAILED` değil
-- [ ] Docker yoksa `SKIPPED` + uyarı, istisna yok
-- [ ] Zaman aşımı → `SKIPPED`, erken çıkış yok
-- [ ] Güvenlik testleri `@pytest.mark.sandbox` ile geçiyor
+- [ ] Kodda ve dokümanlarda Docker'a bağımlılık yok (`docker` çağrısı yok; testle doğrulanıyor)
+- [ ] Kod yalnızca stdin ile gidiyor; kullanıcı kodu diske yazılmıyor; ek `-I` yolu yok
+- [ ] Include koruması: mutlak yol, `..`, sürücü harfi, `\`, `#include MACRO`, `#embed`, `__has_include` → `SKIPPED` + uyarı, derleyici hiç çağrılmıyor (testte çağrı sayısı 0)
+- [ ] Araç yoksa `SKIPPED` + uyarı, istisna yok (araç keşfi sahte `PATH` ile test ediliyor)
+- [ ] Zaman aşımı → süreç ağacı öldürülüyor, `SKIPPED`, erken çıkış yok (sahte yavaş süreçle test)
+- [ ] C/C++ tip hatası (tree-sitter'ın görmediği) Tier 1'de yakalanıyor → `FAILED` (`@pytest.mark.compiler`, gcc/clang yoksa atlanır)
+- [ ] Geçerli Unreal fixture'ı stub ile `PASSED` veya `WARNING`, asla `FAILED` değil; yerel bulunamayan başlık `WARNING`
+- [ ] C# (Roslyn) Tier 1 bu makinede `dotnet` ile çalışıyor
+- [ ] gcc ve clang tanı biçimleri kaydedilmiş örnek çıktılarla (derleyicisiz) test ediliyor
 
 **Görev metni**
 ```
-docs/UYGULAMA_PLANI.md Faz 4'ü uygula. Güvenlik bu fazın ana konusu: mimari
-§5.2.3'teki docker run bayraklarının hiçbirini atlama ve bunu testle sabitle.
-Kod her zaman stdin ile verilir (-x c - / -x c++ -). Derleyici çıktısını
-file:line:col: severity: message kalıbıyla ayrıştır. ue_stubs.h §5.2.2'deki
-tüm makro ve tipleri içersin. Unreal için stub kaynaklı hataları WARNING'e
-düşür (§5.2.4). Docker erişilemezse sistem çökmemeli. Roslyn aracı için
-CSharpSyntaxTree.ParseText kullanan minimal bir konsol uygulaması yaz; .NET
-imaj boyutunu artırıyorsa Dockerfile'da build arg ile opsiyonel yap.
+docs/UYGULAMA_PLANI.md Faz 4'ü uygula (ADR-0009: Docker yok). Güvenlik bu fazın
+ana konusu: mimari §5.2.3'teki yerel yürütme önlemlerinin hiçbirini atlama ve her
+birini testle sabitle. Kod her zaman stdin ile verilir (-x c - / -x c++ -).
+Include korumasını derleyiciden ÖNCE, yorum/metin maskelenmiş kodda uygula.
+Derleyici çıktısını file:line:col: severity: message kalıbıyla ayrıştır. ue_stubs.h
+§5.2.2'deki tüm makro ve tipleri içersin. Unreal stub kaynaklı hataları ve yerel
+bulunamayan başlıkları WARNING'e düşür (§5.2.4). Araç yoksa veya zaman aşımında
+sistem çökmemeli. Roslyn aracı için CSharpSyntaxTree.ParseText kullanan minimal
+bir konsol uygulaması yaz.
 ```
 
-**Claude Code'da:** Güvenlik testlerini `kod-denetci` alt ajanına ayrıca inceletmeyi unutma: "kod-denetci ile sandbox.py'yi sadece güvenlik açısından incele."
+**Claude Code'da:** Güvenlik testlerini `kod-denetci` alt ajanına ayrıca inceletmeyi unutma: "kod-denetci ile runner.py ve include_guard.py'yi yalnızca güvenlik açısından incele."
 
-**Antigravity CLI'da:** Antigravity CLI'ın kendi terminal sandbox'ı Docker komutlarını kısıtlayabilir; `docker` komutlarına izin vermen gerekebilir. Onay isteklerini dikkatle oku, geniş izin verme.
+**Antigravity CLI'da:** Terminal sandbox'ı derleyici süreçlerini kısıtlayabilir; `gcc`/`dotnet` çağrılarına dar kapsamlı izin ver.
 
 **Doğrulama**
 ```bash
-make sandbox-image
-make check && uv run pytest -m sandbox -v
-echo 'int main(){ int x = "a"; }' | docker run --rm -i --network none codementor-sandbox:1 gcc -x c -fsyntax-only -
+make check
+uv run pytest -m compiler -v          # kurulu araçlar için; yoksa atlanır
+echo 'int main(){ int x = "a"; }' | gcc -x c -fsyntax-only -
 ```
 
-**Tuzaklar:** Ajan kolaylık için `-v $(pwd):/work` ekleyebilir, kesinlikle reddet. `--read-only` ile derleyicinin geçici dosya ihtiyacı için `--tmpfs /tmp` gerekli. Windows'ta Docker Desktop yolu farklı; WSL2 önerilir.
+**Tuzaklar:** Ajan kolaylık için kodu geçici dosyaya yazıp derleyiciye yol olarak verebilir — reddet (stdin). `shell=True` kullanılmamalı; komut her zaman liste. Windows'ta `subprocess` zaman aşımı alt süreçleri öldürmez; süreç ağacı için Job Object veya `taskkill /T` gerekir. Derleyici tanı metinleri sürüme göre değişir; testler mesaj metnine değil satır/önem düzeyine bakmalı.
 
-**Commit:** `feat(faz-4): Docker sandbox'ında Tier 1 derleyici doğrulaması ve erken çıkış politikası`
+**Commit:** `feat(faz-4): yerel derleyiciyle opsiyonel Tier 1 doğrulaması ve erken çıkış politikası`
 
 ---
 
@@ -1043,7 +1049,7 @@ uv run codementor eval run --split test --provider ollama --mode two_pass
 
 ---
 
-### Faz 13 — Web UI, Docker ve Dokümantasyon
+### Faz 13 — Web UI, Kurulum ve Dokümantasyon
 
 **Süre:** 3 gün · **Dal:** `faz/13-sunum` · **Mimari:** §5.7, §18, §23
 
@@ -1052,13 +1058,14 @@ uv run codementor eval run --split test --provider ollama --mode two_pass
 **Çıktılar**
 - `web/` (Vite + React + TS): Monaco editör, dil/motor/soru seçimi, SSE ilerleme göstergesi, satır işaretleri, bulgu listesi, Sokratik panel, "sonraki ipucu" düğmesi, karmaşıklık kartı (gerekçe adımları ve güven)
 - `web/src/types/` → `schemas/`'tan otomatik üretilen tipler
-- `Dockerfile` (API), `web/Dockerfile`, `docker-compose.yml` (§18.1)
+- Docker'sız hızlı başlangıç: `uv sync` + `codementor serve` + `npm run dev` (§18)
+- Opsiyonel paketleme: `Dockerfile` (API), `web/Dockerfile`, `docker-compose.yml` (§18.1; hiçbir özellik ona bağlı değil)
 - `README.md`: GIF demo, mimari diyagram, hızlı başlangıç, eval tablosu, sınırlamalar
 - `docs/adr/0001…0008` tamamlanmış
 - CV maddeleri (§23.1) gerçek sayılarla doldurulmuş
 
 **Kabul kriterleri**
-- [ ] `docker compose up` temiz makinede çalışıyor (Ollama modeli indirme adımı README'de)
+- [ ] Docker'sız hızlı başlangıç temiz makinede çalışıyor (Ollama modeli indirme adımı README'de); `docker compose up` yalnızca opsiyonel yol
 - [ ] Web UI'da analiz uçtan uca çalışıyor; bulgu satırları editörde işaretli
 - [ ] Tipler elle yazılmamış, şemadan üretilmiş
 - [ ] Mobil genişlikte kullanılabilir
@@ -1070,7 +1077,7 @@ uv run codementor eval run --split test --provider ollama --mode two_pass
 docs/UYGULAMA_PLANI.md Faz 13'ü uygula. Önce Web UI: mimari §5.7. Tipleri
 schemas/*.schema.json'dan json-schema-to-typescript ile üret. SSE ile aşama
 ilerlemesini göster. Monaco'da bulgu satırlarını önem derecesine göre işaretle.
-Sonra Docker: §18.1. En son README: kısa tanıtım, mimari diyagram (mermaid),
+Sonra kurulum: §18 (Docker'sız varsayılan; §18.1 opsiyonel). En son README: kısa tanıtım, mimari diyagram (mermaid),
 hızlı başlangıç, eval sonuç tablosu (eval/results'tan), sınırlamalar, yol
 haritası. README'de ölçülmemiş hiçbir sayı olmasın.
 ```
@@ -1083,13 +1090,14 @@ haritası. README'de ölçülmemiş hiçbir sayı olmasın.
 ```bash
 make check
 cd web && npm run build && npm run typecheck
-docker compose up --build
+uv run codementor serve &   # ve: cd web && npm run dev
 # tarayıcı: http://127.0.0.1:5173
+# opsiyonel: docker compose up --build
 ```
 
 **Tuzaklar:** UI'da kapsam kayması çok kolaydır (tema, animasyon, hesaplar). Kabul kriterlerine sadık kal; güzelleştirme v1.1.
 
-**Commit:** `feat(faz-13): web arayüzü, docker compose ve portföy dokümantasyonu`
+**Commit:** `feat(faz-13): web arayüzü, kurulum ve portföy dokümantasyonu`
 
 ---
 
@@ -1127,7 +1135,7 @@ docker compose up --build
 | `/faz` komutu görünmüyor | Yanlış konum | Claude Code: `.claude/commands/faz.md`. Antigravity: `.agents/workflows/faz.md` (tekil `.agent/` değil) |
 | Ollama yanıtları anlamsız / şemaya uymuyor | `num_ctx` gönderilmiyor, prompt kırpılıyor | Faz 7 kabul kriterini kontrol et; Ollama loglarında "truncating" uyarısı ara |
 | tree-sitter `Language` hatası | Bağlama sürümü uyumsuzluğu | `uv.lock`'taki sürümün dokümanına göre API'yi güncelle |
-| Sandbox testleri CI'da başarısız | Runner'da Docker yok / imaj yok | CI'da ayrı job, önce `make sandbox-image` |
+| `compiler` testleri atlanıyor | Makinede gcc/clang/dotnet yok | Beklenen davranış (ADR-0009); gerekiyorsa derleyiciyi kur. CI runner'ında gcc/clang hazır gelir |
 | Eval sonuçları "fazla iyi" | Test setine göre ayar, önbellek açık, yanlış etiket | Önbelleği kapat, etiketleri yeniden gözden geçir, dev/test ayrımını kontrol et |
 | Bağlam penceresi doluyor | Faz çok büyük | Fazı alt kilometre taşlarına böl; Claude Code'da `/compact`, Antigravity'de yeni oturum + PROGRESS.md |
 
@@ -1138,11 +1146,11 @@ docker compose up --build
 | Hafta | Fazlar | Kilometre taşı |
 |---|---|---|
 | 1 | 0, 1, 2, 3 | Modeller ve Tier 0 hazır |
-| 2 | 4, 5 (+ paralel 7 başlangıcı) | Sandbox ve olgu çıkarımı |
+| 2 | 4, 5 (+ paralel 7 başlangıcı) | Tier 1 yerel derleyici ve olgu çıkarımı |
 | 3 | 6, 7 | Kurallar ve sağlayıcılar |
 | 4 | 8, 9, 10 | **İlk uçtan uca CLI demosu** |
 | 5 | 11, 12 | API + eval sonuçları (CV sayıları) |
-| 6 | 13 | Web UI, Docker, README, portföy |
+| 6 | 13 | Web UI, kurulum, README, portföy |
 | 7 | Tampon | Hata düzeltme, mülakat provası |
 
 **Minimum uygulanabilir sürüm (zaman darsa):** Faz 0–3, 5, 6 (yalnızca C ve Unity kuralları), 7 (yalnızca Fake + Ollama), 8–10, 12 (40 örnek). Bu kesit bile CV'deki hibrit mimari iddiasını dürüstçe taşır.
