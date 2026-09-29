@@ -218,3 +218,39 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 - `test_loop_bounds.py`, `test_extractor.py`, `test_call_costs.py`, `test_complexity_hint.py`, `test_facts_review.py`.
 - 15 golden vaka (`tests/golden/facts/`), güncelleme: `uv run pytest tests/golden --update-golden`.
 - 12 karmaşıklık fixture'ı (`tests/fixtures/complexity/`): O(1), O(log n), O(n), O(n log n), O(n²), üstel, two-pointer ...
+
+## Faz 6 (daraltılmış) — Kural Motoru ve 10 Statik Kural ✅
+
+### Ne yapıldı
+- Kayıt defterli kural motoru (`rules/`): her kural bir sınıf, `@register_rule` ile eklenir; dil/motor filtresi (Unity kuralı düz C#'ta çalışmaz), yapılandırmadan tek tek kapatma (`[rules] disabled`).
+- 10 kural: C-BUF-001, C-MEM-001, CPP-OWN-001, CS-ALLOC-001, CS-PERF-001, UNITY-GC-001, UNITY-PERF-001, UNITY-EVT-001, UE-GC-001, UE-PERF-001. Kalan 10 kural Faz 10 sonrasına ertelendi.
+- `codementor rules list|doc`, otomatik `docs/rules-catalog.md`.
+- 57 fixture (kural başına ≥2 pozitif + ≥2 "neredeyse ihlal" negatif, `// EXPECT:` satırıyla).
+
+### Önemli olaylar
+- Denetim: C-MEM-001 iç içe girdide 106 sn sürüyordu (→ 0,37 sn) ve bağlı liste kodunda yanlış bulgu veriyordu; satır bazlı eşleşme yanlış bulgular; hepsi düzeltildi.
+
+## Faz 7 — LLM Sağlayıcı Adaptörleri ✅
+
+### Ne yapıldı
+- Tek `LLMProvider` arayüzü arkasında 7 sağlayıcı: Fake, Ollama, OpenAI, DeepSeek, Anthropic (HTTP) ve **Claude Code CLI**, **Antigravity CLI** (abonelikle, API anahtarsız).
+- `SchemaAdapter`: tek Pydantic modelinden sağlayıcıya özel şema; OpenAI katı mod, Ollama kısıtları korur, zorlanamayan kısıtlar açıklamaya not.
+- Yeniden deneme yalnızca ağ/429/5xx; fallback zinciri ve rapora Türkçe uyarılar; `codementor providers check`.
+- Log'da API anahtarı maskeleme (global yapılandırmadan bağımsız).
+- GitHub'da private repo açıldı, CI ilk kez yeşil (gcc/clang ve POSIX testleri Linux'ta doğrulandı).
+
+### Önemli kararlar
+- **ADR-0011:** Anthropic'te zorunlu `tool_choice` yerine `output_config.format` (güncel modeller zorunlu aracı reddediyor).
+- **ADR-0012:** CLI ajanları: tüm mesajlar stdin'den, Claude'da araçlar kapalı, `agy` deneysel ve açık onay gerektirir.
+
+### Canlı denemeler (aynı Unity kodu)
+- Claude CLI: ~32 sn, asıl mantık hatasını buldu, Sokratik sorular çözüm vermiyor.
+- deepseek-r1:8b (Ollama): 3–10 dk, hatayı kaçırdı; `think=false` ile 187 sn, 12/16.
+
+### Güvenlik denetimleri
+- Derin JSON ile çökme, `Retry-After: nan` ile sonsuz bekleme, istisna zincirinde API anahtarı, Windows'ta çalışma dizinindeki `claude.exe`'nin seçilmesi — hepsi düzeltildi.
+- Aynı "çalışma dizini" açığı Faz 4 derleyici çalıştırıcısında da kapatıldı: `run_process` artık yalnızca mutlak yol kabul ediyor.
+
+### Testler (1366 test)
+- 6 adaptörün geçtiği ortak sözleşme paketi (respx ile ağsız), `tests/live/` canlı testler (`-m live`).
+

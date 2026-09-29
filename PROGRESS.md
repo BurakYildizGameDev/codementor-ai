@@ -272,6 +272,13 @@
 - Faz 7: `ProviderResult`'a yanıt veren sağlayıcının yeteneği (şema zorlandı mı) eklenebilir; fallback sonrası K5 için.
 - Faz 7: `FakeReply` bir dataclass olarak `providers/fake.py`'de (Pydantic şeması değil, test düzeneği); gerekirse `models/`'e taşınabilir.
 - Faz 7: token tahmini (Ollama/DeepSeek sayım bildirmezse) ve `config/pricing.yaml` maliyet tahmini (mimari §13) — Faz 10/12.
-- Faz 4 `validation/runner.run_process`: `argv[0]` çıplak adla verildiğinde Windows'ta CreateProcess çalışma dizinini de arar; derleyici yolunu `toolchain` zaten mutlak veriyor ama `run_process` kendisi de mutlak yol şartı koşmalı.
+- ~~Faz 4 `run_process` çıplak `argv[0]`~~ → çözüldü (2026-09-29): yalnızca mutlak yol, `test_bare_or_relative_executable_rejected`.
 - CLI ajanları: gerçek `run_process` ile uçtan uca test (sahte bir CLI betiğiyle: stdin, boş cwd, ortamda başka anahtar yok); agy canlı doğrulaması (oturum açılınca).
 - CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
+
+## Yapılacaklar (2026-09-29 itibarıyla sıra)
+1. **Faz 8 — Prompt orkestrasyonu:** kanıt biçimini ve "statik bulguları tekrar etme"yi örnekle göster (küçük yerel modeller için), sistem talimatı şablondan.
+2. **Faz 9 — Verifier:** kanıtı `line_start..line_end` aralığında ara; öğrencinin kendi kodundan alıntıyı sızıntı sayma; Türkçe `;` kod değildir; "O(n^2) per frame" gibi karmaşıklık eklerini normalize et; onarım (repair) döngüsü.
+3. **Faz 10 — Pipeline + `codementor analyze`:** uçtan uca; erken çıkış Sokratik şablonları; `PolicyDecision.warnings` + fallback uyarıları → `meta.warnings`.
+4. agy canlı doğrulaması (oturum açılınca), Ollama yerel model seçimi (Faz 12 eval).
+5. Faz 6'da ertelenen 10 kural; Faz 11 API → Faz 12 eval → Faz 13 web/kurulum.
