@@ -279,3 +279,12 @@ def test_empty_argv_rejected() -> None:
 def test_posix_bootstrap_is_valid_python() -> None:
     compile(runner._RLIMIT_BOOTSTRAP, "<bootstrap>", "exec")
     assert "os.execv(sys.argv[4], sys.argv[4:])" in runner._RLIMIT_BOOTSTRAP
+
+
+@pytest.mark.parametrize("command", ["python", "gcc", "./gcc", "bin/gcc"])
+def test_bare_or_relative_executable_rejected(command: str) -> None:
+    # çıplak ad Windows'ta çalışma dizininde de aranır (öğrenci projesindeki gcc.exe)
+    result = run_process([command, "--version"], "", LIMITS)
+    assert result.returncode is None
+    assert result.error is not None
+    assert "mutlak yol" in result.error

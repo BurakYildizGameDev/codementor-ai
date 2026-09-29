@@ -24,13 +24,13 @@ from __future__ import annotations
 
 import contextlib
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import IO, Protocol
 
 OUTPUT_LIMIT = 64 * 1024
@@ -210,7 +210,12 @@ def run_process(
     """`argv`'yi boş geçici dizinde, temiz ortamda, `stdin` ile çalıştırır."""
     if isinstance(argv, str) or not argv or not all(isinstance(a, str) for a in argv):
         raise TypeError("argv boş olmayan bir dizge listesi olmalı; kabuk komutu kabul edilmez")
-    if shutil.which(argv[0]) is None:
+    # Yalnızca mutlak yol: çıplak ad verilirse Windows'ta CreateProcess önce çalışma dizinine
+    # bakar (öğrenci projesindeki `gcc.exe` çalışabilirdi). Keşif `toolchain`'in işidir.
+    executable = Path(argv[0])
+    if not executable.is_absolute():
+        return ProcessResult(None, "", "", error=f"çalıştırılabilir mutlak yol olmalı: {argv[0]}")
+    if not executable.is_file():
         return ProcessResult(None, "", "", error=f"çalıştırılabilir bulunamadı: {argv[0]}")
     with tempfile.TemporaryDirectory(prefix="cm-t1-", ignore_cleanup_errors=True) as work:
         tree = _Tree(limits)
