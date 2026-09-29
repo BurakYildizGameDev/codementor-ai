@@ -190,3 +190,31 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 ### Testler (774 test + derleyici testleri)
 - `test_include_guard.py`, `test_diagnostics.py`, `test_runner.py`, `test_toolchain.py`, `test_tier1.py`, `test_policy.py`, `test_ue_stubs.py`, `test_no_docker.py`.
 - `tests/compiler/`: bu makinede Roslyn testleri çalışıyor; gcc/clang testleri araç olmadığı için atlanıyor.
+
+---
+
+## Faz 5 — Statik Olgu Çıkarımı ve Karmaşıklık İpucu ✅
+
+**Dal:** `faz/5-olgular` · **Mimari:** §5.3.1, §5.3.2
+
+### Olgu çıkarımı (`analysis/extractor.py` + yardımcılar)
+- tree-sitter sorguları `analysis/queries/{c,cpp,csharp}/*.scm` dosyalarında: fonksiyonlar, döngüler, çağrılar, tahsisler, alanlar.
+- Her fonksiyon için: ad, satırlar, parametreler, motor yaşam döngüsü ve **sıcak yol** (Unity `Update/FixedUpdate/LateUpdate/OnGUI`, Unreal `Tick/TickComponent`).
+- Döngüler: tür (for/while/do/foreach, C++ range-for dahil), iç içe derinlik, **sınır sınıfı** (LINEAR / LOG / CONSTANT / UNKNOWN; emin değilse UNKNOWN), iki işaretçi (two-pointer) şüphesi.
+- Çağrılar: döngü derinliği ve `data/call_costs.yaml`'dan bilinen maliyet (tip dosyadaki bildirimden çözülür; tahmin yok).
+- Özyineleme (dallanma faktörü, yarılama), tahsis/serbest bırakma (malloc, new, make_unique, C# referans `new`, metin birleştirme, LINQ, closure), motor sembolleri (`UPROPERTY`, `UObject*` alanları, olay abonelikleri, `OnEnable/OnDisable`).
+- Hiçbir durumda çökmez: bölümler yalıtılmış, hata olursa o bölüm boş + uyarı.
+
+### Karmaşıklık ipucu (`analysis/complexity_hint.py`)
+- İç içe döngü yolu boyunca çarpım + döngüdeki bilinen çağrı maliyeti + aynı dosyadaki fonksiyonların ipucu; özyinelemede üstel şüphe, böl-yönet ve karşılıklı özyineleme.
+- Her ipucu `confidence` (low/medium/high) ve açıklayıcı `basis` ile gelir. Örnek: "Update: satır 24 for (linear) × satır 26 for (linear) → n^2".
+- Two-pointer vakasında ipucu bilerek yanılır (n² der) ve **düşük güven** verir.
+
+### Önemli olaylar
+- **Kod denetimi (`kod-denetci`):** Yüksek ×6 (yanlış LOG/CONSTANT sınıfları, sahte LINQ maliyeti, karşılıklı özyinelemede "1 high", `mid` argümanıyla gizlenen üstel şüphe, tek istisnanın tüm olguları silmesi), Orta ×8 (dört karesel yol dahil), Düşük ×7. Hepsi düzeltildi; her biri `test_facts_review.py`'de sabitlendi.
+- 40 KB sınırındaki kötü niyetli girdilerde (1300 iç içe döngü, 6000 terimli `+` zinciri) süre < 1 s.
+
+### Testler (966 test)
+- `test_loop_bounds.py`, `test_extractor.py`, `test_call_costs.py`, `test_complexity_hint.py`, `test_facts_review.py`.
+- 15 golden vaka (`tests/golden/facts/`), güncelleme: `uv run pytest tests/golden --update-golden`.
+- 12 karmaşıklık fixture'ı (`tests/fixtures/complexity/`): O(1), O(log n), O(n), O(n log n), O(n²), üstel, two-pointer ...

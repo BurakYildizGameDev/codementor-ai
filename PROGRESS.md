@@ -8,6 +8,7 @@
 | 2 | ✅ | faz/2-soru-bankasi | 2026-09-29 | Claude Code / — |
 | 3 | ✅ | faz/3-tier0 | 2026-09-29 | Claude Code / kod-denetci |
 | 4 | ✅ | faz/4-tier1 | 2026-09-29 | Claude Code / kod-denetci |
+| 5 | ✅ | faz/5-olgular | 2026-09-29 | Claude Code / kod-denetci |
 
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
@@ -139,11 +140,38 @@
 - `.*?` + `[ \t]*$` gibi masum görünen regex kuyrukları uzun boşluklu satırda karesel olur; yakalamayı `[^\n]*` yapıp kırpmayı Python'a bırakmak doğrusal.
 - Windows'ta süreç ağacı kontrolü için `CREATE_SUSPENDED` + Job Object + `NtResumeProcess` üçlüsü yarışsız ve saf ctypes ile yapılabiliyor.
 
+## Faz 5 — Notlar
+**Yapılanlar:**
+- `analysis/queries/{c,cpp,csharp}/*.scm`: fonksiyon, döngü, çağrı, bellek, alan sorguları (Python'a gömülü sorgu yok); `queries/__init__.py` önbellekli yükleyici, belirleyici kaynak sırası.
+- `analysis/extractor.py` → `extract_facts(code) -> CodeFacts`; yardımcılar `_context` (tek cursor geçişiyle bağlam), `_loops` (§5.3.1 sınır tablosu), `_symbols` (ad, tip tablosu), `_memory`, `_engine`, `_recursion`, `_callgraph`; hata ayıklama CLI'ı `python -m codementor.analysis.extractor dosya` (`_cli.py`, her zaman UTF-8).
+- `analysis/call_costs.py` + `data/call_costs.yaml` (C, C++, Unreal, C#, LINQ, Unity); `config.data.call_costs_file`.
+- `analysis/complexity_hint.py` → `compute_hint`, `function_hints`: yol çarpımı, bilinen çağrı maliyeti, aynı dosyadaki fonksiyonun ipucu, özyineleme (üstel şüphe / böl-yönet / yarılama), karşılıklı özyineleme; `confidence` + `basis`.
+- `models/bigo.parse_cost` (amortize `1*`; soru bankası ve CLI de bunu kullanıyor — "Sonraya" maddesi kapandı). `models/facts.py`: `LoopFact.parent_line/parent_index/counter_outer`, `CallFact.loop_line/loop_index`, `RecursionFact.halving`, `CodeFacts.warnings`, `ComplexityHint.function`, `CallCostTable`.
+- 15 golden vaka (`tests/golden/facts/{c,cpp,csharp,unity,unreal}-0N`), `--update-golden` (`tests/conftest.py`); 12 karmaşıklık fixture'ı (`tests/fixtures/complexity`, ilk satırda beklenti); toplam 966 test.
+**Alınan kararlar (ve neden):**
+- **Döngüler indeksle bağlanır** (`parent_index`, `loop_index`): aynı satırdaki iç içe döngüler (`for (...) for (...) s++;`) satır numarasıyla karışıp n² yerine n veriyordu.
+- **Sınır sınıfı:** yön güncellemenin işaretinden; `CONSTANT` yalnızca başlangıç ve sınır ikisi de sabitse; sayaç tutarsız değişiyorsa (gövdede `i *= 2`, `i = 0`, hem `++` hem `--`) `UNKNOWN`. Bağlı liste gezintisi, `i * i <= n`, `while (true)` → `UNKNOWN`. Binary search `LOG` yalnızca uçlardan biri yarılanmış değerden türetilen atama alırsa.
+- **İpucunda `UNKNOWN` = n varsayımı + `low` güven** (ipucu bir değer vermek zorunda; basis'te açıkça yazılı). `while` ile bulunan `LOG`, amortize maliyet, başka fonksiyonun ipucu → `medium`; özyineleme, dış döngüde sıfırlanmayan iç sayaç (two-pointer), üs taşması → `low`.
+- **Özyineleme:** `Super::f()`, `Base::f()`, `base.f()`, `x.f()` öz-çağrı sayılmaz; `using std::swap;` (ADL) özyineleme değil; dallanma `if/else`/`?:`/`switch`'te max; döngü içindeki öz-çağrı dallanma ≥ 2 (permütasyon); `n - 1` argümanı varsa yarılama yok (üstel şüphe kapanmaz). Karşılıklı özyineleme Tarjan SCC ile; çağrılanlardan çağıranlara yinelemeli hesap.
+- **Çağrı maliyeti yalnızca bildirilen tipten çözülür** (tip tablosu: değişken, alan, parametre, C# property; belirsiz ad çözülmez). Kullanıcı fonksiyonu tabloyu gölgeler. C# LINQ yalnızca bilinen koleksiyonda veya çağrı zincirinde; argümansız `First/Any` (ve koleksiyonda `Count`, listede `Last`) O(1). Büyük harfli, tipi bilinmeyen alıcı statik sınıf (`Mathf.Max` LINQ değil).
+- **Dayanıklılık:** bölümler yalıtılmış (biri çökerse yalnızca o boş + uyarı); maliyet tablosu yoksa maliyetsiz devam; özyinelemeli yardımcılar yinelemeli ya da `RecursionError` korumalı; `compute_hint` istisna fırlatmaz.
+- **Doğrusal süre (§12):** `Node.parent` (tree-sitter'da O(derinlik)) kullanılmaz; `operator: "+"` gibi anonim alanlı sorgu desenleri uzun zincirde karesel çıktı → filtresiz yakalayıp Python'da süzülüyor; atama dizini, dış döngü sıfırlama kümesi, fonksiyona göre gruplama önbellekli. 40 KB sınırındaki kötü niyetli girdiler (1300 iç içe döngü, 6000 terimli `+`, 7000 halkalı çağrı zinciri, 1300 fonksiyon) < 1 s.
+- `×` işareti öğrenciye dönük gerekçelerde kullanıldığı için ruff `allowed-confusables`'a eklendi.
+**Mimariden sapmalar (ADR linki):** yok. Model alanları geriye uyumlu, varsayılanlı genişletildi (rapor şemasında değiller). Planın `StaticFacts` adı yerine Faz 1'deki `CodeFacts` korundu.
+**Denetim (kod-denetci):** Yüksek ×6 (gövdedeki ilgisiz `/2` LOG sayılıyordu; yön karşılaştırmadan çıkarılıp `i != 0; i--` CONSTANT oluyordu; `Mathf.Max`/property üzerinden sahte LINQ ve n² high; karşılıklı özyineleme `1 high`; `mid` argümanı üstel şüpheyi kapatıyordu; tek istisna tüm olguları siliyordu), Orta ×8 (dört karesel yol, uzun çağrı zincirinde `RecursionError`, döngüdeki öz-çağrı, kullanıcı `count`'unun `std::count` sayılması, Unreal metot bildirimlerinin `UObject*` alan sayılması, gövdedeki sayaç değişimi), Düşük ×7. Hepsi düzeltildi; `tests/unit/test_facts_review.py` her bulguyu sabitliyor. Kapsam dışı küçük dokunuşlar: `parse_cost` refaktörü (soru bankası/CLI), ruff'ın `--fix` ile kaldırdığı iki gereksiz `noqa` ve iki import sıralaması.
+**Açık sorular:**
+- Başka nesnenin aynı metodu (`child->visit()`) özyineleme sayılmıyor (çok biçimli çağrıdan ayırt edilemiyor); ağaç gezintilerinde ipucu düşük kalabilir.
+- Unreal `FString(...) + TEXT(...)` birleştirmesi (metin sabiti yok) ve `TArray<TObjectPtr<...>>` kapsayıcı alanları yakalanmıyor.
+- `make` hâlâ yok; kontroller `uv run ...` ile.
+**Bu fazda öğrendiğim:**
+- Golden anlık görüntüleri gözle incelemek şart: ilk turda `Super::BeginPlay()` özyineleme, `using std::swap` sahte özyineleme ve belirleyici olmayan sorgu sırası yalnızca incelemeyle çıktı.
+- tree-sitter'da iki sessiz karesel tuzak: `Node.parent` kökten yürür; anonim düğümlü alan desenleri (`operator: "+"`) sol-derin zincirde karesel eşleşir.
+- Bash heredoc'ları `\n`/`\b` kaçışlarını bozabiliyor (gerçek satır sonu, geri silme karakteri); büyük yamalar dosyaya yazılıp öyle çalıştırılmalı.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
 - `mask_non_code` C++ ham metinlerini (`R"(...)"`) tanımıyor; içlerinde `"` geçerse maskeleme erken biter (öğrenci kodunda nadir).
-- Faz 5: `call_costs.yaml` içindeki amortize `1*` gösterimi `parse_bigo`'ya verilmeden önce `*` ayıklanmalı (ya da `BigO`'ya `amortized` bayrağı). Faz 2'de soru bankası için `removesuffix("*")` yaklaşımı kullanıldı; ortak bir yardımcıya taşınabilir.
 - `data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.
 - Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.
 - `.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.
