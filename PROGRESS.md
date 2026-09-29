@@ -232,6 +232,21 @@
 - "Maskeleme yapılandırmada" tasarımı kırılgan: global yapılandırmayı başka bir kütüphane değiştirebilir. Maskelemeyi logger'ın kendisine gömmek daha sağlam.
 - Bash heredoc'ları bu fazda iki kez daha bozuldu (tek tırnaklı Türkçe metin); çok satırlı yamalar Write ile betik dosyasına yazılıp çalıştırıldı.
 
+## Faz 7 eki — CLI ajanları ve canlı sağlayıcı denemeleri (ADR-0012)
+**Yapılanlar:**
+- `providers/cli_agent.py` → `CliAgentProvider` (`claude_cli`, `agy`): tüm mesajlar stdin'den, PATH'te yalnızca mutlak dizinlerde arama, `.cmd` → `.exe` çözümü, Faz 4 `run_process` ile yalıtım; Claude'da araçlar kapalı. Config: `CliConfig`/`ClaudeCliConfig`/`AgyConfig` (`command`, `allow_tool_agent`), `OllamaConfig.think`. `ProcessLimits.max_processes`, `file_size_bytes`. `providers check` CLI profillerini ağsız denetler. Sözleşme paketine `CliHarness` (6 adaptör).
+- SchemaAdapter: Ollama varyantı kısıtları korur; diğer varyantlarda zorlanamayan kısıtlar alan açıklamasına Türkçe not olarak eklenir ("en fazla 80 karakter").
+**Canlı denemeler (2026-09-29, EnemyRadar / unity-03, Geçiş A + B):**
+- `claude_cli` (claude-opus-5-5): Geçiş A ~32 sn. 33. satırdaki mantık hatasını (`nearby` ⊂ `enemies` → koşul hiç doğru değil) ve `enemies`'in hiç doldurulmadığını buldu; kanıtlar birebir; Geçiş B şemaya uyuyor, çözüm sızmıyor. Kısıt notları eklenmeden önce 8 soru ve 80+ karakterlik kavram yazıyordu.
+- `ollama` / `deepseek-r1:8b`: kısıtlar şemadan çıkarılınca `maxLength` aşıldı → Ollama varyantı kısıtları koruyor, canlı test geçti. Geçiş A 120 sn zaman aşımı ×3; 600 sn ile tamamlandı, 8/16 (kanıtlar `"Line 18: ..."` önekli, statik bulguları tekrar, 33. satırı kaçırdı, B'de çözümü söyledi). `think=false`: 187 sn, 12.440 çıktı token'ı, 12/16 (B temiz, 33. satır yine kaçırıldı).
+- `agy`: bu ortamda oturum açılmamış; `status: SUCCESS`, `response: ""` dönüyor → adaptör "oturum açık mı?" hatası verir.
+**Faz 8/9 için dersler:** kanıt denetimi bulgunun satır aralığına bakmalı (`line_start..line_end`); sızıntı denetimi öğrencinin kendi kodundan yapılan alıntıları (`enemies.Contains(...)`) sızıntı saymamalı; Türkçe düzyazıdaki `;` kod değildir; LLM karmaşıklığı "O(n^2) per frame" gibi ekler taşıyabilir (normalizasyon); küçük yerel modeller için prompt kanıt biçimini ve "statik bulguları tekrar etme"yi örnekle göstermeli.
+**Denetim (kod-denetci, güvenlik):** Yüksek ×1 — Windows'ta `shutil.which` çalışma dizinine önce bakıyordu (öğrenci projesindeki `claude.exe` kullanıcının oturumuyla çalışabilirdi). Orta ×6 — sistem mesajı argv'deydi; agy'de sistem mesajı kayboluyordu; agy için `--mode plan` ve açık onay yoktu; Claude'da katmanlı savunma bayrakları eksikti; zaman aşımı yeniden denemesi fallback'i ~15 dk geciktirebiliyordu; POSIX'te 1 MB dosya sınırı CLI'yi öldürebilirdi. Düşük — `.cmd` hedefinde `..`, `modelUsage` çoklu model, sahte JSON satırı seçimi, stderr kesilmesinin geçerli stdout'u düşürmesi, `assert` ile tip daraltma, `Runner` Protocol, sabit süreç sayısı, şema docstring'i, `command`/`think`'in ortak config'te olması, `ya29.` jeton deseni. Hepsi düzeltildi ve `test_cli_agent.py`'de sabitlendi.
+**Açık sorular:**
+- agy canlı doğrulanmadı (oturum yok): stdin'den okuma ve izin istekleri davranışı.
+- Faz 4 `run_process` de `argv[0]`'ı çıplak adla CreateProcess'e veriyor (derleyiciler); aynı cwd araması riski orada da var (bkz. Sonraya).
+- `deepseek-r1:8b` bu makinede uzun prompt'ta 3 dk+; yerel varsayılan model seçimi Faz 12 eval'ine kadar açık.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -257,3 +272,6 @@
 - Faz 7: `ProviderResult`'a yanıt veren sağlayıcının yeteneği (şema zorlandı mı) eklenebilir; fallback sonrası K5 için.
 - Faz 7: `FakeReply` bir dataclass olarak `providers/fake.py`'de (Pydantic şeması değil, test düzeneği); gerekirse `models/`'e taşınabilir.
 - Faz 7: token tahmini (Ollama/DeepSeek sayım bildirmezse) ve `config/pricing.yaml` maliyet tahmini (mimari §13) — Faz 10/12.
+- Faz 4 `validation/runner.run_process`: `argv[0]` çıplak adla verildiğinde Windows'ta CreateProcess çalışma dizinini de arar; derleyici yolunu `toolchain` zaten mutlak veriyor ama `run_process` kendisi de mutlak yol şartı koşmalı.
+- CLI ajanları: gerçek `run_process` ile uçtan uca test (sahte bir CLI betiğiyle: stdin, boş cwd, ortamda başka anahtar yok); agy canlı doğrulaması (oturum açılınca).
+- CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.

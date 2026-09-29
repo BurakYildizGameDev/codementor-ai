@@ -453,9 +453,11 @@ class ProviderResult(BaseModel):
 | OpenAI | `response_format: json_schema` + `strict: true` | Katı mod şema kısıtları getirir (tüm alanlar zorunlu, `additionalProperties: false`); `SchemaAdapter` bu varyantı üretir |
 | DeepSeek | OpenAI uyumlu uç nokta, JSON modu + şema prompt içinde | Doğrulama tamamen Pydantic'e düşer |
 | Anthropic | Yerel JSON çıktısı: `output_config.format = {type: json_schema, schema}` (araç / `tool_choice` yok) | Güncel modeller zorunlu `tool_choice`'u ve `temperature`'ı reddeder; `temperature` yalnızca yapılandırmada verilirse gönderilir (ADR-0011) |
+| Claude Code CLI (`claude_cli`) | `claude -p --output-format json --json-schema`; araçlar kapalı (`--tools ""`), prompt stdin'den | API anahtarı yerine CLI oturumu; Faz 4 süreç çalıştırıcısı ile yalıtılır (ADR-0012) |
+| Antigravity CLI (`agy`) | `agy -p --output-format json --json-schema --sandbox` | Deneysel: araç kapatma bayrağı yok; paylaşılan sunucuda kapalı tutulmalı (ADR-0012) |
 | Fake | Fixture dosyasından yanıt döner | Testler ve CI için; ağ yok |
 
-`SchemaAdapter` tek bir Pydantic modelinden sağlayıcıya özel şema varyantlarını üretir (opsiyonel alanları `anyOf [T, null]` ile zorunluya çevirme, `$ref` açma, desteklenmeyen anahtarları temizleme).
+`SchemaAdapter` tek bir Pydantic modelinden sağlayıcıya özel şema varyantlarını üretir (opsiyonel alanları `anyOf [T, null]` ile zorunluya çevirme, `$ref` açma, desteklenmeyen anahtarları temizleme); zorlanamayan kısıtlar alan açıklamasına not olarak eklenir, Ollama varyantı kısıtları korur).
 
 #### 5.5.3 Dayanıklılık
 
@@ -1194,6 +1196,17 @@ base_url = "https://api.deepseek.com"
 model = "..."
 api_key_env = "DEEPSEEK_API_KEY"
 
+[providers.claude_cli]         # ADR-0012; `claude` oturumu kullanılır
+command = "claude"
+model = "claude-opus-5-5"
+timeout_s = 300
+
+[providers.agy]                # ADR-0012; deneysel
+command = "agy"
+model = ""
+timeout_s = 300
+allow_tool_agent = false       # araçları kapatılamayan ajan: açık onay gerekir
+
 [providers.anthropic]
 model = "..."
 api_key_env = "ANTHROPIC_API_KEY"
@@ -1278,6 +1291,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0009 | Docker zorunluluğu kaldırıldı; Tier 1 yerel derleyiciyle, opsiyonel | Kurulum eşiği; kod çalıştırılmadığı için süreç düzeyi önlemler yeterli ([docs/adr/0009](adr/0009-docker-yerine-yerel-derleyici.md)) |
 | ADR-0010 | Tier 1 süreç sınırları: `RLIMIT_NPROC` yerine süreç grubu; Windows'ta Job Object | `RLIMIT_NPROC` kullanıcı başına sayılır, derleyiciyi bozar; `RLIMIT_AS` .NET ile uyumsuz ([docs/adr/0010](adr/0010-tier1-surec-sinirlari.md)) |
 | ADR-0011 | Anthropic yapılandırılmış çıktısı `output_config.format` ile | Güncel Claude modelleri zorunlu `tool_choice` ve `temperature`'ı reddediyor ([docs/adr/0011](adr/0011-anthropic-yapilandirilmis-cikti.md)) |
+| ADR-0012 | CLI ajanları (Claude Code, Antigravity) sağlayıcı olarak | Abonelikle API anahtarsız kullanım; araçlar kapalı, prompt stdin'den, süreç yalıtımı ([docs/adr/0012](adr/0012-cli-ajanlari-saglayici.md)) |
 
 ---
 
