@@ -29,8 +29,13 @@ class LimitsSettings(BaseModel):
 
 
 class ValidationSettings(BaseModel):
+    """Tier 1 yerel derleyici ayarları (mimari §5.2.2-5.2.3, ADR-0009)."""
+
     tier1_enabled: bool = True
     compile_timeout_s: int = Field(default=10, ge=1)
+    compile_memory_mb: int = Field(default=1024, ge=64)
+    stub_header: Path = Path("data/stubs/ue_stubs.h")
+    roslyn_check_dll: Path = Path("tools/roslyn-check/out/RoslynCheck.dll")
 
 
 class PipelineSettings(BaseModel):

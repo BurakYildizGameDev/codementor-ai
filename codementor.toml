@@ -5,6 +5,9 @@ max_bytes = 40960
 [validation]
 tier1_enabled = true         # derleyici kuruluysa kullanılır; yoksa SKIPPED (ADR-0009)
 compile_timeout_s = 10
+compile_memory_mb = 1024     # POSIX RLIMIT_AS / Windows Job Object bellek sınırı
+stub_header = "data/stubs/ue_stubs.h"
+roslyn_check_dll = "tools/roslyn-check/out/RoslynCheck.dll"   # make roslyn-check
 
 [pipeline]
 mode = "two_pass"            # two_pass | single_pass

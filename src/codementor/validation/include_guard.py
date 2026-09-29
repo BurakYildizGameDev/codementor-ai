@@ -1,0 +1,141 @@
+"""Include koruması (mimari §5.2.3, ADR-0009).
+
+Derleyici konteyner olmadan çalıştığı için kullanıcı kodu, derleyiciye verilmeden önce
+host dosya sistemine uzanabilecek her önişlemci yapısı için taranır. Bir bulgu varsa
+Tier 1 hiç çalıştırılmaz (`SKIPPED` + uyarı).
+
+**Fail-closed tasarım.** Güvenlik kararı yorum/metin maskeleyicisinin doğruluğuna
+dayanmaz: maskeleyici derleyiciyle her sözcük ayrımında (önekli karakter sabitleri
+`L'`, `u8'`; ham metinler `R"(...)"`; `@"`; `b'` ...) aynı fikirde olmayabilir ve bu
+fark bir `#include` satırını "yorum içinde" gösterebilir. Bu yüzden:
+
+1. Trigraph ve token yapıştırma (`##`, `%:%:`) tümden reddedilir.
+2. `\\` + (boşluk) + satır sonu gcc/clang gibi birleştirilir; `\\f`/`\\v` boşluk sayılır.
+3. `#include`/`#import`/`#include_next`/`#embed`/`#pragma` sözcükleri **maskelenmemiş**
+   metinde her yerde aranır; hedef yolu güvenli değilse (mutlak, `..`, sürücü, `:`, `\\`,
+   Windows aygıt adı, boş) yorum/metin içinde olsa bile reddedilir. `#embed` ve
+   `#pragma ... dependency` her yerde reddedilir.
+4. Hedefi olmayan (`#include MACRO`) biçim yalnızca yönerge konumunda reddedilir: satır
+   başı (maskelenmiş veya maskelenmemiş metinde) ya da bir `*/` sonrası.
+5. `__has_*` ve `_Pragma` her yerde reddedilir.
+
+Yanlış pozitif yalnızca Tier 1'in atlanmasına yol açar (`SKIPPED`); güvenli yönde hatadır.
+"""
+
+from __future__ import annotations
+
+import re
+
+from codementor.analysis.lexical import mask_non_code
+
+_WS = r"[ \t\f\v]"
+_TRIGRAPH = re.compile(r"\?\?[=/'()!<>\-]")
+_SPLICE_TAIL = re.compile(r"\\[ \t\f\v]*$")
+_PASTE = re.compile(r"##|%:%:")
+_KEYWORD = re.compile(rf"(?:#|%:){_WS}*(include_next|include|import|embed|pragma)\b")
+_AFTER_COMMENT_END = re.compile(rf"\*/(?:{_WS}|/\*.*?\*/)*$")
+_FORBIDDEN_TOKENS = re.compile(r"__has_\w*|\b_Pragma\b")
+_DEPENDENCY = re.compile(r"\bdependency\b")
+_DEVICE = re.compile(r"^(?:CON|PRN|AUX|NUL|CLOCK\$|CONIN\$|CONOUT\$|COM\d|LPT\d)$", re.IGNORECASE)
+_INCLUDE_LIKE = frozenset({"include", "include_next", "import"})
+
+
+def _logical_lines(code: str) -> list[tuple[int, str]]:
+    """Satır birleştirilmiş mantıksal satırlar; her biri başladığı fiziksel satır no ile.
+
+    gcc/clang gibi `\\` ile satır sonu arasındaki boşluklara izin verir.
+    """
+    result: list[tuple[int, str]] = []
+    parts: list[str] = []
+    start = 1
+    for number, physical in enumerate(code.split("\n"), start=1):
+        if not parts:
+            start = number
+        tail = _SPLICE_TAIL.search(physical)
+        if tail:
+            parts.append(physical[: tail.start()])
+            continue
+        parts.append(physical)
+        result.append((start, "".join(parts)))
+        parts = []
+    if parts:
+        result.append((start, "".join(parts)))
+    return result
+
+
+def _target(rest: str) -> str | None:
+    """Yönerge adından sonraki metinden `"yol"` / `<yol>` hedefini çıkarır; yoksa None."""
+    rest = rest.lstrip(" \t\f\v")
+    if not rest or rest[0] not in '"<':
+        return None
+    close = rest.find('"' if rest[0] == '"' else ">", 1)
+    if close < 0:
+        return None
+    return rest[1:close]
+
+
+def _unsafe_path(path: str) -> str | None:
+    if not path.strip():
+        return "boş yol"
+    if path.startswith(("/", "\\")):
+        return "mutlak yol"
+    if ":" in path:
+        return "sürücü harfi veya `:`"
+    if "\\" in path:
+        return "ters eğik çizgi"
+    if ".." in path:
+        return "üst dizin (`..`)"
+    name = path.rsplit("/", 1)[-1].split(".", 1)[0].strip()
+    if _DEVICE.match(name):
+        return "aygıt adı"
+    return None
+
+
+def _directive_position(raw: str, masked: str, index: int) -> bool:
+    """`index`teki `#` derleyici için bir yönerge başı olabilir mi (fail-closed)."""
+    before_raw, before_masked = raw[:index], masked[:index]
+    return (
+        not before_raw.strip(" \t\f\v")
+        or (masked[index : index + 1] in ("#", "%") and not before_masked.strip(" \t\f\v"))
+        or _AFTER_COMMENT_END.search(before_raw) is not None
+    )
+
+
+def _check_line(line: int, raw: str, masked: str) -> list[str]:
+    reasons: list[str] = []
+    token = _FORBIDDEN_TOKENS.search(raw)
+    if token:
+        reasons.append(f"Satır {line}: `{token.group()}` kullanımı")
+    for match in _KEYWORD.finditer(raw):
+        name = match.group(1)
+        if name == "embed":
+            reasons.append(f"Satır {line}: `#embed` yönergesi")
+        elif name == "pragma":
+            if _DEPENDENCY.search(raw, match.end()):
+                reasons.append(f"Satır {line}: `#pragma ... dependency` yönergesi")
+        else:
+            target = _target(raw[match.end() :])
+            if target is None:
+                if _directive_position(raw, masked, match.start()):
+                    reasons.append(f"Satır {line}: makroyla hesaplanan veya bozuk `#{name}`")
+                continue
+            problem = _unsafe_path(target)
+            if problem:
+                reasons.append(f"Satır {line}: `#{name}` içinde {problem}")
+    return reasons
+
+
+def check_includes(code: str) -> list[str]:
+    """Güvenli olmayan önişlemci kullanımlarını bulur; boş liste = derleyici çağrılabilir."""
+    reasons: list[str] = []
+    for pattern, label in ((_TRIGRAPH, "trigraph dizisi"), (_PASTE, "token yapıştırma")):
+        found = pattern.search(code)
+        if found:
+            line = code.count("\n", 0, found.start()) + 1
+            reasons.append(f"Satır {line}: {label} (`{found.group()}`)")
+
+    logical = _logical_lines(code)
+    masked = mask_non_code("\n".join(text for _, text in logical)).split("\n")
+    for (line, raw), plain in zip(logical, masked, strict=True):
+        reasons += _check_line(line, raw, plain)
+    return reasons
