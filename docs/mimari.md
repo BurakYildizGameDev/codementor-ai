@@ -264,7 +264,7 @@ Derleyici "yalnızca sözdizimi" modunda bile saldırı yüzeyidir (ör. `#inclu
 - Çalışma dizini boş bir geçici dizin; ek `-I` yolu yok; ortam değişkenleri temizlenir (yalnızca `PATH`, `TEMP`/`TMP` ve derleyicinin gerektirdikleri).
 - Duvar saati zaman aşımı (`validation.compile_timeout_s`) → süreç ağacı öldürülür, `SKIPPED` + uyarı (erken çıkış yapılmaz).
 - Çıktı boyutu sınırı (64 KB); fazlası kesilir.
-- POSIX'te `RLIMIT_AS` / `RLIMIT_CPU` / `RLIMIT_NPROC`; Windows'ta Job Object bellek sınırı (kurulamazsa yalnızca zaman aşımı — belgelenmiş risk).
+- POSIX'te `RLIMIT_AS` / `RLIMIT_CPU` / `RLIMIT_CORE` / `RLIMIT_FSIZE` + ayrı süreç grubu (zaman aşımında grup öldürülür); `RLIMIT_NPROC` kullanıcı başına olduğu için kullanılmaz. POSIX sınırları `preexec_fn` yerine exec öncesi küçük bir başlatıcıda uygulanır (çok iş parçacıklı sunucuda güvenli). Windows'ta Job Object: bellek + etkin süreç sayısı sınırı, askıda başlatılıp işe atanır; iş kurulamazsa süreç öldürülür ve Tier 1 `SKIPPED` (fail-closed). Süreç ağacı normal çıkışta da öldürülür. Ayrıntı: ADR-0010.
 - Araç bulunamazsa → Tier 1 `SKIPPED`, sistem çalışmaya devam eder.
 - Yerel bulunamayan başlık (`"WaveSpawner.h": file not found`) kesin hata sayılmaz → `WARNING`.
 - Derleyici çıktısı `file:line:col: severity: message` regex'iyle `Diagnostic` nesnelerine çevrilir (gcc ve clang biçimleri).
@@ -1159,6 +1159,9 @@ max_bytes = 40960
 [validation]
 tier1_enabled = true         # derleyici kuruluysa kullanılır; yoksa SKIPPED
 compile_timeout_s = 10
+compile_memory_mb = 1024     # RLIMIT_AS / Job Object (ADR-0010)
+stub_header = "data/stubs/ue_stubs.h"
+roslyn_check_dll = "tools/roslyn-check/out/RoslynCheck.dll"   # make roslyn-check
 
 [pipeline]
 mode = "two_pass"            # two_pass | single_pass
@@ -1268,6 +1271,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0007 | Unreal için stub başlık + uyarı seviyesine düşürme | Motor başlıkları olmadan tam derleme imkânsız |
 | ADR-0008 | Model adları yalnızca yapılandırmada | Sağlayıcı model adları sık değişir |
 | ADR-0009 | Docker zorunluluğu kaldırıldı; Tier 1 yerel derleyiciyle, opsiyonel | Kurulum eşiği; kod çalıştırılmadığı için süreç düzeyi önlemler yeterli ([docs/adr/0009](adr/0009-docker-yerine-yerel-derleyici.md)) |
+| ADR-0010 | Tier 1 süreç sınırları: `RLIMIT_NPROC` yerine süreç grubu; Windows'ta Job Object | `RLIMIT_NPROC` kullanıcı başına sayılır, derleyiciyi bozar; `RLIMIT_AS` .NET ile uyumsuz ([docs/adr/0010](adr/0010-tier1-surec-sinirlari.md)) |
 
 ---
 

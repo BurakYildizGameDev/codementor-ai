@@ -7,7 +7,7 @@
 | 1 | ✅ | faz/1-modeller | 2026-09-29 | Claude Code / — |
 | 2 | ✅ | faz/2-soru-bankasi | 2026-09-29 | Claude Code / — |
 | 3 | ✅ | faz/3-tier0 | 2026-09-29 | Claude Code / kod-denetci |
-| 4 | ⏳ (yeniden tanımlandı: Docker'sız yerel derleyici, ADR-0009) | faz/4-tier1 | | |
+| 4 | ✅ | faz/4-tier1 | 2026-09-29 | Claude Code / kod-denetci |
 
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
@@ -107,6 +107,38 @@
 **Değişenler:** `docs/adr/0009-docker-yerine-yerel-derleyici.md`; `mimari.md` §3, §5.2.2–5.2.4, §9, §12, §15–20, §22–23; `UYGULAMA_PLANI.md` §3.1, komutlar, Faz 4 (yeniden yazıldı), Faz 13, sorun giderme, zaman çizelgesi; `pytest` işareti `sandbox` → `compiler`; `Makefile` `test-sandbox` → `test-compiler`; CI ve AGENTS.md komutları; config'ten `validation.sandbox_image` kaldırıldı.
 **Bu makinede:** Docker ve gcc/clang yok; `dotnet` 10.0.103 var → Faz 4'te C# (Roslyn) Tier 1 yerelde test edilebilir, C/C++ `compiler` testleri atlanır (CI'da çalışır).
 
+## Faz 4 — Notlar
+**Yapılanlar:**
+- `validation/toolchain.py`: `PATH`'te araç keşfi (mutlak yol), `Toolchain.summary()` (`/health/ready`), önbellek + `clear_toolchain_cache()`.
+- `validation/include_guard.py`: fail-closed include koruması (ayrıntı aşağıda).
+- `validation/runner.py` + `_winjob.py`: yalnızca stdin, kabuk yok, boş geçici cwd, izin listeli ortam, zaman aşımı, süreç ağacını her durumda öldürme, 64 KB çıktı sınırı; Windows Job Object (askıda başlat → ata → `NtResumeProcess`), POSIX rlimit başlatıcısı.
+- `validation/diagnostics.py`: `<stdin>:l:c: severity: msg` (gcc/clang) ve Roslyn JSON ayrıştırıcıları; 20 tanı ve 500 karakter mesaj sınırı.
+- `validation/tier1.py`: disabled → araç → include koruması → stub → çalıştır → sınıflandır; hiçbir yolda istisna yok. `validation/policy.py`: `decide(tier0, tier1)` §5.2.4 tam tablo.
+- Modeller: `SkipReason`, `CompilerTool`, `Toolchain`, `Tier1Result`; `PolicyDecision.warnings` (Faz 10'da `meta.warnings`'e).
+- `data/stubs/ue_stubs.h` (§5.2.2 listesi + `FTransform`, `FTimerHandle`, `TSubclassOf`, `Cast` ...). `tools/roslyn-check/` (.NET 10, `ParseText`, stdin → JSON). `make roslyn-check`.
+- Config: `validation.compile_memory_mb`, `stub_header`, `roslyn_check_dll`.
+- 774 test (`-m "not live"`) + `tests/compiler/` (bu makinede Roslyn 7 test geçti; gcc/clang atlandı).
+**Alınan kararlar (ve neden):**
+- **ADR-0010:** POSIX'te `RLIMIT_NPROC` yok (kullanıcı başına sayılır, `cc1` başlatmayı bozar); süreç grubu öldürme. `RLIMIT_AS` dotnet'e uygulanmaz (GC büyük sanal alan ayırır) → `DOTNET_GCHeapHardLimit`. Windows'ta Job Object süreç sayısı (8) ve bellek sınırı; kurulamazsa fail-closed.
+- **rlimit'ler `preexec_fn` ile değil**, `python -I -S -c <başlatıcı>` → `os.execv` ile: `preexec_fn` çok iş parçacıklı FastAPI sürecinde fork sonrası kilitlenebilir.
+- **Include koruması fail-closed:** `mask_non_code` derleyiciyle her sözcük ayrımında uyuşmuyor (`L'/*'`, `b'/*'`, `R"(x"/*)"`, C/C++'ta `@"`). Bu yüzden tehlikeli hedefli `#include`/`#import`/`#embed`/`#pragma dependency` maskelenmemiş metinde her yerde aranır; yorumdaki `// #include "/etc/shadow"` da Tier 1'i atlatır (yalnızca `SKIPPED`, güvenli yönde). Makrolu `#include X` yalnızca yönerge konumunda reddedilir. `##`/`%:%:` (token yapıştırmayla `_Pragma`/`__has_include` üretimi) ve trigraph tümden reddedilir.
+- **Unreal:** Tier 0'ın `neutralize_unreal_macros`'u (`*_API` dahil) ve yerel `#include "..."` boşaltma Tier 1'de de uygulanır (aynı uzunlukta; satır/kolon kaymaz); `\` ile devam eden satırlar boşaltılmaz; dönüşmüş son metin de korumadan geçer. Tüm Unreal hataları `WARNING` (ADR-0007).
+- Bulunamayan başlık → `WARNING` (gcc/clang ölümcül hatada durur; kodun geri kalanı denetlenmez).
+- Tanılarda yalnızca `<stdin>` satırları alınır (stub/sistem başlıkları atlanır). Derleyiciye `-fno-diagnostics-color` dışında sürüme özgü bayrak verilmez (macOS'ta `gcc` = clang).
+- `-std=c17` trigraph'ları açtığı için trigraph içeren kod reddedilir.
+- Roslyn aracı net10.0 + `RollForward=Major`; `Microsoft.CodeAnalysis.CSharp 4.14.0`.
+**Mimariden sapmalar (ADR linki):** [ADR-0010](docs/adr/0010-tier1-surec-sinirlari.md) — `RLIMIT_NPROC` yerine süreç grubu; mimari §5.2.3, §17, §20 güncellendi.
+**Denetim (kod-denetci, yalnızca güvenlik):** Yüksek ×4 — include koruması atlatılabiliyordu: (H1) `\` + boşluk + satır sonu birleştirmesi, (H2) maskeleyici–derleyici uyuşmazlığıyla sahte yorum (`L'/*'`, `R"`, `@"`), (H3) ``/``, (H4) Unreal dönüşümü yeni yönerge üretebiliyordu. Orta ×3 — tanı regex'inde ReDoS (60 KB boşluklu satır 118 s → 0,3 s), token yapıştırma, `preexec_fn`. Düşük ×6 — beklenmedik hatada süreç sızıntısı, normal çıkışta torun süreçler, Job Object yokken fail-open, Windows aygıt adları, tanı mesajı uzunluğu, Linux'ta dotnet bellek sınırı (ADR'de belgelendi). Hepsi düzeltildi ve regresyon testiyle sabitlendi.
+**Açık sorular:**
+- gcc/clang bu makinede yok: `compiler` işaretli C/C++ testleri yalnızca CI'da (ubuntu, gcc kurulu) çalışacak. Kaydedilmiş gcc/clang örnek çıktıları belgelenmiş biçime göre elle yazıldı; clang biçimi ve stub, `zig c++` (clang) ile ayrıca denendi.
+- POSIX başlatıcısı ve rlimit testleri Windows'ta atlanıyor; ilk CI koşusunda doğrulanmalı.
+- CI Roslyn aracını derlemiyor → C# `compiler` testleri CI'da atlanır (bkz. Sonraya).
+- `make` hâlâ yok; kontroller `uv run ...` ile çalıştırıldı.
+**Bu fazda öğrendiğim:**
+- Güvenlik filtresini "derleyiciyle aynı sözcük ayrımı" varsayımına kurmak kırılgan; her ayrım farkı bir atlatma yoludur. Fail-closed (şüpheliyi reddet) tasarım, yanlış pozitifin maliyeti düşükse (burada yalnızca `SKIPPED`) doğru tercih.
+- `.*?` + `[ \t]*$` gibi masum görünen regex kuyrukları uzun boşluklu satırda karesel olur; yakalamayı `[^\n]*` yapıp kırpmayı Python'a bırakmak doğrusal.
+- Windows'ta süreç ağacı kontrolü için `CREATE_SUSPENDED` + Job Object + `NtResumeProcess` üçlüsü yarışsız ve saf ctypes ile yapılabiliyor.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -117,3 +149,8 @@
 - `.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.
 - `parse_bigo` şu an `log log n`, `n^n`, `Θ(...)`/`Ω(...)`, `max(n,m)` ve `k` gibi değişken üsleri desteklemiyor; eval'de LLM çıktılarında görülürse eklenebilir.
 - `AnalysisReport.analysis_id` için ULID biçim doğrulaması (şu an serbest `str`, §6.4 böyle).
+- CI'a `actions/setup-dotnet` + `make roslyn-check` adımı: C# `compiler` testleri CI'da da çalışsın.
+- `ue_stubs.h` genişletilebilir (`Super` için `GENERATED_BODY` yerine sınıf başına typedef mümkün değil; delegeler `OnDestroyed.AddDynamic`, `FTimerManager`); eval'de Unreal uyarı gürültüsüne göre karar verilmeli.
+- `validation.stub_header` / `roslyn_check_dll` göreli yolları da çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte ele alınmalı).
+- `#pragma` makro genişletmeli biçimleri (`#pragma MACRO`) ve `#line` şu an serbest; derleyici kaynak okumadığı için risk düşük, ama include korumasına izin listesi eklenebilir.
+- gcc kolonları "display" birimli, clang bayt; Tier 0 karakter. Unicode içeren satırlarda kolonlar farklı olabilir (`-fdiagnostics-column-unit=byte` gcc ≥ 11).

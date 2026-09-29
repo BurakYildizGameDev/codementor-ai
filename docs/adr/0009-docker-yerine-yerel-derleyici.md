@@ -39,7 +39,7 @@ sandbox'ında çalıştırmayı öngörüyordu (§5.2.3). Pratikte:
      (yalnızca `PATH`, `TEMP`/`TMP` ve derleyicinin gerektirdikleri).
    - Duvar saati zaman aşımı (`validation.compile_timeout_s`) → süreç ağacı öldürülür, `SKIPPED`.
    - Çıktı boyutu sınırı (ör. 64 KB); fazlası kesilir.
-   - POSIX'te `RLIMIT_AS`/`RLIMIT_CPU`/`RLIMIT_NPROC` ile bellek/CPU/süreç sınırı;
+   - POSIX'te `RLIMIT_AS`/`RLIMIT_CPU`/`RLIMIT_NPROC` ile bellek/CPU/süreç sınırı (`RLIMIT_NPROC` ADR-0010 ile süreç grubuna dönüştü);
      Windows'ta Job Object bellek sınırı (mümkün değilse yalnızca zaman aşımı — belgelenmiş risk).
    - Yerel bulunamayan başlık (`"WaveSpawner.h": file not found`) `FAILED` sayılmaz, `WARNING`'dir.
 4. `validation.tier1_enabled` varsayılan `true` kalır; API sunucusu `127.0.0.1` dışına

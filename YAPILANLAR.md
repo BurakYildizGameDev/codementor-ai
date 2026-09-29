@@ -154,3 +154,39 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
   - `docs/UYGULAMA_PLANI.md`: kurulum gereksinimleri, komutlar, **Faz 4 yeniden yazıldı** ("Tier 1 Yerel Derleyici"), Faz 13, zaman çizelgesi
   - Test işareti `sandbox` → `compiler`; `make test-compiler`; CI ve AGENTS.md komutları; config'ten `sandbox_image` kaldırıldı
 - **Durum:** Yalnızca karar ve dokümanlar; Faz 4'ün kodu henüz yazılmadı.
+
+---
+
+## Faz 4 — Tier 1 Yerel Derleyici (Docker'sız) ✅
+
+**Dal:** `faz/4-tier1` · **Mimari:** §5.2.2–5.2.4, §12 · **ADR:** 0009, 0010
+
+### Araç keşfi (`validation/toolchain.py`)
+- `PATH`'te gcc/g++/clang/clang++ ve `dotnet` + derlenmiş Roslyn aracı aranır; mutlak yolla çağrılır.
+- Tercih: C gcc→clang, C++ g++→clang++, Unreal clang++→g++. Sonuç önbelleklenir; `/health/ready` için `summary()`.
+
+### Güvenli çalıştırma (`validation/runner.py`, `_winjob.py`)
+- Kod yalnızca stdin ile; kabuk yok; boş geçici çalışma dizini; izin listesiyle ortam (`LC_ALL=C`).
+- Zaman aşımı; süreç ağacı her durumda öldürülür; stdout/stderr 64 KB sınırı.
+- Windows: askıda başlatma → Job Object (bellek + 8 süreç) → devam; kurulamazsa çalıştırılmaz.
+- POSIX: `RLIMIT_CPU/CORE/FSIZE/AS` exec öncesi başlatıcıda; süreç grubu (ADR-0010).
+
+### Include koruması (`validation/include_guard.py`)
+- Mutlak yol, `..`, sürücü, `:`, `\`, Windows aygıt adları, `#include MACRO`, `#import`, `#include_next`, `#embed`, `__has_*`, `_Pragma`, `#pragma ... dependency`, trigraph, `##` → derleyici hiç çağrılmaz, `SKIPPED`.
+- Fail-closed: tehlikeli yollar yorum/metin içinde bile reddedilir (maskeleyici derleyiciyle her sözcük ayrımında aynı fikirde olmayabilir).
+
+### Tier 1 ve politika (`validation/tier1.py`, `diagnostics.py`, `policy.py`)
+- gcc/clang `<stdin>:satır:kolon: önem: mesaj` ayrıştırıcısı ve Roslyn JSON ayrıştırıcısı (en çok 20 tanı).
+- Unreal: `data/stubs/ue_stubs.h` + Tier 0 makro nötrleştirme + yerel include'ların boşaltılması; hatalar `WARNING`'e düşer.
+- Bulunamayan başlık `WARNING`; araç yok / zaman aşımı / koruma → `SKIPPED`; kesin hata → `FAILED` + erken çıkış.
+
+### Roslyn aracı (`tools/roslyn-check/`)
+- .NET 10 konsol uygulaması; yalnızca `CSharpSyntaxTree.ParseText`; stdin → JSON. `make roslyn-check` ile derlenir.
+
+### Önemli olaylar
+- **Güvenlik denetimi (`kod-denetci`):** Yüksek ×4 (include koruması; boşluklu satır birleştirme, `\f`/`\v`, maskeleyici–derleyici uyuşmazlığı ve Unreal dönüşümüyle atlatılabiliyordu), Orta ×3 (tanı regex'inde ReDoS — 60 KB satırda 118 s; token yapıştırma; `preexec_fn`), Düşük ×6. Hepsi düzeltildi ve testlendi.
+- Stub, gerçek clang'a (`zig c++`) karşı iki Unreal fixture'ıyla denendi; yalnızca stub'da olmayan üyeler hata veriyor (uyarıya düşüyor).
+
+### Testler (774 test + derleyici testleri)
+- `test_include_guard.py`, `test_diagnostics.py`, `test_runner.py`, `test_toolchain.py`, `test_tier1.py`, `test_policy.py`, `test_ue_stubs.py`, `test_no_docker.py`.
+- `tests/compiler/`: bu makinede Roslyn testleri çalışıyor; gcc/clang testleri araç olmadığı için atlanıyor.
