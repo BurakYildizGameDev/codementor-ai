@@ -9,7 +9,7 @@ from pydantic import AfterValidator, Field, StringConstraints, field_validator, 
 
 from codementor.models._base import StrictModel
 from codementor.models.bigo import parse_bigo
-from codementor.models.enums import Difficulty, Engine, Language
+from codementor.models.enums import Difficulty, Engine, Language, check_engine_language
 
 QUESTION_ID_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)+$"
 CHECKLIST_ITEM_ID_PATTERN = r"^[A-Z]+-[A-Z]+-\d{3}$"
@@ -19,9 +19,6 @@ HINT_LEVELS = (1, 2, 3)
 
 # Mentorluk motoruna ait, öğrenciye/API'ye verilmeyen alanlar (Question'da, QuestionPublic'te yok)
 MENTOR_FIELDS = frozenset({"concept_tags", "checklist_extra", "hint_ladder"})
-
-# Motorun gerektirdiği dil (mimari §7.2): Unity → C#, Unreal → C++
-_ENGINE_LANGUAGE = {Engine.UNITY: Language.CSHARP, Engine.UNREAL: Language.CPP}
 
 
 def _check_bigo(value: str) -> str:
@@ -35,12 +32,6 @@ def _check_unique(values: list[str]) -> list[str]:
     if duplicates:
         raise ValueError(f"yinelenen öğe: {', '.join(duplicates)}")
     return values
-
-
-def _check_engine_language(language: Language, engine: Engine | None) -> None:
-    required = _ENGINE_LANGUAGE.get(engine) if engine is not None else None
-    if required is not None and language != required:
-        raise ValueError(f"{engine} motoru yalnızca {required} diliyle kullanılabilir")
 
 
 BigOText = Annotated[str, AfterValidator(_check_bigo)]
@@ -76,7 +67,7 @@ class QuestionPublic(StrictModel):
 
     @model_validator(mode="after")
     def _engine_matches_language(self) -> Self:
-        _check_engine_language(self.language, self.engine)
+        check_engine_language(self.language, self.engine)
         return self
 
 
@@ -137,7 +128,7 @@ class AppliesTo(StrictModel):
 
     @model_validator(mode="after")
     def _engine_matches_language(self) -> Self:
-        _check_engine_language(self.language, self.engine)
+        check_engine_language(self.language, self.engine)
         return self
 
 

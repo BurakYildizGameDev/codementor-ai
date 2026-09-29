@@ -93,3 +93,18 @@ class DeallocationKind(StrEnum):
     FREE = "free"
     DELETE = "delete"
     DELETE_ARRAY = "delete_array"
+
+
+_ENGINE_LANGUAGE = {Engine.UNITY: Language.CSHARP, Engine.UNREAL: Language.CPP}
+
+
+def required_language(engine: Engine | None) -> Language | None:
+    """Motorun gerektirdiği dil (Unity → C#, Unreal → C++); motor yoksa None."""
+    return _ENGINE_LANGUAGE.get(engine) if engine is not None else None
+
+
+def check_engine_language(language: Language, engine: Engine | None) -> None:
+    """Dil/motor uyumsuzsa Türkçe mesajlı `ValueError` fırlatır."""
+    required = required_language(engine)
+    if required is not None and language != required:
+        raise ValueError(f"{engine} motoru yalnızca {required} diliyle kullanılabilir")
