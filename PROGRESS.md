@@ -10,6 +10,7 @@
 | 4 | ✅ | faz/4-tier1 | 2026-09-29 | Claude Code / kod-denetci |
 | 5 | ✅ | faz/5-olgular | 2026-09-29 | Claude Code / kod-denetci |
 | 6 (daraltılmış) | ✅ | faz/6-kurallar | 2026-09-29 | Claude Code / kod-denetci |
+| 7 | ✅ | faz/7-saglayicilar | 2026-09-29 | Claude Code / kod-denetci |
 
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
@@ -197,6 +198,40 @@
 - Olgu (satır) ile ağaç düğümünü satır numarasıyla eşlemek aynı satırdaki iki ifadeyi karıştırıyor; kurallar ya olgunun kimliğini (satır + ad) doğrulamalı ya da düğüm düzeyinde çalışmalı.
 - Bash heredoc'ları yine `\n` kaçışlarını bozdu; çok satırlı düzenlemeler Edit/Write ile.
 
+## Faz 7 — Notlar
+**Yapılanlar:**
+- `models/provider.py`: `ChatMessage`, `GenerationOptions`, `TokenUsage`, `ProviderCapabilities`, `ProviderResult` (§5.5.1 + `provider`, `warnings`), `ProviderStatus`.
+- `providers/base.py` (`LLMProvider` Protocol, hata hiyerarşisi, `RetryPolicy`), `_http.py` (ortak HTTP katmanı), `_common.py`, `schema_adapter.py`, `fake.py`, `ollama.py`, `openai_compat.py` (OpenAI + DeepSeek), `anthropic.py`, `factory.py` (`build_provider`, `build_chain`, `FallbackProvider`).
+- `log.py`: structlog JSON + `redact_secrets`; `get_logger` global yapılandırmadan bağımsız maskeleyen logger döndürür.
+- CLI: `codementor providers check [--provider]` (Ollama `GET /api/tags` ile gerçekten sorgulanır; bulut ağsız). Bağımlılıklar: `httpx`, `structlog`; geliştirme: `respx`. Async testler anyio eklentisiyle.
+- Config: sağlayıcı başına alt sınıflar (`OllamaConfig` ... TOML'da bölüm kısmen verilse de varsayılanlar korunur), `providers.max_retries`, bulut `timeout_s = 60`, `max_tokens`; `pytest` `addopts`'a `-m "not live"`.
+- Testler: `tests/providers/` — `contract.py` + `test_contract.py` (**5 adaptör × 25 senaryo** tek sözleşme paketi, respx), `test_adapters.py`, `test_schema_adapter.py`, `test_factory.py`, `test_fake.py`, `test_log_redaction.py`, `test_http_hardening.py`; `tests/unit/test_cli_providers.py`; `tests/live/test_providers_live.py` (`@pytest.mark.live`). Toplam 1304 test.
+**Doküman doğrulaması (kaynaklar, 2026-09-29):**
+- Ollama — `POST /api/chat`, `format` = JSON Schema, `options.num_ctx/temperature/seed`, `stream:false`; yanıt `message.content`, `done_reason`, `prompt_eval_count`, `eval_count`: https://docs.ollama.com/capabilities/structured-outputs
+- OpenAI — Chat Completions `response_format: {type: "json_schema", json_schema: {name, schema, strict: true}}`; katı mod: tüm alanlar `required`, `additionalProperties: false`, opsiyonel = null birliği: https://developers.openai.com/api/docs/guides/structured-outputs , https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+- DeepSeek — yalnızca `response_format: {type: "json_object"}` (json_schema yok); prompt "json" sözcüğü ve örnek biçim içermeli; boş içerik dönebilir: https://api-docs.deepseek.com/guides/json_mode
+- Anthropic — `output_config: {format: {type: "json_schema", schema}}`, beta başlığı yok; JSON `text` bloğunda; `minLength/maxLength/pattern/minimum/maximum` desteklenmez; güncel modeller zorunlu `tool_choice` ve `temperature`'ı reddeder: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+**Alınan kararlar (ve neden):**
+- **ADR-0011:** Anthropic'te zorunlu `tool_choice` yerine `output_config.format` (güncel modeller zorunlu `tool_choice`'u 400 ile reddediyor); `temperature` yalnızca açıkça yapılandırılmışsa, `seed` hiç gönderilmez. Mimari §5.5.2/§5.5.3/§17/§20 ve UYGULAMA_PLANI Faz 7 kriteri güncellendi.
+- **SchemaAdapter:** `$ref` açılır (özyinelemeli şema reddedilir), sağlayıcıların zorlamadığı kısıtlar (`minLength`, `maxLength`, `pattern`, `minimum`, `maximum`, `maxItems`, `minItems>1`) API şemasından çıkarılır — K5 aynı Pydantic modeliyle doğrular. OpenAI katı varyantı her nesnede tüm alanları `required` yapar, opsiyonelleri `anyOf[T, null]`'a çevirir. DeepSeek prompt şeması kısıtları **korur** (API zorlamadığı için modelin sınırları görmesi gerekir).
+- **Yeniden deneme:** yalnızca ağ/zaman aşımı/429/5xx (529 dahil), en fazla `providers.max_retries` (2); üstel geri çekilme + jitter; `Retry-After` sonlu ve ≥ 0 ise ona uyulur, `max_delay_s`'ten (20 sn) uzunsa beklemeden bırakılır (kota → fallback). Diğer 4xx ve işlenemeyen yanıt (`ProviderResponseError`) hemen hata.
+- **Fallback:** her `ProviderError`'da (eksik anahtar/model dahil) sıradakine geçilir, `ProviderResult.warnings`'e Türkçe uyarı yazılır; bozuk JSON geçiş sebebi değil (onarım Faz 9). Hepsi düşerse `AllProvidersFailedError`.
+- **HTTP güvenliği (§12):** toplam süre sınırı (`asyncio.timeout`, httpx'in faz başına zaman aşımına ek), yanıt ≤ 4 MB akışla okunur, `accept-encoding: identity`, derin JSON (`RecursionError`) güvenle "çözülemedi", istisnalar `from None` (httpx istek nesnesi `x-api-key` taşır), hata metni önce maskelenip sonra kırpılır, anahtar yerel olmayan adrese yalnızca https ile gider.
+- **Log maskeleme:** gizli alan adları son parçada tam eşleşir (`x-api-key`, `access_token` evet; `input_tokens`, `max_tokens` hayır), kayıtlı anahtar değerleri ve `Bearer`/`sk-` desenleri tüm metinlerde ve sözlük anahtarlarında maskelenir; varsayılan düzey WARNING (CLI sade), HTTP olayları DEBUG.
+- **Ollama:** `num_ctx` her istekte (yapılandırılmamışsa 16384). **OpenAI:** `max_completion_tokens`; **DeepSeek:** `max_tokens`, `seed` gönderilmez.
+- Canlı testler ayrı dizinde (`tests/live/`): sağlayıcı testlerindeki sahte anahtar fikstürü gerçek anahtarları ezmesin.
+**Mimariden sapmalar (ADR linki):** [ADR-0011](docs/adr/0011-anthropic-yapilandirilmis-cikti.md) — Anthropic `output_config.format`, `tool_choice` yok.
+**Denetim (kod-denetci, güvenlik odaklı):** Yüksek ×1 — derin iç içe JSON'da `RecursionError` fallback zincirinden ve K5'ten kaçıyordu (prompt injection ile tetiklenebilir). Orta ×9 — `Retry-After: nan` sonsuz bekleme; `httpx.DecodingError` kaçıyordu; istisna zinciri (`__cause__`) API anahtarını taşıyordu; hata metni maskelemeden önce kırpılıp anahtar öneki sızıyordu; `token` deseni token sayaçlarını da maskeliyordu; başka bir structlog yapılandırması maskelemeyi devre dışı bırakıyordu; toplam süre sınırı yoktu; DeepSeek prompt şeması kısıtları taşımıyordu; sözleşme testi gönderilen modeli doğrulamıyordu. Düşük (uygulanan) — sıkıştırma bombası (`identity`), düz HTTP'ye anahtar, sağlık kontrolünde 120 sn zaman aşımı ve adresteki kimlik bilgisinin basılması, düz `pytest`'in canlı testleri çalıştırması, ağsızlık testinin zayıflığı, Fake'te `response` hata türü ve negatif gecikme, sözlük anahtarlarının maskelenmemesi, gerekçesiz `type: ignore`. Hepsi düzeltildi ve regresyon testiyle sabitlendi (`test_http_hardening.py`, `test_log_redaction.py`, sözleşme eklemeleri).
+**Açık sorular:**
+- **Canlı doğrulama yapılmadı:** bu makinede Ollama kurulu ama kapalı; bulut modelleri/anahtarları tanımlı değil. ADR-0011'deki Anthropic iddiaları ve Ollama `format` davranışı birleştirmeden önce `uv run pytest -m live -k ollama` / `-k anthropic` ile en az bir kez gerçek çağrıyla doğrulanmalı.
+- `FallbackProvider.capabilities` ilk sağlayıcınınkini gösterir; fallback'te yanıt veren sağlayıcının yeteneği farklı olabilir. K5 (Faz 9) şemanın zorlanıp zorlanmadığını `result.provider` üzerinden çözmeli.
+- `make` hâlâ yok; kontroller `uv run ...` ile.
+**Bu fazda öğrendiğim:**
+- Sağlayıcı API'leri hızla değişiyor: mimari yazılırken doğru olan "zorunlu `tool_choice`" yolu güncel modellerde 400 veriyor. Adaptör kararları kaynak linkiyle ve tarihle kaydedilmeli, canlı testle doğrulanmalı.
+- Güvenlik açısından istisna zinciri de bir veri kanalı: httpx istek nesnesi `x-api-key`'i açık taşıyor ve `repr` bunu gizlemiyor; `from None` ucuz bir savunma.
+- "Maskeleme yapılandırmada" tasarımı kırılgan: global yapılandırmayı başka bir kütüphane değiştirebilir. Maskelemeyi logger'ın kendisine gömmek daha sağlam.
+- Bash heredoc'ları bu fazda iki kez daha bozuldu (tek tırnaklı Türkçe metin); çok satırlı yamalar Write ile betik dosyasına yazılıp çalıştırıldı.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -218,3 +253,7 @@
 - CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection` tipli değişkenler maliyet tablosunda çözülmüyor (kaçırma).
 - Kural motoru: çöken kuralın istisna izi loglanmıyor; structlog (Faz 10) ile `log.exception` eklenmeli.
 - Sıcak yol tespiti sınıf tabanını (MonoBehaviour / UCLASS) da denetlemeli (Faz 5 olgusu).
+- Faz 7: OpenAI katı modu bugün `maxLength`, `maxItems`, `pattern`, `minimum`, `maximum` destekliyor; `SchemaAdapter` kısıt temizliğini sağlayıcıya göre ayırabilir (şu an hepsi çıkarılıyor, K5 doğruluyor).
+- Faz 7: `ProviderResult`'a yanıt veren sağlayıcının yeteneği (şema zorlandı mı) eklenebilir; fallback sonrası K5 için.
+- Faz 7: `FakeReply` bir dataclass olarak `providers/fake.py`'de (Pydantic şeması değil, test düzeneği); gerekirse `models/`'e taşınabilir.
+- Faz 7: token tahmini (Ollama/DeepSeek sayım bildirmezse) ve `config/pricing.yaml` maliyet tahmini (mimari §13) — Faz 10/12.

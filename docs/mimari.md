@@ -452,7 +452,7 @@ class ProviderResult(BaseModel):
 | Ollama | `format` parametresine JSON Schema | **`num_ctx` mutlaka ayarlanmalı**; varsayılan bağlam küçüktür ve uzun prompt sessizce kırpılır |
 | OpenAI | `response_format: json_schema` + `strict: true` | Katı mod şema kısıtları getirir (tüm alanlar zorunlu, `additionalProperties: false`); `SchemaAdapter` bu varyantı üretir |
 | DeepSeek | OpenAI uyumlu uç nokta, JSON modu + şema prompt içinde | Doğrulama tamamen Pydantic'e düşer |
-| Anthropic | Zorunlu araç çağrısı (araç `input_schema` = şema, `tool_choice` ile zorlanır) | Sağlayıcının güncel yapılandırılmış çıktı özellikleri dokümandan kontrol edilmeli |
+| Anthropic | Yerel JSON çıktısı: `output_config.format = {type: json_schema, schema}` (araç / `tool_choice` yok) | Güncel modeller zorunlu `tool_choice`'u ve `temperature`'ı reddeder; `temperature` yalnızca yapılandırmada verilirse gönderilir (ADR-0011) |
 | Fake | Fixture dosyasından yanıt döner | Testler ve CI için; ağ yok |
 
 `SchemaAdapter` tek bir Pydantic modelinden sağlayıcıya özel şema varyantlarını üretir (opsiyonel alanları `anyOf [T, null]` ile zorunluya çevirme, `$ref` açma, desteklenmeyen anahtarları temizleme).
@@ -462,8 +462,9 @@ class ProviderResult(BaseModel):
 - Zaman aşımı: yerel 120 sn, bulut 60 sn (yapılandırılabilir).
 - Yeniden deneme: yalnızca ağ/5xx/429 hatalarında, üstel geri çekilme + jitter, en fazla 2.
 - Geri dönüş zinciri: `providers.fallback = ["ollama", "deepseek"]` gibi; her geçiş rapora `warnings` olarak yazılır.
-- Deterministiklik: `temperature` 0–0.2, destekleniyorsa `seed` sabit.
-- Gizli anahtarlar yalnızca ortam değişkenlerinden okunur; loglara asla yazılmaz.
+- Deterministiklik: `temperature` 0–0.2, destekleniyorsa `seed` sabit (Anthropic'te ikisi de gönderilmez; ADR-0011).
+- Yeniden deneme sayısı `providers.max_retries` (varsayılan 2); 4xx hemen hata. Yanıt gövdesi 4 MB ile sınırlı.
+- Gizli anahtarlar yalnızca ortam değişkenlerinden okunur; loglara asla yazılmaz (structlog `redact_secrets` işlemcisi: gizli adlı alanlar, kayıtlı anahtar değerleri ve `Bearer`/`sk-` desenleri maskelenir).
 
 ### 5.6 K5 — Doğrulama ve Uzlaştırma (Verifier)
 
@@ -1174,6 +1175,7 @@ disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]
 [providers]
 default = "ollama"
 fallback = ["deepseek"]
+max_retries = 2              # yalnızca ağ/429/5xx (§5.5.3)
 
 [providers.ollama]
 base_url = "http://127.0.0.1:11434"
@@ -1275,6 +1277,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0008 | Model adları yalnızca yapılandırmada | Sağlayıcı model adları sık değişir |
 | ADR-0009 | Docker zorunluluğu kaldırıldı; Tier 1 yerel derleyiciyle, opsiyonel | Kurulum eşiği; kod çalıştırılmadığı için süreç düzeyi önlemler yeterli ([docs/adr/0009](adr/0009-docker-yerine-yerel-derleyici.md)) |
 | ADR-0010 | Tier 1 süreç sınırları: `RLIMIT_NPROC` yerine süreç grubu; Windows'ta Job Object | `RLIMIT_NPROC` kullanıcı başına sayılır, derleyiciyi bozar; `RLIMIT_AS` .NET ile uyumsuz ([docs/adr/0010](adr/0010-tier1-surec-sinirlari.md)) |
+| ADR-0011 | Anthropic yapılandırılmış çıktısı `output_config.format` ile | Güncel Claude modelleri zorunlu `tool_choice` ve `temperature`'ı reddediyor ([docs/adr/0011](adr/0011-anthropic-yapilandirilmis-cikti.md)) |
 
 ---
 

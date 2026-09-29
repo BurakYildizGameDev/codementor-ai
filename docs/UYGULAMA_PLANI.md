@@ -755,14 +755,14 @@ make rules-doc && head -40 docs/rules-catalog.md
 - `providers/ollama.py`, `providers/openai_compat.py` (OpenAI + DeepSeek), `providers/anthropic.py`
 - `providers/factory.py` (config → sağlayıcı; fallback zinciri)
 - `tests/providers/contract.py` — **tüm adaptörlerin geçtiği ortak sözleşme test paketi** (respx ile HTTP mock)
-- `tests/providers/test_live.py` (`@pytest.mark.live`)
+- `tests/live/test_providers_live.py` (`@pytest.mark.live`; sahte anahtar fikstürlerinden ayrı dizin)
 - CLI: `codementor providers check`
 
 **Kabul kriterleri**
 - [ ] Tüm adaptörler aynı sözleşme testlerini geçiyor (mock HTTP)
 - [ ] Ollama isteğinde `format` = JSON Schema ve `options.num_ctx` her zaman gönderiliyor
 - [ ] OpenAI katı mod şeması: tüm alanlar `required`, `additionalProperties: false` (şema testi)
-- [ ] Anthropic: araç `input_schema` = şema, `tool_choice` ile zorlanmış
+- [ ] Anthropic: `output_config.format.schema` = şema; araç/`tool_choice` yok (ADR-0011 — güncel modeller zorunlu `tool_choice`'u reddediyor)
 - [ ] Yeniden deneme yalnızca ağ/429/5xx'te; 4xx'te hemen hata (testle)
 - [ ] Fallback zinciri çalışıyor ve rapora uyarı yazılacak bilgi dönüyor
 - [ ] API anahtarı hiçbir log satırında görünmüyor (log yakalama testi)
