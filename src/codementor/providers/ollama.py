@@ -11,7 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from codementor.config import OllamaConfig, ProviderConfig
+from codementor.config import OllamaConfig
 from codementor.models.provider import (
     ChatMessage,
     GenerationOptions,
@@ -45,7 +45,7 @@ class OllamaProvider:
 
     def __init__(
         self,
-        config: ProviderConfig,
+        config: OllamaConfig,
         *,
         retry: RetryPolicy | None = None,
         transport: HttpTransport | None = None,
@@ -67,13 +67,17 @@ class OllamaProvider:
             runtime["seed"] = opts.seed
         if opts.max_tokens is not None:
             runtime["num_predict"] = opts.max_tokens
-        return {
+        payload: dict[str, Any] = {
             "model": require_model(self.name, self.config),
             "messages": [m.model_dump() for m in messages],
             "stream": False,
             "format": SchemaAdapter(output_model).ollama(),
             "options": runtime,
         }
+        if self.config.think is not None:
+            # akıl yürütme modelleri (deepseek-r1) düşünmeyi kapatınca çok daha hızlı yanıt verir
+            payload["think"] = self.config.think
+        return payload
 
     async def generate_structured(
         self, messages: list[ChatMessage], output_model: type[BaseModel], options: GenerationOptions

@@ -99,9 +99,12 @@ def test_non_strict_variants_keep_required_as_model() -> None:
 
 
 def test_refs_inlined() -> None:
-    schema = SchemaAdapter(Nested).ollama()
+    schema = SchemaAdapter(Nested).anthropic()
     items = schema["properties"]["items"]["items"]
-    assert items["properties"]["label"] == {"type": "string"}
+    assert items["properties"]["label"] == {
+        "type": "string",
+        "description": "(en fazla 10 karakter)",
+    }
     assert "$defs" not in schema
 
 
@@ -110,7 +113,7 @@ def test_recursive_schema_rejected() -> None:
         SchemaAdapter(Node)
 
 
-@pytest.mark.parametrize("variant", ["ollama", "anthropic", "openai_strict"])
+@pytest.mark.parametrize("variant", ["anthropic", "openai_strict"])
 def test_unsupported_keywords_removed(variant: str) -> None:
     schema = getattr(SchemaAdapter(Nested), variant)()
     assert not (UNSUPPORTED & _keys(schema))
@@ -155,3 +158,20 @@ def test_prompt_text_keeps_constraints() -> None:
     assert '"maxLength": 80' in text
     assert '"maxItems": 4' in text
     assert '"title"' not in text
+
+
+def test_ollama_keeps_constraints() -> None:
+    # Ollama şemayı dilbilgisine çevirip sınırları zorlar; çıkarılınca deepseek-r1 sınırı aştı
+    schema = SchemaAdapter(LLMSocraticOutput).ollama()
+    assert schema["properties"]["key_flaw_concept"]["maxLength"] == 80
+    assert schema["properties"]["guiding_questions"]["maxItems"] == 4
+    assert "title" not in repr(schema)
+
+
+def test_dropped_constraints_become_description_notes() -> None:
+    # API'nin zorlamadığı sınırlar modele açıklamada iletilir (Claude CLI canlı denemesi)
+    props = SchemaAdapter(LLMSocraticOutput).anthropic()["properties"]
+    assert props["key_flaw_concept"]["description"] == "(en fazla 80 karakter)"
+    assert "en fazla 4 öğe" in props["guiding_questions"]["description"]
+    hint = props["next_step_hint"]["anyOf"][0]
+    assert hint["description"] == "(en fazla 300 karakter)"

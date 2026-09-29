@@ -265,3 +265,14 @@ async def test_oversized_response_rejected(
     )
     with pytest.raises(ProviderResponseError, match="boyut"):
         await _anthropic().generate_structured(MESSAGES, LLMSocraticOutput, OPTIONS)
+
+
+@pytest.mark.parametrize("think", [None, False, True])
+def test_ollama_think_only_if_configured(think: bool | None) -> None:
+    payload = OllamaProvider(OllamaConfig(model="m", think=think)).build_payload(
+        MESSAGES, LLMSocraticOutput, OPTIONS
+    )
+    if think is None:
+        assert "think" not in payload
+    else:
+        assert payload["think"] is think
