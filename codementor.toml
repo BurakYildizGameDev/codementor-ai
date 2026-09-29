@@ -1,0 +1,38 @@
+[limits]
+max_lines = 600
+max_bytes = 40960
+
+[validation]
+tier1_enabled = true
+sandbox_image = "codementor-sandbox:1"
+compile_timeout_s = 10
+
+[pipeline]
+mode = "two_pass"            # two_pass | single_pass
+max_repair_attempts = 1
+use_cache = true
+
+[providers]
+default = "ollama"
+fallback = ["deepseek"]
+
+[providers.ollama]
+base_url = "http://127.0.0.1:11434"
+model = "qwen2.5-coder:7b"
+num_ctx = 16384
+temperature = 0.1
+seed = 42
+timeout_s = 120
+
+[providers.openai]
+model = ""                   # güncel model adını buraya yaz
+api_key_env = "OPENAI_API_KEY"
+
+[providers.deepseek]
+base_url = "https://api.deepseek.com"
+model = ""
+api_key_env = "DEEPSEEK_API_KEY"
+
+[providers.anthropic]
+model = ""
+api_key_env = "ANTHROPIC_API_KEY"
