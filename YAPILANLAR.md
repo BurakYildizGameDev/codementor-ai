@@ -58,3 +58,44 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 
 ### Refactor
 - `bigo.py` 400 satır sınırı için bölündü: `bigo.py` (dışa açık API), `_bigo_algebra.py` (terim cebiri + biçim), `_bigo_parser.py` (tokenizer + ayrıştırıcı).
+
+**Commit'ler:** `60d0cae` Big-O ayrıştırıcı · `43c5708` veri modelleri · `719dc3b` schema export · `d83833e` dokümanlar · `806f3cf` bigo refactor
+
+---
+
+## Faz 2 — Soru Bankası ve Kontrol Listeleri ✅
+
+**Dal:** `faz/2-soru-bankasi` · **Mimari:** §7, §8.3, §12
+
+### Modeller (`models/questions.py`)
+- `QuestionPublic` — API ve CLI'ın gördüğü soru: yalnızca problem tanımı. Referans çözüm yolu, ipuçları, kavram etiketleri ve soruya özgü kontrol maddeleri **yok**.
+- `Question` — `QuestionPublic` + mentorluk verisi (`concept_tags`, `checklist_extra`, `hint_ladder`) + `reference_solution_path` (yalnızca `private/` altında göreli bir dosya).
+- `ExpectedComplexity` — işlem → Big-O (`parse_bigo` ile doğrulanır, `1*` amortize).
+- `ChecklistFile`, `ChecklistItem`, `AppliesTo` — kontrol listesi dosya formatı.
+
+### Yükleyiciler (`questions/`)
+- `QuestionBank.load(dir)`, `get(id)`, `public(id)`, `filter(language, engine, difficulty)`.
+- `Checklists.load(dir)`, `select_items(language, engine, concept_tags, limit=12)`.
+- Hata mesajları Türkçe ve dosya + alan yolu içerir; yinelenen kimlik, id/dosya adı uyuşmazlığı, YAML sözdizimi hataları yakalanır.
+
+### İçerik (`data/`)
+- **14 soru** (§7.2 matrisi): C ×4, C++ ×3, C# ×2, Unity ×3, Unreal ×2. Her birinde prompt, kısıtlar, beklenen karmaşıklık, kavram etiketleri, soruya özgü kontrol maddeleri ve 3 seviyeli ipucu merdiveni.
+- **5 kontrol listesi** (c, cpp, csharp, unity, unreal), toplam 50 madde; §8.2'deki LLM tespitli kurallar dahil.
+- Soru metinleri problemi tanımlar, yöntemi söylemez (testle korunuyor).
+
+### CLI ve yapılandırma
+- `codementor questions list [--language] [--engine] [--difficulty] [--dir]`
+- `codementor questions show <id> [--dir]` — ipuçlarını ve referans yolunu göstermez.
+- `codementor.toml` → `[data] questions_dir`, `checklists_dir`. Bağımlılık: `pyyaml`.
+
+- Çıkış kodları: 1 soru bulunamadı, 3 bozuk yapılandırma veya veri dosyası (stderr'e, traceback'siz).
+
+### Kod denetimi (`kod-denetci` alt ajanı)
+- Yüksek önemde bulgu yok; 5 kabul kriterinin hepsi karşılanıyor.
+- **Orta ×2, düzeltildi:** Public modelde mentorluk verisi (ipuçları API'den sızabilirdi) → modelden çıkarıldı; bozuk config'te traceback ve yanlış çıkış kodu → Türkçe mesaj + kod 3.
+- **Düşük ×9, düzeltildi:** referans yolu doğrulaması sıkılaştırıldı, enum karşılaştırmaları `==`, YAML'da yinelenen anahtar reddi, tamamen Türkçe hata mesajları, boş işlem adı ve yinelenen etiket reddi, `.YAML` uzantısı, aynı dosyada yinelenen madde mesajı, soru içeriği düzeltmeleri (tanımsız `k`, dolaylı yöntem sızıntısı, yönteme bağlı ipucu).
+
+### Testler (358 test, hepsi geçiyor)
+- `test_question_bank.py`, `test_checklists.py`, `test_question_data.py`, `test_cli_questions.py`.
+
+**Commit'ler:** `b079c87` modeller ve yükleyiciler · `663002e` 14 soru ve 5 kontrol listesi · `859602c` CLI komutları · dokümanlar (bu commit)
