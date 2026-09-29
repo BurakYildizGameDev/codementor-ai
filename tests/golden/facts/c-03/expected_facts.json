@@ -1,0 +1,95 @@
+{
+  "language": "c",
+  "engine": "none",
+  "facts": {
+    "functions": [
+      {
+        "name": "stack_push",
+        "line_start": 11,
+        "line_end": 26,
+        "parameters": [
+          "s",
+          "value"
+        ],
+        "lifecycle": null,
+        "is_hot_path": false
+      },
+      {
+        "name": "stack_pop",
+        "line_start": 28,
+        "line_end": 34,
+        "parameters": [
+          "s",
+          "out"
+        ],
+        "lifecycle": null,
+        "is_hot_path": false
+      },
+      {
+        "name": "stack_destroy",
+        "line_start": 36,
+        "line_end": 39,
+        "parameters": [
+          "s"
+        ],
+        "lifecycle": null,
+        "is_hot_path": false
+      }
+    ],
+    "loops": [],
+    "recursion": [],
+    "calls": [
+      {
+        "name": "realloc",
+        "line": 17,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "stack_push",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "free",
+        "line": 37,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "stack_destroy",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "memset",
+        "line": 38,
+        "loop_depth": 0,
+        "known_cost": "n",
+        "function": "stack_destroy",
+        "loop_line": null,
+        "loop_index": null
+      }
+    ],
+    "allocations": [
+      {
+        "kind": "realloc",
+        "line": 17,
+        "loop_depth": 0,
+        "in_hot_path": false,
+        "function": "stack_push"
+      }
+    ],
+    "deallocations": [
+      {
+        "kind": "free",
+        "line": 37,
+        "function": "stack_destroy"
+      }
+    ],
+    "engine_symbols": {
+      "uproperty_fields": [],
+      "uobject_fields": [],
+      "event_subscriptions": [],
+      "has_on_enable": false,
+      "has_on_disable": false
+    },
+    "warnings": []
+  }
+}

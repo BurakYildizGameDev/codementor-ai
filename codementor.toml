@@ -17,6 +17,7 @@ use_cache = true
 [data]
 questions_dir = "data/questions"
 checklists_dir = "data/checklists"
+call_costs_file = "data/call_costs.yaml"
 
 [providers]
 default = "ollama"

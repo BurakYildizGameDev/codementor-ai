@@ -36,6 +36,7 @@ __all__ = [
     "BigOError",
     "BigOParseError",
     "parse_bigo",
+    "parse_cost",
 ]
 
 MAX_INPUT_LENGTH = 200
@@ -153,3 +154,14 @@ def parse_bigo(text: str) -> BigO:
         raise BigOParseError(text, exc.reason) from None
     except RecursionError:
         raise BigOParseError(text, "ifade çok derin iç içe") from None
+
+
+def parse_cost(text: str) -> tuple[BigO, bool]:
+    """Maliyet metni: sondaki `*` amortize işaretidir (`1*` → (O(1), True)).
+
+    Raises:
+        BigOParseError: `*` atıldıktan sonra metin geçerli bir Big-O değilse.
+    """
+    stripped = text.strip()
+    amortized = stripped.endswith("*")
+    return parse_bigo(stripped.removesuffix("*")), amortized

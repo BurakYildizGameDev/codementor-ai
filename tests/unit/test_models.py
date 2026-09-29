@@ -7,6 +7,9 @@ from enum import StrEnum
 from typing import Any
 
 import pytest
+from pydantic import BaseModel, ValidationError
+
+from codementor.models import findings, llm_output, report
 from codementor.models.enums import (
     AllocationKind,
     AuditCategory,
@@ -40,9 +43,6 @@ from codementor.models.report import (
     SocraticResult,
 )
 from codementor.models.request import AnalysisOptions, AnalysisRequest
-from pydantic import BaseModel, ValidationError
-
-from codementor.models import findings, llm_output, report
 
 
 def _fields(model: type[BaseModel]) -> set[str]:

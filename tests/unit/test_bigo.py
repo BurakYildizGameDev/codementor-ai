@@ -109,7 +109,7 @@ def test_drops_coefficients_and_lower_terms(text: str, expected: str) -> None:
         ("log(2^n)", "n"),
         ("O(n^{2})", "n^2"),
         ("O(n^(2))", "n^2"),
-        ("n × n", "n^2"),  # noqa: RUF001
+        ("n × n", "n^2"),
         ("  O( n ^ 2 )  ", "n^2"),
     ],
 )
@@ -404,3 +404,25 @@ def test_overlong_input_rejected() -> None:
 def test_huge_exponents_rejected(text: str) -> None:
     with pytest.raises(BigOParseError, match="üs"):
         parse_bigo(text)
+
+
+# ------------------------------------------------------------------ parse_cost (amortize `*`)
+
+
+@pytest.mark.parametrize(
+    ("text", "canonical", "amortized"),
+    [("1*", "1", True), ("n log n", "n log n", False), (" n* ", "n", True), ("O(1)*", "1", True)],
+)
+def test_parse_cost(text: str, canonical: str, amortized: bool) -> None:
+    from codementor.models.bigo import parse_cost
+
+    value, flag = parse_cost(text)
+    assert value.canonical == canonical
+    assert flag is amortized
+
+
+def test_parse_cost_rejects_garbage() -> None:
+    from codementor.models.bigo import BigOParseError, parse_cost
+
+    with pytest.raises(BigOParseError):
+        parse_cost("**")

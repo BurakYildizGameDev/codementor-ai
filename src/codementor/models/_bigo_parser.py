@@ -44,7 +44,7 @@ _SINGLE = {
     "^": "^",
     "*": "*",
     "·": "*",
-    "×": "*",  # noqa: RUF001 — çarpı işareti bilerek destekleniyor
+    "×": "*",
     "∙": "*",
     "⋅": "*",
     "+": "+",

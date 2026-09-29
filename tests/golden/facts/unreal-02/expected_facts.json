@@ -1,0 +1,33 @@
+{
+  "language": "cpp",
+  "engine": "unreal",
+  "facts": {
+    "functions": [],
+    "loops": [],
+    "recursion": [],
+    "calls": [],
+    "allocations": [],
+    "deallocations": [],
+    "engine_symbols": {
+      "uproperty_fields": [
+        {
+          "name": "RegenPerSecond",
+          "line": 24
+        },
+        {
+          "name": "DelayAfterDamage",
+          "line": 27
+        },
+        {
+          "name": "State",
+          "line": 39
+        }
+      ],
+      "uobject_fields": [],
+      "event_subscriptions": [],
+      "has_on_enable": false,
+      "has_on_disable": false
+    },
+    "warnings": []
+  }
+}

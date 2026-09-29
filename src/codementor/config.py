@@ -49,6 +49,7 @@ class DataSettings(BaseModel):
 
     questions_dir: Path = Path("data/questions")
     checklists_dir: Path = Path("data/checklists")
+    call_costs_file: Path = Path("data/call_costs.yaml")
 
 
 class ProviderConfig(BaseModel):

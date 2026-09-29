@@ -1,0 +1,220 @@
+{
+  "language": "cpp",
+  "engine": "unreal",
+  "facts": {
+    "functions": [
+      {
+        "name": "UTurretComponent::BeginPlay",
+        "line_start": 29,
+        "line_end": 33,
+        "parameters": [],
+        "lifecycle": "BeginPlay",
+        "is_hot_path": false
+      },
+      {
+        "name": "UTurretComponent::TickComponent",
+        "line_start": 35,
+        "line_end": 50,
+        "parameters": [
+          "DeltaTime",
+          "TickType",
+          "ThisTickFunction"
+        ],
+        "lifecycle": "TickComponent",
+        "is_hot_path": true
+      },
+      {
+        "name": "UTurretComponent::CountVisible",
+        "line_start": 52,
+        "line_end": 60,
+        "parameters": [
+          "Candidates"
+        ],
+        "lifecycle": null,
+        "is_hot_path": false
+      },
+      {
+        "name": "UTurretComponent::HandleOwnerDestroyed",
+        "line_start": 62,
+        "line_end": 65,
+        "parameters": [
+          "DestroyedActor"
+        ],
+        "lifecycle": null,
+        "is_hot_path": false
+      }
+    ],
+    "loops": [
+      {
+        "kind": "foreach",
+        "line": 39,
+        "depth": 1,
+        "bound": "linear",
+        "function": "UTurretComponent::TickComponent",
+        "parent_line": null,
+        "parent_index": null,
+        "counter_outer": false
+      },
+      {
+        "kind": "for",
+        "line": 41,
+        "depth": 2,
+        "bound": "linear",
+        "function": "UTurretComponent::TickComponent",
+        "parent_line": 39,
+        "parent_index": 0,
+        "counter_outer": false
+      },
+      {
+        "kind": "for",
+        "line": 55,
+        "depth": 1,
+        "bound": "log",
+        "function": "UTurretComponent::CountVisible",
+        "parent_line": null,
+        "parent_index": null,
+        "counter_outer": false
+      }
+    ],
+    "recursion": [],
+    "calls": [
+      {
+        "name": "Super::BeginPlay",
+        "line": 31,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "UTurretComponent::BeginPlay",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "GetOwner()->OnDestroyed.AddDynamic",
+        "line": 32,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "UTurretComponent::BeginPlay",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "GetOwner",
+        "line": 32,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "UTurretComponent::BeginPlay",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "Super::TickComponent",
+        "line": 38,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "UTurretComponent::TickComponent",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "Targets.Num",
+        "line": 41,
+        "loop_depth": 2,
+        "known_cost": null,
+        "function": "UTurretComponent::TickComponent",
+        "loop_line": 41,
+        "loop_index": 1
+      },
+      {
+        "name": "TArray::Contains",
+        "line": 43,
+        "loop_depth": 2,
+        "known_cost": "n",
+        "function": "UTurretComponent::TickComponent",
+        "loop_line": 41,
+        "loop_index": 1
+      },
+      {
+        "name": "FString",
+        "line": 49,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "UTurretComponent::TickComponent",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "TEXT",
+        "line": 49,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "UTurretComponent::TickComponent",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "FString::FromInt",
+        "line": 49,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "UTurretComponent::TickComponent",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "Targets.Num",
+        "line": 49,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "UTurretComponent::TickComponent",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "Candidates.Num",
+        "line": 55,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "UTurretComponent::CountVisible",
+        "loop_line": 55,
+        "loop_index": 2
+      },
+      {
+        "name": "Targets.Empty",
+        "line": 64,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "UTurretComponent::HandleOwnerDestroyed",
+        "loop_line": null,
+        "loop_index": null
+      }
+    ],
+    "allocations": [],
+    "deallocations": [],
+    "engine_symbols": {
+      "uproperty_fields": [
+        {
+          "name": "Range",
+          "line": 11
+        },
+        {
+          "name": "Targets",
+          "line": 14
+        }
+      ],
+      "uobject_fields": [
+        {
+          "name": "CurrentTarget",
+          "line": 16
+        }
+      ],
+      "event_subscriptions": [
+        {
+          "name": "GetOwner()->OnDestroyed",
+          "line": 32
+        }
+      ],
+      "has_on_enable": false,
+      "has_on_disable": false
+    },
+    "warnings": []
+  }
+}

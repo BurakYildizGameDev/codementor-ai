@@ -1,0 +1,185 @@
+{
+  "language": "c",
+  "engine": "none",
+  "facts": {
+    "functions": [
+      {
+        "name": "push_front",
+        "line_start": 9,
+        "line_end": 18,
+        "parameters": [
+          "head",
+          "value"
+        ],
+        "lifecycle": null,
+        "is_hot_path": false
+      },
+      {
+        "name": "remove_value",
+        "line_start": 20,
+        "line_end": 31,
+        "parameters": [
+          "head",
+          "value"
+        ],
+        "lifecycle": null,
+        "is_hot_path": false
+      },
+      {
+        "name": "destroy",
+        "line_start": 33,
+        "line_end": 39,
+        "parameters": [
+          "head"
+        ],
+        "lifecycle": null,
+        "is_hot_path": false
+      },
+      {
+        "name": "main",
+        "line_start": 41,
+        "line_end": 52,
+        "parameters": [],
+        "lifecycle": null,
+        "is_hot_path": false
+      }
+    ],
+    "loops": [
+      {
+        "kind": "while",
+        "line": 22,
+        "depth": 1,
+        "bound": "unknown",
+        "function": "remove_value",
+        "parent_line": null,
+        "parent_index": null,
+        "counter_outer": false
+      },
+      {
+        "kind": "while",
+        "line": 34,
+        "depth": 1,
+        "bound": "unknown",
+        "function": "destroy",
+        "parent_line": null,
+        "parent_index": null,
+        "counter_outer": false
+      },
+      {
+        "kind": "for",
+        "line": 43,
+        "depth": 1,
+        "bound": "constant",
+        "function": "main",
+        "parent_line": null,
+        "parent_index": null,
+        "counter_outer": false
+      },
+      {
+        "kind": "for",
+        "line": 47,
+        "depth": 1,
+        "bound": "unknown",
+        "function": "main",
+        "parent_line": null,
+        "parent_index": null,
+        "counter_outer": false
+      }
+    ],
+    "recursion": [],
+    "calls": [
+      {
+        "name": "malloc",
+        "line": 10,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "push_front",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "free",
+        "line": 26,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "remove_value",
+        "loop_line": 22,
+        "loop_index": 0
+      },
+      {
+        "name": "free",
+        "line": 36,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "destroy",
+        "loop_line": 34,
+        "loop_index": 1
+      },
+      {
+        "name": "push_front",
+        "line": 44,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "main",
+        "loop_line": 43,
+        "loop_index": 2
+      },
+      {
+        "name": "remove_value",
+        "line": 46,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "main",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "printf",
+        "line": 48,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "main",
+        "loop_line": 47,
+        "loop_index": 3
+      },
+      {
+        "name": "destroy",
+        "line": 50,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "main",
+        "loop_line": null,
+        "loop_index": null
+      }
+    ],
+    "allocations": [
+      {
+        "kind": "malloc",
+        "line": 10,
+        "loop_depth": 0,
+        "in_hot_path": false,
+        "function": "push_front"
+      }
+    ],
+    "deallocations": [
+      {
+        "kind": "free",
+        "line": 26,
+        "function": "remove_value"
+      },
+      {
+        "kind": "free",
+        "line": 36,
+        "function": "destroy"
+      }
+    ],
+    "engine_symbols": {
+      "uproperty_fields": [],
+      "uobject_fields": [],
+      "event_subscriptions": [],
+      "has_on_enable": false,
+      "has_on_disable": false
+    },
+    "warnings": []
+  }
+}

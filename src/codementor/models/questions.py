@@ -8,7 +8,7 @@ from typing import Annotated, Self
 from pydantic import AfterValidator, Field, StringConstraints, field_validator, model_validator
 
 from codementor.models._base import StrictModel
-from codementor.models.bigo import parse_bigo
+from codementor.models.bigo import parse_cost
 from codementor.models.enums import Difficulty, Engine, Language, check_engine_language
 
 QUESTION_ID_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)+$"
@@ -23,7 +23,7 @@ MENTOR_FIELDS = frozenset({"concept_tags", "checklist_extra", "hint_ladder"})
 
 def _check_bigo(value: str) -> str:
     """Big-O metnini doğrular; sondaki `*` amortize işaretidir (`1*`)."""
-    parse_bigo(value.removesuffix("*"))
+    parse_cost(value)
     return value
 
 

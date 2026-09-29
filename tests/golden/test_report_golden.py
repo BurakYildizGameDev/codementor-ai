@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
 from codementor.models.bigo import parse_bigo
 from codementor.models.enums import Engine, FindingSource, Language
 from codementor.models.report import AnalysisReport

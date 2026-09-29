@@ -1,0 +1,238 @@
+{
+  "language": "cpp",
+  "engine": "unreal",
+  "facts": {
+    "functions": [
+      {
+        "name": "AWaveSpawner::BeginPlay",
+        "line_start": 44,
+        "line_end": 48,
+        "parameters": [],
+        "lifecycle": "BeginPlay",
+        "is_hot_path": false
+      },
+      {
+        "name": "AWaveSpawner::StartWave",
+        "line_start": 50,
+        "line_end": 68,
+        "parameters": [],
+        "lifecycle": null,
+        "is_hot_path": false
+      },
+      {
+        "name": "AWaveSpawner::HandleEnemyDestroyed",
+        "line_start": 70,
+        "line_end": 79,
+        "parameters": [
+          "DestroyedActor"
+        ],
+        "lifecycle": null,
+        "is_hot_path": false
+      }
+    ],
+    "loops": [
+      {
+        "kind": "for",
+        "line": 59,
+        "depth": 1,
+        "bound": "linear",
+        "function": "AWaveSpawner::StartWave",
+        "parent_line": null,
+        "parent_index": null,
+        "counter_outer": false
+      }
+    ],
+    "recursion": [],
+    "calls": [
+      {
+        "name": "Super::BeginPlay",
+        "line": 46,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::BeginPlay",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "StartWave",
+        "line": 47,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::BeginPlay",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "Waves.IsValidIndex",
+        "line": 52,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::StartWave",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "AliveEnemies.Reset",
+        "line": 57,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::StartWave",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "AliveEnemies.Reserve",
+        "line": 58,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::StartWave",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "GetWorld().SpawnActor",
+        "line": 61,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "AWaveSpawner::StartWave",
+        "loop_line": 59,
+        "loop_index": 0
+      },
+      {
+        "name": "GetWorld",
+        "line": 61,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "AWaveSpawner::StartWave",
+        "loop_line": 59,
+        "loop_index": 0
+      },
+      {
+        "name": "GetActorTransform",
+        "line": 61,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "AWaveSpawner::StartWave",
+        "loop_line": 59,
+        "loop_index": 0
+      },
+      {
+        "name": "IsValid",
+        "line": 62,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "AWaveSpawner::StartWave",
+        "loop_line": 59,
+        "loop_index": 0
+      },
+      {
+        "name": "Enemy->OnDestroyed.AddDynamic",
+        "line": 64,
+        "loop_depth": 1,
+        "known_cost": null,
+        "function": "AWaveSpawner::StartWave",
+        "loop_line": 59,
+        "loop_index": 0
+      },
+      {
+        "name": "TArray::Add",
+        "line": 65,
+        "loop_depth": 1,
+        "known_cost": "1*",
+        "function": "AWaveSpawner::StartWave",
+        "loop_line": 59,
+        "loop_index": 0
+      },
+      {
+        "name": "AliveEnemies.RemoveSwap",
+        "line": 72,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "KillsByType.FindOrAdd",
+        "line": 73,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "DestroyedActor->GetClass().GetFName",
+        "line": 73,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "DestroyedActor.GetClass",
+        "line": 73,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "AliveEnemies.Num",
+        "line": 74,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "loop_line": null,
+        "loop_index": null
+      },
+      {
+        "name": "StartWave",
+        "line": 77,
+        "loop_depth": 0,
+        "known_cost": null,
+        "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "loop_line": null,
+        "loop_index": null
+      }
+    ],
+    "allocations": [],
+    "deallocations": [],
+    "engine_symbols": {
+      "uproperty_fields": [
+        {
+          "name": "EnemyCount",
+          "line": 11
+        },
+        {
+          "name": "EnemyClass",
+          "line": 14
+        },
+        {
+          "name": "Waves",
+          "line": 24
+        },
+        {
+          "name": "AliveEnemies",
+          "line": 34
+        },
+        {
+          "name": "KillsByType",
+          "line": 37
+        }
+      ],
+      "uobject_fields": [],
+      "event_subscriptions": [
+        {
+          "name": "Enemy->OnDestroyed",
+          "line": 64
+        }
+      ],
+      "has_on_enable": false,
+      "has_on_disable": false
+    },
+    "warnings": []
+  }
+}

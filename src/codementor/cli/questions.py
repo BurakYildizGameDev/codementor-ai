@@ -20,7 +20,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from codementor.config import load_settings
-from codementor.models.bigo import parse_bigo
+from codementor.models.bigo import parse_cost
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.questions._loader import DataFileError
 from codementor.questions.bank import QuestionBank, QuestionNotFoundError
@@ -61,8 +61,8 @@ def _reflow(text: str) -> str:
 
 def _display_bigo(text: str) -> str:
     """`1*` → `O(1) amortize`, `n^2` → `O(n²)`."""
-    display = parse_bigo(text.removesuffix("*")).display
-    return f"{display} amortize" if text.endswith("*") else display
+    value, amortized = parse_cost(text)
+    return f"{value.display} amortize" if amortized else value.display
 
 
 @questions_app.command("list")
