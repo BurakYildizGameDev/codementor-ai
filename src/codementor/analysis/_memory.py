@@ -130,7 +130,7 @@ def allocations(
         if operator_of(node) != "+=":
             continue
         right = node.child_by_field_name("right")
-        target = text(node.child_by_field_name("left"))
+        target = text(node.child_by_field_name("left")).removeprefix("this.")
         if right is not None:
             assigned.add(key(right))
         if (right is not None and right.type in _STRINGS) or target in string_vars:

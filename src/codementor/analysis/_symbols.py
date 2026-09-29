@@ -42,6 +42,14 @@ _NAME_TYPES = frozenset(
         "type_identifier",
     }
 )
+_CSHARP_STRING_INIT = frozenset(
+    {
+        "string_literal",
+        "verbatim_string_literal",
+        "raw_string_literal",
+        "interpolated_string_expression",
+    }
+)
 _TYPE_QUALIFIERS = re.compile(
     r"\b(const|volatile|static|mutable|constexpr|struct|class|unsigned)\b"
 )
@@ -233,6 +241,8 @@ def _csharp_bindings(node: Node) -> list[tuple[str, str | None]]:
             )
             if created is not None:
                 pairs.append((name, _base_type(created.child_by_field_name("type"))))
+            elif any(c.type in _CSHARP_STRING_INIT for c in declarator.named_children):
+                pairs.append((name, "string"))  # `var s = "";` / `var s = $"...";`
         else:
             pairs.append((name, _base_type(type_node)))
     return pairs
