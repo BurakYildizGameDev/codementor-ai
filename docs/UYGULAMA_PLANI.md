@@ -691,6 +691,13 @@ uv run python -m codementor.analysis.extractor tests/golden/facts/unity-01/code.
 
 **Amaç:** Kayıt defterli kural motoru ve §8.2'deki tüm statik kurallar, her biri fixture'larla.
 
+> **Daraltılmış kapsam (2026-09-29, kullanıcı onaylı):** Bu fazda motor + 10 yüksek değerli kural
+> uygulandı (C-BUF-001, C-MEM-001, CPP-OWN-001, CS-ALLOC-001, CS-PERF-001, UNITY-GC-001,
+> UNITY-PERF-001, UNITY-EVT-001, UE-GC-001, UE-PERF-001). Kalan 10 statik kural (C-IO-001,
+> C-UB-001, C-MEM-002, C-MEM-003, C-PERF-001, CPP-SP-001, CPP-PERF-001, CS-ALLOC-002,
+> UNITY-PERF-002, UE-MEM-001) uçtan uca akış (Faz 7–10) bittikten sonra eklenecek; motor ve
+> fixture düzeni değişmeden kural eklemeye hazır. Kabul kriterlerindeki "20 kural" buna göre okunur.
+
 **Çıktılar**
 - `rules/base.py` (`Rule`, `RuleContext`, `finding()` yardımcısı), `rules/registry.py` (`@register_rule`)
 - `rules/{c,cpp,csharp,unity,unreal}.py`

@@ -9,6 +9,7 @@
 | 3 | ✅ | faz/3-tier0 | 2026-09-29 | Claude Code / kod-denetci |
 | 4 | ✅ | faz/4-tier1 | 2026-09-29 | Claude Code / kod-denetci |
 | 5 | ✅ | faz/5-olgular | 2026-09-29 | Claude Code / kod-denetci |
+| 6 (daraltılmış) | ✅ | faz/6-kurallar | 2026-09-29 | Claude Code / kod-denetci |
 
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
@@ -168,6 +169,34 @@
 - tree-sitter'da iki sessiz karesel tuzak: `Node.parent` kökten yürür; anonim düğümlü alan desenleri (`operator: "+"`) sol-derin zincirde karesel eşleşir.
 - Bash heredoc'ları `\n`/`\b` kaçışlarını bozabiliyor (gerçek satır sonu, geri silme karakteri); büyük yamalar dosyaya yazılıp öyle çalıştırılmalı.
 
+## Faz 6 (daraltılmış) — Notlar
+**Kapsam:** Kullanıcı onayıyla 20 yerine motor + 10 kural. Kalan 10 statik kural (C-IO-001, C-UB-001, C-MEM-002, C-MEM-003, C-PERF-001, CPP-SP-001, CPP-PERF-001, CS-ALLOC-002, UNITY-PERF-002, UE-MEM-001) Faz 7–10'dan sonra eklenecek (bkz. Sonraya); `UYGULAMA_PLANI.md` Faz 6'ya not düşüldü.
+**Yapılanlar:**
+- `rules/base.py` (`Rule`, `RuleContext`: `line_text`, `function_nodes`, `hot_functions`, `types`, `in_loop`, `nodes_in`; `Rule.finding()`), `rules/registry.py` (`@register_rule`, §8.1 kimlik doğrulaması, yinelenen kimlik reddi, `applicable_rules`), `rules/engine.py` (`run_rules` → `RuleRunResult`), `rules/catalog.py`.
+- Kurallar: `c.py` (C-BUF-001, C-MEM-001), `cpp.py` (CPP-OWN-001), `csharp.py` (CS-ALLOC-001, CS-PERF-001), `unity.py` (UNITY-GC-001, UNITY-PERF-001, UNITY-EVT-001), `unreal.py` (UE-GC-001, UE-PERF-001).
+- Modeller: `models/rules.py` (`RuleInfo`, `RuleRunResult`, `RULE_ID_PATTERN`). Config: `[rules] disabled = []` (mimari §17'ye eklendi).
+- CLI: `codementor rules list [--language --engine]`, `codementor rules doc --out`; `make rules-doc` → `docs/rules-catalog.md` (commit edilir; `test_committed_catalog_up_to_date`).
+- 57 fixture (`tests/rules/fixtures/{RULE_ID}/{positive,negative}/`, `// EXPECT:` ve isteğe bağlı `// ENGINE:`), parametrik `test_all_rules.py`, `test_registry.py`, `test_engine.py` (6 kötü niyetli 40 KB girdi < 0,4 s), `test_cli_rules.py`. Toplam 1070 test.
+**Alınan kararlar (ve neden):**
+- **Motor dayanıklılığı:** çöken kural yalnızca Türkçe uyarı üretir; aynı kural aynı satırda tek bulgu; bulgular satır sırasıyla `F-001…` numaralanır; kanıt ≤ 200 karakter. Yapılandırmadaki bilinmeyen kimlik (yazım hatası) uyarı verir.
+- **Filtre:** düz C# kuralları Unity kodunda da çalışır (Unity C#'tır); motora özgü kural yalnızca o motorda. C kuralları yalnızca C'de.
+- **C-MEM-001 muhafazakâr kaçış analizi** (fonksiyon içi; fonksiyonlar arası yok): tek geçiş + açık yığın, her düğüm "kaçış bağlamı" bayrağı taşır (`return`, tahsis olmayan atama/ilk değerin sağı, `free`, sahiplenmediği bilinmeyen fonksiyonun argümanı). `p[0]`, `p->x`, `*p`, `p == NULL`, `sizeof` değer bağlamıdır (kaçış değil). Takma ad (`q = p`, `head = node`, `{ p, n }`) izlenmez → bulgu yok. Yanlış bulgu yerine kaçırma tercih edildi.
+- **Olgular satır taşıdığından** aynı satırda karışma oluyordu: CS-ALLOC-001 düğüm düzeyinde çalışır (döngü gövdesi bayt aralıkları + `bisect`, `Node.parent` yok; hedefin string olduğu tip tablosundan ya da metin sabitinden). UNITY-EVT-001 `+=`'i yalnızca olgudaki (satır, hedef adı) ile eşleşirse abonelik sayar.
+- **UNITY-EVT-001:** kaldırma `OnDisable`/`OnDestroy`/`Dispose` ve bunların doğrudan çağırdığı aynı dosyadaki metotlarda (tek seviye) aranır; `RemoveAllListeners` lambda aboneliklerini de kapsar; `new Action(H)` ↔ `H`; lambda abonelik ayrı açıklamayla (kaldırılamaz).
+- **UNITY-PERF-001:** yalın `Find`/`FindWithTag` sayılmaz (kullanıcı metodu, `list.Find`); yalnızca `GameObject.Find*`. `Camera.main` ve `UnityEngine.Camera.main` alanlarla, kısa düğümde metin alınarak.
+- **CS-PERF-001** yalnızca tip tablosunun `List/Array/LinkedList/Queue/Stack` olarak çözdüğü çağrılarda (maliyet `n`); `HashSet`/`Dictionary` bulgu vermez.
+- **CPP-OWN-001** placement new'i saymaz. **UE-GC-001** = `uobject_fields − uproperty_fields`. **UE-PERF-001:** Tick/TickComponent'te en dıştaki döngü, O(1) olmayan bilinen maliyetli ya da ağır Unreal çağrısı (`GetAllActorsOfClass`, `SpawnActor` …), döngü dışı heap tahsisi.
+- Kural açıklamaları öğrenciye dönük ve soru biçiminde (kodu düzeltmez; Sokratik ilke).
+**Mimariden sapmalar (ADR linki):** yok. §17'ye `[rules] disabled` eklendi (kabul kriteri gereği; yeni bileşen değil).
+**Denetim (kod-denetci):** Yüksek ×2 — (Y1) C-MEM-001 iç içe girdide karesel (27 KB'da 106 s → 0,37 s), (Y2) takma ad görülmediği için bağlı liste kurma kodunda yanlış bulgu. Orta ×6 — `Camera.main` aramasında karesel süre (3,5 s → 0,23 s), `RemoveAllListeners` varken lambda bulgusu, yardımcı metotta/`Dispose`'da kaldırma görülmüyordu, satır bazlı eşleşmeyle yanlış bulgu (sayısal `+=`, `count += 1`), `var s = ""`/`this.log +=`/başa ekleme kaçırılıyordu, kullanıcının `Find` metodu yanlış bulgu. Düşük (uygulanan) — `return p[0]`/`return p != NULL` sızıntıyı gizliyordu, placement new, `TryGetComponent`, `UnityEngine.Camera.main`, `new Action(H)`, bilinmeyen kapatılmış kimlik uyarısı, `RULE_ID` tek kaynak, CS-PERF açıklaması `Remove`'u kapsıyor, testte `parsed=None`. Hepsi regresyon fixture'ı veya testle sabitlendi. Kapsam dışı küçük dokunuşlar (Faz 5 kökenli O5): `_symbols._csharp_bindings` `var s = "..."` → `string`; `_memory` `+=` hedefinde `this.` öneki atılır (golden'lar değişmedi).
+**Açık sorular:**
+- Sıcak yol yalnızca adla belirleniyor (Faz 5): MonoBehaviour olmayan sınıftaki `Update`, UCLASS olmayan sınıftaki `Tick` de sıcak sayılır.
+- `make` hâlâ yok; kontroller `uv run ...` ile.
+**Bu fazda öğrendiğim:**
+- "Alt ağaçtaki adları topla" yardımcısını her düğümde çağırmak iç içe girdide sessizce karesel olur; bağlamı yığında bayrak olarak taşımak tek geçişte aynı bilgiyi verir.
+- Olgu (satır) ile ağaç düğümünü satır numarasıyla eşlemek aynı satırdaki iki ifadeyi karıştırıyor; kurallar ya olgunun kimliğini (satır + ad) doğrulamalı ya da düğüm düzeyinde çalışmalı.
+- Bash heredoc'ları yine `\n` kaçışlarını bozdu; çok satırlı düzenlemeler Edit/Write ile.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -182,3 +211,10 @@
 - `validation.stub_header` / `roslyn_check_dll` göreli yolları da çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte ele alınmalı).
 - `#pragma` makro genişletmeli biçimleri (`#pragma MACRO`) ve `#line` şu an serbest; derleyici kaynak okumadığı için risk düşük, ama include korumasına izin listesi eklenebilir.
 - gcc kolonları "display" birimli, clang bayt; Tier 0 karakter. Unicode içeren satırlarda kolonlar farklı olabilir (`-fdiagnostics-column-unit=byte` gcc ≥ 11).
+- Faz 6'da ertelenen 10 statik kural: C-IO-001, C-UB-001, C-MEM-002, C-MEM-003, C-PERF-001, CPP-SP-001, CPP-PERF-001, CS-ALLOC-002, UNITY-PERF-002, UE-MEM-001 (motor ve fixture düzeni hazır).
+- C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi (`print_arr(arr, n)`) sahiplik aktarımı sayılıyor (sık kaçırma); çağrılan fonksiyon aynı dosyadaysa ve `free`/saklama yoksa bulgu verilebilir. Aynı değişkene iki kez `malloc`, gölgeleme ve `realloc` de bilinçli sınırlar.
+- UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı için `new Hit(3)` yanlış bulgu (değer tipi); Faz 5 `CSHARP_VALUE_TYPES` dosyadaki struct adlarıyla genişletilebilir.
+- UE-GC-001: `TArray<AActor*>`/`TMap<..., UObject*>` kapsayıcı alanları kaçırılıyor; UCLASS olmayan sınıfta (`FPlain`) öneri `UPROPERTY` değil `TStrongObjectPtr`/`FGCObject` olmalı.
+- CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection` tipli değişkenler maliyet tablosunda çözülmüyor (kaçırma).
+- Kural motoru: çöken kuralın istisna izi loglanmıyor; structlog (Faz 10) ile `log.exception` eklenmeli.
+- Sıcak yol tespiti sınıf tabanını (MonoBehaviour / UCLASS) da denetlemeli (Faz 5 olgusu).
