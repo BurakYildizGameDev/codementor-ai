@@ -10,6 +10,7 @@ import respx
 from tests.providers.contract import (
     API_KEYS,
     HARNESS_NAMES,
+    CliHarness,
     FakeHarness,
     Harness,
     SleepRecorder,
@@ -48,4 +49,6 @@ def harness(
     name: str = request.param
     if name == "fake":
         return FakeHarness(sleep)
+    if name == "claude_cli":
+        return CliHarness(sleep)
     return http_harness(name, router, sleep)

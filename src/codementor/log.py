@@ -31,7 +31,9 @@ _SECRET_KEY = re.compile(
     r"|(?:access|auth|refresh|bearer|id|session)?[-_]?token)$",
     re.IGNORECASE,
 )
-_SECRET_PATTERNS = re.compile(r"(?i:bearer)\s+[A-Za-z0-9._~+/=-]{8,}|\bsk-[A-Za-z0-9_-]{8,}")
+_SECRET_PATTERNS = re.compile(
+    r"(?i:bearer)\s+[A-Za-z0-9._~+/=-]{8,}|\bsk-[A-Za-z0-9_-]{8,}|\bya29\.[A-Za-z0-9._-]{8,}"
+)
 _MIN_SECRET_LEN = 8
 _secrets: set[str] = set()
 _lock = threading.Lock()

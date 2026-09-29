@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import os
 import tomllib
+from pathlib import Path
 from typing import Annotated
 from urllib.parse import urlsplit
 
@@ -26,9 +27,11 @@ from codementor.config import ProvidersSettings, load_settings
 from codementor.models.provider import ProviderStatus
 from codementor.providers._http import HttpTransport
 from codementor.providers.base import ProviderError, RetryPolicy
+from codementor.providers.cli_agent import resolve_executable
 from codementor.providers.factory import PROVIDER_NAMES, chain_names
 from codementor.providers.ollama import DEFAULT_NUM_CTX, OllamaProvider
 
+CLI_AGENTS = ("claude_cli", "agy")
 HEALTH_TIMEOUT_S = 5  # erişilemeyen adres CLI'yı 2 dakika askıda tutmasın
 EXIT_NOT_READY = 1
 EXIT_USAGE = 2
@@ -93,12 +96,40 @@ def _check_cloud(name: str, providers: ProvidersSettings) -> ProviderStatus:
     )
 
 
+def _check_cli_agent(name: str, providers: ProvidersSettings) -> ProviderStatus:
+    """CLI ajanı: çalıştırılabilir çözülür (`.cmd` → `.exe`); oturum denetlenmez (ağsız)."""
+    cfg = getattr(providers, name)
+    model = cfg.model.strip() or "—"
+    if model == "—":
+        return ProviderStatus(
+            name=name, model=model, ready=False, detail=f"model tanımlı değil ([providers.{name}])"
+        )
+    try:
+        path = resolve_executable(name, cfg.command)
+    except ProviderError as exc:
+        return ProviderStatus(
+            name=name, model=model, ready=False, detail=str(exc).removeprefix(f"{name}: ")
+        )
+    note = " (deneysel, ADR-0012)" if name == "agy" else ""
+    return ProviderStatus(
+        name=name,
+        model=model,
+        ready=True,
+        detail=f"{Path(path).name} bulundu; oturum denetlenmedi{note}",
+    )
+
+
 async def check_providers(names: list[str], providers: ProvidersSettings) -> list[ProviderStatus]:
     """Sağlayıcıların hazır olup olmadığı (Ollama gerçekten sorgulanır)."""
-    return [
-        await _check_ollama(providers) if name == "ollama" else _check_cloud(name, providers)
-        for name in names
-    ]
+    statuses: list[ProviderStatus] = []
+    for name in names:
+        if name == "ollama":
+            statuses.append(await _check_ollama(providers))
+        elif name in CLI_AGENTS:
+            statuses.append(_check_cli_agent(name, providers))
+        else:
+            statuses.append(_check_cloud(name, providers))
+    return statuses
 
 
 @providers_app.command("check")

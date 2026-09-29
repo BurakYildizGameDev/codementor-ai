@@ -69,6 +69,8 @@ class ProcessLimits:
     timeout_s: float
     memory_mb: int
     limit_address_space: bool = True  # dotnet gibi büyük sanal alan ayıranlar için False
+    max_processes: int = MAX_PROCESSES  # Windows Job Object; CLI ajanları daha fazlasını açar
+    file_size_bytes: int = _FILE_SIZE_LIMIT  # POSIX RLIMIT_FSIZE
 
 
 @dataclass(frozen=True)
@@ -138,7 +140,7 @@ def _launch_argv(argv: list[str], limits: ProcessLimits) -> list[str]:
         return argv
     memory = limits.memory_mb * 1024 * 1024 if limits.limit_address_space else 0
     cpu = int(limits.timeout_s) + 1
-    limits_args = [str(cpu), str(memory), str(_FILE_SIZE_LIMIT)]
+    limits_args = [str(cpu), str(memory), str(limits.file_size_bytes)]
     return [sys.executable, "-I", "-S", "-c", _RLIMIT_BOOTSTRAP, *limits_args, *argv]
 
 
@@ -169,7 +171,7 @@ class _Tree:
         from codementor.validation import _winjob
 
         try:
-            job = _winjob.Job(self._limits.memory_mb * 1024 * 1024, MAX_PROCESSES)
+            job = _winjob.Job(self._limits.memory_mb * 1024 * 1024, self._limits.max_processes)
         except OSError:
             return False
         try:

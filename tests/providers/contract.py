@@ -260,7 +260,7 @@ class FakeHarness:
         return self.provider.model
 
 
-HARNESS_NAMES = ["fake", "ollama", "openai", "deepseek", "anthropic"]
+HARNESS_NAMES = ["fake", "ollama", "openai", "deepseek", "anthropic", "claude_cli"]
 
 
 def _seconds(value: str | None) -> float | None:
@@ -269,3 +269,79 @@ def _seconds(value: str | None) -> float | None:
         return float(value) if value is not None else None
     except ValueError:
         return None
+
+
+# ------------------------------------------------------------------------ CLI ajanı
+
+
+@dataclass
+class CliHarness:
+    """Claude CLI adaptörü; alt süreç yerine CLI'nin JSON sonucunu üreten sahte çalıştırıcı.
+
+    HTTP başlığı olmadığı için `Retry-After` senaryoları bu harness'ta anlamsızdır
+    (`supports_retry_after = False`); CLI hataları `api_error_status` ile gelir.
+    """
+
+    sleep: SleepRecorder
+    name: str = "claude_cli"
+    expected_usage: tuple[int, int] | None = (10, 5)
+    supports_retry_after: bool = False
+    outputs: list[Any] = field(default_factory=list)
+    argvs: list[list[str]] = field(default_factory=list)
+
+    def make(self, model: str = "test-model") -> LLMProvider:
+        import sys
+
+        from codementor.config import ClaudeCliConfig
+        from codementor.providers.cli_agent import CliAgentProvider
+
+        return CliAgentProvider(
+            "claude_cli",
+            ClaudeCliConfig(command=sys.executable, model=model),
+            retry=retry_policy(self.sleep),
+            runner=self._run,
+        )
+
+    def _run(self, argv: list[str], stdin: str, limits: Any, *, extra_env: Any) -> Any:
+        self.argvs.append(argv)
+        return self.outputs.pop(0)
+
+    def script(self, steps: list[Step]) -> None:
+        from codementor.validation.runner import ProcessResult
+
+        def result(**fields: Any) -> ProcessResult:
+            base = {
+                "type": "result",
+                "subtype": "success",
+                "is_error": False,
+                "api_error_status": None,
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 10, "output_tokens": 5},
+                "modelUsage": {"served-model": {}},
+            }
+            return ProcessResult(returncode=0, stdout=json.dumps(base | fields), stderr="")
+
+        self.outputs.clear()
+        for step in steps:
+            if isinstance(step, Ok):
+                if step.raw is not None:
+                    self.outputs.append(result(result=step.raw))
+                else:
+                    self.outputs.append(result(result=step.text(), structured_output=step.data))
+            elif isinstance(step, Status):
+                self.outputs.append(
+                    result(is_error=True, subtype="error", api_error_status=step.code, result="x")
+                )
+            elif isinstance(step, Network):
+                self.outputs.append(result(is_error=True, subtype="error", result="bağlantı"))
+            else:
+                self.outputs.append(ProcessResult(None, "", "", timed_out=True))
+
+    @property
+    def request_count(self) -> int:
+        return len(self.argvs)
+
+    @property
+    def sent_model(self) -> str:
+        argv = self.argvs[-1]
+        return argv[argv.index("--model") + 1]

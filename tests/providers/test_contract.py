@@ -91,6 +91,8 @@ async def test_retries_on_5xx_then_succeeds(
 
 
 async def test_retries_on_429_respects_retry_after(harness: Harness, sleep: SleepRecorder) -> None:
+    if not getattr(harness, "supports_retry_after", True):
+        pytest.skip("CLI ajanında HTTP başlığı yok")
     harness.script([Status(429, {"retry-after": "3"}), Ok(ANSWER)])
     result = await harness.make().generate_structured(
         MESSAGES, LLMSocraticOutput, GenerationOptions()
@@ -115,6 +117,8 @@ async def test_network_error_retried_then_unavailable(harness: Harness) -> None:
 
 
 async def test_timeout_is_retried(harness: Harness) -> None:
+    if harness.name == "claude_cli":
+        pytest.skip("CLI zaman aşımı bilerek yeniden denenmez (ADR-0012)")
     harness.script([Timeout(), Ok(ANSWER)])
     result = await harness.make().generate_structured(
         MESSAGES, LLMSocraticOutput, GenerationOptions()
@@ -173,6 +177,8 @@ async def test_long_retry_after_gives_up_immediately(
     harness: Harness, sleep: SleepRecorder
 ) -> None:
     # kota tükenmesi (ör. 1 saat): beklemeden bırak, fallback sıradakine geçsin
+    if not getattr(harness, "supports_retry_after", True):
+        pytest.skip("CLI ajanında HTTP başlığı yok")
     harness.script([Status(429, {"retry-after": "3600"}), Ok(ANSWER)])
     with pytest.raises(ProviderRateLimitError):
         await _call(harness)

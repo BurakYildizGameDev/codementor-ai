@@ -23,10 +23,11 @@ from codementor.models.provider import (
 from codementor.providers._http import HttpTransport
 from codementor.providers.anthropic import AnthropicProvider
 from codementor.providers.base import LLMProvider, ProviderConfigError, ProviderError, RetryPolicy
+from codementor.providers.cli_agent import CliAgentProvider
 from codementor.providers.ollama import OllamaProvider
 from codementor.providers.openai_compat import OpenAICompatProvider
 
-PROVIDER_NAMES = ("ollama", "openai", "deepseek", "anthropic")
+PROVIDER_NAMES = ("ollama", "openai", "deepseek", "anthropic", "claude_cli", "agy")
 FALLBACK_WARNING = "{failed} sağlayıcısı kullanılamadı ({reason}); {next} ile devam edildi."
 
 
@@ -64,6 +65,10 @@ def build_provider(
     if name == "anthropic":
         anthropic = providers.anthropic
         return AnthropicProvider(anthropic, transport=transport(name, anthropic.timeout_s))
+    if name == "claude_cli":
+        return CliAgentProvider("claude_cli", providers.claude_cli, retry=policy)
+    if name == "agy":
+        return CliAgentProvider("agy", providers.agy, retry=policy)
     raise ProviderConfigError(
         name, f"bilinmeyen sağlayıcı (seçenekler: {', '.join(PROVIDER_NAMES)})"
     )

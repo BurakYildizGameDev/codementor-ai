@@ -76,6 +76,9 @@ class OllamaConfig(ProviderConfig):
     base_url: str | None = "http://127.0.0.1:11434"
     num_ctx: int | None = Field(default=16384, ge=512)
     timeout_s: int = Field(default=120, ge=1)  # yerel: 120 sn
+    think: bool | None = Field(
+        default=None, description="Akıl yürütme modelleri (deepseek-r1) için `think`"
+    )
 
 
 class OpenAIConfig(ProviderConfig):
@@ -94,6 +97,26 @@ class AnthropicConfig(ProviderConfig):
     max_tokens: int | None = Field(default=16000, ge=1)  # düşünme de bu bütçeden harcar
 
 
+class CliConfig(ProviderConfig):
+    """CLI ajanı (ADR-0012): çalıştırılabilir dosya adı ya da mutlak yolu."""
+
+    command: str | None = None
+    timeout_s: int = Field(default=300, ge=1)
+
+
+class ClaudeCliConfig(CliConfig):
+    """Claude Code CLI (`claude -p`); kimlik CLI oturumundan gelir, API anahtarı gerekmez."""
+
+    command: str | None = "claude"
+
+
+class AgyConfig(CliConfig):
+    """Antigravity CLI (`agy -p`); araçları kapatılamadığı için açık onay gerekir."""
+
+    command: str | None = "agy"
+    allow_tool_agent: bool = False
+
+
 class ProvidersSettings(BaseModel):
     default: str = "ollama"
     fallback: list[str] = Field(default_factory=list)
@@ -102,6 +125,8 @@ class ProvidersSettings(BaseModel):
     openai: OpenAIConfig = Field(default_factory=OpenAIConfig)
     deepseek: DeepSeekConfig = Field(default_factory=DeepSeekConfig)
     anthropic: AnthropicConfig = Field(default_factory=AnthropicConfig)
+    claude_cli: ClaudeCliConfig = Field(default_factory=ClaudeCliConfig)
+    agy: AgyConfig = Field(default_factory=AgyConfig)
 
 
 class Settings(BaseSettings):

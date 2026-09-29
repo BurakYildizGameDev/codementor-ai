@@ -132,3 +132,27 @@ def test_health_check_uses_short_timeout(router: respx.MockRouter) -> None:
         mp.setattr(cli, "HttpTransport", spy)
         _invoke("--provider", "ollama")
     assert seen == [cli.HEALTH_TIMEOUT_S]
+
+
+def test_cli_agent_resolved_without_network(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, router: respx.MockRouter
+) -> None:
+    import sys
+
+    path = tmp_path / "codementor.toml"
+    path.write_text(
+        f'[providers.claude_cli]\ncommand = "{Path(sys.executable).as_posix()}"\nmodel = "m"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(path))
+    result = _invoke("--provider", "claude_cli")
+    assert result.exit_code == 0, result.output
+    assert "oturum denetlenmedi" in result.output
+    assert not router.calls
+
+
+@pytest.mark.usefixtures("config")
+def test_agy_without_model_not_ready() -> None:
+    result = _invoke("--provider", "agy")
+    assert result.exit_code == 1
+    assert "model tanımlı değil" in result.output
