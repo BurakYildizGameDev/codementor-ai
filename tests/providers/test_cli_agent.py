@@ -103,7 +103,7 @@ async def test_claude_argv_disables_tools_and_uses_schema() -> None:
     runner = FakeRunner([ok(claude_json(structured_output=ANSWER))])
     await _run(_provider("claude_cli", runner))
     argv = runner.calls[0]["argv"]
-    assert argv[0] == EXE
+    assert argv[0] == str(Path(EXE).resolve())  # Linux'ta venv python'u sembolik bağ
     assert argv[argv.index("--tools") + 1] == ""  # hiç araç yok
     assert argv[argv.index("--permission-mode") + 1] == "dontAsk"
     assert argv[argv.index("--permission-prompts") + 1] == "none"
@@ -331,10 +331,14 @@ def test_absolute_command_accepted() -> None:
     assert resolve_executable("claude_cli", EXE) == str(Path(EXE).resolve())
 
 
+windows_only = pytest.mark.skipif(sys.platform != "win32", reason=".cmd kısayolu: PATHEXT")
+
+
 def _shim(directory: Path, body: str) -> None:
     (directory / "tool.cmd").write_text(body, encoding="utf-8")
 
 
+@windows_only
 def test_batch_shim_resolves_to_exe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     target = tmp_path / "node_modules" / "pkg" / "bin" / "tool.exe"
     target.parent.mkdir(parents=True)
@@ -344,6 +348,7 @@ def test_batch_shim_resolves_to_exe(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert resolve_executable("claude_cli", "tool") == str(target.resolve())
 
 
+@windows_only
 def test_batch_without_exe_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _shim(tmp_path, "@ECHO off\r\nnode tool.js %*\r\n")
     _isolated_path(monkeypatch, tmp_path)
@@ -351,6 +356,7 @@ def test_batch_without_exe_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         resolve_executable("claude_cli", "tool")
 
 
+@windows_only
 def test_batch_target_outside_shim_dir_rejected(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
