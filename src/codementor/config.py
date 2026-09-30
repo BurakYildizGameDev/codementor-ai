@@ -63,6 +63,16 @@ class PromptSettings(BaseModel):
     max_checklist_items: int = Field(default=12, ge=0)
 
 
+class ApiSettings(BaseModel):
+    """REST API (mimari §9); varsayılan yalnızca yerel bağlama (§12)."""
+
+    host: str = "127.0.0.1"
+    port: int = Field(default=8000, ge=1, le=65535)
+    cors_origins: list[str] = Field(
+        default_factory=lambda: ["http://127.0.0.1:5173", "http://localhost:5173"]
+    )
+
+
 class StorageSettings(BaseModel):
     """SQLite depolama (mimari §11); yol yoksa CODEMENTOR_DB_PATH, o da yoksa ~/.codementor."""
 
@@ -178,6 +188,7 @@ class Settings(BaseSettings):
     prompts: PromptSettings = Field(default_factory=PromptSettings)
     verify: VerifySettings = Field(default_factory=VerifySettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
+    api: ApiSettings = Field(default_factory=ApiSettings)
     providers: ProvidersSettings = Field(default_factory=ProvidersSettings)
 
     @classmethod

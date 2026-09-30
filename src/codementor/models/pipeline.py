@@ -39,7 +39,7 @@ ALL_STAGES: tuple[Stage, ...] = (
     "verify_b",
     "report",
 )
-StageStatus = Literal["started", "done", "skipped", "failed"]
+StageStatus = Literal["started", "completed", "skipped", "failed"]
 
 
 class StageEvent(StrictModel):

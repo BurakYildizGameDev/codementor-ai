@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Literal
 
 from codementor.config import Settings, ValidationSettings
-from codementor.ingest.errors import IngestError
+from codementor.ingest.errors import CodeTooLargeError, IngestError
 from codementor.ingest.normalize import normalize
 from codementor.models.enums import PipelineMode
 from codementor.models.prompts import MentoringProfile, QuestionContext
@@ -37,8 +38,15 @@ from codementor.validation.tier1 import run_tier1
 ProviderFactory = Callable[[str], LLMProvider]
 
 
+PipelineErrorKind = Literal["too_large", "invalid", "not_found", "provider"]
+
+
 class PipelineError(Exception):
-    """Analiz hiç yapılamadı (CLI çıkış kodu 3); mesaj kullanıcıya dönük, Türkçe."""
+    """Analiz hiç yapılamadı (CLI çıkış kodu 3, API 413/422/404/503); mesaj Türkçe."""
+
+    def __init__(self, message: str, kind: PipelineErrorKind) -> None:
+        super().__init__(message)
+        self.kind: PipelineErrorKind = kind
 
 
 @dataclass
@@ -79,7 +87,7 @@ class Orchestrator:
         try:
             provider = (self.provider_factory or self._build_provider)(name)
         except ProviderError as exc:
-            raise PipelineError(f"Sağlayıcı kullanılamıyor: {exc}") from exc
+            raise PipelineError(f"Sağlayıcı kullanılamıyor: {exc}", "provider") from exc
         version = prompt_version(self.settings.prompts.dir)
         key = self._cache_key(run, code, profile, provider, version)
 
@@ -125,8 +133,12 @@ class Orchestrator:
                     engine=request.engine or (run.question.engine if run.question else None),
                 )
                 return normalize(request.code, hint, limits=self.settings.limits)
-        except (QuestionNotFoundError, IngestError) as exc:
-            raise PipelineError(str(exc).strip("'\"")) from exc
+        except QuestionNotFoundError as exc:
+            raise PipelineError(str(exc).strip("'\""), "not_found") from exc
+        except CodeTooLargeError as exc:
+            raise PipelineError(str(exc), "too_large") from exc
+        except IngestError as exc:
+            raise PipelineError(str(exc), "invalid") from exc
 
     def _cache_key(
         self,

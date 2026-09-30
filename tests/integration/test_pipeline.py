@@ -218,10 +218,10 @@ async def test_events_published(settings: Settings, db: Database, fake: FakeFact
     orch.bus.subscribe(events.append)
     orch.bus.subscribe(lambda _e: 1 / 0)  # hatalı abone analizi bozmaz
     report = await orch.analyze(_request())
-    done = {e.stage for e in events if e.status == "done"}
+    done = {e.stage for e in events if e.status == "completed"}
     assert {"ingest", "tier0", "facts", "rules", "llm_a", "llm_b", "report"} <= done
     assert all(e.analysis_id == report.analysis_id for e in events)
-    llm_a = next(e for e in events if e.stage == "llm_a" and e.status == "done")
+    llm_a = next(e for e in events if e.stage == "llm_a" and e.status == "completed")
     assert llm_a.tokens > 0
 
 

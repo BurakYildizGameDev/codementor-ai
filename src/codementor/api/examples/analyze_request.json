@@ -1,0 +1,9 @@
+{
+  "code": "#include <stdio.h>\nint main(void) {\n    int a, b;\n    scanf(\"%d %d\", &a, &b);\n    printf(\"%d\n\", a / b);\n    return 0;\n}\n",
+  "language": "c",
+  "engine": "none",
+  "question_id": "c-veryeasy-calculator",
+  "session_id": "local-user-1",
+  "provider": "ollama",
+  "options": { "mode": "two_pass", "tier1": true, "use_cache": true }
+}

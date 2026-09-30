@@ -75,7 +75,7 @@ class StageTimer:
         """`with timer.stage("tier0"):` süre ölçer, başarı/başarısızlık yayınlar."""
         self.emit(stage, "started")
         start = time.perf_counter()
-        status: StageStatus = "done"
+        status: StageStatus = "completed"
         try:
             yield
         except BaseException:

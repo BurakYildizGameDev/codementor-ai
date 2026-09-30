@@ -12,6 +12,7 @@ from codementor.cli.analyze import analyze
 from codementor.cli.providers import providers_app
 from codementor.cli.questions import questions_app
 from codementor.cli.rules import rules_app
+from codementor.cli.serve import serve
 from codementor.models.schemas import export_schemas
 
 app = typer.Typer(name="codementor", no_args_is_help=True, add_completion=False)
@@ -38,6 +39,7 @@ app.add_typer(questions_app)
 app.add_typer(rules_app)
 app.add_typer(providers_app)
 app.command("analyze")(analyze)
+app.command("serve")(serve)
 
 
 @schema_app.command("export")

@@ -108,7 +108,7 @@ def test_broken_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_origin_hides_credentials() -> None:
-    from codementor.cli.providers import _origin
+    from codementor.providers.health import origin as _origin
 
     assert (
         _origin("http://kullanici:parola@ollama.test:11434/yol?x=1") == "http://ollama.test:11434"
@@ -118,7 +118,7 @@ def test_origin_hides_credentials() -> None:
 
 @pytest.mark.usefixtures("config")
 def test_health_check_uses_short_timeout(router: respx.MockRouter) -> None:
-    from codementor.cli import providers as cli
+    from codementor.providers import health as cli
 
     seen: list[float] = []
     original = cli.HttpTransport

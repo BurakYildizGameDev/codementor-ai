@@ -13,6 +13,7 @@ from codementor.analysis.call_costs import load_call_costs
 from codementor.analysis.complexity_hint import compute_hint, function_hints
 from codementor.analysis.extractor import extract_facts
 from codementor.config import Settings
+from codementor.log import get_logger
 from codementor.models.bigo import parse_bigo
 from codementor.models.enums import FindingSource
 from codementor.models.facts import ComplexityHint
@@ -36,6 +37,7 @@ from codementor.verify.analysis import question_text, verify_analysis, verify_so
 from codementor.verify.complexity import is_optimal
 from codementor.verify.leak_guard import check_leaks
 
+log = get_logger("codementor.pipeline")
 MAX_REFERENCE_BYTES = 256 * 1024
 _HINT_CONFIDENCE = {"low": 0.3, "medium": 0.5, "high": 0.7}
 UNKNOWN_SPACE = "?"
@@ -100,8 +102,10 @@ def load_reference(question: Question | None) -> tuple[str | None, list[str]]:
         if path.stat().st_size > MAX_REFERENCE_BYTES:
             raise OSError("çok büyük")
         return path.read_text(encoding="utf-8"), []
-    except (OSError, UnicodeDecodeError):
-        return None, ["Referans çözüm okunamadı; sızıntı denetimi yalnızca kod biçimine bakıyor."]
+    except (OSError, UnicodeDecodeError) as exc:
+        # öğrenciye iç yapı (referans çözümün varlığı) söylenmez; operatör log'dan görür
+        log.warning("reference_solution_unreadable", question=question.id, error=type(exc).__name__)
+        return None, []
 
 
 @dataclass

@@ -61,6 +61,13 @@ def find_cached(db: Database, key: str) -> AnalysisReport | None:
     return AnalysisReport.model_validate_json(row.report_json) if row else None
 
 
+def get_analysis(db: Database, analysis_id: str) -> AnalysisReport | None:
+    """Kimlikle kayıtlı rapor (API `GET /v1/analyses/{id}`)."""
+    with db.session() as session:
+        row = session.get(AnalysisRow, analysis_id)
+    return AnalysisReport.model_validate_json(row.report_json) if row else None
+
+
 def save_analysis(
     db: Database,
     report: AnalysisReport,

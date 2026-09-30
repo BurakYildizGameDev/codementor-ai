@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import Engine
+from sqlalchemy.pool import StaticPool
 from sqlmodel import Field, Session, SQLModel, create_engine
 
 from codementor.config import Settings
@@ -96,7 +97,12 @@ class Database:
         if isinstance(path, Path):
             path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
-        self.engine: Engine = create_engine(f"sqlite:///{path}")
+        # FastAPI senkron rotaları başka iş parçacığında çalışır; `:memory:` tek bağlantı paylaşır
+        self.engine: Engine = create_engine(
+            f"sqlite:///{path}",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool if path == MEMORY else None,
+        )
         SQLModel.metadata.create_all(self.engine)
 
     @classmethod
