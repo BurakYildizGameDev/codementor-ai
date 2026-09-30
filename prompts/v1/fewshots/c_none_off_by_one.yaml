@@ -1,0 +1,50 @@
+id: c-none-off-by-one
+language: c
+engine: none
+title: "C: tampona kopyalayıp toplama"
+code: |
+  #include <stdlib.h>
+
+  int sum_copy(const int *src, int n) {
+      int *buf = malloc(n * sizeof(int));
+      int total = 0;
+      for (int i = 0; i <= n; i++) {
+          buf[i] = src[i];
+          total += buf[i];
+      }
+      return total;
+  }
+static_hint: "O(n)"
+static_findings:
+  - rule_id: C-MEM-001
+    line: 4
+    evidence: "int *buf = malloc(n * sizeof(int));"
+    description: "Ayrılan bellek fonksiyondan çıkmadan serbest bırakılıyor mu?"
+analysis:
+  complexity:
+    reasoning_steps:
+      - "6. satırdaki for döngüsü n + 1 kez döner; gövdedeki işlemler O(1)."
+      - "4. satırda n elemanlık tampon ayrılıyor: ek bellek O(n)."
+    time_complexity: "O(n)"
+    space_complexity: "O(n)"
+    optimal_time_target: "O(n)"
+    agreement: agrees
+  additional_findings:
+    - category: memory_safety
+      severity: high
+      line_start: 6
+      line_end: null
+      evidence: "i <= n"
+      description: "Döngünün son turunda i = n olur; n elemanlık dizilerin dışına yazılıp okunuyor."
+    - category: edge_case
+      severity: medium
+      line_start: 7
+      line_end: null
+      evidence: "buf[i] = src[i];"
+      description: "malloc başarısız olursa buf NULL olur; dönüş değeri denetlenmeden kullanılıyor."
+socratic:
+  key_flaw_concept: "Dizi sınırının aşılması (off-by-one)"
+  guiding_questions:
+    - "n elemanlı bir dizide geçerli son indis kaçtır ve döngünün son turunda i hangi değeri alır?"
+    - "malloc istenen belleği veremezse ne döndürür ve tampona yazan kod bu durumda ne yapar?"
+  next_step_hint: "Döngüyü n = 2 için elle izleyip her turda hangi indise erişildiğini yazın."

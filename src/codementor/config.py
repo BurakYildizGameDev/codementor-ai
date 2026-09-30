@@ -52,6 +52,16 @@ class DataSettings(BaseModel):
     call_costs_file: Path = Path("data/call_costs.yaml")
 
 
+class PromptSettings(BaseModel):
+    """Prompt şablonları ve token bütçesi (mimari §5.4.4-5.4.5)."""
+
+    dir: Path = Path("prompts/v1")
+    default_context_tokens: int = Field(default=32768, ge=1024)
+    reserve_output_tokens: int = Field(default=4096, ge=256)
+    max_fewshots: int = Field(default=2, ge=0, le=4)
+    max_checklist_items: int = Field(default=12, ge=0)
+
+
 class RulesSettings(BaseModel):
     """Statik kural motoru (mimari §5.3.3); kurallar kimlikle tek tek kapatılabilir."""
 
@@ -65,6 +75,9 @@ class ProviderConfig(BaseModel):
     model: str = ""
     api_key_env: str | None = None
     num_ctx: int | None = Field(default=None, ge=512)
+    context_tokens: int | None = Field(
+        default=None, ge=1024, description="Bağlam penceresi; yoksa prompts.default_context_tokens"
+    )
     temperature: float | None = Field(default=None, ge=0, le=2)
     seed: int | None = None
     max_tokens: int | None = Field(default=None, ge=1)
@@ -95,6 +108,7 @@ class AnthropicConfig(ProviderConfig):
     base_url: str | None = "https://api.anthropic.com"
     api_key_env: str | None = "ANTHROPIC_API_KEY"
     max_tokens: int | None = Field(default=16000, ge=1)  # düşünme de bu bütçeden harcar
+    context_tokens: int | None = Field(default=200000, ge=1024)
 
 
 class CliConfig(ProviderConfig):
@@ -108,6 +122,7 @@ class ClaudeCliConfig(CliConfig):
     """Claude Code CLI (`claude -p`); kimlik CLI oturumundan gelir, API anahtarı gerekmez."""
 
     command: str | None = "claude"
+    context_tokens: int | None = Field(default=200000, ge=1024)
 
 
 class AgyConfig(CliConfig):
@@ -143,6 +158,7 @@ class Settings(BaseSettings):
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
     data: DataSettings = Field(default_factory=DataSettings)
     rules: RulesSettings = Field(default_factory=RulesSettings)
+    prompts: PromptSettings = Field(default_factory=PromptSettings)
     providers: ProvidersSettings = Field(default_factory=ProvidersSettings)
 
     @classmethod

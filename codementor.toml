@@ -30,7 +30,7 @@ max_retries = 2              # yalnızca ağ/429/5xx hatalarında (4xx hemen hat
 [providers.ollama]
 base_url = "http://127.0.0.1:11434"
 model = "qwen2.5-coder:7b"
-num_ctx = 16384
+num_ctx = 16384              # prompt bütçesi de buradan (§5.4.5); 600 satırlık kod için 32768 önerilir
 temperature = 0.1
 seed = 42
 timeout_s = 120
@@ -48,6 +48,7 @@ api_key_env = "DEEPSEEK_API_KEY"
 [providers.claude_cli]         # Claude Code CLI; `claude` ile oturum açılmış olmalı (ADR-0012)
 command = "claude"
 model = "claude-opus-5-5"
+context_tokens = 200000        # prompt bütçesi (mimari §5.4.5)
 timeout_s = 300
 
 [providers.agy]                # Antigravity CLI; deneysel, araç kapatma bayrağı yok (ADR-0012)
@@ -59,4 +60,5 @@ allow_tool_agent = false       # true: öğrenci kodunu araç çalıştırabilen
 [providers.anthropic]
 model = ""                   # ör. güncel Claude model kimliği
 api_key_env = "ANTHROPIC_API_KEY"
+context_tokens = 200000
 # temperature/seed verme: güncel Claude modelleri temperature'ı reddediyor (ADR-0011)

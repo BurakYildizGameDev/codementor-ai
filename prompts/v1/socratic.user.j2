@@ -1,0 +1,29 @@
+{% import "_macros.j2" as m %}
+{{ m.question_block(question) }}
+
+{{ m.code_block(language, engine, code_view) }}
+
+## Doğrulanmış analiz
+{% if complexity %}
+Karmaşıklık: zaman {{ complexity.time_complexity | guard }}, bellek {{ complexity.space_complexity | guard }}{% if complexity.optimal_time_target %}; ulaşılabilir hedef {{ complexity.optimal_time_target | guard }}{% endif %}
+
+Gerekçe:
+{% for step in complexity.reasoning_steps %}
+- {{ step | guard }}
+{% endfor %}
+{% else %}
+Karmaşıklık doğrulanamadı; sorularını bulgulara dayandır.
+{% endif %}
+{% if findings %}
+Bulgular (önem sırasıyla):
+{% for f in findings %}
+- ({{ f.severity }}) {{ f.line_start }}. satır: `{{ f.evidence | guard }}`: {{ f.description | guard }}
+{% endfor %}
+{% else %}
+Doğrulanmış bulgu yok; sorularını karmaşıklığa ve hedefe dayandır.
+{% endif %}
+
+{{ m.mentoring_block(profile, question) }}
+
+## Görev
+Öğrencinin, yukarıdaki analizdeki en önemli sorunu kendisinin bulmasını sağlayacak yönlendirici sorular üret. Yanıt olarak yalnızca şemaya uyan JSON nesnesini döndür.

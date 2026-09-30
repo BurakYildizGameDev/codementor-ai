@@ -44,3 +44,10 @@ class LLMSocraticOutput(StrictModel):
     key_flaw_concept: str = Field(max_length=80)
     guiding_questions: list[str] = Field(min_length=1, max_length=4)
     next_step_hint: str | None = Field(default=None, max_length=300)
+
+
+class LLMSinglePassOutput(StrictModel):
+    """`pipeline.mode = "single_pass"` çıktısı: Geçiş A ve B tek çağrıda (mimari §5.4.2)."""
+
+    analysis: LLMAnalysisOutput
+    socratic: LLMSocraticOutput

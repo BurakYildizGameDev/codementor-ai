@@ -10,11 +10,16 @@ from typer.testing import CliRunner
 from codementor.cli.main import app
 from codementor.models.schemas import SCHEMA_MODELS, build_schemas
 
-EXPECTED = {"report.schema.json", "llm_analysis.schema.json", "llm_socratic.schema.json"}
+EXPECTED = {
+    "report.schema.json",
+    "llm_analysis.schema.json",
+    "llm_socratic.schema.json",
+    "llm_single_pass.schema.json",
+}
 REPO_SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 
 
-def test_schema_export_writes_three_files(tmp_path: Path) -> None:
+def test_schema_export_writes_all_files(tmp_path: Path) -> None:
     out = tmp_path / "nested" / "schemas"
     result = CliRunner().invoke(app, ["schema", "export", "--out", str(out)])
     assert result.exit_code == 0, result.output

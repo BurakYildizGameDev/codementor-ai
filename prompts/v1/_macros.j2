@@ -1,0 +1,169 @@
+{# Ortak bölümler. Kullanıcı kaynaklı her metin `guard` süzgecinden geçer (mimari §12). #}
+{% set LANGUAGES = {"c": "C", "cpp": "C++", "csharp": "C#"} %}
+{% set ENGINES = {"unity": "Unity", "unreal": "Unreal Engine"} %}
+{% set DIFFICULTIES = {"very_easy": "çok kolay", "easy": "kolay", "medium": "orta", "hard": "zor"} %}
+{% set BOUNDS = {"linear": "girdiyle doğrusal (n) kez", "log": "logaritmik (log n) kez", "constant": "sabit sayıda", "unknown": "sayısı belirsiz (statik analiz çıkaramadı)"} %}
+{% set ALLOCATIONS = {"malloc": "malloc", "calloc": "calloc", "realloc": "realloc", "new": "new", "new_array": "new[]", "make_unique": "make_unique", "make_shared": "make_shared", "csharp_new": "new ile nesne", "string_concat": "string birleştirme", "linq": "LINQ", "closure": "lambda/closure"} %}
+{% set LEVELS = {1: "kavramsal soru, satır numarası verme", 2: "sorunlu satıra işaret eden soru", 3: "kavramın adı ve kısa bir benzetme"} %}
+
+{% macro cost(value) -%}
+{% if value.endswith("*") %}O({{ value[:-1] }}) amortize{% else %}O({{ value }}){% endif %}
+{%- endmacro %}
+
+{% macro language_label(language, engine) -%}
+{{ LANGUAGES[language] }}{% if engine in ENGINES %} / {{ ENGINES[engine] }}{% endif %}
+{%- endmacro %}
+
+{% macro question_block(q) %}
+{% if q %}
+## Soru: {{ q.title }}
+Zorluk: {{ DIFFICULTIES[q.difficulty] }}
+{{ q.prompt | trim }}
+
+Kısıtlar:
+{% for c in q.constraints %}
+- {{ c }}
+{% endfor %}
+Hedef karmaşıklık: zaman {% for name, value in q.expected.time.items() %}{{ name }} {{ cost(value) }}{% if not loop.last %}, {% endif %}{% endfor %}; bellek {{ cost(q.expected.space) }}
+{% else %}
+## Serbest mod
+Soru bağlamı yok. Kodu kendi başına değerlendir; optimal_time_target alanına bu kodun amacı için ulaşılabilir en iyi zamanı yaz, emin değilsen null.
+{% endif %}
+{% endmacro %}
+
+{% macro code_block(language, engine, code_view) %}
+## Öğrencinin kodu ({{ language_label(language, engine) }})
+Satırlar "numara | kod" biçimindedir. evidence alanına yalnızca "|" işaretinden sonraki kodu kopyala.
+<user_code>
+{{ code_view }}
+</user_code>
+{% endmacro %}
+
+{% macro hint_block(hint, function_hints) %}
+## Statik karmaşıklık ipucu
+{% if hint %}
+O({{ hint.value }}), güven: {{ hint.confidence }}{% if hint.exponential_suspect %}, üstel özyineleme şüphesi{% endif %}.
+Dayanak: {{ hint.basis | join("; ") | guard }}
+{% for h in function_hints %}
+- {{ h.function | guard }}: O({{ h.value }}), güven: {{ h.confidence }}
+{% endfor %}
+Bu bir ipucudur, gerçek değil: kendin doğrula ve agreement alanında belirt.
+{% else %}
+Statik ipucu yok; agreement alanına "no_hint" yaz.
+{% endif %}
+{% endmacro %}
+
+{% macro findings_block(findings, level) %}
+## Statik analizin zaten bulduğu sorunlar
+{% if level >= 2 %}
+Statik analiz {{ findings | length }} sorun buldu (yer kalmadığı için listelenmedi). Bunlar zaten bulundu ve rapora eklenecek: tekrarlama.
+{% elif findings %}
+Bunlar zaten bulundu ve rapora eklenecek: tekrarlama. Gerekirse açıklamanda onlara atıf yap; senin işin statik analizin kaçırdıklarını bulmak ve eksikleri tamamlamak.
+{% for f in findings %}
+- {{ f.rule_id or f.id }} ({{ f.severity }}), {{ f.line_start }}. satır: `{{ f.evidence | guard }}`{% if level == 0 %}: {{ f.description | guard }}{% endif %}
+
+{% endfor %}
+{% else %}
+Statik analiz sorun bulmadı; bu, kodun sorunsuz olduğu anlamına gelmez.
+{% endif %}
+{% endmacro %}
+
+{% macro facts_block(d) %}
+{% if d and not d.is_empty() %}
+## Statik olgular (özet)
+{% if d.functions %}
+Fonksiyonlar:
+{% for f in d.functions %}
+- {{ f.name | guard }} ({{ f.line_start }}–{{ f.line_end }}. satırlar){% if f.lifecycle %}, yaşam döngüsü: {{ f.lifecycle | guard }}{% endif %}{% if f.is_hot_path %}, sıcak yol (her karede çalışır){% endif %}
+
+{% endfor %}
+{% endif %}
+{% if d.loops %}
+Döngüler:
+{% for lp in d.loops %}
+- {{ lp.line }}. satır: {{ lp.kind }} döngüsü, derinlik {{ lp.depth }}, {{ BOUNDS[lp.bound] }} döner{% if lp.parent_line %}, {{ lp.parent_line }}. satırdaki döngünün içinde{% endif %}{% if lp.function %} ({{ lp.function | guard }}){% endif %}
+
+{% endfor %}
+{% endif %}
+{% if d.recursion %}
+Özyineleme:
+{% for r in d.recursion %}
+- {{ r.function | guard }}: kendini {{ r.branching_factor }} kez çağırıyor{% if r.halving %}, girdiyi yarılayarak{% endif %}{% if r.lines %} ({{ r.lines | join(", ") }}. satırlar){% endif %}
+
+{% endfor %}
+{% endif %}
+{% if d.costly_calls %}
+Maliyetli çağrılar:
+{% for c in d.costly_calls %}
+- {{ c.line }}. satır: {{ c.name | guard }} → O({{ c.known_cost }}){% if c.loop_depth %}, {{ c.loop_depth }} döngünün içinde{% endif %}
+
+{% endfor %}
+{% endif %}
+{% if d.allocations %}
+Bellek tahsisleri:
+{% for a in d.allocations %}
+- {{ a.line }}. satır: {{ ALLOCATIONS.get(a.kind, a.kind) }}{% if a.loop_depth %}, döngü içinde{% endif %}{% if a.in_hot_path %}, sıcak yolda{% endif %}
+
+{% endfor %}
+{% endif %}
+{% if d.unmanaged_uobjects %}
+UPROPERTY olmayan UObject işaretçileri: {% for s in d.unmanaged_uobjects %}{{ s.name | guard }} ({{ s.line }}. satır){% if not loop.last %}, {% endif %}{% endfor %}
+
+{% endif %}
+{% if d.event_subscriptions %}
+Olay abonelikleri: {% for s in d.event_subscriptions %}{{ s.name | guard }} ({{ s.line }}. satır){% if not loop.last %}, {% endif %}{% endfor %}{% if not d.has_on_disable %}; OnDisable yok{% endif %}
+
+{% endif %}
+{% if d.omitted %}
+(+{{ d.omitted }} olgu yer kalmadığı için gösterilmedi)
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+{% macro checklist_block(items) %}
+{% if items %}
+## Kontrol listesi
+Kaçırılmış sorun ararken şu soruları kendine sor (her madde bir bulgu değildir; yalnızca kodda kanıtı varsa bulgu yaz):
+{% for item in items %}
+- {{ item }}
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{% macro fewshots_block(examples, single_pass) %}
+{% if examples %}
+## Örnekler
+Aşağıdaki örnekler yalnızca yanıt biçimini gösterir; öğrencinin koduyla ilgili değildir. Dikkat et: evidence satırdan birebir kopyalanmış, statik analizin bulduğu sorunlar tekrar edilmemiş.{% if single_pass %} Örnek sorular ipucu seviyesi 1 üslubundadır; sen mentorluk ayarındaki seviyeye uy.{% endif +%}
+{% for ex in examples %}
+
+### Örnek {{ loop.index }}: {{ ex.title }}
+<example_code>
+{{ ex.numbered_code }}
+</example_code>
+Statik ipucu: {{ ex.static_hint or "yok" }}
+Statik analizin zaten bulduğu: {% if ex.static_findings %}{% for f in ex.static_findings %}{{ f.rule_id }} ({{ f.line }}. satır: `{{ f.evidence }}`){% if not loop.last %}; {% endif %}{% endfor %}{% else %}yok{% endif %}
+
+Doğru yanıt:
+{% if single_pass %}
+{"analysis": {{ ex.analysis_json }}, "socratic": {{ ex.socratic_json }}}
+{% else %}
+{{ ex.analysis_json }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{% macro mentoring_block(profile, q) %}
+## Mentorluk ayarı
+- İpucu seviyesi: {{ profile.hint_level }} ({{ LEVELS[profile.hint_level] }})
+- Soru sayısı: {% if profile.min_questions == profile.max_questions %}{{ profile.min_questions }}{% else %}{{ profile.min_questions }}-{{ profile.max_questions }}{% endif %}
+
+{% if profile.name_concept %}
+- Sorularda ve next_step_hint içinde kavramın adını verebilirsin.
+{% else %}
+- Sorularda ve next_step_hint içinde kavramın adını verme; kavramı yalnızca key_flaw_concept alanına yaz.
+{% endif %}
+{% if q and q.hint_ladder.get(profile.hint_level) %}
+- Öğretmenin bu seviye için yönlendirmesi (aynen kopyalama; kendi sözlerinle ve öğrencinin koduna uyarlayarak kullan): {{ q.hint_ladder[profile.hint_level] }}
+{% endif %}
+{% endmacro %}

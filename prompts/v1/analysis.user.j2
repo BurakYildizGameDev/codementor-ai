@@ -1,0 +1,17 @@
+{% import "_macros.j2" as m %}
+{{ m.fewshots_block(fewshots, false) }}
+
+{{ m.question_block(question) }}
+
+{{ m.code_block(language, engine, code_view) }}
+
+{{ m.hint_block(hint, function_hints) }}
+
+{{ m.findings_block(static_findings, findings_level) }}
+
+{{ m.facts_block(facts) }}
+
+{{ m.checklist_block(checklist) }}
+
+## Görev
+Öğrencinin kodunun zaman ve bellek karmaşıklığını adım adım gerekçelendir ve statik analizin kaçırdığı en fazla 10 sorunu bul. Yanıt olarak yalnızca şemaya uyan JSON nesnesini döndür.

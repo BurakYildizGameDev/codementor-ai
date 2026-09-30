@@ -1,0 +1,54 @@
+id: csharp-unity-update-alloc
+language: csharp
+engine: unity
+title: "Unity: menzildeki düşmanları gösteren radar"
+code: |
+  using System.Collections.Generic;
+  using UnityEngine;
+
+  public class Radar : MonoBehaviour {
+      public List<Transform> enemies = new List<Transform>();
+      public float range = 10f;
+
+      void Update() {
+          var nearby = new List<Transform>();
+          foreach (var e in enemies) {
+              if (Vector3.Distance(transform.position, e.position) < range)
+                  nearby.Add(e);
+          }
+          GetComponent<RadarUI>().Show(nearby);
+      }
+  }
+static_hint: "O(n)"
+static_findings:
+  - rule_id: UNITY-GC-001
+    line: 9
+    evidence: "var nearby = new List<Transform>();"
+    description: "Bu satır her karede yeni bir nesne ayırıyor; çöp toplayıcı bunları bir noktada toplarken oyun takılabilir."
+  - rule_id: UNITY-PERF-001
+    line: 14
+    evidence: "GetComponent<RadarUI>().Show(nearby);"
+    description: "Bu arama her karede yeniden yapılıyor ama sonucu kareden kareye değişiyor mu?"
+analysis:
+  complexity:
+    reasoning_steps:
+      - "Update her karede çalışır; aşağıdakiler kare başına maliyettir."
+      - "10. satırdaki foreach n düşman üzerinde bir kez döner; Vector3.Distance O(1)."
+      - "nearby listesi en fazla n eleman tutar: ek bellek O(n)."
+    time_complexity: "O(n)"
+    space_complexity: "O(n)"
+    optimal_time_target: "O(n)"
+    agreement: agrees
+  additional_findings:
+    - category: edge_case
+      severity: medium
+      line_start: 11
+      line_end: null
+      evidence: "e.position"
+      description: "Listedeki bir düşman yok edilirse e.position erişimi hata verir; bu durum ele alınmıyor."
+socratic:
+  key_flaw_concept: "Kare başına tahsis ve GC baskısı"
+  guiding_questions:
+    - "Update saniyede kaç kez çalışır ve her çalıştığında belleğe ne ekleniyor?"
+    - "Bir düşman sahneden yok edildiğinde enemies listesinde ne kalır?"
+  next_step_hint: "Profiler'da Update için GC Alloc sütununu izleyin."

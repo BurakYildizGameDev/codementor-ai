@@ -8,7 +8,11 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from codementor.models.llm_output import LLMAnalysisOutput, LLMSocraticOutput
+from codementor.models.llm_output import (
+    LLMAnalysisOutput,
+    LLMSinglePassOutput,
+    LLMSocraticOutput,
+)
 from codementor.models.report import AnalysisReport
 
 JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
@@ -17,6 +21,7 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "report.schema.json": AnalysisReport,
     "llm_analysis.schema.json": LLMAnalysisOutput,
     "llm_socratic.schema.json": LLMSocraticOutput,
+    "llm_single_pass.schema.json": LLMSinglePassOutput,
 }
 
 

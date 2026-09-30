@@ -1,0 +1,62 @@
+id: cpp-unreal-uproperty
+language: cpp
+engine: unreal
+title: "Unreal: hedef seçen taret"
+code: |
+  UCLASS()
+  class ATurret : public AActor {
+      GENERATED_BODY()
+  public:
+      virtual void Tick(float DeltaTime) override;
+  private:
+      AActor* Target;
+      TArray<AActor*> Enemies;
+  };
+
+  void ATurret::Tick(float DeltaTime) {
+      Super::Tick(DeltaTime);
+      for (AActor* Enemy : Enemies) {
+          if (GetDistanceTo(Enemy) < 1000.f) {
+              Target = Enemy;
+          }
+      }
+  }
+static_hint: "O(n)"
+static_findings:
+  - rule_id: UE-GC-001
+    line: 7
+    evidence: "AActor* Target;"
+    description: "Çöp toplayıcı yalnızca UPROPERTY ile işaretli alanları görür; bu alan ne gösterir?"
+  - rule_id: UE-PERF-001
+    line: 13
+    evidence: "for (AActor* Enemy : Enemies) {"
+    description: "Tick her karede çalışır. Bu iş gerçekten her karede mi gerekli?"
+analysis:
+  complexity:
+    reasoning_steps:
+      - "Tick her karede çalışır; aşağıdakiler kare başına maliyettir."
+      - "13. satırdaki döngü n düşman üzerinde bir kez döner; GetDistanceTo O(1)."
+      - "Ek bellek ayrılmıyor."
+    time_complexity: "O(n)"
+    space_complexity: "O(1)"
+    optimal_time_target: "O(n)"
+    agreement: agrees
+  additional_findings:
+    - category: garbage_collection
+      severity: high
+      line_start: 8
+      line_end: null
+      evidence: "TArray<AActor*> Enemies;"
+      description: "UPROPERTY olmayan dizideki aktörler çöp toplayıcıya görünmez; yok edilen aktörler geçersiz işaretçi olarak kalabilir."
+    - category: edge_case
+      severity: medium
+      line_start: 14
+      line_end: null
+      evidence: "GetDistanceTo(Enemy)"
+      description: "Yok edilmiş ya da null bir aktör için mesafe hesaplanıyor; geçerlilik denetimi yok."
+socratic:
+  key_flaw_concept: "Unreal çöp toplayıcısı ve UPROPERTY"
+  guiding_questions:
+    - "Unreal'in çöp toplayıcısı bir aktöre başka bir nesnenin hâlâ işaret ettiğini nereden bilir?"
+    - "Enemies dizisindeki bir aktör oyundan kaldırıldığında dizide ne kalır?"
+  next_step_hint: null
