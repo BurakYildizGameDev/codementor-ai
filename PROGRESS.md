@@ -15,7 +15,7 @@
 | 9 | ✅ | faz/9-dogrulayici | 2026-09-30 | Claude Code / — |
 | 10 | ✅ | faz/10-pipeline | 2026-09-30 | Claude Code / — |
 | 11 | ✅ | faz/11-api | 2026-09-30 | Claude Code / — |
-| 12 | 🔄 12A + 12B bitti (altyapı + 80 örnek); 12C ölçümler sürüyor | faz/12-eval | 2026-09-30 | Claude Code / — |
+| 12 | ✅ | faz/12-eval | 2026-09-30 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -386,8 +386,8 @@
 - SSE için istek başına olay yolu şart: paylaşılan bir abonelik listesi eşzamanlı iki analizin olaylarını birbirine karıştırırdı; bunu doğrudan test etmek (asyncio.gather ile iki akış) ucuz.
 - FastAPI senkron rotaları iş parçacığı havuzunda çalıştırıyor; SQLite bağlantısının iş parçacığına bağlı olduğu burada ortaya çıkıyor.
 
-## Faz 12 — Notlar (devam ediyor)
-**Durum:** 12A (altyapı) ve 12B (80 örneklik veri seti, etiketler kullanıcı onaylı) `faz/12-eval` dalında commit'li, main'e alınmadı. 12C (ölçüm) kaldı.
+## Faz 12 — Notlar
+**Durum:** 12A (altyapı), 12B (80 örneklik veri seti, etiketler kullanıcı onaylı) ve 12C (ölçümler, `docs/eval-findings.md`, ADR-0003) bitti.
 **Yapılanlar (12A):**
 - `src/codementor/eval/`: `dataset.py` (yükleme + doğrulama: şema, kimlik = dizin, uzantı = dil, satırlar kodda, dev/test/_draft arasında aynı kimlik/kod yok; `promote` yorumları koruyarak `reviewed: true` yazar), `metrics.py` (§14.2'nin tamamı; eşleşme: aynı kategori + satır farkı ≤ 2, bire bir, en yakın önce), `runner.py` (önbellek kapalı, veritabanı yok; `StaticOnlyProvider` ile LLM'siz taban çizgisi; ablasyonlar `facts|line_numbers|fewshot0|fewshot1`; sonuç `eval/results/{zaman}_{sağlayıcı}_{model}_{mod}[_abl]_{bölüm}.json`), `compare.py` (Markdown tablo + sürüm dipnotu), `review.py` (taslak etiketleri statik analizle karşılaştırır, etiketi değiştirmez).
 - CLI: `codementor eval run --split dev|test [--provider --mode --static-only --ablate --limit --final]` (test yalnızca `--final` ile), `eval compare`, `eval check-drafts`, `eval promote <id…> --split`.
@@ -402,10 +402,16 @@
 - Etiket kararları: dosya düzeyinde tek doğru karmaşıklık yoksa (unity-012 havuz: Awake O(n), Get/Release O(1); cpp-016 sonsuz döngü) `time_complexity` boş bırakıldı. C#'ta "istisna fırlatır" türü hatalar (foreach içinde koleksiyon değişimi) için uygun kategori olmadığından örnek konmadı.
 - Veri setinde bulunan Faz 5 `foreach` hatası kullanıcı isteğiyle düzeltildi (bkz. Sonraya). Dev static-only: erken çıkış 100/100, Big-O %92, denetim P/R/F1 100/38/55.
 **Kararlar:** "yerel model" satırları Ollama yerine claude_cli ile ölçülecek (kullanıcı tercihi); `leak_rate` §14.2 gereği `must_not_contain` ile ölçülür, `private/solutions/` zorunlu değil; injection örneğinde erken çıkış da direnç sayılır; `complexity_time_class_acc` değişkenleri tek değişkene indirger (`m*n` ≈ `n^2`).
-**Sıradaki adımlar (yeni oturumda):**
-1. ~~C taslak incelemesi~~, ~~kalan 64 taslak~~ → 12B'de bitti.
-2. 12C: `eval run --split dev --static-only`, two_pass ve single_pass (claude_cli), ≥ 2 ablasyon, `eval compare`, `docs/eval-findings.md`, ADR-0003; en sonda bir kez `--split test --final`.
-**Açık sorular:** `make` hâlâ yok. Tam pakette bir kez zamanlamaya bağlı tek test hatası görüldü, tekrarlanmadı (yük altında süre sınırlı bir performans testi olabilir).
+**Yapılanlar (12C):** tüm koşular `claude_cli` / `claude-opus-5-5`, önbellek kapalı, prompt dev'de ayarlanmadı; sonuç dosyaları `eval/results/` (8 dosya: dev 5, test 3).
+- Dev (31): static-only, two_pass, single_pass, two_pass `--ablate facts`, two_pass `--ablate line_numbers` (önceki geçersiz koşu 429 sonrası yeniden koşuldu; 26/26 LLM çağrısı hatasız).
+- Test (49, `--final`, tek sefer): static-only Big-O %88, P/R/F1 100/42/59 · two_pass Big-O %91, 27/92/42, sızıntı %0, injection %100, 20,3/57,3 sn, 15,7k token · single_pass Big-O %94, 32/94/48, %0, %100, 13,5/35,7 sn, 10,2k token.
+- Ablasyonlar: olgular çıkarılınca Big-O birebir %96 → %85 (model kanonik `n` yerine kendi değişkenini yazıyor); numaralı görünüm kapatılınca satır doğruluğu %100 → %96 (bu modelde küçük etki). Few-shot ablasyonu koşulmadı (kriter ≥ 2).
+- LLM katma değeri: recall %38–42 → %92–96; kategorisiz eşleşmede dev 24/24, test 36/36. Precision %27–32 (orta+ önemde %35–43); FP'ler etiketlenmemiş küçük `edge_case`/`design`/`input_handling` gözlemleri.
+- `docs/eval-findings.md` (tablolar, ablasyonlar, two_pass vs single_pass), `docs/adr/0003-iki-gecisli-prompt.md`, mimari §5.4.2 ve §23 ADR-0003'e bağlandı.
+**Kararlar:** ADR-0003: varsayılan `two_pass` kalır ama gerekçe kalite değil (kalite üstünlüğü teyit edilmedi; F1'de single_pass biraz önde); single_pass'te sızıntı koruması 60 örneğin 17'sinde, two_pass'te 11'inde devreye girdi → two_pass sezgisel korumaya daha az yaslanıyor. `single_pass` kalite kaybı olmadan hızlı mod (~%35–45 hızlı, ~%35 az token).
+**Kabul kriterleri:** [x] 80 örnek elle kontrol · [x] metrik birim testleri · [x] önbellek kapalı · [x] sonuç dosyasında metrikler + sürümler · [x] ≥ 3 satırlı tablo (statik / two_pass / single_pass; "yerel model" yerine claude_cli, kullanıcı tercihi) · [x] 2 ablasyon (facts, line_numbers) · [x] prompt ayarı yalnız dev, test en sonda bir kez · [x] ADR-0003 güncellendi. `private/solutions/` oluşturulmadı: `leak_rate` §14.2 gereği `must_not_contain` ile ölçülüyor.
+**Ortam notu:** two_pass test koşusunda bilgisayar 21:21–21:54 uykuya geçti; `cpp-012` süresi (2036 sn) geçersiz, p50/p95 etkilenmedi (en yakın sıra). Makinede gcc/clang yok: C/C++/Unreal Tier 1 `skipped`.
+**Açık sorular:** `make` hâlâ yok. Precision analiz betiği (kategorisiz eşleşme, önem filtresi, FP/FN dökümü) scratchpad'de kaldı; Sonraya. Tam pakette bir kez zamanlamaya bağlı tek test hatası görüldü, tekrarlanmadı (yük altında süre sınırlı bir performans testi olabilir).
 
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
@@ -448,8 +454,11 @@
 - CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
 - ~~Faz 5 hatası (csharp-011): `foreach` koleksiyon ifadesindeki çağrı döngü içinde sayılıyordu → `high` O(n²)~~ → çözüldü (2026-09-30, kullanıcı isteğiyle Faz 12 içinde): `_context.contexts` döngü başlığında bir kez değerlendirilen alanlara (`initializer`, `right`: C `for` başlatıcısı, C++ range-for, C# `foreach`) dış bağlamı verir; `tests/fixtures/complexity/on_{foreach_header_call,range_for_header_call,for_initializer_strlen}` + koşuldaki `strlen` için `on2_strlen_condition`. Dev static-only Big-O %88 → %92.
 - Çağrı maliyeti tablosu eksikleri (eval notları): `std::memset`/`memcpy` (n), `UGameplayStatics::GetAllActorsOfClass` (n), `TArray::Remove` (n); `std::string operator+` / C# `string +=` döngüde karesel (şu an n).
+- Faz 12: eval'e `guard_interventions` metriği (sızıntı korumasının müdahale sayısı; şu an yalnızca rapor uyarılarından sayılabiliyor, ADR-0003'ün ana argümanı).
+- Faz 12: `eval analyze` aracı (kategorisiz eşleşme, önem filtreli precision, örnek bazında FP/FN); `compare` statik satırında injection direncini "—" göstermeli.
+- Faz 12: precision iyileştirme — `design` bulgularını yalnızca soru gereksinimi varken üretmek, `low` bulguları raporda ayrı göstermek; kategori belirsizliği (sıfıra bölme `edge_case`/`undefined_behavior`, null `edge_case`/`memory_safety`) için prompt'ta kategori tanımları. Değişiklik sonrası dev'de yeniden ölçülmeli (test artık kullanıldı).
+- Faz 12: few-shot 0/1 ablasyonu (§14.4) koşulmadı.
 
 ## Yapılacaklar (2026-09-30 itibarıyla sıra)
-1. **Faz 12 devamı** (dal `faz/12-eval`): 12C ölçümler — claude_cli two_pass/single_pass + 2 ablasyon (dev), `eval compare`, `docs/eval-findings.md`, ADR-0003, en sonda bir kez `--split test --final` (bkz. "Faz 12 — Notlar / Sıradaki adımlar").
-2. **Faz 13 — Web UI + kurulum** (Docker yok; API kimlik/hız sınırı kararı burada).
-3. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması. Ollama kullanılmıyor (kullanıcı tercihi). main origin'in önünde, push edilmedi.
+1. **Faz 13 — Web UI + kurulum** (Docker yok; API kimlik/hız sınırı kararı burada).
+2. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması. Ollama kullanılmıyor (kullanıcı tercihi). main origin'in önünde, push edilmedi.

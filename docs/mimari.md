@@ -381,7 +381,7 @@ class UnityAllocInUpdate(Rule):
 | A — Analiz | Karmaşıklık + gerekçe adımları, ek bulgular | `LLMAnalysisOutput` | Teknik doğruluk; düşük sıcaklık |
 | B — Mentorluk | Doğrulanmış analizden Sokratik sorular üret | `LLMSocraticOutput` | Doğrulanmamış bulgular soruya dönüşmez; sızıntı kontrolü ayrı yapılır; ton ayarı bağımsız |
 
-`pipeline.mode = "single_pass"` ile tek çağrıya indirilebilir (maliyet/gecikme için). Hangisinin daha iyi olduğu **eval ile** belirlenir ve sonuç ADR-003'e yazılır.
+`pipeline.mode = "single_pass"` ile tek çağrıya indirilebilir (maliyet/gecikme için). Faz 12 eval sonucu (ADR-0003): kalite farkı ölçülmedi, single_pass ~%35–45 hızlı ama sızıntı koruması ~1,5× sık devreye giriyor; varsayılan `two_pass` kalır (güvenlik payı), `single_pass` hızlı mod.
 
 #### 5.4.3 Zorluk → mentorluk ayarı
 
@@ -1318,7 +1318,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 |---|---|---|
 | ADR-0001 | Temel ayrıştırıcı olarak tree-sitter | Tek API ile üç dil; hata toleransı; derleyici gerektirmez |
 | ADR-0002 | Hibrit analiz: statik kanıt + LLM açıklama | Halüsinasyonu kanıtla sınırlar; LLM'siz taban çizgisi sağlar |
-| ADR-0003 | İki geçişli prompt (varsayılan) | Doğrulanmamış bulguların Sokratik sorulara dönüşmesini engeller; eval ile teyit edilecek |
+| ADR-0003 | İki geçişli prompt (varsayılan) | Doğrulanmamış bulguların Sokratik sorulara dönüşmesini engeller; Faz 12 eval ile teyit edildi (`docs/eval-findings.md`) |
 | ADR-0004 | LLM şeması ≠ rapor şeması | Modelin uydurabileceği alanları azaltır |
 | ADR-0005 | v1'de kod çalıştırma yok | Güvenlik riski ve kapsam; v2'de ampirik karmaşıklık için ele alınacak |
 | ADR-0006 | SQLite | Tek kullanıcı, sıfır operasyon yükü |
