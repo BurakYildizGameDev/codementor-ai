@@ -280,7 +280,7 @@ Derleyici "yalnızca sözdizimi" modunda bile saldırı yüzeyidir (ör. `#inclu
 | Yalnızca derleyici uyarıları | Devam, `WARNING`, uyarılar bulgulara eklenir |
 | Tier 1 zaman aşımı / derleyici yok / include koruması | Devam, `SKIPPED` |
 
-Erken çıkış raporu da Sokratik tondadır ama **LLM kullanmaz**: tanıya göre şablon mesajlar (ör. "14. satırda bir ifade `;` ile bitmiyor gibi görünüyor. Derleyici bu satırdan sonra neyi bekliyor olabilir?").
+Erken çıkış raporu da Sokratik tondadır ama **LLM kullanmaz** (şablonlar `data/mentor_templates.yaml`; zarif bozulmadaki şablon sorular da oradadır): tanıya göre şablon mesajlar (ör. "14. satırda bir ifade `;` ile bitmiyor gibi görünüyor. Derleyici bu satırdan sonra neyi bekliyor olabilir?").
 
 ### 5.3 K2 — Statik Olgu Çıkarımı ve Kural Motoru
 
@@ -1133,7 +1133,7 @@ codementor-ai/
 │   ├── prompts/       builder.py  budget.py  fewshot.py
 │   ├── providers/     base.py  schema_adapter.py  fake.py  ollama.py  openai_compat.py  anthropic.py  factory.py
 │   ├── verify/        schema_check.py  lines.py  complexity.py  merge.py  leak_guard.py  confidence.py  analysis.py
-│   ├── pipeline/      orchestrator.py  stages.py  events.py
+│   ├── pipeline/      orchestrator.py  stages.py  passes.py  assemble.py  events.py  templates.py  ids.py  versions.py
 │   ├── storage/       db.py  cache.py  sessions.py
 │   ├── report/        cli_render.py  markdown.py  sarif.py
 │   ├── api/           app.py  routes.py  sse.py  errors.py
@@ -1184,6 +1184,9 @@ use_cache = true
 
 [rules]
 disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]
+
+[storage]                    # Faz 10 (§11); yoksa CODEMENTOR_DB_PATH, o da yoksa ~/.codementor/codementor.db
+# db_path = "~/.codementor/codementor.db"
 
 [verify]                     # Faz 9 (§5.6); eşikler Faz 12 eval'inde ayarlanır
 evidence_window = 2

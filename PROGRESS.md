@@ -13,6 +13,7 @@
 | 7 | ✅ | faz/7-saglayicilar | 2026-09-29 | Claude Code / kod-denetci |
 | 8 | ✅ | faz/8-promptlar | 2026-09-30 | Claude Code / kod-denetci |
 | 9 | ✅ | faz/9-dogrulayici | 2026-09-30 | Claude Code / — |
+| 10 | ✅ | faz/10-pipeline | 2026-09-30 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -317,6 +318,43 @@
 - Regex tabanlı "kod mu?" sezgisi Türkçe düzyazıda kolayca yanılıyor; her desen için Türkçe negatif fixture şart.
 - Sınırsız uzunluktaki model çıktısına regex uygulamak karesel süre tuzağı; ölçmeden fark edilmiyor.
 
+## Faz 10 — Notlar
+**Yapılanlar:**
+- `pipeline/`: `orchestrator.py` (§4 akışı; katmanları çağırır, 235 satır), `stages.py` (statik aşama, referans çözüm yükleme, `VerifyArgs`, gerekçe/açıklama sızıntı süzgeci, bozulmada statik karmaşıklık), `passes.py` (`LLMSession`, onarım döngülü Geçiş A, sızıntıda 1 kez yeniden üretimli Geçiş B, `single_pass`), `assemble.py` (rapor + `stage_latency_ms`), `events.py` (`EventBus`, `StageTimer`), `templates.py` (LLM'siz erken çıkış ve bozulma soruları), `ids.py` (bağımlılıksız ULID), `versions.py` (`rules_version`).
+- `storage/`: `db.py` (SQLModel: `analyses`, `sessions`, `eval_runs`, `eval_results`), `cache.py` (§11'in 10 alanlı anahtarı, uzunluk önekli), `sessions.py` (ipucu merdiveni).
+- `report/`: `cli_render.py` (Rich; bulgular satır numaralı, vurgulu kod parçasıyla), `markdown.py`, `sarif.py` (SARIF 2.1.0).
+- CLI `codementor analyze PATH [--language --engine --question --session --provider --mode --format pretty|json|md|sarif --out --no-cache --tier1/--no-tier1]`; çıkış kodları §10; `asyncio.run` tek noktada; JSON/MD/SARIF stdout'a UTF-8 bayt.
+- Veri: `data/mentor_templates.yaml`. Modeller: `models/pipeline.py` (`StageEvent`, `ALL_STAGES`, `MentorTemplates`). Config: `[storage]`, `data.mentor_templates_file`. Bağımlılık: `sqlmodel`; geliştirme: `jsonschema`, `types-jsonschema`. Resmi şema: `tests/fixtures/sarif-schema-2.1.0.json` (oasis-tcs/sarif-spec).
+- Testler: `tests/integration/test_pipeline.py` (20 uçtan uca senaryo, FakeProvider, geçici SQLite), `test_cli_analyze.py`, `test_report_render.py`, `test_storage.py`, `test_mentor_templates.py`. Toplam 1687 test.
+- Demo: `docs/demo/analyze-unity-hard-inventory.{svg,json}` (claude_cli, gerçek çalıştırma).
+**Kabul kriterleri:**
+- [x] Erken çıkışta sağlayıcı hiç çağrılmıyor — `test_early_exit_never_calls_provider`, `test_exit_2_on_compile_failure_without_llm` (FakeProvider çağrı listesi boş).
+- [x] Onarım en fazla `max_repair_attempts` kez — `test_repair_bounded_then_degraded[0,1,2]`, `test_repair_succeeds`, `test_unjustified_conflict_repaired`.
+- [x] Bozulmada rapor dönüyor, `degraded=true`, Sokratik bölüm şablondan — aynı test + `test_provider_failure_degrades`.
+- [x] Aynı istek ikinci kez → `cache_hit=true`, sağlayıcı çağrılmıyor — `test_cache_hit_skips_provider`; canlı demoda 44 sn → 1,2 sn, 0 token.
+- [x] Aynı oturum + soru ile 3. gönderimde `hint_level=3` — `test_hint_level_rises_per_session_submission` (orta zorluk: 1 → 2 → 3, prompt'ta da görülüyor).
+- [x] SARIF çıktısı resmi SARIF 2.1.0 şemasıyla doğrulanıyor — `test_sarif_validates_against_official_schema`, `test_sarif_output_valid` (Draft4Validator).
+- [x] `meta.stage_latency_ms` tüm aşamaları içeriyor — `test_all_stage_latencies_present` (erken çıkışta da; çalışmayan aşama 0).
+- [x] Gerçek sağlayıcıyla manuel demo çalışıyor — **Ollama yerine claude_cli** (kullanıcı tercihi): `codementor analyze tests/golden/prompts/unity-hard-inventory/code.cs --engine unity --question unity-hard-inventory --provider claude_cli` → 44 sn, 20.480/4.455 token, onarım yok, O(n) ipucuyla uyumlu, 6 doğrulanmış LLM + 2 statik bulgu, Sokratik sorular SO asset'inin çalışma zamanında değiştirilmesine çözümü söylemeden yönlendiriyor; çıkış kodu 1 (yüksek önemli bulgu). Bozuk C → çıkış 2, LLM çağrısı yok.
+**Alınan kararlar (ve neden):**
+- **Bozulma kapsamı (§5.6):** Geçiş A onarımdan sonra da doğrulanamazsa ya da sağlayıcı/bütçe hatası olursa rapor yalnızca K1+K2'dir: LLM bulguları atılır, zaman karmaşıklığı statik ipucundan (`space_complexity = "?"`, güven ipucu güveninden 0.3/0.5/0.7), sorular şablondan. Yalnızca Geçiş B düşerse bozulma sayılmaz; sorular şablondan gelir, uyarı yazılır.
+- **Önbellek:** bozulmuş rapor önbellekten dönmez (geçici sağlayıcı hatası kalıcı olmasın); erken çıkış raporu önbelleğe girer (belirleyici). İsabet de `analyses`'a yeni kimlikle yazılır (iz). Anahtar alanları uzunluk önekli: alan sınırları kayarak çakışamaz.
+- **Oturum:** deneme sayısı önbellek isabetinde de artar (yeni gönderim = yeni deneme; ipucu seviyesi değiştiği için anahtar da değişir). Oturumsuz istek hep 1. deneme.
+- **Sızıntı süzgeci genişletildi (Faz 9 açık sorusu):** `reasoning_steps`'te çözüm ima eden adım rapordan çıkarılır, LLM bulgu açıklaması nötr şablonla değiştirilir (yeniden üretim yok). Test sırasında C işaretçi bildirimi (`Node *next = cur->next;`) kod sayılmıyordu → desen eklendi, `a * b = c` düzyazısı negatif testle korunuyor.
+- **`key_flaw_concept`:** raporda kalır (öğretmen/eval için); CLI ve Markdown yalnızca ipucu seviyesi 3'te gösterir (seviye 3 = kavram adı).
+- **SARIF:** kuralı olmayan LLM bulgusu `CM-LLM-<KATEGORİ>`, derleme tanıları `CM-COMPILE`; `artifactLocation.uri` ileri eğik çizgili.
+- **Katman sınırı:** SQLModel tabloları `storage/db.py`'de (veritabanı şeması; API/rapor şeması `models/`'de kalır, rapor JSON olarak saklanır). Orkestratör 250 satır sınırı için aşamalar `stages.py` + `passes.py` + `assemble.py`'ye bölündü.
+**Mimariden sapmalar (ADR linki):** yok. §16 pipeline dosya listesi, §17 `[storage]`, §5.2.4 şablon dosyası notu güncellendi. Canlı demo Ollama yerine claude_cli (kullanıcı kararı, 2026-09-30).
+**Açık sorular:**
+- "Referans çözüm okunamadı" uyarısı öğrenciye de görünüyor (`private/` yoksa); yerel geliştirmede gürültülü. Faz 11 API'sinde yalnızca log'a mı yazılmalı?
+- Typer'ın kendi kullanım hatası (geçersiz `--language` değeri) çıkış kodu 2 veriyor; §10'da 2 "derleme başarısız". Typer davranışını değiştirmek yerine belgelemek yeterli mi?
+- Maliyet tahmini (`pricing.yaml`, §13) ve `usage_estimated` bayrağının rapora taşınması yapılmadı (Faz 12).
+- `make` hâlâ yok; kontroller `uv run ...` ile.
+**Bu fazda öğrendiğim:**
+- Uçtan uca testler, birim testlerin kaçırdığı bir sızıntı desenini (C işaretçi bildirimi) buldu; öğrenci kodundan alıntı toleransı ile yeni kod arasındaki çizgi ince.
+- FakeProvider senaryolarıyla onarım/yeniden üretim sayılarını doğrudan saymak, "en fazla N kez" kriterini kanıtlamanın en net yolu.
+- Windows'ta Rich/Typer çıktısı kod sayfasına takılıyor; yönlendirilen biçimlerde stdout'a UTF-8 bayt yazmak gerekiyor.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -349,11 +387,13 @@
 - Faz 8 denetim D2: `prompt_version` her build'de şablon dosyalarını okuyor; Faz 10'da mtime tabanlı önbellek.
 - Faz 8 denetim D8: `prompts.dir` ve demo'nun golden dizini çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte).
 - Faz 8: prompt'ların `claude_cli` ile canlı karşılaştırması (analysis vs single_pass) Faz 12 eval'inde; token tahmininin gerçek `usage` ile kalibrasyonu.
-- Faz 9: sızıntı korumasını `reasoning_steps`, `key_flaw_concept` ve LLM bulgu açıklamalarına genişletmek (Faz 10 rapor kararına bağlı).
+- ~~Faz 9: sızıntı korumasını `reasoning_steps` ve LLM açıklamalarına genişletmek~~ → Faz 10'da yapıldı.
 - Faz 9: `LLMSocraticOutput.guiding_questions` öğelerine şemada `max_length` (şu an doğrulayıcı 1000 karakter üstünü ihlal sayıyor).
+- Faz 10: `prompt_version` her analizde şablon dosyalarını okuyor (Faz 8 D2); API'de mtime önbelleği.
+- Faz 10: CLI ilerleme göstergesi yalnızca aşama adını gösteriyor; token/süre canlı gösterilebilir.
 - CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
 
 ## Yapılacaklar (2026-09-30 itibarıyla sıra)
-1. **Faz 10 — Pipeline + `codementor analyze`:** uçtan uca; `verify_analysis`/`verify_socratic` kararlarını uygula (onarım 1 kez, yeniden üretim 1 kez, zarif bozulma §5.6); `private/` referans çözüm yükleme; erken çıkış Sokratik şablonları; `PolicyDecision.warnings` + fallback + doğrulayıcı uyarıları → `meta.warnings`; `BuiltPrompt.prompt_version/trimmed` → rapor; `key_flaw_concept` ve `reasoning_steps` gösterimi/sızıntı kararı.
-2. agy canlı doğrulaması (oturum açılınca). Ollama kullanılmıyor (kullanıcı tercihi, 2026-09-30).
-3. Faz 6'da ertelenen 10 kural; Faz 11 API → Faz 12 eval → Faz 13 web/kurulum.
+1. **Faz 11 — REST API** (`codementor serve`, SSE aşama olayları `EventBus` üzerinden).
+2. **Faz 12 — Eval:** eşikler (`leak_ngram_threshold`), analysis vs single_pass (ADR-003), token tahmini kalibrasyonu, maliyet tahmini.
+3. Faz 6'da ertelenen 10 kural; Faz 13 web/kurulum. agy canlı doğrulaması (oturum açılınca). Ollama kullanılmıyor (kullanıcı tercihi).
