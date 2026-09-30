@@ -26,6 +26,7 @@ from codementor.models.prompts import (
     SocraticPromptInput,
 )
 from codementor.models.provider import ChatMessage
+from codementor.models.request import NormalizedCode
 from codementor.prompts.budget import (
     CHARS_PER_TOKEN,
     MESSAGE_OVERHEAD_TOKENS,
@@ -77,6 +78,11 @@ def _messages(directory: Path, name: str, context: Mapping[str, Any]) -> list[Ch
     ]
 
 
+def _code_view(code: NormalizedCode, settings: Settings) -> str:
+    """Numaralı görünüm; `numbered_code` ablasyonunda düz kod (mimari §14.4)."""
+    return code.numbered_view if settings.prompts.numbered_code else code.text
+
+
 def _checklist(inp: AnalysisPromptInput, limit: int) -> list[str]:
     extra = inp.question.checklist_extra if inp.question else []
     items = list(extra) + [item.text for item in inp.checklist]
@@ -91,7 +97,7 @@ def _analysis_renderer(
     version = prompt_version(directory)
     lang, engine = inp.code.language, inp.code.engine
     fewshots = [
-        fewshot_view(e)
+        fewshot_view(e, numbered=settings.prompts.numbered_code)
         for e in select_fewshots(
             _fewshots(directory.resolve(), version), lang, engine, settings.prompts.max_fewshots
         )
@@ -105,7 +111,7 @@ def _analysis_renderer(
         "language": lang,
         "engine": engine,
         "question": inp.question,
-        "code_view": guard_delimiters(inp.code.numbered_view),
+        "code_view": guard_delimiters(_code_view(inp.code, settings)),
         "hint": inp.hint,
         "static_findings": inp.static_findings,
         "profile": mentoring_profile(
@@ -188,7 +194,7 @@ def build_socratic_messages(
         "language": inp.code.language,
         "engine": inp.code.engine,
         "question": question,
-        "code_view": guard_delimiters(inp.code.numbered_view),
+        "code_view": guard_delimiters(_code_view(inp.code, settings)),
         "findings": _severity_order(inp.findings),
         "complexity": inp.complexity,
         "profile": mentoring_profile(question.difficulty if question else None, inp.attempt),

@@ -1,0 +1,8 @@
+# Tahmini maliyet (mimari §13): 1 milyon token başına fiyat. Fiyatlar değişir; elle güncellenir
+# ve rapora yalnızca "tahmini" olarak yazılır. Burada olmayan sağlayıcı/model için cost_est boş
+# kalır (ör. claude_cli abonelikle çalışır, token başına ücret yok; ollama yerel).
+version: 1
+currency: USD
+prices: []
+# Örnek:
+#   - { provider: openai, model: "<model-adı>", input_per_mtok: 0.0, output_per_mtok: 0.0 }

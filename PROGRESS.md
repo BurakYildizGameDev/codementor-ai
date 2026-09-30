@@ -15,6 +15,7 @@
 | 9 | ✅ | faz/9-dogrulayici | 2026-09-30 | Claude Code / — |
 | 10 | ✅ | faz/10-pipeline | 2026-09-30 | Claude Code / — |
 | 11 | ✅ | faz/11-api | 2026-09-30 | Claude Code / — |
+| 12 | 🔄 12A bitti (altyapı + C taslakları) | faz/12-eval | 2026-09-30 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -385,6 +386,22 @@
 - SSE için istek başına olay yolu şart: paylaşılan bir abonelik listesi eşzamanlı iki analizin olaylarını birbirine karıştırırdı; bunu doğrudan test etmek (asyncio.gather ile iki akış) ucuz.
 - FastAPI senkron rotaları iş parçacığı havuzunda çalıştırıyor; SQLite bağlantısının iş parçacığına bağlı olduğu burada ortaya çıkıyor.
 
+## Faz 12 — Notlar (devam ediyor)
+**Durum:** 12A (altyapı + ilk taslak grubu) bitti, `faz/12-eval` dalında commit'li, main'e alınmadı. 12B (etiket incelemesi) ve 12C (ölçüm) kaldı.
+**Yapılanlar (12A):**
+- `src/codementor/eval/`: `dataset.py` (yükleme + doğrulama: şema, kimlik = dizin, uzantı = dil, satırlar kodda, dev/test/_draft arasında aynı kimlik/kod yok; `promote` yorumları koruyarak `reviewed: true` yazar), `metrics.py` (§14.2'nin tamamı; eşleşme: aynı kategori + satır farkı ≤ 2, bire bir, en yakın önce), `runner.py` (önbellek kapalı, veritabanı yok; `StaticOnlyProvider` ile LLM'siz taban çizgisi; ablasyonlar `facts|line_numbers|fewshot0|fewshot1`; sonuç `eval/results/{zaman}_{sağlayıcı}_{model}_{mod}[_abl]_{bölüm}.json`), `compare.py` (Markdown tablo + sürüm dipnotu), `review.py` (taslak etiketleri statik analizle karşılaştırır, etiketi değiştirmez).
+- CLI: `codementor eval run --split dev|test [--provider --mode --static-only --ablate --limit --final]` (test yalnızca `--final` ile), `eval compare`, `eval check-drafts`, `eval promote <id…> --split`.
+- Modeller `models/eval.py`; `data/pricing.yaml` (boş, fiyatlar elle); config `prompts.include_facts`, `prompts.numbered_code` (ablasyon); `verify_a` olayına `schema:ok|invalid` notu (rapor şeması değişmeden şema metriği için); few-shot'lar da `numbered_code` ablasyonuna uyar.
+- `.gitignore`: `eval/results/*.json` artık commit edilebilir (Faz 13 README tablosu bu dosyalarla birebir olacak).
+- Testler `tests/unit/eval/` (35): her metrik için elle hesaplanmış bilinen girdi → skor, veri seti, koşucu, ablasyon prompt'u, karşılaştırma, taslak kontrolü, CLI. Toplam 1754 test.
+- **Taslaklar:** `eval/dataset/_draft/c-001…c-016` (C grubu: 4 sözdizimi hatalı, 2 injection, 2 temiz, 8 sorunlu; dev 6 / test 10). Satırlar betikle koddan hesaplandı; `check-drafts` 16/16 uyumlu (statik ipucu ve kural bulguları etiketle aynı). **Etiketler henüz insan tarafından incelenmedi (`reviewed: false`).**
+**Kararlar:** "yerel model" satırları Ollama yerine claude_cli ile ölçülecek (kullanıcı tercihi); `leak_rate` §14.2 gereği `must_not_contain` ile ölçülür, `private/solutions/` zorunlu değil; injection örneğinde erken çıkış da direnç sayılır; `complexity_time_class_acc` değişkenleri tek değişkene indirger (`m*n` ≈ `n^2`).
+**Sıradaki adımlar (yeni oturumda):**
+1. C taslaklarını incele (sorular: c-016 realloc → `resource_leak`, c-013 scanf → `input_handling`, c-014 Fibonacci `performance` bulgusu olsun mu, `must_not_contain` ifadeleri, c-010 `n = 0` durumu) → `uv run codementor eval promote c-001 … --split dev|test`.
+2. Aynı biçimde C++, C#, Unity, Unreal grupları (16'şar; üretici betik oturum scratchpad'indeydi, gerekirse yeniden yazılır).
+3. 12C: `eval run --split dev --static-only`, two_pass ve single_pass (claude_cli), ≥ 2 ablasyon, `eval compare`, `docs/eval-findings.md`, ADR-0003; en sonda bir kez `--split test --final`.
+**Açık sorular:** `make` hâlâ yok. Tam pakette bir kez zamanlamaya bağlı tek test hatası görüldü, tekrarlanmadı (yük altında süre sınırlı bir performans testi olabilir).
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -426,6 +443,6 @@
 - CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
 
 ## Yapılacaklar (2026-09-30 itibarıyla sıra)
-1. **Faz 12 — Eval:** veri seti + metrikler + karşılaştırma; eşikler (`leak_ngram_threshold`), analysis vs single_pass (ADR-003), token tahmini kalibrasyonu, maliyet tahmini.
-2. **Faz 13 — Web UI + kurulum** (API kimlik/hız sınırı kararı burada).
-3. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması (oturum açılınca). Ollama kullanılmıyor (kullanıcı tercihi).
+1. **Faz 12 devamı** (dal `faz/12-eval`): C taslak incelemesi → kalan 64 taslak → ölçümler (bkz. "Faz 12 — Notlar / Sıradaki adımlar").
+2. **Faz 13 — Web UI + kurulum** (Docker yok; API kimlik/hız sınırı kararı burada).
+3. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması. Ollama kullanılmıyor (kullanıcı tercihi). main origin'in önünde, push edilmedi.

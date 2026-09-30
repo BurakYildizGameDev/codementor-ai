@@ -75,11 +75,11 @@ def select_fewshots(
     return (exact + related)[:limit]
 
 
-def fewshot_view(example: FewShotExample) -> FewShotView:
-    """Şablon için numaralı kod ve kısa JSON metinleri."""
+def fewshot_view(example: FewShotExample, *, numbered: bool = True) -> FewShotView:
+    """Şablon için kod (numaralı; `numbered_code` ablasyonunda düz) ve kısa JSON metinleri."""
     return FewShotView(
         title=example.title,
-        numbered_code=numbered_view(split_lines(example.code)),
+        numbered_code=numbered_view(split_lines(example.code)) if numbered else example.code,
         static_hint=example.static_hint,
         static_findings=example.static_findings,
         analysis_json=json.dumps(example.analysis.model_dump(mode="json"), ensure_ascii=False),

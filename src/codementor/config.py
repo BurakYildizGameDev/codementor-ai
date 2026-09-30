@@ -61,6 +61,9 @@ class PromptSettings(BaseModel):
     reserve_output_tokens: int = Field(default=4096, ge=256)
     max_fewshots: int = Field(default=2, ge=0, le=4)
     max_checklist_items: int = Field(default=12, ge=0)
+    # Ablasyon (mimari §14.4, eval): normalde ikisi de açık
+    include_facts: bool = Field(default=True, description="Statik olgular + ipucu prompt'ta")
+    numbered_code: bool = Field(default=True, description="Kod numaralı görünümle")
 
 
 class ApiSettings(BaseModel):

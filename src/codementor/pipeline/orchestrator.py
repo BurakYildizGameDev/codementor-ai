@@ -200,7 +200,7 @@ class Orchestrator:
         reference, notes = stages.load_reference(run.question)
         run.warnings += notes
         verify = stages.VerifyArgs(
-            code, static.findings, static.hint, run.context, reference, settings
+            code, static.findings, static.facts_input.hint, run.context, reference, settings
         )
         llm = LLMSession(provider, settings, timer)
         mode = run.request.options.mode or PipelineMode(settings.pipeline.mode)

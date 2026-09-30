@@ -16,7 +16,7 @@ from codementor.config import Settings
 from codementor.log import get_logger
 from codementor.models.bigo import parse_bigo
 from codementor.models.enums import FindingSource
-from codementor.models.facts import ComplexityHint
+from codementor.models.facts import CodeFacts, ComplexityHint
 from codementor.models.findings import Finding
 from codementor.models.llm_output import LLMAnalysisOutput, LLMSocraticOutput
 from codementor.models.pipeline import MentorTemplates
@@ -73,12 +73,13 @@ def run_static(
         checklist = Checklists.load(settings.data.checklists_dir).select_items(
             code.language, code.engine, concept_tags, settings.prompts.max_checklist_items
         )
+    shown = settings.prompts.include_facts  # §14.4 ablasyonu
     inp = AnalysisPromptInput(
         code=code,
         question=question,
-        facts=facts,
-        hint=hint,
-        function_hints=hints,
+        facts=facts if shown else CodeFacts(),
+        hint=hint if shown else None,
+        function_hints=hints if shown else [],
         static_findings=rules.findings,
         checklist=checklist,
         attempt=attempt,

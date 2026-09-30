@@ -9,6 +9,7 @@ import typer
 
 from codementor import __version__
 from codementor.cli.analyze import analyze
+from codementor.cli.eval import eval_app
 from codementor.cli.providers import providers_app
 from codementor.cli.questions import questions_app
 from codementor.cli.rules import rules_app
@@ -38,6 +39,7 @@ app.add_typer(schema_app)
 app.add_typer(questions_app)
 app.add_typer(rules_app)
 app.add_typer(providers_app)
+app.add_typer(eval_app)
 app.command("analyze")(analyze)
 app.command("serve")(serve)
 

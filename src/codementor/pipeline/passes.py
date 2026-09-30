@@ -30,6 +30,10 @@ from codementor.prompts.builder import (
 from codementor.providers.base import LLMProvider
 from codementor.verify.schema_check import check_schema
 
+# `verify_a` olayının `detail`i: eval `schema_valid_first_try/after_repair` buradan ölçer
+SCHEMA_OK = "schema:ok"
+SCHEMA_INVALID = "schema:invalid"
+
 
 @dataclass
 class LLMSession:
@@ -88,6 +92,7 @@ async def run_pass_a[M: BaseModel](
             parsed, check = check_schema(model, parsed=result.parsed, raw_text=result.raw_text)
             if schema_first_try is None:
                 schema_first_try = check.ok
+            llm.timer.note(verify_stage, SCHEMA_OK if check.ok else SCHEMA_INVALID)
             errors = check.errors
             verification: AnalysisVerification | None = None
             analysis: LLMAnalysisOutput | None = None

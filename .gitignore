@@ -1,6 +1,7 @@
 .env
 private/
-eval/results/
+# eval/results/*.json commit edilir: README tablosu bu dosyalarla birebir (Faz 13)
+eval/results/*.tmp
 *.db
 __pycache__/
 *.py[cod]

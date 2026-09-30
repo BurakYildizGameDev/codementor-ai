@@ -41,6 +41,7 @@ class StageTimer:
     bus: EventBus
     latency_ms: dict[str, int] = field(default_factory=dict)
     tokens: dict[str, int] = field(default_factory=dict)
+    notes: dict[str, str] = field(default_factory=dict)
 
     def emit(
         self,
@@ -67,6 +68,10 @@ class StageTimer:
         self.latency_ms.setdefault(stage, 0)
         self.emit(stage, "skipped", detail=detail)
 
+    def note(self, stage: Stage, detail: str) -> None:
+        """Aşama tamamlandığında olayın `detail` alanına yazılır (ör. eval için şema sonucu)."""
+        self.notes[stage] = detail
+
     def add_tokens(self, stage: Stage, count: int) -> None:
         self.tokens[stage] = self.tokens.get(stage, 0) + count
 
@@ -84,4 +89,10 @@ class StageTimer:
         finally:
             elapsed = int((time.perf_counter() - start) * 1000)
             self.latency_ms[stage] = self.latency_ms.get(stage, 0) + elapsed
-            self.emit(stage, status, duration_ms=elapsed, tokens=self.tokens.get(stage, 0))
+            self.emit(
+                stage,
+                status,
+                duration_ms=elapsed,
+                tokens=self.tokens.get(stage, 0),
+                detail=self.notes.pop(stage, None),
+            )

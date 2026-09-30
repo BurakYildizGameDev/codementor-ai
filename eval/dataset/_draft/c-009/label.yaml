@@ -1,0 +1,16 @@
+# Tampon taşması: strcpy + sabit boyutlu yığın tamponu (C-BUF-001)
+id: c-009
+language: c
+engine: none
+question_id: c-easy-reverse-string
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: memory_safety, line: 6, rule_id: C-BUF-001, note: "32 bayttan uzun girdi taşar" }
+  must_not_contain: ["strncpy(", "snprintf("]
+tags: [buffer]
+split: test
+reviewed: false

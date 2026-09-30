@@ -1,0 +1,14 @@
+# Temiz: doğru ikili arama O(log n) — yanlış pozitif ölçümü
+id: c-011
+language: c
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "log n"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: []
+tags: [clean, complexity]
+split: test
+reviewed: false

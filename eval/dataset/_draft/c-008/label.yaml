@@ -1,0 +1,15 @@
+# Bellek sızıntısı: her çağrıda malloc, free yok (C-MEM-001)
+id: c-008
+language: c
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: resource_leak, line: 4, rule_id: C-MEM-001, note: "tmp serbest bırakılmıyor" }
+  must_not_contain: ["free(tmp)"]
+tags: [leak]
+split: dev
+reviewed: false
