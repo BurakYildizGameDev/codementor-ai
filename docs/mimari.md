@@ -389,8 +389,8 @@ class UnityAllocInUpdate(Rule):
 |---|---|---|---|
 | Çok kolay | 2 | 2–3 | Evet |
 | Kolay | 2 | 2–3 | Evet |
-| Orta | 1 | 2 | Yalnızca 2. denemeden sonra |
-| Zor | 1 | 1–2 | Yalnızca 3. denemeden sonra |
+| Orta | 1 | 2 | 2. denemeden itibaren |
+| Zor | 1 | 1–2 | 3. denemeden itibaren |
 
 **İpucu merdiveni:** Seviye 1 = kavramsal soru; Seviye 2 = satıra işaret eden soru; Seviye 3 = kavram adı + benzetme. Aynı `session_id` ve `question_id` ile yapılan her yeni gönderim seviyeyi 1 artırır (en fazla 3).
 
@@ -418,6 +418,10 @@ Sistem prompt'unun çekirdek kuralları (özet):
 - Bağlam limiti sağlayıcı yapılandırmasından okunur.
 - Öncelik sırası (bütçe aşılırsa sondan kırpılır): kod → şema → çekirdek kurallar → kural bulguları → olgular → kontrol listesi → few-shot.
 - Kod bütçeye sığmıyorsa istek reddedilir (kod asla kırpılmaz; kırpılmış kod yanlış analiz üretir).
+- Bütçe, prompt'un gidebileceği her sağlayıcının (varsayılan + fallback) en darıdır: bağlam
+  (`context_tokens`, yoksa `num_ctx`, yoksa `prompts.default_context_tokens`) − çıktı payı − şema.
+  `limits.max_bytes` (40 KB ≈ 15k token) sınırındaki kod için en dar sağlayıcıda ~20k token
+  prompt bütçesi gerekir (Ollama'da `num_ctx = 32768`).
 
 ### 5.5 K4 — Sağlayıcı Adaptörü
 
@@ -596,6 +600,11 @@ class LLMSocraticOutput(BaseModel):
     key_flaw_concept: str = Field(max_length=80)
     guiding_questions: list[str] = Field(min_length=1, max_length=4)
     next_step_hint: str | None = Field(default=None, max_length=300)
+
+
+class LLMSinglePassOutput(BaseModel):  # pipeline.mode = "single_pass" (§5.4.2)
+    analysis: LLMAnalysisOutput
+    socratic: LLMSocraticOutput
 ```
 
 ### 6.4 Rapor modeli
@@ -1174,6 +1183,13 @@ use_cache = true
 [rules]
 disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]
 
+[prompts]                    # Faz 8 (§5.4.4-5.4.5)
+dir = "prompts/v1"
+default_context_tokens = 32768   # sağlayıcıda context_tokens / num_ctx yoksa
+reserve_output_tokens = 4096     # sağlayıcıda max_tokens yoksa
+max_fewshots = 2
+max_checklist_items = 12
+
 [providers]
 default = "ollama"
 fallback = ["deepseek"]
@@ -1198,6 +1214,7 @@ api_key_env = "DEEPSEEK_API_KEY"
 
 [providers.claude_cli]         # ADR-0012; `claude` oturumu kullanılır
 command = "claude"
+context_tokens = 200000        # prompt bütçesi (§5.4.5); her sağlayıcıda tanımlanabilir
 model = "claude-opus-5-5"
 timeout_s = 300
 

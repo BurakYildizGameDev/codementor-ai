@@ -11,7 +11,7 @@
 | 5 | ✅ | faz/5-olgular | 2026-09-29 | Claude Code / kod-denetci |
 | 6 (daraltılmış) | ✅ | faz/6-kurallar | 2026-09-29 | Claude Code / kod-denetci |
 | 7 | ✅ | faz/7-saglayicilar | 2026-09-29 | Claude Code / kod-denetci |
-
+| 8 | ✅ | faz/8-promptlar | 2026-09-30 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -247,6 +247,43 @@
 - Faz 4 `run_process` de `argv[0]`'ı çıplak adla CreateProcess'e veriyor (derleyiciler); aynı cwd araması riski orada da var (bkz. Sonraya).
 - `deepseek-r1:8b` bu makinede uzun prompt'ta 3 dk+; yerel varsayılan model seçimi Faz 12 eval'ine kadar açık.
 
+## Faz 8 — Notlar
+**Yapılanlar:**
+- Şablonlar (`prompts/v1/`, Jinja2, `StrictUndefined`): `analysis.{system,user}.j2`, `socratic.{system,user}.j2`, `single_pass.{system,user}.j2`, `repair.user.j2`; ortak parçalar `_core_rules.j2` (§5.4.4'ün 7 kuralı + Türkçe açıklama kuralı), `_mentoring_rules.j2`, `_macros.j2` (soru, kod, ipucu, statik bulgular, olgu özeti, kontrol listesi, few-shot, mentorluk ayarı). Python'da prompt metni yok.
+- Few-shot'lar: `prompts/v1/fewshots/{c_none,cpp_none,csharp_none,csharp_unity,cpp_unreal}_*.yaml` (dil/motor başına 1). Her örnekte statik ipucu, statik analizin zaten bulduğu bulgular ve bunları **tekrar etmeyen**, kanıtı satırdan birebir alıntılayan doğru yanıt var; biri (`csharp_none`) `agreement: conflicts` gösteriyor.
+- `src/codementor/prompts/`: `templates.py` (ortam, `guard_delimiters`, `prompt_version`), `budget.py` (`estimate_tokens` = ⌈karakter/3⌉, `context_budget`, `fit_to_budget`, `PromptBudgetError`), `fewshot.py` (yükleme + kanıt doğrulama + seçim), `summary.py` (`digest_facts`: `full`/`brief`), `mentoring.py` (§5.4.3), `builder.py` (`build_analysis_messages`, `build_socratic_messages`, `build_single_pass_messages`, `build_repair_messages`), `_demo.py` (`python -m codementor.prompts.builder --demo <soru> [--code] [--mode]`).
+- Modeller: `models/prompts.py` (`QuestionContext`, `MentoringProfile`, `FewShotExample`, `FactsDigest`, `AnalysisPromptInput`, `SocraticPromptInput`, `BuiltPrompt`), `models/llm_output.LLMSinglePassOutput` + `schemas/llm_single_pass.schema.json`.
+- Config: `[prompts]` (`dir`, `default_context_tokens`, `reserve_output_tokens`, `max_fewshots`, `max_checklist_items`), sağlayıcılarda `context_tokens`; mimari §17 güncellendi. Bağımlılık: `jinja2`.
+- Testler: `test_prompt_builder.py`, `test_prompt_budget.py`, `test_fewshot.py`, `test_facts_summary.py`, `test_mentoring_profile.py`; golden `tests/golden/prompts/{unity-hard-inventory,c-medium-linked-list,free-cpp}` × {analysis, single_pass, socratic}. Toplam 1442 test (denetim sonrası 1468).
+**Kabul kriterleri:**
+- [x] Kod her zaman `<user_code>` içinde ve numaralı görünümde — `test_code_inside_user_code_numbered`, golden; koddaki `</user_code>` kaçışlanıyor (`test_user_code_delimiter_escaped`, `free-cpp` vakası).
+- [x] Sistem prompt'u §5.4.4 çekirdek kurallarını içeriyor — `test_system_prompt_has_core_rules` (analysis + single_pass), `test_socratic_system_forbids_solution`.
+- [x] Referans çözüm hiçbir prompt'ta yok — `test_reference_solution_never_in_prompt` (çözüm dosyası okunabilir durumdayken benzersiz satır ve yol aranıyor); `QuestionContext` bu alanı yapısal olarak taşımıyor.
+- [x] Bütçe aşımında few-shot → kontrol listesi → olgular (→ kural bulguları) sırasıyla kırpılıyor; kod sığmazsa istisna — `test_trim_order_*`, `test_facts_trimmed_before_static_findings`, `test_code_never_trimmed_and_too_large_raises`, `test_budget_trims_fewshots_first`, `test_code_too_large_raises`.
+- [x] Zorluk → ipucu seviyesi tablosu (§5.4.3) — `test_mentoring_profile.py`, `test_socratic_uses_mentoring_profile`.
+- [x] Şablon değişince `prompt_version` değişiyor — `test_prompt_version_changes_when_template_changes` / `_fewshot_changes`; satır sonu farkı değiştirmiyor.
+- [x] `single_pass` modu destekleniyor — `build_single_pass_messages`, `LLMSinglePassOutput`, `test_single_pass_messages`, golden.
+**Alınan kararlar (ve neden):**
+- **`prompt_version` = `"<dizin adı>+" + sha256(şablonlar + few-shot'lar)[:8]`**: few-shot'lar da prompt'u değiştirdiği için hash'e dahil; CRLF → LF normalize (Windows ve CI aynı sürümü üretsin).
+- **Bütçe:** bağlam = sağlayıcının `context_tokens` → `num_ctx` → `prompts.default_context_tokens`; çıktı payı = `max_tokens` → `reserve_output_tokens`; şema tokenları API'de gitse de düşülür. Sayım sağlayıcıdan bağımsız ve temkinli (3 karakter/token). Kırpma kademeli: few-shot'lar tek tek, kontrol listesi yarı → yok, olgular tam → kısa → yok, kural bulguları açıklamalı → yalnız kanıt → yalnız sayı. Sokratik geçiş kırpılmaz (sığmazsa istisna).
+- **Olgular tam JSON değil:** `digest_facts` süzer (O(1) ve maliyeti bilinmeyen çağrılar gürültü; `brief` yalnızca sıcak yol/iç içe yapılar), metni şablon üretir.
+- **Few-shot'lar yüklenirken doğrulanır:** kanıt `line_start..line_end` aralığında birebir geçmeli (`"Line 3:"` önekli kanıt reddedilir), statik bulgu tekrarı reddedilir. Ayrıca `test_repo_fewshots_match_static_engine` örnekteki statik bulguların ve ipucunun **gerçek motor çıktısıyla aynı** olduğunu doğrular. İlk taslakta Unity örneği `GetComponent` sorununu LLM bulgusu olarak gösteriyordu, oysa UNITY-PERF-001 onu zaten buluyor: örnek tekrarı öğretiyordu.
+- **Sınırlayıcı koruması (§12):** kullanıcı kaynaklı her metin (kod görünümü, kanıtlar, açıklamalar, adlar) `guard` ile `&lt;/user_code>` biçimine çevrilir; soru metni güvenilir veri (soru bankası).
+- **Sokratik geçişte `hint_ladder[seviye]`** "aynen kopyalama, uyarlayarak kullan" notuyla verilir; `name_concept = false` iken kavram adı yalnızca `key_flaw_concept` alanına yazılır.
+- **Serbest mod:** zorluk varsayılanı orta; kontrol listesi yalnızca `core` maddeler.
+**Denetim (kod-denetci):** Yüksek yok. Orta ×7 — (O1) bütçe yalnızca tek sağlayıcıya göre hesaplanıyordu, `claude_cli` + fallback `ollama` zincirinde 28k token'lık prompt 16k bağlama gidip sessizce kesilebilirdi → zincirin en darı, bilinmeyen ad `PromptConfigError`; (O2) 40 KB sınırındaki kod varsayılan sağlayıcıda reddediliyordu, fonksiyon ipuçları kırpılamıyordu ve hata kodu suçluyordu → ipuçları olgu kademesine bağlandı, hata kodun mu geri kalanın mı taştığını söylüyor, Anthropic/Claude CLI için `context_tokens = 200000`; (O3) onarım prompt'u bütçeyi denetlemiyordu → ham yanıt kalan yere göre kırpılıyor, yer yoksa istisna; (O4) onarım hataları çerçevesiz user mesajıydı → `<validation_errors>` veri çerçevesi, `guard`, `repair_errors()` `input_value` vermiyor; (O5) sınırlayıcı koruması Unicode varyantlarını (sıfır genişlikli boşluk, Kiril harf, tam genişlikli ayraç) kaçırıyordu → görünmez karakter atan + NFKC + benzer harf katlayan iskelet üzerinde eşleşme, çekirdek kurallara yapısal kural (kod yalnızca kendi satırındaki `</user_code>` ile biter); (O6) few-shot soruları satır numarası veriyordu (seviye 1 ile çelişki) → yeniden yazıldı, testle sabit; (O7) kırpma kademeleri gerçek şablonda test edilmiyordu → `test_prompt_render.py`. Düşük (uygulanan) — `prompt_version` uzantısı büyük/küçük harf duyarsız, `O(1*)` → "O(1) amortize", mimari §5.4.3 "itibaren", statik bulgunun satırına yeni bulgu reddi, kesişim örneği `O(n*m)`, eksik few-shot dizini log uyarısı, bozuk bağlam ayarı yapılandırma hatası, test dosyası bölündü (`prompt_helpers.py`, `test_prompt_render.py`, `test_prompt_version.py`) ve `type: ignore`'lar kaldırıldı, PROGRESS'teki çift satır, §6.3'e `LLMSinglePassOutput`. Ertelenen: D2 (`prompt_version` her build'de dosyaları okur; Faz 10'da mtime önbelleği), D3 (kaçışlanmış kanıt Faz 9'da ters çevrilmeli), D8 (göreli `prompts.dir`).
+**Mimariden sapmalar (ADR linki):** yok. §5.4.2'de şeması tanımlanmamış tek geçiş için `LLMSinglePassOutput` (= analiz + Sokratik) eklendi; §17'ye `[prompts]` ve `context_tokens` eklendi (yeni bileşen değil, boşluk doldurma).
+**Açık sorular:**
+- `name_concept = false` iken `key_flaw_concept` raporda öğrenciye gösterilmeli mi? Faz 10 (pipeline/rapor) karar vermeli.
+- 3 karakter/token tahmini Türkçe + kod için kaba; Faz 12 eval'de gerçek `usage` ile kalibre edilmeli.
+- Prompt'lar bu fazda canlı denenmedi (kullanıcı isteğiyle Ollama kullanılmadı); `claude_cli` ile uçtan uca deneme Faz 9/10'da.
+- Golden vakalarda görülen Faz 5 sınırı: `RemoveAll(...)` maliyet tablosunda yok, `Remove: O(1)` ipucu çıkıyor.
+- `make` hâlâ yok; kontroller `uv run ...` ile.
+**Bu fazda öğrendiğim:**
+- Few-shot'lar da test edilmesi gereken veri: gerçek statik motorla karşılaştırılmadan yazılan "doğru yanıt" örneği, modele tam da yapmamasını istediğimiz şeyi (statik bulguyu tekrar) öğretiyordu.
+- Görev metninde `<user_code>` etiketini düz yazıyla anmak sınırlayıcı sayısını bozuyor; talimatlarda etiket adı yerine "öğrencinin kodu" demek daha güvenli.
+- Bash heredoc'ları Türkçe metinde yine bozuldu; PROGRESS güncellemesi betik dosyasıyla yapıldı.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -274,11 +311,15 @@
 - Faz 7: token tahmini (Ollama/DeepSeek sayım bildirmezse) ve `config/pricing.yaml` maliyet tahmini (mimari §13) — Faz 10/12.
 - ~~Faz 4 `run_process` çıplak `argv[0]`~~ → çözüldü (2026-09-29): yalnızca mutlak yol, `test_bare_or_relative_executable_rejected`.
 - CLI ajanları: gerçek `run_process` ile uçtan uca test (sahte bir CLI betiğiyle: stdin, boş cwd, ortamda başka anahtar yok); agy canlı doğrulaması (oturum açılınca).
+- Faz 8: `call_costs.yaml`'a C# `RemoveAll`/`RemoveAt(0)`/`Insert(0, …)` maliyetleri (golden'da `Remove: O(1)` ipucu).
+- Faz 8 denetim D3: kod görünümünde `<user_code>` benzeri dizi `&lt;` ile kaçışlanıyor; model kanıtı kaçışlı haliyle kopyalarsa Faz 9 doğrulayıcısı karşılaştırmadan önce `&lt;` → `<` ters çevirmeli.
+- Faz 8 denetim D2: `prompt_version` her build'de şablon dosyalarını okuyor; Faz 10'da mtime tabanlı önbellek.
+- Faz 8 denetim D8: `prompts.dir` ve demo'nun golden dizini çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte).
+- Faz 8: prompt'ların `claude_cli` ile canlı karşılaştırması (analysis vs single_pass) Faz 12 eval'inde; token tahmininin gerçek `usage` ile kalibrasyonu.
 - CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
 
-## Yapılacaklar (2026-09-29 itibarıyla sıra)
-1. **Faz 8 — Prompt orkestrasyonu:** kanıt biçimini ve "statik bulguları tekrar etme"yi örnekle göster (küçük yerel modeller için), sistem talimatı şablondan.
-2. **Faz 9 — Verifier:** kanıtı `line_start..line_end` aralığında ara; öğrencinin kendi kodundan alıntıyı sızıntı sayma; Türkçe `;` kod değildir; "O(n^2) per frame" gibi karmaşıklık eklerini normalize et; onarım (repair) döngüsü.
-3. **Faz 10 — Pipeline + `codementor analyze`:** uçtan uca; erken çıkış Sokratik şablonları; `PolicyDecision.warnings` + fallback uyarıları → `meta.warnings`.
-4. agy canlı doğrulaması (oturum açılınca), Ollama yerel model seçimi (Faz 12 eval).
-5. Faz 6'da ertelenen 10 kural; Faz 11 API → Faz 12 eval → Faz 13 web/kurulum.
+## Yapılacaklar (2026-09-30 itibarıyla sıra)
+1. **Faz 9 — Verifier:** kanıtı `line_start..line_end` aralığında ara; öğrencinin kendi kodundan alıntıyı sızıntı sayma; Türkçe `;` kod değildir; "O(n^2) per frame" gibi karmaşıklık eklerini normalize et; onarım döngüsü (`build_repair_messages` hazır).
+2. **Faz 10 — Pipeline + `codementor analyze`:** uçtan uca; erken çıkış Sokratik şablonları; `PolicyDecision.warnings` + fallback uyarıları → `meta.warnings`; `BuiltPrompt.prompt_version/trimmed` → rapor; `key_flaw_concept` gösterimi.
+3. agy canlı doğrulaması (oturum açılınca). Ollama kullanılmıyor (kullanıcı tercihi, 2026-09-30).
+4. Faz 6'da ertelenen 10 kural; Faz 11 API → Faz 12 eval → Faz 13 web/kurulum.
