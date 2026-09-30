@@ -24,4 +24,9 @@ jobs:
         run: uv run ruff format --check .
       - if: runner.os == 'Linux'
         run: uv run mypy src/
-      - run: uv run pytest -m "not live"
+      - if: runner.os == 'Linux'
+        run: uv run pytest -m "not live"
+      # Windows runner'daki g++ (MinGW) ilk çağrıda 10 sn'yi aşıyor, clang++ MSVC hedefli;
+      # derleyici testleri Linux'ta koşar (PROGRESS "Sonraya")
+      - if: runner.os == 'Windows'
+        run: uv run pytest -m "not live and not compiler"
