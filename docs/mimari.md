@@ -921,7 +921,9 @@ event: report
 data: { ...AnalysisReport... }
 ```
 
-**Hata kodları:** `413` kod çok büyük · `422` dil belirlenemedi / geçersiz istek · `502` tüm sağlayıcılar başarısız (yine de `degraded` rapor döndürülebiliyorsa `200` + `degraded=true` tercih edilir) · `503` sağlayıcı yapılandırması eksik veya servis hazır değil. (Tier 1 derleyicisinin olmaması hata değildir: `SKIPPED`.)
+Aşama durumları: `started` · `completed` · `skipped` (çalışmayan aşama, ör. erken çıkışta LLM) · `failed`. Akış başladıktan sonra oluşan hata son olay olarak `event: error` (problem+json gövdesi) gelir; istek gövdesi geçersizse akış hiç açılmaz (422). Yanıt başlıkları: `Cache-Control: no-cache`, `X-Accel-Buffering: no`.
+
+**Hata kodları:** `404` soru/analiz bulunamadı · `413` kod çok büyük · `422` dil belirlenemedi / geçersiz istek · `502` tüm sağlayıcılar başarısız (yine de `degraded` rapor döndürülebiliyorsa `200` + `degraded=true` tercih edilir) · `503` sağlayıcı yapılandırması eksik veya servis hazır değil. (Tier 1 derleyicisinin olmaması hata değildir: `SKIPPED`.)
 
 ---
 
@@ -1136,7 +1138,7 @@ codementor-ai/
 │   ├── pipeline/      orchestrator.py  stages.py  passes.py  assemble.py  events.py  templates.py  ids.py  versions.py
 │   ├── storage/       db.py  cache.py  sessions.py
 │   ├── report/        cli_render.py  markdown.py  sarif.py
-│   ├── api/           app.py  routes.py  sse.py  errors.py
+│   ├── api/           app.py  routes.py  sse.py  errors.py  state.py  examples/
 │   ├── cli/           main.py
 │   └── eval/          dataset.py  metrics.py  runner.py  compare.py
 ├── data/
@@ -1184,6 +1186,11 @@ use_cache = true
 
 [rules]
 disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]
+
+[api]                        # Faz 11 (§9, §12)
+host = "127.0.0.1"           # 0.0.0.0 ile açılırsa `serve` uyarı basar
+port = 8000
+cors_origins = ["http://127.0.0.1:5173", "http://localhost:5173"]
 
 [storage]                    # Faz 10 (§11); yoksa CODEMENTOR_DB_PATH, o da yoksa ~/.codementor/codementor.db
 # db_path = "~/.codementor/codementor.db"

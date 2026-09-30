@@ -14,6 +14,7 @@
 | 8 | ✅ | faz/8-promptlar | 2026-09-30 | Claude Code / kod-denetci |
 | 9 | ✅ | faz/9-dogrulayici | 2026-09-30 | Claude Code / — |
 | 10 | ✅ | faz/10-pipeline | 2026-09-30 | Claude Code / — |
+| 11 | ✅ | faz/11-api | 2026-09-30 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -355,6 +356,35 @@
 - FakeProvider senaryolarıyla onarım/yeniden üretim sayılarını doğrudan saymak, "en fazla N kez" kriterini kanıtlamanın en net yolu.
 - Windows'ta Rich/Typer çıktısı kod sayfasına takılıyor; yönlendirilen biçimlerde stdout'a UTF-8 bayt yazmak gerekiyor.
 
+## Faz 11 — Notlar
+**Yapılanlar:**
+- `api/`: `app.py` (`create_app(settings, db=, provider_factory=)`, CORS yalnızca `api.cors_origins`, `/docs`), `routes.py` (§9'un 10 uç noktası, ince), `sse.py` (istek başına `EventBus` + `asyncio.Queue`; bağlantı kesilirse görev iptal), `errors.py` (RFC 7807; `PipelineError.kind` → 413/422/404/503, doğrulama hatası girdiyi yansıtmaz, beklenmeyen hata 500 ayrıntısız), `state.py` (istek başına orkestratör, tembel veritabanı/soru bankası), `examples/` (OpenAPI istek + §6.5 rapor örneği, paket verisi).
+- `codementor serve [--host --port]` (uvicorn; varsayılan `127.0.0.1:8000`, döngü dışı adreste uyarı). `models/api.py` (`Problem`, `Health`, `Readiness`, `CompilerStatus`). Config `[api]`.
+- Refaktör: sağlayıcı sağlık kontrolleri `cli/providers.py` → `providers/health.py` (CLI ve API aynı kod); `PipelineError(kind)`; `StageStatus` `done` → `completed` (§9 örneği); SQLite `check_same_thread=False` + `:memory:` için `StaticPool`; `cache.get_analysis`.
+- Testler `tests/api/` (32): rotalar, hata eşlemesi, SSE (sıra, son olay, hata olayı, başlıklar, eşzamanlı akışlar karışmıyor), CORS, OpenAPI örnekleri, `serve`. Toplam 1719 test.
+**Kabul kriterleri:**
+- [x] §9 tablosundaki her uç nokta çalışıyor ve testli — `test_routes.py` (analyze, stream, analyses/{id}, /sarif, questions, questions/{id}, providers, rules, health, health/ready).
+- [x] `/v1/questions/{id}` referans çözüm yolu döndürmüyor — `test_question_detail_hides_solution_and_mentor_data` (ipucu merdiveni ve kavram etiketleri de yok).
+- [x] Hata yanıtları `application/problem+json` — 404/405/413/422/503 testleri, SSE `error` olayı da problem gövdesi.
+- [x] SSE: `stage` olayları doğru sırada, son olay `report` — `test_stage_events_in_order_then_report` (her `completed`'dan önce `started`); canlı `curl -N`: 26 aşama olayı + `report`, 20 sn.
+- [x] Varsayılan bağlama `127.0.0.1` — `test_default_bind_is_loopback`, `test_serve_uses_config_and_warns_when_exposed`.
+- [x] OpenAPI dokümanı `/docs`'ta, örnek istek/yanıtlar dolu — `test_openapi_has_examples` (istek, 200 rapor, 413 problem, SSE örneği).
+**Canlı doğrulama (claude_cli, 2026-09-30):** `codementor serve --port 8765` + `curl -N -X POST /v1/analyze/stream` (c-medium-linked-list): aşamalar doğru sırada akıyor (llm_a 11 sn, llm_b 9 sn); model koda bilerek konmuş iki use-after-free'yi (30. ve 43. satır) ve boş listede NULL erişimini (21. satır) buldu, Sokratik sorular çözümü söylemiyor; `/v1/analyses/{id}/sarif` çalışıyor; bilinmeyen soru 404 problem+json.
+**Alınan kararlar (ve neden):**
+- **§9 hata tablosu:** tüm sağlayıcılar düşse de bozulmuş rapor üretilebildiği için 502 yerine 200 + `degraded=true`; sağlayıcı hiç kurulamazsa (yapılandırma) 503.
+- **SSE hata semantiği:** istek gövdesi geçersizse akış açılmadan 422; akış başladıktan sonraki hata son olay `event: error`. Eşzamanlı istekler için orkestratör istek başına (paylaşılan bus olayları karıştırırdı).
+- **Referans çözüm uyarısı (Faz 10 açık sorusu):** öğrenciye dönen `meta.warnings`'ten çıkarıldı, `reference_solution_unreadable` log olayına dönüştü (iç yapı söylenmesin).
+- **SARIF uç noktası:** yüklenen dosya adı bilinmediği için `artifactLocation.uri = <analysis_id>.<uzantı>`; içerik türü `application/sarif+json`.
+**Mimariden sapmalar (ADR linki):** yok. §9'a aşama durumları / SSE hata olayı / 404 notu, §16'ya `state.py` ve `examples/`, §17'ye `[api]` eklendi.
+**Açık sorular:**
+- Pipeline'ın senkron parçaları (tree-sitter, Tier 1 derleyici süreci, SQLite) async rotada olay döngüsünü kısa süre bloklar; tek kullanıcılı yerel kullanımda sorun değil, çok kullanıcıda `asyncio.to_thread` gerekir (Sonraya).
+- API'de kimlik doğrulama ve hız sınırlama yok (§12 "API hız sınırlama" azaltımı); yalnızca yerel bağlama ile korunuyor. Faz 13'te (web/kurulum) ele alınmalı.
+- Typer kullanım hatası çıkış kodu 2 çakışması (Faz 10'dan) hâlâ açık.
+- `make` hâlâ yok; kontroller `uv run ...` ile.
+**Bu fazda öğrendiğim:**
+- SSE için istek başına olay yolu şart: paylaşılan bir abonelik listesi eşzamanlı iki analizin olaylarını birbirine karıştırırdı; bunu doğrudan test etmek (asyncio.gather ile iki akış) ucuz.
+- FastAPI senkron rotaları iş parçacığı havuzunda çalıştırıyor; SQLite bağlantısının iş parçacığına bağlı olduğu burada ortaya çıkıyor.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -391,9 +421,11 @@
 - Faz 9: `LLMSocraticOutput.guiding_questions` öğelerine şemada `max_length` (şu an doğrulayıcı 1000 karakter üstünü ihlal sayıyor).
 - Faz 10: `prompt_version` her analizde şablon dosyalarını okuyor (Faz 8 D2); API'de mtime önbelleği.
 - Faz 10: CLI ilerleme göstergesi yalnızca aşama adını gösteriyor; token/süre canlı gösterilebilir.
+- Faz 11: pipeline'ın senkron aşamalarını (`run_tier0/1`, olgular, SQLite) `asyncio.to_thread`'e taşımak (çok kullanıcılı API).
+- Faz 11: API anahtarı / hız sınırlama (§12); yerel olmayan bağlamada zorunlu kılınabilir.
 - CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
 
 ## Yapılacaklar (2026-09-30 itibarıyla sıra)
-1. **Faz 11 — REST API** (`codementor serve`, SSE aşama olayları `EventBus` üzerinden).
-2. **Faz 12 — Eval:** eşikler (`leak_ngram_threshold`), analysis vs single_pass (ADR-003), token tahmini kalibrasyonu, maliyet tahmini.
-3. Faz 6'da ertelenen 10 kural; Faz 13 web/kurulum. agy canlı doğrulaması (oturum açılınca). Ollama kullanılmıyor (kullanıcı tercihi).
+1. **Faz 12 — Eval:** veri seti + metrikler + karşılaştırma; eşikler (`leak_ngram_threshold`), analysis vs single_pass (ADR-003), token tahmini kalibrasyonu, maliyet tahmini.
+2. **Faz 13 — Web UI + kurulum** (API kimlik/hız sınırı kararı burada).
+3. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması (oturum açılınca). Ollama kullanılmıyor (kullanıcı tercihi).
