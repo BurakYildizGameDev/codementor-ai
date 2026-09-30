@@ -91,6 +91,7 @@ def test_code_block_detected(text: str) -> None:
         "`for (int k = 0; k < n; k++) {` ile başlayan bir döngü düşün.",  # döngü başlığı
         "Mesafeyi `d = (a - b).sqrMagnitude;` ile hesaplasan?",  # atama deyimi
         "`void Check(Transform t) { ... }` gibi bir yardımcı yaz.",  # fonksiyon tanımı
+        "Önce `Node *next = cur->next;` ile sakla.",  # C işaretçi bildirimi
     ],
 )
 def test_code_line_detected(text: str) -> None:
@@ -106,6 +107,7 @@ def test_code_line_detected(text: str) -> None:
         "int türünde bir sayaç yeterli mi; neden?",
         "i = n ise ne olur; dizinin sonu mu?",  # ASCII düzyazı, sağ taraf kod değil
         "x = 0 olsaydı döngü kaç kez dönerdi?",
+        "a * b = c eşitliği her zaman doğru mu?",  # düzyazı: ; yok, işaretçi değil
         # öğrencinin kendi kodundan birebir alıntı serbest (Faz 7 dersi)
         "`if (!enemies.Contains(nearby[i])) OnTargetFound?.Invoke(nearby[i]);` koşulu "
         "ne zaman doğru olur?",

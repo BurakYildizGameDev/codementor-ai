@@ -49,6 +49,8 @@ _CODE_PATTERNS = [
         r"[A-Za-z_]\w*\s*(?:=|;|\[)"
     ),
     re.compile(r"\b[A-Z]\w*<[\w\s,*<>]+>\s+[A-Za-z_]\w*\s*[=;]"),
+    # C/C++ işaretçi bildirimi: `Node *next = ...`, `char* buf;`
+    re.compile(r"\b[A-Za-z_]\w*\s*\*+\s*[A-Za-z_]\w*\s*(?:=[^=;\n][^;\n]*)?;"),
     # fonksiyon tanımı: `void Foo(int x) {`
     re.compile(r"\b[A-Za-z_]\w*\s+[A-Za-z_]\w*\s*\([^)\n]*\)\s*\{"),
     # süslü ayraçlı blok içinde deyim

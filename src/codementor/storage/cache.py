@@ -1,0 +1,92 @@
+"""Rapor önbelleği (mimari §11).
+
+Anahtar: sha256(normalized_code | language | engine | question_id | hint_level | provider |
+model | prompt_version | rules_version | schema_version). Bozulmuş (degraded) raporlar
+önbellekten dönmez: geçici sağlayıcı hatası kalıcı olmasın.
+"""
+
+from __future__ import annotations
+
+import hashlib
+
+from sqlmodel import col, select
+
+from codementor.models.report import AnalysisReport
+from codementor.storage.db import AnalysisRow, Database
+
+_SEPARATOR = "\x1f"  # alan ayırıcı: kodda geçse bile uzunluk öneki çakışmayı önler
+
+
+def cache_key(
+    *,
+    normalized_code: str,
+    language: str,
+    engine: str,
+    question_id: str | None,
+    hint_level: int,
+    provider: str | None,
+    model: str | None,
+    prompt_version: str,
+    rules_version: str,
+    schema_version: str,
+) -> str:
+    """§11'deki alanların tamamından belirleyici anahtar."""
+    fields = [
+        normalized_code,
+        language,
+        engine,
+        question_id or "",
+        str(hint_level),
+        provider or "",
+        model or "",
+        prompt_version,
+        rules_version,
+        schema_version,
+    ]
+    digest = hashlib.sha256()
+    for value in fields:
+        encoded = value.encode("utf-8")
+        digest.update(f"{len(encoded)}:".encode() + encoded + _SEPARATOR.encode())
+    return digest.hexdigest()
+
+
+def find_cached(db: Database, key: str) -> AnalysisReport | None:
+    """Bu anahtarla kaydedilmiş en yeni bozulmamış rapor."""
+    with db.session() as session:
+        row = session.exec(
+            select(AnalysisRow)
+            .where(AnalysisRow.cache_key == key, col(AnalysisRow.degraded).is_(False))
+            .order_by(col(AnalysisRow.created_at).desc())
+        ).first()
+    return AnalysisReport.model_validate_json(row.report_json) if row else None
+
+
+def save_analysis(
+    db: Database,
+    report: AnalysisReport,
+    *,
+    key: str,
+    session_id: str | None,
+    latency_ms: int,
+) -> None:
+    """Raporu `analyses` tablosuna yazar (önbellek isabetleri de iz için kaydedilir)."""
+    row = AnalysisRow(
+        id=report.analysis_id,
+        created_at=report.created_at,
+        cache_key=key,
+        language=report.language.value,
+        engine=report.engine.value,
+        question_id=report.question_id,
+        session_id=session_id,
+        provider=report.meta.provider,
+        model=report.meta.model,
+        early_exit=report.meta.early_exit,
+        degraded=report.meta.degraded,
+        tokens_in=report.meta.tokens_in,
+        tokens_out=report.meta.tokens_out,
+        latency_ms=latency_ms,
+        report_json=report.model_dump_json(),
+    )
+    with db.session() as session:
+        session.add(row)
+        session.commit()

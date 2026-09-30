@@ -17,6 +17,7 @@ dependencies = [
     "httpx>=0.28.1",
     "structlog>=26.1.0",
     "jinja2>=3.1",
+    "sqlmodel>=0.0.22",
 ]
 
 [project.scripts]
@@ -30,6 +31,8 @@ dev = [
     "mypy>=1.11",
     "types-pyyaml>=6.0",
     "respx>=0.23.1",
+    "jsonschema>=4.23",
+    "types-jsonschema>=4.26.0.20260518",
 ]
 
 [build-system]

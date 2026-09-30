@@ -50,6 +50,7 @@ class DataSettings(BaseModel):
     questions_dir: Path = Path("data/questions")
     checklists_dir: Path = Path("data/checklists")
     call_costs_file: Path = Path("data/call_costs.yaml")
+    mentor_templates_file: Path = Path("data/mentor_templates.yaml")
 
 
 class PromptSettings(BaseModel):
@@ -60,6 +61,12 @@ class PromptSettings(BaseModel):
     reserve_output_tokens: int = Field(default=4096, ge=256)
     max_fewshots: int = Field(default=2, ge=0, le=4)
     max_checklist_items: int = Field(default=12, ge=0)
+
+
+class StorageSettings(BaseModel):
+    """SQLite depolama (mimari §11); yol yoksa CODEMENTOR_DB_PATH, o da yoksa ~/.codementor."""
+
+    db_path: Path | None = None
 
 
 class VerifySettings(BaseModel):
@@ -170,6 +177,7 @@ class Settings(BaseSettings):
     rules: RulesSettings = Field(default_factory=RulesSettings)
     prompts: PromptSettings = Field(default_factory=PromptSettings)
     verify: VerifySettings = Field(default_factory=VerifySettings)
+    storage: StorageSettings = Field(default_factory=StorageSettings)
     providers: ProvidersSettings = Field(default_factory=ProvidersSettings)
 
     @classmethod

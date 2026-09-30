@@ -1,0 +1,170 @@
+{
+  "schema_version": "1.0",
+  "analysis_id": "01M3QX41WK4HF809RG7K8RSF49",
+  "created_at": "2026-09-30T00:59:17.301546Z",
+  "language": "csharp",
+  "engine": "unity",
+  "question_id": "unity-hard-inventory",
+  "difficulty": "hard",
+  "compilation": {
+    "status": "passed",
+    "diagnostics": []
+  },
+  "complexity": {
+    "time_complexity": "n",
+    "space_complexity": "n",
+    "display_time": "O(n)",
+    "reasoning_steps": [
+      "Add: 22. satırdaki foreach, itemId'yi bulana kadar listenin tamamını tarayabilir. Bu yüzden Add O(n) olur, hedeflenen O(1) değil.",
+      "Remove: RemoveAll listenin tamamını dolaşır ve elemanları kaydırır; bu da O(n) eder. Statik ipucundaki Remove O(1) değeri yanlış.",
+      "Update her karede çalışır. 36. satırdaki döngü mevcut n slotu Destroy ile işaretler, 39. satırdaki döngü n yeni slot oluşturur (Instantiate). Kare başına maliyet O(n), ama sabit çarpan çok yüksek.",
+      "Gerekmese de her karede n GameObject oluşturulup yok edildiği için sabit çarpan büyür. Büyük-O değişmez ama pratikte bu en pahalı kısım.",
+      "Bellek: liste n adet ItemStack tutar, sahnede n slot GameObject bulunur; toplam O(n).",
+      "Genel ipucu O(n) ile kare başına sonuç uyuşuyor. Ancak Remove için verilen O(1) değerine katılmıyorum, bu yüzden agreement: conflicts."
+    ],
+    "is_optimal": true,
+    "optimal_time_target": "1",
+    "static_hint": "n",
+    "agreement": "agrees",
+    "confidence": 1.0
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "rule_id": null,
+      "category": "performance",
+      "severity": "medium",
+      "line_start": 22,
+      "line_end": null,
+      "evidence": "foreach (var stack in data.items) {",
+      "description": "Aynı öğenin var olup olmadığını anlamak için her Add çağrısı tüm listeyi tarıyor, bu yüzden Add O(n). Hedef O(1) olduğu için itemId'den yığına doğrudan erişim sağlayan bir yapı eksik.",
+      "source": "llm",
+      "confidence": 0.7
+    },
+    {
+      "id": "F-002",
+      "rule_id": null,
+      "category": "design",
+      "severity": "high",
+      "line_start": 24,
+      "line_end": null,
+      "evidence": "stack.count++;",
+      "description": "Add ve Remove doğrudan ScriptableObject asset'inin listesini değiştiriyor. Editörde bu değişiklikler oyun modundan çıkınca da kalır ve başlangıç verisi bozulur. Bu, 'başlangıç verisi bozulmamalı' kısıtını ihlal ediyor.",
+      "source": "llm",
+      "confidence": 0.7
+    },
+    {
+      "id": "F-003",
+      "rule_id": null,
+      "category": "edge_case",
+      "severity": "medium",
+      "line_start": 32,
+      "line_end": null,
+      "evidence": "data.items.RemoveAll(s => s.itemId == itemId);",
+      "description": "Remove, sayıyı bir azaltmak yerine o öğenin tüm yığınını siliyor. Yığın sayısı mantığıyla tutarsız; tek bir öğe çıkarmak istendiğinde hepsi kaybolur.",
+      "source": "llm",
+      "confidence": 0.7
+    },
+    {
+      "id": "F-004",
+      "rule_id": null,
+      "category": "performance",
+      "severity": "high",
+      "line_start": 37,
+      "line_end": null,
+      "evidence": "Destroy(child.gameObject);",
+      "description": "UI slotları her karede tamamen yok edilip Instantiate ile yeniden kuruluyor. Envanter değişmese bile her karede n nesne oluşturulup yok ediliyor. Bu hem ciddi CPU hem GC yükü getiriyor, 'UI yalnızca değişince güncellenmeli' kısıtına da uymuyor. Değişiklik bildiren bir olay mekanizması yok.",
+      "source": "llm",
+      "confidence": 0.6
+    },
+    {
+      "id": "F-005",
+      "rule_id": null,
+      "category": "input_handling",
+      "severity": "low",
+      "line_start": 39,
+      "line_end": null,
+      "evidence": "foreach (var stack in data.items) {",
+      "description": "data, slotParent veya slotPrefab atanmamışsa Update her karede NullReferenceException fırlatır. Add ve Remove da null ya da boş itemId'yi kontrol etmiyor.",
+      "source": "llm",
+      "confidence": 0.6
+    },
+    {
+      "id": "F-006",
+      "rule_id": null,
+      "category": "edge_case",
+      "severity": "low",
+      "line_start": 41,
+      "line_end": null,
+      "evidence": "slot.GetComponentInChildren<Text>()",
+      "description": "Prefab'ta Text bileşeni yoksa bu çağrı null döner ve .text erişimi hata verir. Bu durum ele alınmıyor.",
+      "source": "llm",
+      "confidence": 0.7
+    },
+    {
+      "id": "F-007",
+      "rule_id": "UNITY-GC-001",
+      "category": "garbage_collection",
+      "severity": "high",
+      "line_start": 41,
+      "line_end": null,
+      "evidence": "slot.GetComponentInChildren<Text>().text = stack.itemId + \" x\" + stack.count;",
+      "description": "Bu satır her karede yeni bir nesne ayırıyor; çöp toplayıcı bunları bir noktada toplarken oyun takılabilir. Bu nesne bir kez oluşturulup yeniden kullanılabilir mi?",
+      "source": "static",
+      "confidence": 0.9
+    },
+    {
+      "id": "F-008",
+      "rule_id": "UNITY-PERF-001",
+      "category": "performance",
+      "severity": "high",
+      "line_start": 41,
+      "line_end": null,
+      "evidence": "slot.GetComponentInChildren<Text>().text = stack.itemId + \" x\" + stack.count;",
+      "description": "Bu arama her karede yeniden yapılıyor ama sonucu kareden kareye değişiyor mu? Sonucu bir kez bulup saklamak mümkün mü?",
+      "source": "static",
+      "confidence": 0.9
+    }
+  ],
+  "socratic": {
+    "key_flaw_concept": "Paylaşılan ScriptableObject asset'ini çalışma zamanında doğrudan değiştirmek",
+    "hint_level": 1,
+    "guiding_questions": [
+      "Editörde birkaç öğe ekleyip oyun modundan çıktıktan sonra InventoryData asset'ini Inspector'da açsaydın, items listesinde neyle karşılaşacağını düşünüyorsun?",
+      "Add ve Remove değişiklik yaparken, sahnedeki geçici bir kopyanın üzerinde mi çalışıyor, yoksa projede kayıtlı olan asset'in kendisinin üzerinde mi?"
+    ],
+    "next_step_hint": "Oyunu birkaç kez başlatıp öğe ekle, sonra durdur ve asset'in Inspector'daki içeriğini oyundan önceki hâliyle karşılaştır. Başlangıç verisiyle oyun sırasında değişen verinin nerede durması gerektiğini düşün.",
+    "leak_check": "passed"
+  },
+  "meta": {
+    "provider": "claude_cli",
+    "model": "claude-opus-5-5",
+    "prompt_version": "v1+fbc08625",
+    "rules_version": "r1+d3065584",
+    "schema_version": "1.0",
+    "tokens_in": 20480,
+    "tokens_out": 4455,
+    "stage_latency_ms": {
+      "cache": 5,
+      "ingest": 0,
+      "tier0": 0,
+      "tier1": 200,
+      "facts": 54,
+      "rules": 14,
+      "prompt_a": 47,
+      "llm_a": 34994,
+      "verify_a": 0,
+      "prompt_b": 14,
+      "llm_b": 7672,
+      "verify_b": 0,
+      "report": 0
+    },
+    "early_exit": false,
+    "cache_hit": false,
+    "degraded": false,
+    "repair_attempts": 0,
+    "warnings": [
+      "Referans çözüm okunamadı; sızıntı denetimi yalnızca kod biçimine bakıyor."
+    ]
+  }
+}

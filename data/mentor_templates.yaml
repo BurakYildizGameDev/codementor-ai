@@ -1,0 +1,66 @@
+# LLM kullanmadan üretilen mentor soruları (mimari §5.2.4 erken çıkış, §5.6 zarif bozulma).
+# Kodu düzeltmez, çözümü söylemez; Sokratik tondadır. Yer tutucular: {line}, {message}, {label}.
+version: 1
+
+# Tanı mesajında `match` geçen ilk şablon kullanılır (Tier 0 ve derleyici mesajları).
+early_exit:
+  - match: "noktalı virgül"
+    question: "{line}. satırda bir ifade `;` ile bitmiyor gibi görünüyor. Derleyici bu satırdan sonra neyi bekliyor olabilir?"
+  - match: "expected ';'"
+    question: "{line}. satırda bir ifade `;` ile bitmiyor gibi görünüyor. Derleyici bu satırdan sonra neyi bekliyor olabilir?"
+  - match: "CS1002"
+    question: "{line}. satırda bir ifade `;` ile bitmiyor gibi görünüyor. Derleyici bu satırdan sonra neyi bekliyor olabilir?"
+  - match: "kapanmamış"
+    question: "Derleyici bir bloğun kapanmadığını düşünüyor ({message}). Açtığın her `{{` için bir `}}` var mı; hangisi eşsiz kalmış olabilir?"
+  - match: "kapanış"
+    question: "{line}. satırda bir parantez ya da ayraç kapanmamış gibi görünüyor. Açılan her parantezin eşini bulabiliyor musun?"
+  - match: "eksik görünüyor"
+    question: "{line}. satırda derleyici bir parçanın eksik olduğunu düşünüyor ({message}). Bu satırın dilin kurallarına göre nasıl bitmesi gerekiyordu?"
+  - match: "Beklenmeyen sözdizimi"
+    question: "{line}. satırdaki ifade derleyiciye anlamsız geliyor ({message}). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+early_exit_default: "{line}. satırda derleyici şunu söylüyor: \"{message}\". Bu mesaj sence o satırdaki hangi parçaya işaret ediyor?"
+early_exit_concept: "Sözdizimi hatası"
+early_exit_hint: "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek."
+
+# Zarif bozulma: LLM analizi doğrulanamadı; sorular statik bulgulardan üretilir.
+degraded_concept: "Kodun gözden geçirilmesi"
+degraded_generic: "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+degraded_hint: "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle."
+categories:
+  memory_safety:
+    label: "Bellek güvenliği"
+    conceptual: "Bir dizinin ya da işaretçinin geçerli sınırlarını nereden biliyorsun?"
+    pointed: "{line}. satırda erişilen bellek her durumda geçerli mi?"
+  resource_leak:
+    label: "Kaynak sızıntısı"
+    conceptual: "Aldığın her kaynağı (bellek, abonelik, dosya) kim ve ne zaman geri veriyor?"
+    pointed: "{line}. satırda alınan kaynak nerede serbest bırakılıyor?"
+  undefined_behavior:
+    label: "Tanımsız davranış"
+    conceptual: "Kodunun sonucu derleyiciye ya da çalıştığı makineye göre değişebilir mi?"
+    pointed: "{line}. satırdaki işlem her girdi için tanımlı bir sonuç veriyor mu?"
+  garbage_collection:
+    label: "Çöp toplayıcı baskısı"
+    conceptual: "Sık çalışan kodun her seferinde yeni nesne oluşturuyor mu?"
+    pointed: "{line}. satır her çalıştığında belleğe ne ekleniyor ve bu ne sıklıkla oluyor?"
+  performance:
+    label: "Performans"
+    conceptual: "Girdi büyüdükçe kodunun en çok tekrarlanan işi hangisi?"
+    pointed: "{line}. satırdaki iş girdi boyutuyla birlikte nasıl büyüyor?"
+  engine_best_practice:
+    label: "Motor kullanımı"
+    conceptual: "Motorun her karede çalıştırdığı kodda neleri bir kez yapıp saklayabilirsin?"
+    pointed: "{line}. satırdaki iş gerçekten her karede mi yapılmalı?"
+  edge_case:
+    label: "Uç durum"
+    conceptual: "Girdi boş, null ya da beklenenden büyük olursa kodun ne yapar?"
+    pointed: "{line}. satır uç bir girdide (boş, null, sınırda) ne yapar?"
+  input_handling:
+    label: "Girdi denetimi"
+    conceptual: "Dışarıdan gelen veriye ne kadar güveniyorsun?"
+    pointed: "{line}. satıra gelen veri beklemediğin biçimde olursa ne olur?"
+  design:
+    label: "Tasarım ve mantık"
+    conceptual: "Kodunun yapmasını istediğin şeyi tek cümleyle anlatsan, kod gerçekten bunu mu yapıyor?"
+    pointed: "{line}. satırdaki koşul ya da işlem hangi durumda beklediğin sonucu vermez?"
+finding_fallback: "Bu satırda {label} açısından bir sorun olabilir; ne olduğunu kendi başına bulmaya çalış."

@@ -1,0 +1,150 @@
+"""`codementor analyze` (mimari §10): çıkış kodları ve biçimler; ağsız (FakeProvider)."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+import pytest
+from jsonschema import Draft4Validator
+from typer.testing import CliRunner
+
+import codementor.cli.analyze as analyze_module
+from codementor.cli.main import app
+from codementor.pipeline.orchestrator import Orchestrator
+from codementor.providers.base import RetryPolicy
+from codementor.providers.fake import FakeProvider, FakeReply
+from tests.integration.conftest import BROKEN_C, LINKED_LIST, analysis_reply, socratic_reply
+
+REPO = Path(__file__).resolve().parents[2]
+CLEAN_C = "int add(int a, int b) {\n    return a + b;\n}\n"
+SARIF_SCHEMA = json.loads(
+    (REPO / "tests" / "fixtures" / "sarif-schema-2.1.0.json").read_text(encoding="utf-8")
+)
+
+
+@pytest.fixture
+def run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Any:
+    """CLI'yı FakeProvider ile çalıştıran yardımcı; `replies` sağlayıcı senaryosu."""
+    config = tmp_path / "codementor.toml"
+    config.write_text(
+        f"""
+[validation]
+tier1_enabled = false
+[providers]
+default = "fake"
+fallback = []
+[storage]
+db_path = "{(tmp_path / "cm.db").as_posix()}"
+[data]
+questions_dir = "{(REPO / "data" / "questions").as_posix()}"
+checklists_dir = "{(REPO / "data" / "checklists").as_posix()}"
+call_costs_file = "{(REPO / "data" / "call_costs.yaml").as_posix()}"
+mentor_templates_file = "{(REPO / "data" / "mentor_templates.yaml").as_posix()}"
+[prompts]
+dir = "{(REPO / "prompts" / "v1").as_posix()}"
+[verify]
+common_identifiers_file = "{(REPO / "data" / "leak_common_identifiers.yaml").as_posix()}"
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CODEMENTOR_CONFIG_FILE", str(config))
+    monkeypatch.delenv("CODEMENTOR_DB_PATH", raising=False)
+    calls: list[FakeProvider] = []
+
+    def invoke(code: str, *args: str, replies: list[dict[str, Any]] | None = None) -> Any:
+        provider = FakeProvider(
+            script=[FakeReply(data=r) for r in replies or []], retry=RetryPolicy(max_retries=0)
+        )
+        calls.append(provider)
+
+        class FakeOrchestrator(Orchestrator):
+            def __init__(self, settings: Any, db: Any) -> None:
+                super().__init__(settings, db, provider_factory=lambda _n: provider)
+
+        monkeypatch.setattr(analyze_module, "Orchestrator", FakeOrchestrator)
+        source = tmp_path / "kod.c"
+        source.write_text(code, encoding="utf-8")
+        return CliRunner().invoke(app, ["analyze", str(source), "--language", "c", *args])
+
+    invoke.calls = calls  # type: ignore[attr-defined]
+    return invoke
+
+
+def test_exit_2_on_compile_failure_without_llm(run: Any) -> None:
+    result = run(BROKEN_C)
+    assert result.exit_code == 2
+    assert run.calls[-1].calls == []
+
+
+def test_exit_1_on_high_severity_finding(run: Any) -> None:
+    result = run(
+        LINKED_LIST,
+        "--question",
+        "c-medium-linked-list",
+        "--format",
+        "json",
+        replies=[analysis_reply(), socratic_reply()],
+    )
+    assert result.exit_code == 1, result.output
+    report = json.loads(result.stdout)
+    assert report["meta"]["provider"] == "fake"
+    assert any(f["severity"] == "high" for f in report["findings"])
+
+
+def test_exit_0_clean_code(run: Any) -> None:
+    reply = {
+        "complexity": {
+            "reasoning_steps": ["Tek işlem."],
+            "time_complexity": "O(1)",
+            "space_complexity": "O(1)",
+            "optimal_time_target": "O(1)",
+            "agreement": "no_hint",
+        },
+        "additional_findings": [],
+    }
+    result = run(CLEAN_C, "--format", "md", replies=[reply, socratic_reply("Toplam taşabilir mi?")])
+    assert result.exit_code == 0, result.output
+    assert "# CodeMentor raporu" in result.stdout
+
+
+def test_exit_3_on_system_error(run: Any) -> None:
+    result = run(CLEAN_C, "--question", "boyle-bir-soru-yok")
+    assert result.exit_code == 3
+    assert "boyle-bir-soru-yok" in result.output
+
+
+def test_exit_3_missing_file(run: Any, tmp_path: Path) -> None:
+    result = CliRunner().invoke(app, ["analyze", str(tmp_path / "yok.c")])
+    assert result.exit_code == 3
+    assert "Dosya okunamadı" in result.output
+
+
+def test_sarif_output_valid(run: Any, tmp_path: Path) -> None:
+    out = tmp_path / "out.sarif"
+    result = run(BROKEN_C, "--format", "sarif", "--out", str(out))
+    assert result.exit_code == 2
+    log = json.loads(out.read_text(encoding="utf-8"))
+    Draft4Validator(SARIF_SCHEMA).validate(log)
+    assert log["runs"][0]["results"][0]["ruleId"] == "CM-COMPILE"
+
+
+def test_pretty_output_to_file(run: Any, tmp_path: Path) -> None:
+    out = tmp_path / "rapor.txt"
+    result = run(BROKEN_C, "--out", str(out))
+    assert result.exit_code == 2
+    text = out.read_text(encoding="utf-8")
+    assert "CodeMentor" in text
+    assert "Mentor soruları" in text
+
+
+def test_no_cache_flag_calls_provider_again(run: Any) -> None:
+    args = ("--question", "c-medium-linked-list", "--format", "json")
+    replies = [analysis_reply(), socratic_reply()]
+    run(LINKED_LIST, *args, replies=replies)
+    second = run(LINKED_LIST, *args, replies=replies)
+    assert json.loads(second.stdout)["meta"]["cache_hit"] is True
+    third = run(LINKED_LIST, *args, "--no-cache", replies=replies)
+    assert json.loads(third.stdout)["meta"]["cache_hit"] is False
+    assert len(run.calls[-1].calls) == 2
