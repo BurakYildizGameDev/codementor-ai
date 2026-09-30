@@ -1,0 +1,12 @@
+# Sözdizimi: TArray şablon argümanında kapanmayan açılı parantez
+id: unreal-003
+language: cpp
+engine: unreal
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

@@ -1,0 +1,16 @@
+# Use-after-free: bağlı listeyi temizlerken serbest bırakılmış düğüme erişim
+id: c-012
+language: c
+engine: none
+question_id: c-medium-linked-list
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: memory_safety, line: 11, note: "free(node) sonrası node->next okunuyor" }
+  must_not_contain: ["Node *next = node->next", "next = node->next;"]
+tags: [use-after-free]
+split: dev
+reviewed: true

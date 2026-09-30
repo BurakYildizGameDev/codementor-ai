@@ -1,0 +1,15 @@
+# Kenar durumu: boş listede values[0] istisna fırlatır
+id: csharp-016
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: edge_case, line: 7, note: "boş listede ArgumentOutOfRangeException" }
+  must_not_contain: ["if (values.Count == 0)"]
+tags: [edge-case]
+split: test
+reviewed: true

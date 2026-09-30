@@ -1,0 +1,15 @@
+# Kare hızına bağlı hareket: Tick'te DeltaTime kullanılmıyor
+id: unreal-010
+language: cpp
+engine: unreal
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: engine_best_practice, line: 7, note: "60 ve 144 FPS'te farklı hızda hareket eder" }
+  must_not_contain: ["Speed * DeltaTime", "DeltaTime * Speed"]
+tags: [tick, engine]
+split: test
+reviewed: true

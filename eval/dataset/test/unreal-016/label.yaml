@@ -1,0 +1,15 @@
+# Tick içinde her karede NewObject ile UObject oluşturma
+id: unreal-016
+language: cpp
+engine: unreal
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: performance, line: 7, rule_id: UE-PERF-001, note: "her karede GC'nin izleyeceği yeni nesne" }
+  must_not_contain: ["if (PendingDamage > 0", "if (PendingDamage <= 0"]
+tags: [tick, allocation]
+split: test
+reviewed: true

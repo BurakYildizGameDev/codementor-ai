@@ -1,0 +1,16 @@
+# Cast sonucu null denetimi olmadan kullanılıyor
+id: unreal-009
+language: cpp
+engine: unreal
+question_id: unreal-medium-actor-component
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: memory_safety, line: 8, note: "sahip karakter değilse Cast nullptr döner" }
+  must_not_contain: ["if (OwnerCharacter)", "if (!OwnerCharacter)"]
+tags: [null-check, memory-safety]
+split: dev
+reviewed: true

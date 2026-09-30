@@ -1,0 +1,16 @@
+# shared_ptr döngüsü: ebeveyn ve çocuk birbirini canlı tutuyor
+id: cpp-014
+language: cpp
+engine: none
+question_id: cpp-medium-tree-smartptr
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: resource_leak, line: 7, note: "sahiplik döngüsü; referans sayısı sıfıra inmez" }
+  must_not_contain: ["std::weak_ptr<Node> parent"]
+tags: [leak, smart-pointer]
+split: dev
+reviewed: true

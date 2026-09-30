@@ -1,0 +1,18 @@
+# Üç kuralı ihlali: kopyalanan Buffer aynı tamponu iki kez delete[] eder
+id: cpp-009
+language: cpp
+engine: none
+question_id: cpp-easy-rule-of-zero
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: memory_safety, line: 6, rule_id: CPP-OWN-001, note: "sahiplik elle yönetiliyor" }
+    - { category: memory_safety, line: 10, rule_id: CPP-OWN-001, note: "çıplak delete[]" }
+    - { category: memory_safety, line: 20, note: "değerle geçiş sığ kopya yapar; iki yıkıcı aynı tamponu siler" }
+  must_not_contain: ["std::vector<char> data_", "= delete;"]
+tags: [rule-of-three, double-free, raw-new]
+split: dev
+reviewed: true

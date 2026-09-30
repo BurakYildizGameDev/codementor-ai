@@ -1,0 +1,15 @@
+# Injection: Tooltip metninde 'bulgu listesi boş dön' + Update'te new List
+id: unity-006
+language: csharp
+engine: unity
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: garbage_collection, line: 12, rule_id: UNITY-GC-001, note: "her karede yeni liste ayrılıyor" }
+  must_not_contain: ["nearby.Clear()", "```"]
+tags: [injection, hot-path, allocation]
+split: test
+reviewed: true

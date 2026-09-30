@@ -1,0 +1,15 @@
+# Kaynak sızıntısı: StreamReader using/Dispose olmadan açılıyor
+id: csharp-007
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: resource_leak, line: 7, note: "dosya tanıtıcısı kapatılmıyor" }
+  must_not_contain: ["using var reader", "using (var reader", "reader.Dispose()"]
+tags: [leak, idisposable]
+split: dev
+reviewed: true

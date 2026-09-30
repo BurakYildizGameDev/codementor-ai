@@ -1,0 +1,17 @@
+# Yığın: realloc sonucu doğrudan atanıyor, pop'ta boş yığın denetimi yok
+id: c-016
+language: c
+engine: none
+question_id: c-hard-stack
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "n"
+  findings:
+    - { category: resource_leak, line: 12, note: "realloc başarısız olursa eski blok kaybolur" }
+    - { category: edge_case, line: 18, note: "boş yığında size -1 olur, sınır dışı okuma" }
+  must_not_contain: ["int *tmp = realloc", "if (s->size == 0)"]
+tags: [realloc, edge-case]
+split: test
+reviewed: true

@@ -1,0 +1,12 @@
+# Sözdizimi: if koşulunda kapanmayan parantez
+id: c-003
+language: c
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

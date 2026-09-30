@@ -1,0 +1,14 @@
+# Temiz: Dictionary ile kelime sayımı O(n) — yanlış pozitif ölçümü
+id: csharp-011
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings: []
+  must_not_contain: []
+tags: [clean]
+split: dev
+reviewed: true

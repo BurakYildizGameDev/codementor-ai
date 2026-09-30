@@ -1,0 +1,15 @@
+# Temiz: DeltaTime ile sınırlandırılmış can yenileme — yanlış pozitif ölçümü
+id: unreal-011
+language: cpp
+engine: unreal
+question_id: unreal-medium-actor-component
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: []
+tags: [clean]
+split: dev
+reviewed: true

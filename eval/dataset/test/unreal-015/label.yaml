@@ -1,0 +1,15 @@
+# TArray indeksi IsValidIndex olmadan: son yol noktasında sınır dışı erişim
+id: unreal-015
+language: cpp
+engine: unreal
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: memory_safety, line: 6, note: "son noktada CurrentIndex + 1 dizinin dışında" }
+  must_not_contain: ["IsValidIndex(CurrentIndex + 1)", "% Waypoints.Num()"]
+tags: [edge-case, bounds]
+split: test
+reviewed: true

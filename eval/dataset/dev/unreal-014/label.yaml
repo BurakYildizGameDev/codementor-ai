@@ -1,0 +1,15 @@
+# Aralık tabanlı for içinde TArray'den eleman silme
+id: unreal-014
+language: cpp
+engine: unreal
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "1"
+  findings:
+    - { category: undefined_behavior, line: 9, note: "gezilen dizi değişiyor; yineleyici geçersizleşir" }
+  must_not_contain: ["RemoveAll(", "for (int32 i = Members.Num() - 1"]
+tags: [container-mutation]
+split: dev
+reviewed: true

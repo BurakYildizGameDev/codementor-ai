@@ -1,0 +1,14 @@
+# Temiz: bileşen Awake'te önbelleğe alınıyor, hareket deltaTime ile — yanlış pozitif ölçümü
+id: unity-011
+language: csharp
+engine: unity
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: []
+tags: [clean]
+split: dev
+reviewed: true

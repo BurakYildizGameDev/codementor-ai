@@ -1,0 +1,16 @@
+# Envanter UI senkronu: döngüde List.Contains O(n^2)
+id: unity-013
+language: csharp
+engine: unity
+question_id: unity-hard-inventory
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "n"
+  findings:
+    - { category: performance, line: 13, rule_id: CS-PERF-001, note: "her öğe için gösterilen liste baştan taranıyor" }
+  must_not_contain: ["HashSet<string> shown"]
+tags: [complexity, performance]
+split: test
+reviewed: true

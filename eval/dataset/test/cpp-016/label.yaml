@@ -1,0 +1,14 @@
+# İşaretsiz sayaç: i >= 0 hep doğru; boş vektörde ve sarmada sınır dışı okuma
+id: cpp-016
+language: cpp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  space_complexity: "1"
+  findings:
+    - { category: memory_safety, line: 5, note: "size_t hiçbir zaman negatif olmaz; i sarınca v[i] sınır dışı" }
+  must_not_contain: ["i-- > 0", "std::size_t i = v.size(); i > 0"]
+tags: [edge-case, unsigned]
+split: test
+reviewed: true

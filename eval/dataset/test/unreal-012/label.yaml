@@ -1,0 +1,15 @@
+# Temiz: UPROPERTY TArray<TObjectPtr> + zamanlayıcıyla dalga oluşturucu — yanlış pozitif ölçümü
+id: unreal-012
+language: cpp
+engine: unreal
+question_id: unreal-hard-tarray-gc
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings: []
+  must_not_contain: []
+tags: [clean, gc]
+split: test
+reviewed: true

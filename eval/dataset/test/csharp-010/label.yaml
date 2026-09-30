@@ -1,0 +1,14 @@
+# Temiz: ReadOnlySpan ile tahsissiz CSV toplamı O(n) — yanlış pozitif ölçümü
+id: csharp-010
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: []
+tags: [clean, span]
+split: test
+reviewed: true

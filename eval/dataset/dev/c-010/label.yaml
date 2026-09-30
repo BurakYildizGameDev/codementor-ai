@@ -1,0 +1,14 @@
+# Karmaşıklık: kabarcık sıralama O(n^2); ek sorun yok
+id: c-010
+language: c
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: ["qsort(", "merge sort"]
+tags: [complexity]
+split: dev
+reviewed: true

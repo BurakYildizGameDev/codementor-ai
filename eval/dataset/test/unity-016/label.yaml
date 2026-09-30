@@ -1,0 +1,15 @@
+# Unity null denetimi: yok edilmiş nesnede ?. operatörü '== null' aşırı yüklemesini atlar
+id: unity-016
+language: csharp
+engine: unity
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: engine_best_practice, line: 9, note: "Destroy edilen hedefte ?. null saymaz, MissingReferenceException" }
+  must_not_contain: ["if (target != null)", "if (target == null)"]
+tags: [edge-case, engine]
+split: test
+reviewed: true

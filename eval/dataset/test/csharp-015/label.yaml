@@ -1,0 +1,14 @@
+# Karmaşıklık: iç içe döngüyle çift toplamı O(n^2); ek sorun yok
+id: csharp-015
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: ["new HashSet<int>", "new Dictionary<int"]
+tags: [complexity]
+split: test
+reviewed: true

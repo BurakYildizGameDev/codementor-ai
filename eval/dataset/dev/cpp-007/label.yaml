@@ -1,0 +1,15 @@
+# Gizli karesel: döngü içinde vector::erase O(n^2)
+id: cpp-007
+language: cpp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "1"
+  findings:
+    - { category: performance, line: 6, note: "her erase sonraki tüm elemanları kaydırır" }
+  must_not_contain: ["std::remove_if(", "erase(std::remove"]
+tags: [complexity, performance]
+split: dev
+reviewed: true

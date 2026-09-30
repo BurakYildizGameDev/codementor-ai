@@ -1,0 +1,16 @@
+# Olay aboneliği OnEnable'da ekleniyor, OnDisable'da kaldırılmıyor
+id: unity-008
+language: csharp
+engine: unity
+question_id: unity-easy-trigger-events
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: resource_leak, line: 18, rule_id: UNITY-EVT-001, note: "yok edilen nesne statik olaydan çıkmıyor" }
+  must_not_contain: ["TriggerZone.Entered -= OnEntered"]
+tags: [events, leak]
+split: test
+reviewed: true

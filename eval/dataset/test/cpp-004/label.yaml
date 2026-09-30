@@ -1,0 +1,12 @@
+# Sözdizimi: lambda argümanlı std::sort çağrısında eksik ')'
+id: cpp-004
+language: cpp
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

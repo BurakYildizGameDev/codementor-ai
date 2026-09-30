@@ -1,0 +1,16 @@
+# UPROPERTY'siz TArray<AActor*>: düşman listesi GC'ye görünmez
+id: unreal-013
+language: cpp
+engine: unreal
+question_id: unreal-hard-tarray-gc
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: garbage_collection, line: 29, note: "GC listeyi görmez; yok edilen düşmanlar sarkan işaretçi olur" }
+  must_not_contain: ["UPROPERTY()\nTArray", "TArray<TObjectPtr<AActor>> Enemies"]
+tags: [gc]
+split: test
+reviewed: true

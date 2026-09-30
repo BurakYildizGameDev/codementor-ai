@@ -1,0 +1,15 @@
+# Gizli karesel: result = result + parça ile her turda kopya O(n^2)
+id: cpp-015
+language: cpp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "n"
+  findings:
+    - { category: performance, line: 7, note: "her birleştirme o ana kadarki metni yeniden kopyalar" }
+  must_not_contain: ["result += parts[i]", "result.reserve("]
+tags: [complexity, performance]
+split: test
+reviewed: true

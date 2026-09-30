@@ -1,0 +1,15 @@
+# Yineleyici geçersizleşmesi: aralık tabanlı for içinde push_back
+id: cpp-008
+language: cpp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: undefined_behavior, line: 6, note: "yeniden ayırma döngünün yineleyicilerini geçersiz kılar" }
+  must_not_contain: ["const std::size_t n = v.size();", "v.reserve("]
+tags: [iterator-invalidation]
+split: test
+reviewed: true

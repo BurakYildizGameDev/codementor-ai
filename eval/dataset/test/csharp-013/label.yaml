@@ -1,0 +1,15 @@
+# Kenar durumu: ikili aramada (lo + hi) / 2 taşması
+id: csharp-013
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "log n"
+  space_complexity: "1"
+  findings:
+    - { category: edge_case, line: 9, note: "çok büyük dizide lo + hi int sınırını aşar" }
+  must_not_contain: ["lo + (hi - lo) / 2"]
+tags: [edge-case, overflow, complexity]
+split: test
+reviewed: true

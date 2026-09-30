@@ -1,0 +1,16 @@
+# Bellek sızıntısı: her çağrıda malloc, free yok (C-MEM-001) + n = 0 için sıfıra bölme
+id: c-008
+language: c
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: resource_leak, line: 4, rule_id: C-MEM-001, note: "tmp serbest bırakılmıyor" }
+    - { category: edge_case, line: 10, note: "n = 0 için sıfıra bölme" }
+  must_not_contain: ["free(tmp)"]
+tags: [leak]
+split: dev
+reviewed: true

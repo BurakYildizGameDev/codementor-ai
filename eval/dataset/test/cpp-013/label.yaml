@@ -1,0 +1,15 @@
+# Gizli karesel: döngü içinde std::find ile tekrar denetimi O(n^2)
+id: cpp-013
+language: cpp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "n"
+  findings:
+    - { category: performance, line: 7, note: "her eleman için sonuç listesi baştan taranıyor" }
+  must_not_contain: ["std::unordered_set<int> seen", "seen.insert("]
+tags: [complexity, performance]
+split: test
+reviewed: true

@@ -1,0 +1,12 @@
+# Sözdizimi: eksik noktalı virgül (erken çıkış beklenir)
+id: c-001
+language: c
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: dev
+reviewed: true

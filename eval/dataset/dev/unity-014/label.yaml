@@ -1,0 +1,15 @@
+# Update'te her karede string birleştirme ile UI metni güncelleniyor
+id: unity-014
+language: csharp
+engine: unity
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: garbage_collection, line: 11, note: "skor değişmese de her karede yeni string ayrılıyor" }
+  must_not_contain: ["if (score != lastScore)", "private int lastScore"]
+tags: [hot-path, allocation]
+split: dev
+reviewed: true

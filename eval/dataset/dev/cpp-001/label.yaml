@@ -1,0 +1,12 @@
+# Sözdizimi: sınıf tanımından sonra eksik noktalı virgül
+id: cpp-001
+language: cpp
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: dev
+reviewed: true

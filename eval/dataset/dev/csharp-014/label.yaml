@@ -1,0 +1,15 @@
+# Olay sızıntısı: statik olaya abone olunuyor, abonelik hiç kaldırılmıyor
+id: csharp-014
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: resource_leak, line: 16, note: "statik olay Display örneklerini sonsuza dek canlı tutar" }
+  must_not_contain: ["Clock.Ticked -= OnTicked"]
+tags: [leak, events]
+split: dev
+reviewed: true

@@ -1,0 +1,15 @@
+# Update'te FindObjectOfType: her karede sahne taraması O(n)
+id: unity-007
+language: csharp
+engine: unity
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: performance, line: 9, rule_id: UNITY-PERF-001, note: "sahne her karede baştan taranıyor" }
+  must_not_contain: ["private PlayerController player;"]
+tags: [hot-path, performance]
+split: dev
+reviewed: true

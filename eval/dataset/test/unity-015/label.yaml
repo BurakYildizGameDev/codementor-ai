@@ -1,0 +1,15 @@
+# Coroutine döngüsünde her turda new WaitForSeconds
+id: unity-015
+language: csharp
+engine: unity
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: garbage_collection, line: 14, note: "aynı bekleme nesnesi her turda yeniden ayrılıyor" }
+  must_not_contain: ["private readonly WaitForSeconds", "var wait = new WaitForSeconds"]
+tags: [allocation, coroutine]
+split: test
+reviewed: true

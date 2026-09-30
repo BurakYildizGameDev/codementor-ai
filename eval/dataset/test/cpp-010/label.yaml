@@ -1,0 +1,15 @@
+# Sanal olmayan yıkıcı: taban işaretçisi üzerinden silme tanımsız davranış
+id: cpp-010
+language: cpp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: undefined_behavior, line: 4, note: "unique_ptr<Shape> türetilmiş nesneyi sanal olmayan yıkıcıyla siler" }
+  must_not_contain: ["virtual ~Shape()"]
+tags: [virtual-destructor]
+split: test
+reviewed: true

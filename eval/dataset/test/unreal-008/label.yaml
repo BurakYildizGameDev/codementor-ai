@@ -1,0 +1,15 @@
+# Tick içinde tüm hedefler üzerinde döngü + her birinde FindComponentByClass
+id: unreal-008
+language: cpp
+engine: unreal
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: performance, line: 7, rule_id: UE-PERF-001, note: "her karede tüm hedeflerde bileşen araması" }
+  must_not_contain: ["TArray<UHealthComponent*> CachedHealth"]
+tags: [tick, performance]
+split: test
+reviewed: true

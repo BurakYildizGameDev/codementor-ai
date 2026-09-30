@@ -15,7 +15,7 @@
 | 9 | ✅ | faz/9-dogrulayici | 2026-09-30 | Claude Code / — |
 | 10 | ✅ | faz/10-pipeline | 2026-09-30 | Claude Code / — |
 | 11 | ✅ | faz/11-api | 2026-09-30 | Claude Code / — |
-| 12 | 🔄 12A bitti (altyapı + C taslakları) | faz/12-eval | 2026-09-30 | Claude Code / — |
+| 12 | 🔄 12A + 12B bitti (altyapı + 80 örnek); 12C ölçümler sürüyor | faz/12-eval | 2026-09-30 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -387,7 +387,7 @@
 - FastAPI senkron rotaları iş parçacığı havuzunda çalıştırıyor; SQLite bağlantısının iş parçacığına bağlı olduğu burada ortaya çıkıyor.
 
 ## Faz 12 — Notlar (devam ediyor)
-**Durum:** 12A (altyapı + ilk taslak grubu) bitti, `faz/12-eval` dalında commit'li, main'e alınmadı. 12B (etiket incelemesi) ve 12C (ölçüm) kaldı.
+**Durum:** 12A (altyapı) ve 12B (80 örneklik veri seti, etiketler kullanıcı onaylı) `faz/12-eval` dalında commit'li, main'e alınmadı. 12C (ölçüm) kaldı.
 **Yapılanlar (12A):**
 - `src/codementor/eval/`: `dataset.py` (yükleme + doğrulama: şema, kimlik = dizin, uzantı = dil, satırlar kodda, dev/test/_draft arasında aynı kimlik/kod yok; `promote` yorumları koruyarak `reviewed: true` yazar), `metrics.py` (§14.2'nin tamamı; eşleşme: aynı kategori + satır farkı ≤ 2, bire bir, en yakın önce), `runner.py` (önbellek kapalı, veritabanı yok; `StaticOnlyProvider` ile LLM'siz taban çizgisi; ablasyonlar `facts|line_numbers|fewshot0|fewshot1`; sonuç `eval/results/{zaman}_{sağlayıcı}_{model}_{mod}[_abl]_{bölüm}.json`), `compare.py` (Markdown tablo + sürüm dipnotu), `review.py` (taslak etiketleri statik analizle karşılaştırır, etiketi değiştirmez).
 - CLI: `codementor eval run --split dev|test [--provider --mode --static-only --ablate --limit --final]` (test yalnızca `--final` ile), `eval compare`, `eval check-drafts`, `eval promote <id…> --split`.
@@ -395,11 +395,16 @@
 - `.gitignore`: `eval/results/*.json` artık commit edilebilir (Faz 13 README tablosu bu dosyalarla birebir olacak).
 - Testler `tests/unit/eval/` (35): her metrik için elle hesaplanmış bilinen girdi → skor, veri seti, koşucu, ablasyon prompt'u, karşılaştırma, taslak kontrolü, CLI. Toplam 1754 test.
 - **Taslaklar:** `eval/dataset/_draft/c-001…c-016` (C grubu: 4 sözdizimi hatalı, 2 injection, 2 temiz, 8 sorunlu; dev 6 / test 10). Satırlar betikle koddan hesaplandı; `check-drafts` 16/16 uyumlu (statik ipucu ve kural bulguları etiketle aynı). **Etiketler henüz insan tarafından incelenmedi (`reviewed: false`).**
+**Yapılanlar (12B):**
+- C incelemesi: c-006 alan O(n)→O(1); c-008'e `n = 0` sıfıra bölme (`edge_case`, satır 10) eklendi (LLM'in doğru bulgusu yanlış pozitif sayılmasın); c-005 `must_not_contain`'de masum bağlamda geçebilecek "düzeltilmiş kod" yerine kod bloğu işareti. Kullanıcı kararları: c-016 realloc → `resource_leak`, c-014 `performance` bulgusu kalır, c-013 `input_handling` kalır.
+- C++, C#, Unity, Unreal: 16'şar örnek (her grupta 4 sözdizimi hatalı, 2 injection, 1–2 temiz). Satırlar betikle koddan hesaplandı; `check-drafts` 64/64 uyumlu. Kalan notlar bilinen statik kör noktalar (etiket doğru): `memset`, döngüde string kopyası, `GetAllActorsOfClass`, `TArray::Remove` maliyet tablosunda yok (bkz. Sonraya).
+- Dağılım: 80 örnek, dev 31 / test 49; %25 sözdizimi hatalı, %12,5 injection; her dil/motor 16. `tests/unit/eval/test_dataset_content.py` (9 test) dağılımı, inceleme bayrağını, bölüm ayrıklığını, kural/soru kimliklerini, sızıntı işaretlerinin kodda geçmemesini ve satır sınırlarını korur.
+- Etiket kararları: dosya düzeyinde tek doğru karmaşıklık yoksa (unity-012 havuz: Awake O(n), Get/Release O(1); cpp-016 sonsuz döngü) `time_complexity` boş bırakıldı. C#'ta "istisna fırlatır" türü hatalar (foreach içinde koleksiyon değişimi) için uygun kategori olmadığından örnek konmadı.
+- Veri setinde bulunan Faz 5 `foreach` hatası kullanıcı isteğiyle düzeltildi (bkz. Sonraya). Dev static-only: erken çıkış 100/100, Big-O %92, denetim P/R/F1 100/38/55.
 **Kararlar:** "yerel model" satırları Ollama yerine claude_cli ile ölçülecek (kullanıcı tercihi); `leak_rate` §14.2 gereği `must_not_contain` ile ölçülür, `private/solutions/` zorunlu değil; injection örneğinde erken çıkış da direnç sayılır; `complexity_time_class_acc` değişkenleri tek değişkene indirger (`m*n` ≈ `n^2`).
 **Sıradaki adımlar (yeni oturumda):**
-1. C taslaklarını incele (sorular: c-016 realloc → `resource_leak`, c-013 scanf → `input_handling`, c-014 Fibonacci `performance` bulgusu olsun mu, `must_not_contain` ifadeleri, c-010 `n = 0` durumu) → `uv run codementor eval promote c-001 … --split dev|test`.
-2. Aynı biçimde C++, C#, Unity, Unreal grupları (16'şar; üretici betik oturum scratchpad'indeydi, gerekirse yeniden yazılır).
-3. 12C: `eval run --split dev --static-only`, two_pass ve single_pass (claude_cli), ≥ 2 ablasyon, `eval compare`, `docs/eval-findings.md`, ADR-0003; en sonda bir kez `--split test --final`.
+1. ~~C taslak incelemesi~~, ~~kalan 64 taslak~~ → 12B'de bitti.
+2. 12C: `eval run --split dev --static-only`, two_pass ve single_pass (claude_cli), ≥ 2 ablasyon, `eval compare`, `docs/eval-findings.md`, ADR-0003; en sonda bir kez `--split test --final`.
 **Açık sorular:** `make` hâlâ yok. Tam pakette bir kez zamanlamaya bağlı tek test hatası görüldü, tekrarlanmadı (yük altında süre sınırlı bir performans testi olabilir).
 
 ## Sonraya (kapsam dışı fikirler)
@@ -441,8 +446,10 @@
 - Faz 11: pipeline'ın senkron aşamalarını (`run_tier0/1`, olgular, SQLite) `asyncio.to_thread`'e taşımak (çok kullanıcılı API).
 - Faz 11: API anahtarı / hız sınırlama (§12); yerel olmayan bağlamada zorunlu kılınabilir.
 - CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
+- ~~Faz 5 hatası (csharp-011): `foreach` koleksiyon ifadesindeki çağrı döngü içinde sayılıyordu → `high` O(n²)~~ → çözüldü (2026-09-30, kullanıcı isteğiyle Faz 12 içinde): `_context.contexts` döngü başlığında bir kez değerlendirilen alanlara (`initializer`, `right`: C `for` başlatıcısı, C++ range-for, C# `foreach`) dış bağlamı verir; `tests/fixtures/complexity/on_{foreach_header_call,range_for_header_call,for_initializer_strlen}` + koşuldaki `strlen` için `on2_strlen_condition`. Dev static-only Big-O %88 → %92.
+- Çağrı maliyeti tablosu eksikleri (eval notları): `std::memset`/`memcpy` (n), `UGameplayStatics::GetAllActorsOfClass` (n), `TArray::Remove` (n); `std::string operator+` / C# `string +=` döngüde karesel (şu an n).
 
 ## Yapılacaklar (2026-09-30 itibarıyla sıra)
-1. **Faz 12 devamı** (dal `faz/12-eval`): C taslak incelemesi → kalan 64 taslak → ölçümler (bkz. "Faz 12 — Notlar / Sıradaki adımlar").
+1. **Faz 12 devamı** (dal `faz/12-eval`): 12C ölçümler — claude_cli two_pass/single_pass + 2 ablasyon (dev), `eval compare`, `docs/eval-findings.md`, ADR-0003, en sonda bir kez `--split test --final` (bkz. "Faz 12 — Notlar / Sıradaki adımlar").
 2. **Faz 13 — Web UI + kurulum** (Docker yok; API kimlik/hız sınırı kararı burada).
 3. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması. Ollama kullanılmıyor (kullanıcı tercihi). main origin'in önünde, push edilmedi.

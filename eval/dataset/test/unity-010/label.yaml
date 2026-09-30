@@ -1,0 +1,15 @@
+# Fizik kuvveti Update'te uygulanıyor (FixedUpdate yerine), kare hızına bağlı
+id: unity-010
+language: csharp
+engine: unity
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: engine_best_practice, line: 12, note: "sürekli kuvvet kare sayısına göre birikir" }
+  must_not_contain: ["private void FixedUpdate()"]
+tags: [physics, engine]
+split: test
+reviewed: true

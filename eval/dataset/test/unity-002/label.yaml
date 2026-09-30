@@ -1,0 +1,12 @@
+# Sözdizimi: metodun kapanış süslü parantezi eksik
+id: unity-002
+language: csharp
+engine: unity
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

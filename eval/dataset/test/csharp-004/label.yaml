@@ -1,0 +1,12 @@
+# Sözdizimi: generic tip argümanında kapanmayan açılı parantez
+id: csharp-004
+language: csharp
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

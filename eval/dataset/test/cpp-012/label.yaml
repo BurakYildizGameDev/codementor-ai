@@ -1,0 +1,15 @@
+# Temiz: list + unordered_map ile O(1) LRU önbellek — yanlış pozitif ölçümü
+id: cpp-012
+language: cpp
+engine: none
+question_id: cpp-hard-lru-cache
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "n"
+  findings: []
+  must_not_contain: []
+tags: [clean]
+split: test
+reviewed: true

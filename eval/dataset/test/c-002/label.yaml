@@ -1,0 +1,12 @@
+# Sözdizimi: kapanmamış süslü parantez
+id: c-002
+language: c
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

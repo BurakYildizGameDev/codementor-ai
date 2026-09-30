@@ -1,0 +1,15 @@
+# Gizli karesel: List'i kuyruk gibi kullanıp RemoveAt(0) O(n^2)
+id: csharp-012
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "1"
+  findings:
+    - { category: performance, line: 11, note: "baştan silme kalan tüm elemanları kaydırır" }
+  must_not_contain: ["new Queue<int>", "jobs.Dequeue()"]
+tags: [complexity, performance]
+split: test
+reviewed: true

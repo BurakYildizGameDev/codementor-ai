@@ -1,0 +1,14 @@
+# Temiz: sort + unique ile tekilleştirme O(n log n) — yanlış pozitif ölçümü
+id: cpp-011
+language: cpp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n log n"
+  space_complexity: "n"
+  findings: []
+  must_not_contain: []
+tags: [clean, complexity]
+split: dev
+reviewed: true

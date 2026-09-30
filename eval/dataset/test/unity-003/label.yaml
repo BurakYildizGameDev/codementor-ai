@@ -1,0 +1,12 @@
+# Sözdizimi: Input koşulunda kapanmayan parantez
+id: unity-003
+language: csharp
+engine: unity
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

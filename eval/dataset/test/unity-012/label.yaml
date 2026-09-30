@@ -1,0 +1,14 @@
+# Temiz: Queue tabanlı mermi havuzu — yanlış pozitif ölçümü
+id: unity-012
+language: csharp
+engine: unity
+question_id: unity-medium-object-pool
+syntax_valid: true
+expected:
+  compilation_status: passed
+  space_complexity: "n"
+  findings: []
+  must_not_contain: []
+tags: [clean, pooling]
+split: test
+reviewed: true

@@ -1,0 +1,16 @@
+# Her atışta Instantiate + Destroy: havuz yok, GC baskısı
+id: unity-009
+language: csharp
+engine: unity
+question_id: unity-medium-object-pool
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: garbage_collection, line: 15, note: "saniyede 12 nesne yaratılıp yok ediliyor" }
+  must_not_contain: ["Queue<Bullet>", "ObjectPool<Bullet>"]
+tags: [allocation, pooling]
+split: dev
+reviewed: true

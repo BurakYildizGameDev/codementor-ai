@@ -1,0 +1,15 @@
+# Girdi denetimi: int.Parse kullanıcı girdisinde (null / sayı olmayan metin)
+id: csharp-008
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: input_handling, line: 9, note: "geçersiz girdi veya null'da istisna" }
+  must_not_contain: ["int.TryParse(line, out"]
+tags: [input]
+split: test
+reviewed: true

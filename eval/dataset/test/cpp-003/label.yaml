@@ -1,0 +1,12 @@
+# Sözdizimi: aralık tabanlı for'da kapanmayan parantez
+id: cpp-003
+language: cpp
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

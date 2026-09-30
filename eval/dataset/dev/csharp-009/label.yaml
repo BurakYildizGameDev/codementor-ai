@@ -1,0 +1,15 @@
+# Gizli karesel: döngü koşulu içinde LINQ Average O(n^2)
+id: csharp-009
+language: csharp
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "n"
+  findings:
+    - { category: performance, line: 11, note: "ortalama her turda baştan hesaplanıyor" }
+  must_not_contain: ["double avg = scores.Average()", "var avg = scores.Average()"]
+tags: [complexity, performance, linq]
+split: dev
+reviewed: true
