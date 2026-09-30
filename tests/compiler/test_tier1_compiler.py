@@ -27,6 +27,9 @@ FIXTURES = ROOT / "tests" / "fixtures" / "tier0"
 SETTINGS = ValidationSettings(
     stub_header=ROOT / "data" / "stubs" / "ue_stubs.h",
     roslyn_check_dll=ROOT / "tools" / "roslyn-check" / "out" / "RoslynCheck.dll",
+    # Tanı doğruluğu ölçülür, süre değil: CI'ın soğuk başlangıcında clang++ + ue_stubs.h
+    # 10 sn'yi aşabiliyor. Zaman aşımı yolu tests/unit/test_tier1.py'de sınanır.
+    compile_timeout_s=60,
 )
 CHAIN: Toolchain = discover(os.environ.get("PATH", ""), SETTINGS.roslyn_check_dll)
 
