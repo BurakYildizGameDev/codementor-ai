@@ -12,6 +12,7 @@
 | 6 (daraltılmış) | ✅ | faz/6-kurallar | 2026-09-29 | Claude Code / kod-denetci |
 | 7 | ✅ | faz/7-saglayicilar | 2026-09-29 | Claude Code / kod-denetci |
 | 8 | ✅ | faz/8-promptlar | 2026-09-30 | Claude Code / kod-denetci |
+| 9 | ✅ | faz/9-dogrulayici | 2026-09-30 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -284,6 +285,38 @@
 - Görev metninde `<user_code>` etiketini düz yazıyla anmak sınırlayıcı sayısını bozuyor; talimatlarda etiket adı yerine "öğrencinin kodu" demek daha güvenli.
 - Bash heredoc'ları Türkçe metinde yine bozuldu; PROGRESS güncellemesi betik dosyasıyla yapıldı.
 
+## Faz 9 — Notlar
+**Yapılanlar:**
+- `src/codementor/verify/`: `schema_check.py` (`check_schema`, `extract_json`: ``` çiti / düz yazı içinden tek geçişte JSON), `lines.py` (`check_line_range`, `match_evidence`, `normalize_evidence`), `complexity.py` (`normalize_complexity`, `resolve_conflict`, `is_optimal`, `check_complexity`), `merge.py` (`merge_findings`, `number_findings`), `leak_guard.py` (`check_leaks`, `code_violations`, `decide_leak_action`), `confidence.py` (§5.6 formülü + bulgu başına güven), `analysis.py` (`verify_analysis`, `verify_socratic`: kontrolleri sırayla çağıran ince birleştirici).
+- Modeller: `models/verification.py` (`SchemaCheck`, `EvidenceMatch`, `ComplexityCheck`, `LeakViolation`, `LeakCheck`, `LeakDecision`, `RepairRequest`, `AnalysisVerification`, `SocraticVerification`, `CommonIdentifiers`). Config `[verify]` (mimari §17). Veri: `data/leak_common_identifiers.yaml`.
+- Halüsinasyon fixture'ları `tests/fixtures/llm_responses/`: **2 gerçek claude_cli yanıtı** (EnemyRadar / golden unity-03, Faz 8 prompt'uyla; Geçiş A 21 sn, B 7 sn) + onlardan türetilmiş 9 sentetik vaka (yanlış satır, var olmayan kanıt, `Line 23:` önekli kanıt + statik tekrar [Faz 7 deepseek gözlemi], gerekçesiz/gerekçeli çatışma, `per frame`, ayrıştırılamayan karmaşıklık, yasaklı tanımlayıcı, kod bloğu, öğrenci alıntısı) + test referans çözümü `unity03_reference.cs`.
+- Testler `tests/unit/verify/` (148): her §5.6 satırı için pozitif + negatif, hypothesis ile güven skoru. Toplam 1616 test.
+**Kabul kriterleri:**
+- [x] §5.6 tablosundaki her kontrol için pozitif ve negatif test — şema (`test_schema_check.py`), satır aralığı + kanıt (`test_lines.py`), Big-O + çatışma (`test_complexity.py`), birleştirme + önem (`test_merge.py`), sızıntı (`test_leak_guard.py`).
+- [x] Kanıtı 1 satır kaymış bulgu düzeltiliyor; kanıtı hiç olmayan atılıyor + uyarı — `test_shift_within_two_lines_corrected`, `test_missing_evidence_not_found`, `test_dropped_findings_warn_in_turkish_and_lower_confidence`, fixture `wrong_line`, `missing_evidence`.
+- [x] Gerekçesiz çatışma → onarım talebi; gerekçeli çatışma → kabul + düşük güven — `test_unjustified_conflict_requests_repair`, `test_justified_conflict_accepted`, fixture `conflict_unjustified` / `conflict_justified` (güven 0.85).
+- [x] Statik ve LLM aynı sorunu bulunca tek `confirmed` bulgu — `test_same_issue_becomes_single_confirmed`, `test_static_and_llm_merge_confirmed`, fixture `prefixed_evidence_and_repeat`.
+- [x] Sızıntı: kod bloğu, referansla yüksek 5-gram örtüşmesi ve yasaklı tanımlayıcı ayrı ayrı yakalanıyor — `test_code_block_detected`, `test_ngram_overlap_detected` (yasaklı ad kapalıyken), `test_forbidden_identifier_detected`; negatifler (Türkçe `;`, öğrenci alıntısı, genel adlar, soru metnindeki adlar).
+- [x] Güven skoru 0–1 aralığında ve formüle uygun (hypothesis ile) — `test_always_in_unit_interval_and_matches_formula`.
+**Alınan kararlar (ve neden):**
+- **Doğrulayıcılar saf:** onarımı değil kararı döndürür (`RepairRequest`, `LeakDecision.action`); LLM'i ve `private/` okumayı Faz 10 pipeline'ı yapar. Referans çözüm metin olarak verilir.
+- **Kanıt araması:** `line_start..line_end ± evidence_window` (varsayılan 2); bildirilen satıra en yakın eşleşme seçilir; önek atılmış hali bulunamazsa ham hali de denenir (`0 | FLAG` gerçek kod olabilir); `...` parçalar sırayla aranır; en az 2 anlamlı karakter. Aralık dışı ya da kanıtı olmayan bulgu atılır + Türkçe uyarı (onarım istenmez; §5.6 onarımı yalnızca şema/karmaşıklık için ister).
+- **Gerekçeli çatışma = `agreement == "conflicts"`** (şema en az bir `reasoning_steps` adımı zorunlu kılıyor); aynı sınıftaysa "conflicts" dense bile uyum. Gerekçesiz çatışmada karmaşıklık rapora yazılmaz (onarım bekler). `O(...)` yazılmışsa yalnızca içi ayrıştırılır: yarım `O(n` artık `o` değişkeni sanılmaz.
+- **Birleştirme:** her LLM bulgusu en yakın eşleşmemiş statik bulguyla birleşir; bir statik bulgu en fazla bir LLM bulgusunu emer; LLM'in kendi tekrarları atılır. Güven: LLM 0.7 (satır doğru) / 0.6 (düzeltilmiş), confirmed ≥ 0.95. LLM bulgu vermediyse kanıt oranı 1.
+- **Sızıntı:** kod deseni her zaman kod sözdizimi ister; atamada sağ taraf da kod gibi olmalı (ASCII, tek token ya da işaret içeren) — ilk uygulamada "i = n olduğunda ne olur;" kod sayılıyordu. Öğrenci alıntısı boşluksuz karşılaştırmayla serbest. n-gram'da öğrenci kodunda da geçen n-gram'lar ve referanstaki yorum/metin sabitleri sayılmaz; tanımlayıcı Türkçe sözcüğün parçasıysa (`Listeyi`) sayılmaz. Eşik varsayılanı 0.2 (config).
+- **§12 doğrusal süre:** JSON çıkarma tek geçişli yığın (400 K `{` < 2 sn), kanıt aramasında eşleşme sayısı sınırlı, soru/ipucu 1000 karakteri aşarsa `too_long` ihlali (ölçüm: kod regex'leri 32 K karakterde 15 sn sürüyordu).
+**Mimariden sapmalar (ADR linki):** yok. §16'ya `verify/analysis.py` (birleştirici), §17'ye `[verify]`, §5.6'ya uygulama notları eklendi; `LeakKind`'e `too_long` eklendi.
+**Canlı gözlem (claude_cli, 2026-09-30):** Faz 8 prompt'u ilk kez canlı denendi. 7 LLM bulgusunun kanıtının tümü kodda, tek satır kayması (17→18) düzeltildi, statik bulgular tekrar edilmedi, karmaşıklık `O(n^2)` ipucuyla uyumlu; Geçiş B 33. satırdaki mantık hatasına çözümü söylemeden yönlendiriyor ve referans çözümle karşılaştırıldığında temiz.
+**Açık sorular:**
+- **`reasoning_steps` sızıntısı:** canlı Geçiş A yanıtında bir adım "hash tabanlı bir yapı kullanılırsa kare başına O(n) mümkün" diyor. §5.6 sızıntı korumasını yalnızca Sokratik bölüme uyguluyor; `reasoning_steps` rapora (öğrenciye) gidiyorsa Faz 10'da ya gizlenmeli ya da aynı korumadan geçmeli.
+- `key_flaw_concept` (Faz 8'den) ve LLM bulgu açıklamaları da sızıntı denetimine girmiyor; açıklamalar "hash tabanlı..." gibi çözüm önerebilir.
+- Yasaklı tanımlayıcı listesi referans çözümün kalitesine bağlı; eval (Faz 12) yanlış pozitif/negatifleri ölçmeli, `leak_ngram_threshold` orada ayarlanmalı.
+- `make` hâlâ yok; kontroller `uv run ...` ile.
+**Bu fazda öğrendiğim:**
+- Gerçek yanıt kaydetmek sentetik fixture'dan daha çok şey öğretti: kanıt biçimi Faz 8 örnekleriyle birebir oturmuş, ama asıl sızıntı riski beklenmedik yerde (`reasoning_steps`) çıktı.
+- Regex tabanlı "kod mu?" sezgisi Türkçe düzyazıda kolayca yanılıyor; her desen için Türkçe negatif fixture şart.
+- Sınırsız uzunluktaki model çıktısına regex uygulamak karesel süre tuzağı; ölçmeden fark edilmiyor.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -312,14 +345,15 @@
 - ~~Faz 4 `run_process` çıplak `argv[0]`~~ → çözüldü (2026-09-29): yalnızca mutlak yol, `test_bare_or_relative_executable_rejected`.
 - CLI ajanları: gerçek `run_process` ile uçtan uca test (sahte bir CLI betiğiyle: stdin, boş cwd, ortamda başka anahtar yok); agy canlı doğrulaması (oturum açılınca).
 - Faz 8: `call_costs.yaml`'a C# `RemoveAll`/`RemoveAt(0)`/`Insert(0, …)` maliyetleri (golden'da `Remove: O(1)` ipucu).
-- Faz 8 denetim D3: kod görünümünde `<user_code>` benzeri dizi `&lt;` ile kaçışlanıyor; model kanıtı kaçışlı haliyle kopyalarsa Faz 9 doğrulayıcısı karşılaştırmadan önce `&lt;` → `<` ters çevirmeli.
+- ~~Faz 8 denetim D3 (`&lt;` kanıtı)~~ → Faz 9'da çözüldü (`normalize_evidence`).
 - Faz 8 denetim D2: `prompt_version` her build'de şablon dosyalarını okuyor; Faz 10'da mtime tabanlı önbellek.
 - Faz 8 denetim D8: `prompts.dir` ve demo'nun golden dizini çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte).
 - Faz 8: prompt'ların `claude_cli` ile canlı karşılaştırması (analysis vs single_pass) Faz 12 eval'inde; token tahmininin gerçek `usage` ile kalibrasyonu.
+- Faz 9: sızıntı korumasını `reasoning_steps`, `key_flaw_concept` ve LLM bulgu açıklamalarına genişletmek (Faz 10 rapor kararına bağlı).
+- Faz 9: `LLMSocraticOutput.guiding_questions` öğelerine şemada `max_length` (şu an doğrulayıcı 1000 karakter üstünü ihlal sayıyor).
 - CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
 
 ## Yapılacaklar (2026-09-30 itibarıyla sıra)
-1. **Faz 9 — Verifier:** kanıtı `line_start..line_end` aralığında ara; öğrencinin kendi kodundan alıntıyı sızıntı sayma; Türkçe `;` kod değildir; "O(n^2) per frame" gibi karmaşıklık eklerini normalize et; onarım döngüsü (`build_repair_messages` hazır).
-2. **Faz 10 — Pipeline + `codementor analyze`:** uçtan uca; erken çıkış Sokratik şablonları; `PolicyDecision.warnings` + fallback uyarıları → `meta.warnings`; `BuiltPrompt.prompt_version/trimmed` → rapor; `key_flaw_concept` gösterimi.
-3. agy canlı doğrulaması (oturum açılınca). Ollama kullanılmıyor (kullanıcı tercihi, 2026-09-30).
-4. Faz 6'da ertelenen 10 kural; Faz 11 API → Faz 12 eval → Faz 13 web/kurulum.
+1. **Faz 10 — Pipeline + `codementor analyze`:** uçtan uca; `verify_analysis`/`verify_socratic` kararlarını uygula (onarım 1 kez, yeniden üretim 1 kez, zarif bozulma §5.6); `private/` referans çözüm yükleme; erken çıkış Sokratik şablonları; `PolicyDecision.warnings` + fallback + doğrulayıcı uyarıları → `meta.warnings`; `BuiltPrompt.prompt_version/trimmed` → rapor; `key_flaw_concept` ve `reasoning_steps` gösterimi/sızıntı kararı.
+2. agy canlı doğrulaması (oturum açılınca). Ollama kullanılmıyor (kullanıcı tercihi, 2026-09-30).
+3. Faz 6'da ertelenen 10 kural; Faz 11 API → Faz 12 eval → Faz 13 web/kurulum.

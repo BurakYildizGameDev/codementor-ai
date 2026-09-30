@@ -487,6 +487,8 @@ Bu katman "halüsinasyonu nasıl engelliyorsun?" sorusunun asıl cevabıdır.
 | Önem sağlaması | Statik kuralın önemi LLM'inkinden önceliklidir | — |
 | Sızıntı koruması | (1) sorularda kod bloğu/kod benzeri satır yok (2) referans çözümle 5-gram örtüşme < eşik (3) yasaklı tanımlayıcılar (referans çözümde olup kullanıcı kodunda olmayan) | Geçiş B yeniden üretilir (1 kez); yine başarısızsa sorunlu soru atılır |
 
+**Uygulama notları (Faz 9):** kanıt aramasında `Line 18:` / `18 |` önekleri, çevreleyen tırnak, sondaki `;` ve Faz 8'in `&lt;` kaçışı yok sayılır; `O(...)` dışındaki ekler (`per frame`, `amortized`, `Θ(...)`) normalize edilir. Sızıntı korumasında öğrencinin kendi kodundan birebir alıntı ve Türkçe düzyazıdaki `;` kod sayılmaz; genel adlar `data/leak_common_identifiers.yaml`'dadır; 1000 karakteri aşan soru/ipucu ihlaldir (regex süresi doğrusal kalsın). Kontrolleri sırayla çağıran `verify/analysis.py` (`verify_analysis`, `verify_socratic`) karar döndürür; onarımı Faz 10 pipeline'ı yapar.
+
 **Big-O dilbilgisi (desteklenen):** `1`, `log n`, `n`, `n log n`, `n^k`, `2^n`, `n!`, çok değişkenli çarpım/toplam (`n*m`, `V+E`). Tek değişkenli ifadeler sıralanabilir (`1 < log n < n < n log n < n^2 < ... < 2^n < n!`); `is_optimal` kontrolü bu sıralamayla doğrulanır.
 
 **Güven skoru (0–1):**
@@ -1130,7 +1132,7 @@ codementor-ai/
 │   ├── questions/     bank.py  checklists.py
 │   ├── prompts/       builder.py  budget.py  fewshot.py
 │   ├── providers/     base.py  schema_adapter.py  fake.py  ollama.py  openai_compat.py  anthropic.py  factory.py
-│   ├── verify/        schema_check.py  lines.py  complexity.py  merge.py  leak_guard.py  confidence.py
+│   ├── verify/        schema_check.py  lines.py  complexity.py  merge.py  leak_guard.py  confidence.py  analysis.py
 │   ├── pipeline/      orchestrator.py  stages.py  events.py
 │   ├── storage/       db.py  cache.py  sessions.py
 │   ├── report/        cli_render.py  markdown.py  sarif.py
@@ -1182,6 +1184,13 @@ use_cache = true
 
 [rules]
 disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]
+
+[verify]                     # Faz 9 (§5.6); eşikler Faz 12 eval'inde ayarlanır
+evidence_window = 2
+leak_ngram_n = 5
+leak_ngram_threshold = 0.2
+leak_min_identifier_length = 3
+common_identifiers_file = "data/leak_common_identifiers.yaml"
 
 [prompts]                    # Faz 8 (§5.4.4-5.4.5)
 dir = "prompts/v1"
