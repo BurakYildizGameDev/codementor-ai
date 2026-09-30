@@ -254,3 +254,18 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 ### Testler (1366 test)
 - 6 adaptörün geçtiği ortak sözleşme paketi (respx ile ağsız), `tests/live/` canlı testler (`-m live`).
 
+---
+
+## Faz 13 — Web UI, Kurulum ve Dokümantasyon ✅
+
+**Dal:** `faz/13-sunum` · **Mimari:** §5.7, §18, §23
+
+### Ne yapıldı
+- **Web arayüzü (`web/`):** Vite + React + TypeScript, Monaco editör. Dil/motor/soru seçimi, SSE ile canlı aşama ilerlemesi, bulgu satırlarının önem derecesine göre işaretlenmesi, tıklanabilir bulgu listesi, Sokratik sorular ve "Sonraki ipucu" (ipucu merdiveni), karmaşıklık kartı. Mobilde tek sütun.
+- **Tipler şemadan:** Python modelleri → `schemas/*.schema.json` → `web/src/types/` (json-schema-to-typescript). CI sapmayı yakalar.
+- **Kurulum (Docker'sız):** `uv sync` → `uv run codementor serve` → `cd web && npm install && npm run dev`. Varsayılan sağlayıcı Claude Code CLI.
+- **README:** gerçek analiz ekran görüntüsü, mimari diyagram, hızlı başlangıç, eval tabloları (testle `eval/results/` ile birebir), sınırlamalar, yol haritası.
+- **ADR'ler:** 0001, 0002, 0004–0008 yazıldı; ADR-0009'a "Docker paketleme yok" eki.
+
+### Testler
+- Vitest 24, Playwright 2 (+1 canlı), Python'da README tablo ve şema testleri. Toplam Python 1772.

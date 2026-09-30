@@ -8,12 +8,16 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from codementor.models.api import Problem
 from codementor.models.llm_output import (
     LLMAnalysisOutput,
     LLMSinglePassOutput,
     LLMSocraticOutput,
 )
+from codementor.models.pipeline import StageEvent
+from codementor.models.questions import QuestionPublic
 from codementor.models.report import AnalysisReport
+from codementor.models.request import AnalysisRequest
 
 JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
 
@@ -22,6 +26,11 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "llm_analysis.schema.json": LLMAnalysisOutput,
     "llm_socratic.schema.json": LLMSocraticOutput,
     "llm_single_pass.schema.json": LLMSinglePassOutput,
+    # Web UI tipleri bunlardan üretilir (web/scripts/gen-types.mjs)
+    "request.schema.json": AnalysisRequest,
+    "stage_event.schema.json": StageEvent,
+    "question_public.schema.json": QuestionPublic,
+    "problem.schema.json": Problem,
 }
 
 

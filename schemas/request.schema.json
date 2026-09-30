@@ -1,0 +1,153 @@
+{
+  "$defs": {
+    "AnalysisOptions": {
+      "additionalProperties": false,
+      "description": "İstek başına seçenekler; `None` → yapılandırmadaki değer kullanılır.",
+      "properties": {
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PipelineMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tier1": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tier1"
+        },
+        "use_cache": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Use Cache"
+        }
+      },
+      "title": "AnalysisOptions",
+      "type": "object"
+    },
+    "Engine": {
+      "enum": [
+        "none",
+        "unity",
+        "unreal"
+      ],
+      "title": "Engine",
+      "type": "string"
+    },
+    "Language": {
+      "enum": [
+        "c",
+        "cpp",
+        "csharp"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "PipelineMode": {
+      "description": "Pipeline çağrı modu (mimari §5.4, §17 `pipeline.mode`).",
+      "enum": [
+        "two_pass",
+        "single_pass"
+      ],
+      "title": "PipelineMode",
+      "type": "string"
+    }
+  },
+  "$id": "request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Analiz isteği. Kullanıcı kodu güvenilmeyen veridir (mimari §12).",
+  "properties": {
+    "code": {
+      "minLength": 1,
+      "title": "Code",
+      "type": "string"
+    },
+    "engine": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Engine"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Boşsa sezgisel tespit"
+    },
+    "language": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Language"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Boşsa sezgisel tespit"
+    },
+    "options": {
+      "$ref": "#/$defs/AnalysisOptions"
+    },
+    "provider": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Provider"
+    },
+    "question_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Question Id"
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Session Id"
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "title": "AnalysisRequest",
+  "type": "object"
+}

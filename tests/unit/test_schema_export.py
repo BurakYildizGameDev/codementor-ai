@@ -15,6 +15,11 @@ EXPECTED = {
     "llm_analysis.schema.json",
     "llm_socratic.schema.json",
     "llm_single_pass.schema.json",
+    # Web UI tipleri bunlardan üretilir (Faz 13, web/scripts/gen-types.mjs)
+    "request.schema.json",
+    "stage_event.schema.json",
+    "question_public.schema.json",
+    "problem.schema.json",
 }
 REPO_SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 
@@ -50,6 +55,22 @@ def test_llm_schema_excludes_system_fields() -> None:
         text = json.dumps(schemas[name])
         for field in ("compilation", "meta", '"source"', "confidence", "analysis_id"):
             assert field not in text, (name, field)
+
+
+def test_ui_schemas_exported() -> None:
+    schemas = build_schemas()
+    titles = {
+        "request.schema.json": "AnalysisRequest",
+        "stage_event.schema.json": "StageEvent",
+        "question_public.schema.json": "QuestionPublic",
+        "problem.schema.json": "Problem",
+    }
+    for name, title in titles.items():
+        assert schemas[name]["title"] == title
+    # soru şeması referans çözümü ve mentorluk verisini taşımaz (§12)
+    question = json.dumps(schemas["question_public.schema.json"])
+    for field in ("reference_solution", "hint_ladder"):
+        assert field not in question
 
 
 def test_schema_models_mapping() -> None:

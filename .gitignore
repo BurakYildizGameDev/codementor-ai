@@ -19,3 +19,8 @@ node_modules/
 tools/roslyn-check/bin/
 tools/roslyn-check/obj/
 tools/roslyn-check/out/
+
+# Web UI (Faz 13)
+web/test-results/
+web/playwright-report/
+web/*.tsbuildinfo

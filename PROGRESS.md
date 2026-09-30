@@ -16,6 +16,7 @@
 | 10 | ✅ | faz/10-pipeline | 2026-09-30 | Claude Code / — |
 | 11 | ✅ | faz/11-api | 2026-09-30 | Claude Code / — |
 | 12 | ✅ | faz/12-eval | 2026-09-30 | Claude Code / — |
+| 13 | ✅ | faz/13-sunum | 2026-09-30 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -413,6 +414,17 @@
 **Ortam notu:** two_pass test koşusunda bilgisayar 21:21–21:54 uykuya geçti; `cpp-012` süresi (2036 sn) geçersiz, p50/p95 etkilenmedi (en yakın sıra). Makinede gcc/clang yok: C/C++/Unreal Tier 1 `skipped`.
 **Açık sorular:** `make` hâlâ yok. Precision analiz betiği (kategorisiz eşleşme, önem filtresi, FP/FN dökümü) scratchpad'de kaldı; Sonraya. Tam pakette bir kez zamanlamaya bağlı tek test hatası görüldü, tekrarlanmadı (yük altında süre sınırlı bir performans testi olabilir).
 
+## Faz 13 — Notlar
+**Yapılanlar:**
+- `web/` (Vite 8 + React 19 + TS, Monaco yerel paketten, CDN yok; yalnızca çekirdek editör + C/C++/C# renklendirme): dil/motor/soru seçimi, SSE aşama ilerlemesi (`fetch` + `ReadableStream`; POST olduğu için `EventSource` değil), Monaco satır işaretleri (önem derecesine göre; aynı satırda en yüksek önem, mesajlar birleşik), bulgu listesi (tıkla → satır), Sokratik panel + "Sonraki ipucu" (kalıcı `session_id` ile aynı kodu yeniden gönderir; ipucu merdiveni sunucuda, yeni uç nokta yok), karmaşıklık kartı (gerekçe adımları, güven, statik uyum), uyarı/bozulma bildirimi, Türkçe hata mesajları. ≤ 900 px tek sütun.
+- Tipler elle yazılmadı: `models/schemas.py`'ye `request`, `stage_event`, `question_public`, `problem` şemaları eklendi; `web/scripts/gen-types.mjs` (json-schema-to-typescript) → `web/src/types/*.ts` (başlıkta "OTOMATİK ÜRETİLDİ"). CI `web` işi tipleri yeniden üretip `git diff --exit-code` ile sapmayı yakalar.
+- Testler: Vitest 24 (`sse`, `client`, `markers`, `progress`, `session`, `App`), Playwright 2 (API `page.route` ile taklit: işaret sınıfları, 375 px'de yatay kaydırma yok) + 1 canlı (`CODEMENTOR_E2E_LIVE=1`, gerçek API + claude_cli). Python: `test_ui_schemas_exported`, `test_readme_table.py` (README eval tabloları `compare` çıktısıyla birebir), `test_repo_config_default_provider_is_claude_cli`. Toplam Python 1772.
+- Kurulum: `codementor.toml` varsayılan sağlayıcı `claude_cli` (fallback yok); Makefile `serve`, `web-install`, `web-types`, `web`, `web-test`, `web-e2e`; CI'a `web` işi (npm ci, tip senkronu, typecheck, test, build, Playwright).
+- README baştan: gerçek analiz ekran görüntüsü (`docs/img/web-live.png`), mermaid diyagram, Docker'sız hızlı başlangıç, sağlayıcı tablosu (Ollama `ollama pull` adımı dahil), eval tabloları (işaretler arasında, testle korunur), dürüst Sınırlamalar, yol haritası. ADR 0001, 0002, 0004–0008 yazıldı; mimari §18, §19, §20 (bağlantılar), §22, §23.1/§23.2 ölçülen sayılarla güncellendi.
+**Kararlar:** (1) Docker dosyaları yazılmadı (kullanıcı kuralı; ADR-0009 Faz 13 eki, mimari §18.1). (2) Varsayılan sağlayıcı `claude_cli` (eval bununla ölçüldü, kullanıcı Ollama kullanmıyor). (3) API kimlik/hız sınırı v1'de yok; `serve` yerel olmayan adreste uyarıyor, README Sınırlamalar'da. (4) GIF yerine PNG (ffmpeg yok); ekran görüntüleri Playwright ile üretilir. (5) Monaco çekirdeği ~3 MB (gzip ~770 kB), yerel araç olduğu için kabul; `chunkSizeWarningLimit` 3500.
+**Doğrulama:** README adımları git'in izleyeceği dosyaların temiz kopyasında (`.venv`/`node_modules` yok) birebir uygulandı: `uv sync`, `serve`, `npm install`, `npm run dev`; `/health/ready`, soru listesi ve Vite proxy üzerinden SSE analiz (26 aşama + rapor), canlı Playwright testi geçti. Canlı ekran görüntüsünde aynı satırda yüksek + düşük bulgu varken düşük rengin görünmesi hatası bulundu ve düzeltildi (testli).
+**Açık sorular:** `YAPILANLAR.md` Faz 7'den sonra güncellenmemiş (Faz 8–12 özetleri yok); Faz 13 bölümü eklendi.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -450,7 +462,7 @@
 - Faz 10: `prompt_version` her analizde şablon dosyalarını okuyor (Faz 8 D2); API'de mtime önbelleği.
 - Faz 10: CLI ilerleme göstergesi yalnızca aşama adını gösteriyor; token/süre canlı gösterilebilir.
 - Faz 11: pipeline'ın senkron aşamalarını (`run_tier0/1`, olgular, SQLite) `asyncio.to_thread`'e taşımak (çok kullanıcılı API).
-- Faz 11: API anahtarı / hız sınırlama (§12); yerel olmayan bağlamada zorunlu kılınabilir.
+- Faz 11: API anahtarı / hız sınırlama (§12); yerel olmayan bağlamada zorunlu kılınabilir. (Faz 13 kararı: v1'de yok, README Sınırlamalar.)
 - CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
 - ~~Faz 5 hatası (csharp-011): `foreach` koleksiyon ifadesindeki çağrı döngü içinde sayılıyordu → `high` O(n²)~~ → çözüldü (2026-09-30, kullanıcı isteğiyle Faz 12 içinde): `_context.contexts` döngü başlığında bir kez değerlendirilen alanlara (`initializer`, `right`: C `for` başlatıcısı, C++ range-for, C# `foreach`) dış bağlamı verir; `tests/fixtures/complexity/on_{foreach_header_call,range_for_header_call,for_initializer_strlen}` + koşuldaki `strlen` için `on2_strlen_condition`. Dev static-only Big-O %88 → %92.
 - Çağrı maliyeti tablosu eksikleri (eval notları): `std::memset`/`memcpy` (n), `UGameplayStatics::GetAllActorsOfClass` (n), `TArray::Remove` (n); `std::string operator+` / C# `string +=` döngüde karesel (şu an n).
@@ -459,7 +471,11 @@
 - Faz 12: precision iyileştirme — `design` bulgularını yalnızca soru gereksinimi varken üretmek, `low` bulguları raporda ayrı göstermek; kategori belirsizliği (sıfıra bölme `edge_case`/`undefined_behavior`, null `edge_case`/`memory_safety`) için prompt'ta kategori tanımları. Değişiklik sonrası dev'de yeniden ölçülmeli (test artık kullanıldı).
 - Faz 12: few-shot 0/1 ablasyonu (§14.4) koşulmadı.
 - CI Windows işi (2026-09-30): `windows-latest`'te g++ (MinGW) ilk derlemede 10 sn sınırını aşıyor (`test_cpp_type_error_failed` → `timeout`); clang++ varsayılan MSVC hedefli olduğundan Unreal stub denetimi `tool_error` ile atlanıyor (2 test). Ürün zarif atlıyor ama Windows'ta clang için `--target=x86_64-w64-mingw32` / başlık yolu ve soğuk başlangıç süresi ele alınmalı; o zamana kadar Windows CI `-m "not live and not compiler"`.
+- Faz 13: README için GIF demo (ffmpeg ile Playwright videosundan); şu an PNG.
+- Faz 13: Web UI'da SARIF/Markdown indirme düğmesi (`/v1/analyses/{id}/sarif` hazır), sağlayıcı seçimi ve mod (two_pass/single_pass) seçeneği.
+- Faz 13: Monaco'yu tembel yükleme (dinamik `import`) ile ilk yükü küçültmek.
+- Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri.
 
 ## Yapılacaklar (2026-09-30 itibarıyla sıra)
-1. **Faz 13 — Web UI + kurulum** (Docker yok; API kimlik/hız sınırı kararı burada).
-2. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması. Ollama kullanılmıyor (kullanıcı tercihi). main origin'in önünde, push edilmedi.
+1. Faz 13 commit'i ve main'e alınması (kullanıcı); CI'da yeni `web` işinin ilk koşusu.
+2. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması; eval precision iyileştirmesi (bkz. Sonraya). Ollama kullanılmıyor (kullanıcı tercihi).

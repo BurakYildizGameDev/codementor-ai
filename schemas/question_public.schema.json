@@ -1,0 +1,120 @@
+{
+  "$defs": {
+    "Difficulty": {
+      "enum": [
+        "very_easy",
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "Engine": {
+      "enum": [
+        "none",
+        "unity",
+        "unreal"
+      ],
+      "title": "Engine",
+      "type": "string"
+    },
+    "ExpectedComplexity": {
+      "additionalProperties": false,
+      "description": "Sorunun beklenen karmaşıklığı; işlem adı → Big-O.",
+      "properties": {
+        "space": {
+          "title": "Space",
+          "type": "string"
+        },
+        "time": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "minProperties": 1,
+          "propertyNames": {
+            "minLength": 1
+          },
+          "title": "Time",
+          "type": "object"
+        }
+      },
+      "required": [
+        "time",
+        "space"
+      ],
+      "title": "ExpectedComplexity",
+      "type": "object"
+    },
+    "Language": {
+      "enum": [
+        "c",
+        "cpp",
+        "csharp"
+      ],
+      "title": "Language",
+      "type": "string"
+    }
+  },
+  "$id": "question_public.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Öğrenciye (API, CLI) verilen soru: yalnızca problem tanımı.\n\nReferans çözüm (mimari §12) ve mentorluk verisi (`MENTOR_FIELDS`: kavram\netiketleri, soruya özgü kontrol maddeleri, ipucu merdiveni) içermez; ipuçları\nanaliz sırasında kademeli açılır.",
+  "properties": {
+    "constraints": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Constraints",
+      "type": "array"
+    },
+    "difficulty": {
+      "$ref": "#/$defs/Difficulty"
+    },
+    "engine": {
+      "$ref": "#/$defs/Engine"
+    },
+    "expected": {
+      "$ref": "#/$defs/ExpectedComplexity"
+    },
+    "id": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "language": {
+      "$ref": "#/$defs/Language"
+    },
+    "prompt": {
+      "minLength": 1,
+      "title": "Prompt",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "language",
+    "engine",
+    "difficulty",
+    "title",
+    "prompt",
+    "constraints",
+    "expected"
+  ],
+  "title": "QuestionPublic",
+  "type": "object"
+}

@@ -1,0 +1,72 @@
+{
+  "$id": "stage_event.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Bir aşamanın durumu (CLI ilerleme göstergesi, Web UI SSE).",
+  "properties": {
+    "analysis_id": {
+      "title": "Analysis Id",
+      "type": "string"
+    },
+    "detail": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Detail"
+    },
+    "duration_ms": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Duration Ms",
+      "type": "integer"
+    },
+    "stage": {
+      "enum": [
+        "cache",
+        "ingest",
+        "tier0",
+        "tier1",
+        "facts",
+        "rules",
+        "prompt_a",
+        "llm_a",
+        "verify_a",
+        "prompt_b",
+        "llm_b",
+        "verify_b",
+        "report"
+      ],
+      "title": "Stage",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "started",
+        "completed",
+        "skipped",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "tokens": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Tokens",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "analysis_id",
+    "stage",
+    "status"
+  ],
+  "title": "StageEvent",
+  "type": "object"
+}

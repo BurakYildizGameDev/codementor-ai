@@ -30,3 +30,23 @@ jobs:
       # derleyici testleri Linux'ta koşar (PROGRESS "Sonraya")
       - if: runner.os == 'Windows'
         run: uv run pytest -m "not live and not compiler"
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      # Tipler şemadan üretilir; elle düzenleme ya da güncel olmayan tip CI'da yakalanır
+      - run: npm run gen:types && git diff --exit-code -- src/types
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium && npm run e2e

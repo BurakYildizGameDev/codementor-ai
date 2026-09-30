@@ -52,3 +52,12 @@ def test_rules_disabled_from_toml(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     assert load_settings().rules.disabled == ["C-BUF-001", "UE-GC-001"]
     monkeypatch.setenv(CONFIG_FILE_ENV, str(tmp_path / "yok.toml"))
     assert load_settings().rules.disabled == []
+
+
+def test_repo_config_default_provider_is_claude_cli(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Hızlı başlangıç (README) claude_cli ile; Ollama isteğe bağlı alternatif (Faz 13)."""
+    repo_toml = Path(__file__).resolve().parents[2] / "codementor.toml"
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(repo_toml))
+    settings = load_settings()
+    assert settings.providers.default == "claude_cli"
+    assert settings.providers.fallback == []

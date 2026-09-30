@@ -68,3 +68,13 @@ sandbox'ında çalıştırmayı öngörüyordu (§5.2.3). Pratikte:
 
 **Değişmeyenler:** Tier 0 her zaman çalışır (ADR-0001); kod çalıştırma yok (ADR-0005);
 Unreal stub + uyarıya düşürme (ADR-0007); erken çıkış politikası tablosunun mantığı (§5.2.4).
+
+## Faz 13 eki (2026-09-30): opsiyonel Docker paketleme de sağlanmıyor
+
+UYGULAMA_PLANI Faz 13, §18.1'deki opsiyonel `Dockerfile`, `web/Dockerfile` ve
+`docker-compose.yml` dosyalarını öngörüyordu. Proje sahibinin kuralı gereği Docker hiçbir
+biçimde kullanılmaz; bu dosyalar yazılmadı. Kurulum yereldir: `uv sync` →
+`uv run codementor serve` → `cd web && npm install && npm run dev` (README "Hızlı başlangıç").
+Faz 13'ün "`docker compose up` yalnızca opsiyonel yol" kabul kriteri bu nedenle uygulanamaz
+(N/A). Paylaşılan sunucuda yalıtım gerekiyorsa v1.1'deki ayrı runner servisi seçeneği yine
+konteynersiz çözümlerle değerlendirilir.

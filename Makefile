@@ -23,6 +23,25 @@ schema:
 rules-doc:
 	uv run codementor rules doc --out docs/rules-catalog.md
 
+serve:
+	uv run codementor serve
+
+# Web UI (Faz 13): tipler schemas/'tan üretilir, elle yazılmaz
+web-install:
+	cd web && npm install
+
+web-types: schema
+	cd web && npm run gen:types
+
+web:
+	cd web && npm run dev
+
+web-test:
+	cd web && npm run typecheck && npm test && npm run build
+
+web-e2e:
+	cd web && npx playwright install chromium && npm run e2e
+
 check: lint typecheck test
 
-.PHONY: setup lint typecheck test roslyn-check test-compiler schema rules-doc check
+.PHONY: setup lint typecheck test roslyn-check test-compiler schema rules-doc check serve web-install web-types web web-test web-e2e

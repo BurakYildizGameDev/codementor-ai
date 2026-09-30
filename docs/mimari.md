@@ -1254,9 +1254,11 @@ Model adları koda gömülmez; sağlayıcılar model adlarını sık değiştird
 
 ## 18. Dağıtım
 
-Varsayılan dağıtım **Docker'sızdır**: `uv sync` + `codementor serve` (Ollama yerel kurulu). Tier 1 için isteğe bağlı olarak gcc/clang ve `dotnet` kurulur (ADR-0009).
+Varsayılan dağıtım **Docker'sızdır**: `uv sync` + `codementor serve` + Web UI için `npm run dev`. Varsayılan sağlayıcı `claude_cli` (Faz 13; Ollama, Anthropic API vb. yapılandırmayla). Tier 1 için isteğe bağlı olarak gcc/clang ve `dotnet` kurulur (ADR-0009).
 
 ### 18.1 docker-compose (opsiyonel paketleme)
+
+> **Faz 13 kararı (ADR-0009 eki):** Docker dosyaları (`Dockerfile`, `web/Dockerfile`, `docker-compose.yml`) **sağlanmıyor**. Kurulum `uv sync` + `codementor serve` + `cd web && npm install && npm run dev` ile yereldir (README "Hızlı başlangıç"). Aşağıdaki taslak yalnızca tarihsel referanstır.
 
 Uygulamanın hiçbir özelliği Docker'a bağlı değildir; aşağıdaki dosya yalnızca hazır paketleme isteyenler içindir. API imajı gcc/clang içerirse Tier 1 imaj içinde yerel derleyiciyle çalışır; `docker.sock` bağlanmaz.
 
@@ -1284,7 +1286,7 @@ volumes: { codementor-db: {}, ollama-models: {} }
 
 ### 18.2 Makefile hedefleri
 
-`make setup` · `make lint` · `make typecheck` · `make test` · `make test-compiler` · `make schema` · `make eval SPLIT=dev` · `make serve` · `make web` · `make up` (opsiyonel, docker-compose)
+`make setup` · `make lint` · `make typecheck` · `make test` · `make test-compiler` · `make schema` · `make serve` · `make web-install` · `make web-types` · `make web` · `make web-test` · `make web-e2e` (Faz 13). `make up` sağlanmıyor (Docker yok, ADR-0009); eval doğrudan `uv run codementor eval run`.
 
 ---
 
@@ -1305,8 +1307,8 @@ volumes: { codementor-db: {}, ollama-models: {} }
 | Test | pytest, hypothesis, respx | Standart; respx ile HTTP mock | — |
 | Kalite | ruff, mypy --strict | Hız + tip güvenliği | flake8 + black |
 | Web | Vite + React + TS + Monaco | Kod editörü, satır işaretleri | HTMX (daha basit, daha az etkileyici) |
-| Derleyici yalıtımı | Süreç düzeyi (stdin, include koruması, rlimit/Job Object, zaman aşımı) | Docker'sız kurulum; ADR-0009 | Docker/gVisor sandbox (v1.1+, opsiyonel) |
-| Paketleme | Docker (opsiyonel) | Hazır dağıtım isteyenler için | Podman |
+| Derleyici yalıtımı | Süreç düzeyi (stdin, include koruması, rlimit/Job Object, zaman aşımı) | Docker'sız kurulum; ADR-0009 | Süreç düzeyi ek yalıtım, ör. bubblewrap/seccomp (v1.1+) |
+| Paketleme | Yok — yerel `uv` + `npm` (Faz 13, ADR-0009) | Kurulum eşiği düşük; Docker kullanılmıyor | Docker/Podman (sağlanmıyor) |
 
 ---
 
@@ -1316,14 +1318,14 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 
 | No | Karar | Özet gerekçe |
 |---|---|---|
-| ADR-0001 | Temel ayrıştırıcı olarak tree-sitter | Tek API ile üç dil; hata toleransı; derleyici gerektirmez |
-| ADR-0002 | Hibrit analiz: statik kanıt + LLM açıklama | Halüsinasyonu kanıtla sınırlar; LLM'siz taban çizgisi sağlar |
-| ADR-0003 | İki geçişli prompt (varsayılan) | Doğrulanmamış bulguların Sokratik sorulara dönüşmesini engeller; Faz 12 eval ile teyit edildi (`docs/eval-findings.md`) |
-| ADR-0004 | LLM şeması ≠ rapor şeması | Modelin uydurabileceği alanları azaltır |
-| ADR-0005 | v1'de kod çalıştırma yok | Güvenlik riski ve kapsam; v2'de ampirik karmaşıklık için ele alınacak |
-| ADR-0006 | SQLite | Tek kullanıcı, sıfır operasyon yükü |
-| ADR-0007 | Unreal için stub başlık + uyarı seviyesine düşürme | Motor başlıkları olmadan tam derleme imkânsız |
-| ADR-0008 | Model adları yalnızca yapılandırmada | Sağlayıcı model adları sık değişir |
+| ADR-0001 | Temel ayrıştırıcı olarak tree-sitter | Tek API ile üç dil; hata toleransı; derleyici gerektirmez ([docs/adr/0001](adr/0001-tree-sitter.md)) |
+| ADR-0002 | Hibrit analiz: statik kanıt + LLM açıklama | Halüsinasyonu kanıtla sınırlar; LLM'siz taban çizgisi sağlar ([docs/adr/0002](adr/0002-hibrit-analiz.md)) |
+| ADR-0003 | İki geçişli prompt (varsayılan) | Doğrulanmamış bulguların Sokratik sorulara dönüşmesini engeller; Faz 12'de kalite üstünlüğü ölçülmedi, sızıntı korumasına daha az yaslandığı için varsayılan kaldı (`docs/eval-findings.md`) ([docs/adr/0003](adr/0003-iki-gecisli-prompt.md)) |
+| ADR-0004 | LLM şeması ≠ rapor şeması | Modelin uydurabileceği alanları azaltır ([docs/adr/0004](adr/0004-llm-semasi-rapor-semasi.md)) |
+| ADR-0005 | v1'de kod çalıştırma yok | Güvenlik riski ve kapsam; v2'de ampirik karmaşıklık için ele alınacak ([docs/adr/0005](adr/0005-kod-calistirma-yok.md)) |
+| ADR-0006 | SQLite | Tek kullanıcı, sıfır operasyon yükü ([docs/adr/0006](adr/0006-sqlite.md)) |
+| ADR-0007 | Unreal için stub başlık + uyarı seviyesine düşürme | Motor başlıkları olmadan tam derleme imkânsız ([docs/adr/0007](adr/0007-unreal-stub-baslik.md)) |
+| ADR-0008 | Model adları yalnızca yapılandırmada | Sağlayıcı model adları sık değişir ([docs/adr/0008](adr/0008-model-adlari-yapilandirmada.md)) |
 | ADR-0009 | Docker zorunluluğu kaldırıldı; Tier 1 yerel derleyiciyle, opsiyonel | Kurulum eşiği; kod çalıştırılmadığı için süreç düzeyi önlemler yeterli ([docs/adr/0009](adr/0009-docker-yerine-yerel-derleyici.md)) |
 | ADR-0010 | Tier 1 süreç sınırları: `RLIMIT_NPROC` yerine süreç grubu; Windows'ta Job Object | `RLIMIT_NPROC` kullanıcı başına sayılır, derleyiciyi bozar; `RLIMIT_AS` .NET ile uyumsuz ([docs/adr/0010](adr/0010-tier1-surec-sinirlari.md)) |
 | ADR-0011 | Anthropic yapılandırılmış çıktısı `output_config.format` ile | Güncel Claude modelleri zorunlu `tool_choice` ve `temperature`'ı reddediyor ([docs/adr/0011](adr/0011-anthropic-yapilandirilmis-cikti.md)) |
@@ -1352,7 +1354,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 
 **v1.1:**
 - cppcheck ve clang-tidy entegrasyonu
-- Tier 1 için opsiyonel yalıtılmış "runner" servisi (Docker/gVisor) — paylaşılan sunucular için
+- Tier 1 için opsiyonel yalıtılmış "runner" servisi (süreç düzeyi, ör. bubblewrap/seccomp; ADR-0009 Faz 13 eki) — paylaşılan sunucular için
 - Oturum geçmişi ekranı ve ilerleme grafiği
 - LLM-as-judge ile Sokratik kalite puanı (eval'de)
 
@@ -1369,12 +1371,12 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 ### 23.1 CV maddeleri (köşeli parantezler eval sonuçlarıyla doldurulur)
 
 **CodeMentor AI** — Açık kaynak algoritmik kod denetim ve mentorluk motoru
-*Python, FastAPI, Pydantic, tree-sitter, Ollama, React/TypeScript*
+*Python, FastAPI, Pydantic, tree-sitter, Claude, React/TypeScript*
 
-- Statik analiz (tree-sitter + 20 deterministik kurallı motor) ile LLM'i birleştiren hibrit bir mimari tasarladım; LLM iddialarını satır kanıtı ve statik karmaşıklık ipucuyla doğrulayan bir katman sayesinde [N] örneklik test setinde Big-O doğruluğu yalnızca LLM kullanımına göre [%X]'ten [%Y]'ye çıktı.
-- Ollama, OpenAI, DeepSeek ve Anthropic'i tek arayüzde toplayan sağlayıcı bağımsız bir adaptör katmanı geliştirdim; sağlayıcıya özel yapılandırılmış çıktı stratejileri ve onarım döngüsüyle şema geçerliliğini [%Z]'ye ulaştırdım.
-- Sözdizimi hatalı kodu LLM'e göndermeden yakalayan, tree-sitter ve yalıtılmış yerel derleyicilerle çalışan kademeli bir ön doğrulama katmanı kurdum; gönderimlerin [%A]'sı hiç LLM çağrısı yapılmadan yanıtlandı.
-- Model × prompt sürümü kombinasyonlarını karşılaştıran, dev/test ayrımlı bir değerlendirme altyapısı kurdum ve ablasyon deneyleriyle her bileşenin katkısını ölçtüm.
+- Statik analiz (tree-sitter + deterministik kural motoru) ile LLM'i birleştiren hibrit bir mimari tasarladım; LLM iddialarını satır kanıtı ve statik karmaşıklık ipucuyla doğrulayan bir katman kurdum. 49 örneklik ayrı test setinde denetim recall'u yalnızca statik kurallarla %42'den hibrit sistemde %92–94'e çıktı; statik olgular prompt'tan çıkarıldığında Big-O doğruluğu (dev, 31 örnek) %96'dan %85'e düştü.
+- Ollama, OpenAI, DeepSeek, Anthropic ve Claude Code CLI'ı tek arayüzde toplayan sağlayıcı bağımsız bir adaptör katmanı geliştirdim; yapılandırılmış çıktı ve onarım döngüsüyle ölçülen sağlayıcıda (Claude Code CLI) şema geçerliliği onarım sonrası %100.
+- Sözdizimi hatalı kodu LLM'e göndermeden yakalayan, tree-sitter ve yalıtılmış yerel derleyicilerle çalışan kademeli bir ön doğrulama katmanı kurdum; test setindeki gönderimlerin %31'i (15/49) hiç LLM çağrısı yapılmadan yanıtlandı, erken çıkış kararları %100 doğru.
+- Model × mod × prompt sürümü kombinasyonlarını karşılaştıran, 80 elle etiketlenmiş örnekli ve dev/test ayrımlı bir değerlendirme altyapısı kurdum; ablasyon deneyleriyle bileşen katkılarını, iki geçişli ve tek geçişli prompt tasarımlarının kalite/maliyet dengesini ölçtüm (ADR-0003).
 
 ### 23.2 Mülakat soruları ve güncel cevaplar
 
@@ -1382,7 +1384,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 Üç fark var: (1) Kodu düzeltmez, doğrulanmış bulgulardan Sokratik sorular üretir ve sızıntıyı ölçer. (2) Unity/Unreal/C'ye özgü kurallar deterministik çalışır; LLM'in "hatırlamasına" bağlı değildir. (3) Çıktı sürümlenmiş, doğrulanmış bir JSON'dur; SARIF ile CI'a ve IDE'lere bağlanabilir.
 
 **"Halüsinasyon gören LLM'in yanlış Big-O vermesini nasıl engelliyorsun?"**
-Tamamen engelleyemiyorum, ama sınırlayıp ölçüyorum. Tree-sitter ile döngü derinliği ve sınır sınıfından bir ipucu çıkarıyorum; LLM'den önce gerekçe adımlarını, sonra sonucu istiyorum ve ipucuyla uyumunu beyan ettiriyorum. Çatışma varsa gerekçe istiyor, gerekçe yoksa onarım döngüsüne sokuyorum. Sonucu güven skoruyla birlikte veriyorum. Doğruluğu [N] örneklik ayrı bir test setinde ölçtüm: [%Y].
+Tamamen engelleyemiyorum, ama sınırlayıp ölçüyorum. Tree-sitter ile döngü derinliği ve sınır sınıfından bir ipucu çıkarıyorum; LLM'den önce gerekçe adımlarını, sonra sonucu istiyorum ve ipucuyla uyumunu beyan ettiriyorum. Çatışma varsa gerekçe istiyor, gerekçe yoksa onarım döngüsüne sokuyorum. Sonucu güven skoruyla birlikte veriyorum. Doğruluğu 49 örneklik ayrı bir test setinde ölçtüm: birebir %91 (two_pass), aynı büyüme sınıfı %94; yalnızca statik ipucu %88.
 
 **"JSON şeması halüsinasyonu engellemez, değil mi?"**
 Doğru; şema yalnızca biçimi garanti eder. İçerik doğrulaması ayrı katmanda: satır numarası o satırdaki kanıt metniyle eşleşmek zorunda, Big-O kanonik biçime ayrıştırılıyor ve statik ipucuyla karşılaştırılıyor.
@@ -1391,7 +1393,7 @@ Doğru; şema yalnızca biçimi garanti eder. İçerik doğrulaması ayrı katma
 Kod sınırlayıcılar içinde veri olarak işaretleniyor, çıktı serbest metin değil şema, Sokratik çıktı sızıntı korumasından geçiyor. Eval setinde injection örnekleri var ve direnç oranını ölçüyorum.
 
 **"Neden iki LLM çağrısı? Maliyet artmıyor mu?"**
-Artıyor; bu yüzden tek geçiş modu da var. İki geçiş, doğrulanmamış bulguların öğrenciye soru olarak gitmesini engelliyor. Hangisinin daha iyi olduğunu eval'de karşılaştırdım: [sonuç].
+Artıyor; bu yüzden tek geçiş modu da var. İki geçiş, doğrulanmamış bulguların öğrenciye soru olarak gitmesini engelliyor. Hangisinin daha iyi olduğunu eval'de karşılaştırdım: kalite farkı çıkmadı, tek geçiş ~%35–45 daha hızlı ama sızıntı koruması tek geçişte ~1,5 kat daha sık devreye girdi. Bu yüzden varsayılanı iki geçişte tuttum, tek geçiş hızlı mod olarak duruyor (ADR-0003).
 
 ---
 

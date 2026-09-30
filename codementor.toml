@@ -23,8 +23,8 @@ call_costs_file = "data/call_costs.yaml"
 disabled = []               # ör. ["CPP-OWN-001"]; kural kataloğu: docs/rules-catalog.md
 
 [providers]
-default = "ollama"
-fallback = ["deepseek"]
+default = "claude_cli"        # Claude Code oturumu; eval bu sağlayıcıyla ölçüldü (docs/eval-findings.md)
+fallback = []                # ör. ["anthropic"] veya ["ollama"]; README "Sağlayıcılar"
 max_retries = 2              # yalnızca ağ/429/5xx hatalarında (4xx hemen hata)
 
 [providers.ollama]
