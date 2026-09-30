@@ -1,0 +1,28 @@
+{
+  "code": "tests/golden/facts/unity-03/code.cs",
+  "language": "csharp",
+  "engine": "unity",
+  "description": "Çözümü söyleyen yanıt: referansta olup öğrenci kodunda olmayan adlar (HashSet, seenTargets, sqrMagnitude). İlk seferde yeniden üretim istenir.",
+  "source": "synthetic",
+  "pass": "socratic",
+  "reference": "tests/fixtures/llm_responses/unity03_reference.cs",
+  "regenerated": false,
+  "response": {
+    "raw_text": "{\"key_flaw_concept\": \"Görülen hedefleri saklama\", \"guiding_questions\": [\"Daha önce bulunan hedefleri bir HashSet içinde, örneğin seenTargets adıyla, tutsan 33. satırdaki kontrol nasıl değişirdi?\", \"Yakındaki düşmanlar hangi listeden geliyor?\"], \"next_step_hint\": \"Mesafeyi sqrMagnitude ile karşılaştırmayı dene.\"}",
+    "parsed": {
+      "key_flaw_concept": "Görülen hedefleri saklama",
+      "guiding_questions": [
+        "Daha önce bulunan hedefleri bir HashSet içinde, örneğin seenTargets adıyla, tutsan 33. satırdaki kontrol nasıl değişirdi?",
+        "Yakındaki düşmanlar hangi listeden geliyor?"
+      ],
+      "next_step_hint": "Mesafeyi sqrMagnitude ile karşılaştırmayı dene."
+    }
+  },
+  "expect": {
+    "action": "regenerate",
+    "violations": [
+      "forbidden_identifier",
+      "forbidden_identifier"
+    ]
+  }
+}

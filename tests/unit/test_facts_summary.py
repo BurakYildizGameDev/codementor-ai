@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from codementor.prompts.summary import BRIEF_LIMIT, FULL_LIMIT, digest_facts
-
 from codementor.models.enums import AllocationKind, LoopBound
 from codementor.models.facts import (
     AllocationFact,
@@ -15,6 +13,7 @@ from codementor.models.facts import (
     RecursionFact,
     SymbolRef,
 )
+from codementor.prompts.summary import BRIEF_LIMIT, FULL_LIMIT, digest_facts
 
 
 def _facts() -> CodeFacts:

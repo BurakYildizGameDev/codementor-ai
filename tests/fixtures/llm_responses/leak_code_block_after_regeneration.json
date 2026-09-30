@@ -1,0 +1,29 @@
+{
+  "code": "tests/golden/facts/unity-03/code.cs",
+  "language": "csharp",
+  "engine": "unity",
+  "description": "Kod bloğu içeren soru, yeniden üretimden sonra da var → yalnızca o soru atılır, diğeri kalır.",
+  "source": "synthetic",
+  "pass": "socratic",
+  "reference": "tests/fixtures/llm_responses/unity03_reference.cs",
+  "regenerated": true,
+  "response": {
+    "raw_text": "{\"key_flaw_concept\": \"Görülen hedefleri saklama\", \"guiding_questions\": [\"Şu yapıyı düşün:\\n```csharp\\nif (seen.Add(t)) OnTargetFound?.Invoke(t);\\n```\\nNe değişir?\", \"Yakındaki düşmanlar hangi listeden geliyor; bu listedeki bir eleman asıl listede bulunmayabilir mi?\"], \"next_step_hint\": null}",
+    "parsed": {
+      "key_flaw_concept": "Görülen hedefleri saklama",
+      "guiding_questions": [
+        "Şu yapıyı düşün:\n```csharp\nif (seen.Add(t)) OnTargetFound?.Invoke(t);\n```\nNe değişir?",
+        "Yakındaki düşmanlar hangi listeden geliyor; bu listedeki bir eleman asıl listede bulunmayabilir mi?"
+      ],
+      "next_step_hint": null
+    }
+  },
+  "expect": {
+    "action": "dropped_questions",
+    "violations": [
+      "code_block"
+    ],
+    "kept_questions": 1,
+    "leak_check": "dropped_questions"
+  }
+}

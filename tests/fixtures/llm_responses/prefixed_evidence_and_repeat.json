@@ -1,0 +1,59 @@
+{
+  "code": "tests/golden/facts/unity-03/code.cs",
+  "language": "csharp",
+  "engine": "unity",
+  "description": "Faz 7'de yerel modelde görülen hata: 'Line 23:' / '33 |' önekli kanıt ve statik UNITY-GC-001 bulgusunun tekrarı; önek atılır, tekrar tek confirmed bulguya birleşir.",
+  "source": "synthetic (Faz 7 deepseek-r1:8b gözlemi)",
+  "pass": "analysis",
+  "response": {
+    "raw_text": "{\"complexity\": {\"reasoning_steps\": [\"n = enemies listesindeki düşman sayısı, m = nearby listesindeki eleman sayısı (m ≤ n). Update her karede çalışır; aşağıdakiler kare başına maliyettir.\", \"23. satırdaki Where + ToList n eleman üzerinde bir kez döner: O(n) zaman, nearby için O(m) bellek.\", \"24. ve 26. satırdaki iç içe for döngüleri m × m kez döner: O(m^2).\", \"33. satırdaki enemies.Contains her i için n elemanı tarar: m × n = O(m·n).\", \"En kötü durumda tüm düşmanlar menzildedir (m = n), bu yüzden toplam O(n^2). Statik ipucuna katılıyorum.\", \"Ek bellek, m elemanlı nearby listesi ve string'lerden gelir: O(n).\", \"Tekrarları bulmak için ziyaret edilenleri tutan bir küme, üyelik kontrolü için de hash tabanlı bir yapı kullanılırsa kare başına O(n) mümkün olur.\"], \"time_complexity\": \"O(n^2)\", \"space_complexity\": \"O(n)\", \"optimal_time_target\": \"O(n)\", \"agreement\": \"agrees\"}, \"additional_findings\": [{\"category\": \"garbage_collection\", \"severity\": \"medium\", \"line_start\": 23, \"line_end\": null, \"evidence\": \"Line 23: var nearby = enemies.Where(e => Vector3.Distance(e.position, transform.position) < radius).ToList();\", \"description\": \"Sentetik bulgu.\"}, {\"category\": \"design\", \"severity\": \"medium\", \"line_start\": 33, \"line_end\": null, \"evidence\": \"33 | if (!enemies.Contains(nearby[i]))\", \"description\": \"Sentetik bulgu.\"}]}",
+    "parsed": {
+      "complexity": {
+        "reasoning_steps": [
+          "n = enemies listesindeki düşman sayısı, m = nearby listesindeki eleman sayısı (m ≤ n). Update her karede çalışır; aşağıdakiler kare başına maliyettir.",
+          "23. satırdaki Where + ToList n eleman üzerinde bir kez döner: O(n) zaman, nearby için O(m) bellek.",
+          "24. ve 26. satırdaki iç içe for döngüleri m × m kez döner: O(m^2).",
+          "33. satırdaki enemies.Contains her i için n elemanı tarar: m × n = O(m·n).",
+          "En kötü durumda tüm düşmanlar menzildedir (m = n), bu yüzden toplam O(n^2). Statik ipucuna katılıyorum.",
+          "Ek bellek, m elemanlı nearby listesi ve string'lerden gelir: O(n).",
+          "Tekrarları bulmak için ziyaret edilenleri tutan bir küme, üyelik kontrolü için de hash tabanlı bir yapı kullanılırsa kare başına O(n) mümkün olur."
+        ],
+        "time_complexity": "O(n^2)",
+        "space_complexity": "O(n)",
+        "optimal_time_target": "O(n)",
+        "agreement": "agrees"
+      },
+      "additional_findings": [
+        {
+          "category": "garbage_collection",
+          "severity": "medium",
+          "line_start": 23,
+          "line_end": null,
+          "evidence": "Line 23: var nearby = enemies.Where(e => Vector3.Distance(e.position, transform.position) < radius).ToList();",
+          "description": "Sentetik bulgu."
+        },
+        {
+          "category": "design",
+          "severity": "medium",
+          "line_start": 33,
+          "line_end": null,
+          "evidence": "33 | if (!enemies.Contains(nearby[i]))",
+          "description": "Sentetik bulgu."
+        }
+      ]
+    }
+  },
+  "expect": {
+    "repair": [],
+    "dropped": 0,
+    "llm_lines": [
+      33
+    ],
+    "confirmed": [
+      [
+        "UNITY-GC-001",
+        23
+      ]
+    ]
+  }
+}

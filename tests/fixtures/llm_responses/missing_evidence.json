@@ -1,0 +1,54 @@
+{
+  "code": "tests/golden/facts/unity-03/code.cs",
+  "language": "csharp",
+  "engine": "unity",
+  "description": "Var olmayan kanıt: uydurulmuş ifade atılır, gerçek olan kalır.",
+  "source": "synthetic",
+  "pass": "analysis",
+  "response": {
+    "raw_text": "{\"complexity\": {\"reasoning_steps\": [\"n = enemies listesindeki düşman sayısı, m = nearby listesindeki eleman sayısı (m ≤ n). Update her karede çalışır; aşağıdakiler kare başına maliyettir.\", \"23. satırdaki Where + ToList n eleman üzerinde bir kez döner: O(n) zaman, nearby için O(m) bellek.\", \"24. ve 26. satırdaki iç içe for döngüleri m × m kez döner: O(m^2).\", \"33. satırdaki enemies.Contains her i için n elemanı tarar: m × n = O(m·n).\", \"En kötü durumda tüm düşmanlar menzildedir (m = n), bu yüzden toplam O(n^2). Statik ipucuna katılıyorum.\", \"Ek bellek, m elemanlı nearby listesi ve string'lerden gelir: O(n).\", \"Tekrarları bulmak için ziyaret edilenleri tutan bir küme, üyelik kontrolü için de hash tabanlı bir yapı kullanılırsa kare başına O(n) mümkün olur.\"], \"time_complexity\": \"O(n^2)\", \"space_complexity\": \"O(n)\", \"optimal_time_target\": \"O(n)\", \"agreement\": \"agrees\"}, \"additional_findings\": [{\"category\": \"design\", \"severity\": \"medium\", \"line_start\": 33, \"line_end\": null, \"evidence\": \"enemies.IndexOf(nearby[i]) >= 0\", \"description\": \"Sentetik bulgu.\"}, {\"category\": \"edge_case\", \"severity\": \"medium\", \"line_start\": 42, \"line_end\": null, \"evidence\": \"enemies.Clear();\", \"description\": \"Sentetik bulgu.\"}]}",
+    "parsed": {
+      "complexity": {
+        "reasoning_steps": [
+          "n = enemies listesindeki düşman sayısı, m = nearby listesindeki eleman sayısı (m ≤ n). Update her karede çalışır; aşağıdakiler kare başına maliyettir.",
+          "23. satırdaki Where + ToList n eleman üzerinde bir kez döner: O(n) zaman, nearby için O(m) bellek.",
+          "24. ve 26. satırdaki iç içe for döngüleri m × m kez döner: O(m^2).",
+          "33. satırdaki enemies.Contains her i için n elemanı tarar: m × n = O(m·n).",
+          "En kötü durumda tüm düşmanlar menzildedir (m = n), bu yüzden toplam O(n^2). Statik ipucuna katılıyorum.",
+          "Ek bellek, m elemanlı nearby listesi ve string'lerden gelir: O(n).",
+          "Tekrarları bulmak için ziyaret edilenleri tutan bir küme, üyelik kontrolü için de hash tabanlı bir yapı kullanılırsa kare başına O(n) mümkün olur."
+        ],
+        "time_complexity": "O(n^2)",
+        "space_complexity": "O(n)",
+        "optimal_time_target": "O(n)",
+        "agreement": "agrees"
+      },
+      "additional_findings": [
+        {
+          "category": "design",
+          "severity": "medium",
+          "line_start": 33,
+          "line_end": null,
+          "evidence": "enemies.IndexOf(nearby[i]) >= 0",
+          "description": "Sentetik bulgu."
+        },
+        {
+          "category": "edge_case",
+          "severity": "medium",
+          "line_start": 42,
+          "line_end": null,
+          "evidence": "enemies.Clear();",
+          "description": "Sentetik bulgu."
+        }
+      ]
+    }
+  },
+  "expect": {
+    "repair": [],
+    "dropped": 1,
+    "shifted_lines": [],
+    "llm_lines": [
+      42
+    ]
+  }
+}

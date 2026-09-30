@@ -1,0 +1,104 @@
+{
+  "code": "tests/golden/facts/unity-03/code.cs",
+  "language": "csharp",
+  "engine": "unity",
+  "description": "Gerçek claude_cli Geçiş A yanıtı (2026-09-30, Faz 8 prompt'u). 7 bulgunun kanıtının tümü kodda; 17-18 olarak bildirilen abonelik bulgusu 18. satıra düzeltilir.",
+  "source": "live:claude_cli/claude-opus-5-5 v1+fbc08625",
+  "pass": "analysis",
+  "response": {
+    "raw_text": "{\"complexity\": {\"reasoning_steps\": [\"n = enemies listesindeki düşman sayısı, m = nearby listesindeki eleman sayısı (m ≤ n). Update her karede çalışır; aşağıdakiler kare başına maliyettir.\", \"23. satırdaki Where + ToList n eleman üzerinde bir kez döner: O(n) zaman, nearby için O(m) bellek.\", \"24. ve 26. satırdaki iç içe for döngüleri m × m kez döner: O(m^2).\", \"33. satırdaki enemies.Contains her i için n elemanı tarar: m × n = O(m·n).\", \"En kötü durumda tüm düşmanlar menzildedir (m = n), bu yüzden toplam O(n^2). Statik ipucuna katılıyorum.\", \"Ek bellek, m elemanlı nearby listesi ve string'lerden gelir: O(n).\", \"Tekrarları bulmak için ziyaret edilenleri tutan bir küme, üyelik kontrolü için de hash tabanlı bir yapı kullanılırsa kare başına O(n) mümkün olur.\"], \"time_complexity\": \"O(n^2)\", \"space_complexity\": \"O(n)\", \"optimal_time_target\": \"O(n)\", \"agreement\": \"agrees\"}, \"additional_findings\": [{\"category\": \"design\", \"severity\": \"high\", \"line_start\": 33, \"line_end\": 35, \"evidence\": \"if (!enemies.Contains(nearby[i]))\", \"description\": \"nearby listesi enemies listesinden süzülerek oluşturuluyor. Bu yüzden içindeki her eleman enemies içinde zaten var ve koşul hiçbir zaman true olmuyor. OnTargetFound bu yüzden asla tetiklenmiyor. Bu bir mantık hatası; performans sorunu (CS-PERF-001) bunun yanında ikincil kalıyor.\"}, {\"category\": \"design\", \"severity\": \"medium\", \"line_start\": 11, \"line_end\": null, \"evidence\": \"private List<Transform> enemies = new List<Transform>();\", \"description\": \"enemies private bir alan, SerializeField değil ve kodun hiçbir yerinde listeye eleman eklenmiyor. Liste hep boş kalıyor, bu yüzden radar hiçbir düşmanı bulamaz.\"}, {\"category\": \"edge_case\", \"severity\": \"medium\", \"line_start\": 23, \"line_end\": null, \"evidence\": \"e.position\", \"description\": \"Listedeki bir düşman Destroy ile yok edilirse ya da liste null eleman içerirse e.position erişimi MissingReferenceException veya NullReferenceException fırlatır. Update bu hata yüzünden her karede çöker.\"}, {\"category\": \"edge_case\", \"severity\": \"medium\", \"line_start\": 17, \"line_end\": 18, \"evidence\": \"health.OnDeath += HandleDeath;\", \"description\": \"Nesnede Health bileşeni yoksa GetComponent null döner ve bir sonraki satırda NullReferenceException oluşur. Bu durum ele alınmıyor; bileşenin varlığı da zorunlu kılınmıyor.\"}, {\"category\": \"performance\", \"severity\": \"low\", \"line_start\": 26, \"line_end\": 28, \"evidence\": \"for (int j = 0; j < nearby.Count; j++)\", \"description\": \"İç döngü j = 0'dan başlıyor, bu yüzden her çift iki kez karşılaştırılıyor. Tekrar bulunduktan sonra da döngü devam ediyor. Gereksiz iş, zaten karesel olan maliyeti daha da artırıyor.\"}, {\"category\": \"design\", \"severity\": \"low\", \"line_start\": 30, \"line_end\": null, \"evidence\": \"status = \\\"Duplicate: \\\" + nearby[i].name;\", \"description\": \"status hiç sıfırlanmıyor ve her tekrar bulunduğunda üzerine yazılıyor. Tekrar ortadan kalksa bile eski mesaj kalıyor ve yalnızca son tekrar görünüyor. Ayrıca bu değer hiçbir yerde okunmuyor.\"}, {\"category\": \"performance\", \"severity\": \"low\", \"line_start\": 23, \"line_end\": null, \"evidence\": \"Vector3.Distance(e.position, transform.position) < radius\", \"description\": \"Vector3.Distance her eleman için karekök hesaplıyor; yalnızca eşik karşılaştırması yapıldığı için buna gerek yok. transform.position da her eleman için motor tarafına yeniden erişiyor, oysa kare başına bir kez okunup saklanabilir.\"}]}",
+    "parsed": {
+      "complexity": {
+        "reasoning_steps": [
+          "n = enemies listesindeki düşman sayısı, m = nearby listesindeki eleman sayısı (m ≤ n). Update her karede çalışır; aşağıdakiler kare başına maliyettir.",
+          "23. satırdaki Where + ToList n eleman üzerinde bir kez döner: O(n) zaman, nearby için O(m) bellek.",
+          "24. ve 26. satırdaki iç içe for döngüleri m × m kez döner: O(m^2).",
+          "33. satırdaki enemies.Contains her i için n elemanı tarar: m × n = O(m·n).",
+          "En kötü durumda tüm düşmanlar menzildedir (m = n), bu yüzden toplam O(n^2). Statik ipucuna katılıyorum.",
+          "Ek bellek, m elemanlı nearby listesi ve string'lerden gelir: O(n).",
+          "Tekrarları bulmak için ziyaret edilenleri tutan bir küme, üyelik kontrolü için de hash tabanlı bir yapı kullanılırsa kare başına O(n) mümkün olur."
+        ],
+        "time_complexity": "O(n^2)",
+        "space_complexity": "O(n)",
+        "optimal_time_target": "O(n)",
+        "agreement": "agrees"
+      },
+      "additional_findings": [
+        {
+          "category": "design",
+          "severity": "high",
+          "line_start": 33,
+          "line_end": 35,
+          "evidence": "if (!enemies.Contains(nearby[i]))",
+          "description": "nearby listesi enemies listesinden süzülerek oluşturuluyor. Bu yüzden içindeki her eleman enemies içinde zaten var ve koşul hiçbir zaman true olmuyor. OnTargetFound bu yüzden asla tetiklenmiyor. Bu bir mantık hatası; performans sorunu (CS-PERF-001) bunun yanında ikincil kalıyor."
+        },
+        {
+          "category": "design",
+          "severity": "medium",
+          "line_start": 11,
+          "line_end": null,
+          "evidence": "private List<Transform> enemies = new List<Transform>();",
+          "description": "enemies private bir alan, SerializeField değil ve kodun hiçbir yerinde listeye eleman eklenmiyor. Liste hep boş kalıyor, bu yüzden radar hiçbir düşmanı bulamaz."
+        },
+        {
+          "category": "edge_case",
+          "severity": "medium",
+          "line_start": 23,
+          "line_end": null,
+          "evidence": "e.position",
+          "description": "Listedeki bir düşman Destroy ile yok edilirse ya da liste null eleman içerirse e.position erişimi MissingReferenceException veya NullReferenceException fırlatır. Update bu hata yüzünden her karede çöker."
+        },
+        {
+          "category": "edge_case",
+          "severity": "medium",
+          "line_start": 17,
+          "line_end": 18,
+          "evidence": "health.OnDeath += HandleDeath;",
+          "description": "Nesnede Health bileşeni yoksa GetComponent null döner ve bir sonraki satırda NullReferenceException oluşur. Bu durum ele alınmıyor; bileşenin varlığı da zorunlu kılınmıyor."
+        },
+        {
+          "category": "performance",
+          "severity": "low",
+          "line_start": 26,
+          "line_end": 28,
+          "evidence": "for (int j = 0; j < nearby.Count; j++)",
+          "description": "İç döngü j = 0'dan başlıyor, bu yüzden her çift iki kez karşılaştırılıyor. Tekrar bulunduktan sonra da döngü devam ediyor. Gereksiz iş, zaten karesel olan maliyeti daha da artırıyor."
+        },
+        {
+          "category": "design",
+          "severity": "low",
+          "line_start": 30,
+          "line_end": null,
+          "evidence": "status = \"Duplicate: \" + nearby[i].name;",
+          "description": "status hiç sıfırlanmıyor ve her tekrar bulunduğunda üzerine yazılıyor. Tekrar ortadan kalksa bile eski mesaj kalıyor ve yalnızca son tekrar görünüyor. Ayrıca bu değer hiçbir yerde okunmuyor."
+        },
+        {
+          "category": "performance",
+          "severity": "low",
+          "line_start": 23,
+          "line_end": null,
+          "evidence": "Vector3.Distance(e.position, transform.position) < radius",
+          "description": "Vector3.Distance her eleman için karekök hesaplıyor; yalnızca eşik karşılaştırması yapıldığı için buna gerek yok. transform.position da her eleman için motor tarafına yeniden erişiyor, oysa kare başına bir kez okunup saklanabilir."
+        }
+      ]
+    }
+  },
+  "expect": {
+    "repair": [],
+    "dropped": 0,
+    "time": "n^2",
+    "agreement": "agrees",
+    "shifted_lines": [
+      18
+    ],
+    "llm_lines": [
+      11,
+      18,
+      23,
+      23,
+      26,
+      30,
+      33
+    ]
+  }
+}

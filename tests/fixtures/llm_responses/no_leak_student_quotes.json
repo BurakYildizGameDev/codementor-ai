@@ -1,0 +1,26 @@
+{
+  "code": "tests/golden/facts/unity-03/code.cs",
+  "language": "csharp",
+  "engine": "unity",
+  "description": "Negatif: öğrencinin kendi kodundan birebir alıntı ve Türkçe cümledeki ';' sızıntı sayılmaz (Faz 7 dersi).",
+  "source": "synthetic",
+  "pass": "socratic",
+  "reference": "tests/fixtures/llm_responses/unity03_reference.cs",
+  "regenerated": false,
+  "response": {
+    "raw_text": "{\"key_flaw_concept\": \"Alt kümenin kaynakta aranması\", \"guiding_questions\": [\"`if (!enemies.Contains(nearby[i]))` koşulu hangi durumda true olur; nearby'deki bir eleman enemies'te olmayabilir mi?\", \"Döngüde `status = \\\"Duplicate: \\\" + nearby[i].name;` her karede çalışıyor; bu satır ne üretiyor?\"], \"next_step_hint\": \"Tek bir düşmanı elle izle; her adımda hangi listede olduğunu yaz.\"}",
+    "parsed": {
+      "key_flaw_concept": "Alt kümenin kaynakta aranması",
+      "guiding_questions": [
+        "`if (!enemies.Contains(nearby[i]))` koşulu hangi durumda true olur; nearby'deki bir eleman enemies'te olmayabilir mi?",
+        "Döngüde `status = \"Duplicate: \" + nearby[i].name;` her karede çalışıyor; bu satır ne üretiyor?"
+      ],
+      "next_step_hint": "Tek bir düşmanı elle izle; her adımda hangi listede olduğunu yaz."
+    }
+  },
+  "expect": {
+    "action": "passed",
+    "violations": [],
+    "leak_check": "passed"
+  }
+}

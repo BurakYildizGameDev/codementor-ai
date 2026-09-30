@@ -1,0 +1,26 @@
+{
+  "code": "tests/golden/facts/unity-03/code.cs",
+  "language": "csharp",
+  "engine": "unity",
+  "description": "Gerçek claude_cli Geçiş B yanıtı: çözümü söylemeden 33. satırdaki mantık hatasına yönlendiriyor; referans çözümle karşılaştırıldığında da temiz.",
+  "source": "live:claude_cli/claude-opus-5-5 v1+fbc08625",
+  "pass": "socratic",
+  "reference": "tests/fixtures/llm_responses/unity03_reference.cs",
+  "regenerated": false,
+  "response": {
+    "raw_text": "{\"key_flaw_concept\": \"Alt kümeden türetilen elemanın kaynakta aranması: koşul hiç sağlanmaz\", \"guiding_questions\": [\"Yakındaki düşmanlar listesindeki her eleman nereden geliyor ve bu elemanlardan biri, türetildiği asıl listede bulunmayabilir mi?\", \"Hedef bulunduğunda olayın tetiklenmesini sağlayan koşulun gerçekten true olabileceği bir senaryo düşünebiliyor musun; düşünemiyorsan, 'yeni bulunan hedef' fikrini aslında neye göre ölçmek istiyordun?\"], \"next_step_hint\": \"Tek bir düşmanı elle izle: menzile giriyor, süzülüyor, sonra olayı tetikleyen kontrole geliyor. Her adımda hangi listede olduğunu yaz. 'Daha önce görülmemiş' bilgisini şu anda hiçbir yerde saklayıp saklamadığını da gözden geçir.\"}",
+    "parsed": {
+      "key_flaw_concept": "Alt kümeden türetilen elemanın kaynakta aranması: koşul hiç sağlanmaz",
+      "guiding_questions": [
+        "Yakındaki düşmanlar listesindeki her eleman nereden geliyor ve bu elemanlardan biri, türetildiği asıl listede bulunmayabilir mi?",
+        "Hedef bulunduğunda olayın tetiklenmesini sağlayan koşulun gerçekten true olabileceği bir senaryo düşünebiliyor musun; düşünemiyorsan, 'yeni bulunan hedef' fikrini aslında neye göre ölçmek istiyordun?"
+      ],
+      "next_step_hint": "Tek bir düşmanı elle izle: menzile giriyor, süzülüyor, sonra olayı tetikleyen kontrole geliyor. Her adımda hangi listede olduğunu yaz. 'Daha önce görülmemiş' bilgisini şu anda hiçbir yerde saklayıp saklamadığını da gözden geçir."
+    }
+  },
+  "expect": {
+    "action": "passed",
+    "violations": [],
+    "leak_check": "passed"
+  }
+}

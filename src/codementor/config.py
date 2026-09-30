@@ -62,6 +62,16 @@ class PromptSettings(BaseModel):
     max_checklist_items: int = Field(default=12, ge=0)
 
 
+class VerifySettings(BaseModel):
+    """K5 doğrulayıcı eşikleri (mimari §5.6); Faz 12 eval'inde ayarlanır."""
+
+    evidence_window: int = Field(default=2, ge=0, le=10)
+    leak_ngram_n: int = Field(default=5, ge=2, le=10)
+    leak_ngram_threshold: float = Field(default=0.2, gt=0, le=1)
+    leak_min_identifier_length: int = Field(default=3, ge=1)
+    common_identifiers_file: Path = Path("data/leak_common_identifiers.yaml")
+
+
 class RulesSettings(BaseModel):
     """Statik kural motoru (mimari §5.3.3); kurallar kimlikle tek tek kapatılabilir."""
 
@@ -159,6 +169,7 @@ class Settings(BaseSettings):
     data: DataSettings = Field(default_factory=DataSettings)
     rules: RulesSettings = Field(default_factory=RulesSettings)
     prompts: PromptSettings = Field(default_factory=PromptSettings)
+    verify: VerifySettings = Field(default_factory=VerifySettings)
     providers: ProvidersSettings = Field(default_factory=ProvidersSettings)
 
     @classmethod
