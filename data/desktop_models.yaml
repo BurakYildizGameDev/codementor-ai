@@ -1,0 +1,15 @@
+# Masaüstü "Bağlantılar" ekranındaki model önerileri (ADR-0014). Yalnızca öneridir: alan serbest
+# metindir, listede olmayan bir model de yazılabilir. Ollama ve agy modelleri ayrıca canlı
+# keşfedilir (`/api/tags`, `agy models`). Güncel model adları sağlayıcı belgelerinden alınmalı.
+claude_cli:
+  - claude-opus-5-5
+  - claude-sonnet-5-5
+  - claude-haiku-4-5-20251001
+anthropic:
+  - claude-opus-5-5
+  - claude-sonnet-5-5
+  - claude-haiku-4-5-20251001
+openai: []
+deepseek:
+  - deepseek-chat
+  - deepseek-reasoner

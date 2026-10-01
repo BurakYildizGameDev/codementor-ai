@@ -55,7 +55,11 @@ sağlayıcının hazır olup olmadığını gösterir.
 - **Soru bankası:** 14 görev; seçilen görev editörün üstünde hedefiyle görünür.
 - **Geçmiş:** önceki analizler kodlarıyla yeniden açılır; raporlar Markdown/SARIF/JSON olarak
   dışa aktarılır.
-- **Ayarlar:** sağlayıcı seçimi ve bağlantı denetimi, bulunan derleyiciler, veri konumları.
+- **Bağlantılar:** Claude Code, Antigravity (agy), Ollama, Anthropic, OpenAI ve DeepSeek için
+  birer kart. Model seçimi (Ollama'da kurulu modeller, agy'de hesabındaki modeller listelenir),
+  **Oturum aç** (CLI'nın kendi girişini yeni pencerede açar), API anahtarı (Windows Kimlik
+  Bilgisi Yöneticisi'nde saklanır, dosyaya yazılmaz), **Bağlantıyı dene** ve **Varsayılan yap**.
+  Analiz ekranındaki rozet hangi model ile çalıştığını gösterir (ADR-0014).
 
 Derlemek için (Windows, depo kökünde):
 
@@ -65,8 +69,8 @@ uv run python build_exe.py --both    # dist/CodeMentor.exe (~37 MB) + dist/CodeM
 uv run python -m codementor.desktop  # derlemeden çalıştırmak için
 ```
 
-Exe'nin yanına bir `codementor.toml` koyarsan paketteki varsayılan yerine o kullanılır
-(ör. `[providers] default = "anthropic"`). Veritabanı, tercihler ve log `~/.codementor`
+Sağlayıcı ve model ayarlarını **Bağlantılar** ekranından yaparsın; ileri ayarlar için exe'nin
+yanına bir `codementor.toml` koyarsan paketteki varsayılan yerine o kullanılır. Veritabanı, tercihler ve log `~/.codementor`
 altındadır.
 
 ## Hızlı başlangıç (Docker gerekmez)

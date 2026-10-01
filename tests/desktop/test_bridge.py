@@ -110,8 +110,10 @@ def test_resubmit_keeps_only_newest_generation() -> None:
 def test_render_export_formats(core: ApiState) -> None:
     bridge = Bridge()
     bridge.submit("analyze", analysis_work(core, request()))
-    report = run(bridge, "analyze")[-1].payload
-    assert isinstance(report, AnalysisReport)
+    messages = run(bridge, "analyze")
+    assert messages, "analiz 30 sn içinde bitmedi"
+    report = messages[-1].payload
+    assert isinstance(report, AnalysisReport), report
     assert render_export(report, "md").startswith("#")
     assert '"version": "2.1.0"' in render_export(report, "sarif")
     assert AnalysisReport.model_validate_json(render_export(report, "json")) == report

@@ -55,6 +55,7 @@ class AnalyzeActions:
     load_sample: Callable[[], None]
     export: Callable[[str], None]
     questions: Callable[[Language, Engine], list[QuestionPublic]]
+    open_connections: Callable[[], None]
 
 
 class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
@@ -129,6 +130,21 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
 
         right = ctk.CTkFrame(bar, fg_color="transparent", width=1, height=1)
         right.grid(row=0, column=4, sticky="e")
+        self.provider_badge = ctk.CTkButton(
+            right,
+            text="",
+            command=self.actions.open_connections,
+            height=36,
+            corner_radius=18,
+            font=theme.font(12),
+            fg_color="transparent",
+            hover_color=theme.SURFACE_2,
+            text_color=theme.TEXT_SOFT,
+            border_width=1,
+            border_color=theme.BORDER,
+            width=40,
+        )
+        self.provider_badge.pack(side="left", padx=(0, 12))
         self._ghost(right, "Dosya aç", self.actions.open_file).pack(side="left", padx=(0, 6))
         self._ghost(right, "Örnek", self.actions.load_sample).pack(side="left", padx=(0, 6))
         self.export_button = self._ghost(right, "Dışa aktar ▾", self._export_menu)
@@ -259,6 +275,17 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
             if match is not None:
                 self.question_picker.set(match.title)
                 self._on_question(match.title)
+
+    def set_provider_badge(self, name: str, model: str, ready: bool | None) -> None:
+        """Araç çubuğundaki sağlayıcı/model rozeti (`ready=None`: bilinmiyor)."""
+        dot = theme.FAINT if ready is None else theme.OK if ready else theme.ERROR
+        label = f"{name} · {model}" if model else name
+        self.provider_badge.configure(
+            text=f"●  {label}", border_color=dot if ready is False else theme.BORDER
+        )
+        self.provider_badge.configure(
+            text_color=theme.TEXT_SOFT if ready is not False else theme.ERROR
+        )
 
     # --- Durum ve sonuçlar ----------------------------------------------------------------
 

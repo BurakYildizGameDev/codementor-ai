@@ -7,7 +7,6 @@ işlenir.
 
 from __future__ import annotations
 
-import asyncio
 import os
 import sys
 import uuid
@@ -21,21 +20,21 @@ from codementor.api.state import ApiState
 from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE, Settings
 from codementor.desktop import runtime, theme
 from codementor.desktop.bridge import Bridge, Message, analysis_work
-from codementor.desktop.services import compiler_statuses, render_export
+from codementor.desktop.connections import KeyStore, apply_overrides
+from codementor.desktop.connections_controller import ConnectionsController
+from codementor.desktop.services import render_export
 from codementor.desktop.viewmodel import SAMPLES, SOURCE_PATTERNS, StageTracker, language_for_path
 from codementor.desktop.views.analyze_view import AnalyzeActions, AnalyzeView
+from codementor.desktop.views.connections_view import ConnectionsView
 from codementor.desktop.views.history_view import HistoryView
 from codementor.desktop.views.questions_view import QuestionsView
-from codementor.desktop.views.settings_view import SettingsActions, SettingsView
 from codementor.desktop.widgets.sidebar import Sidebar
 from codementor.models.enums import Engine, Language
 from codementor.models.pipeline import StageEvent
-from codementor.models.provider import ProviderStatus
 from codementor.models.questions import QuestionPublic
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest
 from codementor.providers.factory import PROVIDER_NAMES
-from codementor.providers.health import check_providers
 from codementor.storage.cache import get_analysis, list_analyses
 from codementor.storage.db import AnalysisRow, resolve_db_path
 
@@ -50,19 +49,26 @@ class App(ctk.CTk):  # type: ignore[misc]
     """Ana pencere. Testler `state` (FakeProvider'lı) ve `prefs_dir` verip denetimleri kapatır."""
 
     def __init__(
-        self, state: ApiState, prefs_dir: Path | None = None, check_on_start: bool = True
+        self,
+        state: ApiState,
+        prefs_dir: Path | None = None,
+        check_on_start: bool = True,
+        key_store: KeyStore | None = None,
     ) -> None:
         ctk.set_appearance_mode("dark")
         super().__init__(fg_color=theme.BG)
         self.core = state
-        self.settings: Settings = state.settings
+        self.base_settings: Settings = state.settings  # toml + ortam; arayüz seçimleri üstüne
         self.prefs_dir = prefs_dir
         self.prefs = runtime.load_prefs(prefs_dir)
         if self.prefs.provider not in (None, *PROVIDER_NAMES):
             self.prefs = self.prefs.model_copy(update={"provider": None})
+        self.settings: Settings = state.settings
+        self.apply_settings()
         if not self.prefs.session_id:
             self._new_session()
         self.bridge = Bridge()
+        self.connections = ConnectionsController(self, key_store or KeyStore())
         self.tracker = StageTracker()
         self._closing = False
         self._last_code = ""
@@ -104,6 +110,7 @@ class App(ctk.CTk):  # type: ignore[misc]
                 load_sample=self.load_sample,
                 export=self.export,
                 questions=self.questions_for,
+                open_connections=lambda: self.navigate("settings"),
             ),
             self.prefs.language,
         )
@@ -111,18 +118,11 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.analyze_view.editor.set(SAMPLES[self.prefs.language], self.prefs.language)
         self.questions_view = QuestionsView(stage, self._questions_by_language, self.start_question)
         self.history_view = HistoryView(stage, self._history_rows, self.open_history)
-        self.settings_view = SettingsView(
-            stage,
-            SettingsActions(
-                providers=PROVIDER_NAMES,
-                default_provider=self.settings.providers.default,
-                choose_provider=self.choose_provider,
-                check=self.check_environment,
-                open_folder=self.open_folder,
-            ),
-            self.prefs.provider,
-            self._locations(),
+        self.settings_view = ConnectionsView(
+            stage, self.connections.actions(), self.open_folder, self._locations()
         )
+        self.connections.attach(self.settings_view)
+        self.analyze_view.set_provider_badge(self.provider_name(), self.current_model(), None)
         self.views: dict[str, ctk.CTkFrame] = {
             "analyze": self.analyze_view,
             "questions": self.questions_view,
@@ -171,6 +171,19 @@ class App(ctk.CTk):  # type: ignore[misc]
     def provider_name(self) -> str:
         return self.prefs.provider or self.settings.providers.default
 
+    def base_default(self) -> str:
+        """`codementor.toml`'daki varsayılan sağlayıcı."""
+        return self.base_settings.providers.default
+
+    def current_model(self) -> str:
+        config = getattr(self.settings.providers, self.provider_name(), None)
+        return str(config.model) if config is not None else ""
+
+    def apply_settings(self) -> None:
+        """Arayüz seçimlerini (model, adres) ayarlara uygular; sonraki analizler bunu kullanır."""
+        self.settings = apply_overrides(self.base_settings, self.prefs)
+        self.core.settings = self.settings
+
     def analyze(self) -> None:
         view = self.analyze_view
         if self.bridge.is_running("analyze"):
@@ -189,7 +202,7 @@ class App(ctk.CTk):  # type: ignore[misc]
             provider=self.prefs.provider,
         )
         self._last_code = code
-        self._save_prefs(language=view.language, engine=view.engine)
+        self.save_prefs(language=view.language, engine=view.engine)
         self.tracker.reset()
         view.set_busy(True)
         view.show_progress(self.tracker)
@@ -206,6 +219,9 @@ class App(ctk.CTk):  # type: ignore[misc]
         runtime.save_prefs(self.prefs, self.prefs_dir)
 
     def _on_message(self, message: Message) -> None:
+        if message.task.partition(":")[0] in ("probe", "test", "compilers"):
+            self.connections.handle(message)
+            return
         handler = getattr(self, f"_on_{message.task}", None)
         if handler is not None:
             handler(message)
@@ -319,34 +335,9 @@ class App(ctk.CTk):  # type: ignore[misc]
 
     # --- Ayarlar ve ortam ---------------------------------------------------------------
 
-    def choose_provider(self, name: str | None) -> None:
-        self._save_prefs(provider=name)
-        self.check_environment()
-
     def check_environment(self) -> None:
-        name = self.provider_name()
-        providers = self.settings.providers
-        names = [name, *(n for n in providers.fallback if n != name)]
-        self.sidebar.set_provider(name, None)
-        self.settings_view.show_providers(None)
-        self.bridge.submit(
-            "providers", lambda _emit: asyncio.run(check_providers(names, providers))
-        )
-        self.bridge.submit("compilers", lambda _emit: compiler_statuses(self.settings))
-
-    def _on_providers(self, message: Message) -> None:
-        if message.kind == "error":
-            self.sidebar.set_provider(self.provider_name(), False, "denetlenemedi")
-            self.settings_view.show_providers(None, error=str(message.payload))
-            return
-        statuses: list[ProviderStatus] = message.payload  # type: ignore[assignment]
-        primary = statuses[0]
-        self.sidebar.set_provider(primary.name, primary.ready, primary.model or "")
-        self.settings_view.show_providers(statuses)
-
-    def _on_compilers(self, message: Message) -> None:
-        if message.kind == "result":
-            self.settings_view.show_compilers(message.payload)  # type: ignore[arg-type]
+        """Tüm sağlayıcıları ve derleyicileri yoklar (açılışta ve Bağlantılar ekranında)."""
+        self.connections.refresh_all()
 
     def open_folder(self, path: str) -> None:
         target = Path(path)
@@ -362,7 +353,7 @@ class App(ctk.CTk):  # type: ignore[misc]
             ("Kullanıcı verisi", str(runtime.user_dir())),
         ]
 
-    def _save_prefs(self, **changes: Any) -> None:
+    def save_prefs(self, **changes: Any) -> None:
         self.prefs = self.prefs.model_copy(update=changes)
         runtime.save_prefs(self.prefs, self.prefs_dir)
 
@@ -377,7 +368,6 @@ class App(ctk.CTk):  # type: ignore[misc]
 
     def close(self) -> None:
         self._closing = True
-        for task in ("analyze", "providers", "compilers"):
-            self.bridge.cancel(task)
+        self.bridge.cancel_all()
         self.core.close()
         self.destroy()

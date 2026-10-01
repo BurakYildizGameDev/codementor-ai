@@ -48,6 +48,7 @@ HIDDEN_IMPORTS = [
     "codementor.providers.openai_compat",
     "codementor.providers.anthropic",
     "codementor.providers.cli_agent",
+    "keyring.backends.Windows",  # API anahtarları Kimlik Bilgisi Yöneticisi'nde (ADR-0014)
 ]
 EXCLUDES = ["pytest", "hypothesis", "respx", "mypy", "ruff", "IPython", "matplotlib", "numpy"]
 

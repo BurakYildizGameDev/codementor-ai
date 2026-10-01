@@ -18,6 +18,7 @@
 | 12 | ✅ | faz/12-eval | 2026-09-30 | Claude Code / — |
 | 13 | ✅ | faz/13-sunum | 2026-09-30 | Claude Code / — |
 | 14 | ✅ | faz-14-masaustu | 2026-10-01 | Claude Code / — |
+| 15 | ✅ | faz-15-baglantilar | 2026-10-01 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -436,7 +437,19 @@
 **Kararlar:** (1) CustomTkinter + PyInstaller (ADR-0013); pywebview/Electron reddedildi. (2) `web/` silinmedi, ikincil istemci. (3) `customtkinter`/`pillow` ana bağımlılık (exe ve `python -m codementor.desktop` için; ayrı grup ek karmaşa). (4) Rapor kodu içermediği için kod masaüstünde ayrı saklanıyor (yerel). (5) `pyi_splash` doğrudan import edilmeli; `importlib` ile PyInstaller modülü pakete koymuyor ve açılış görseli kapanmıyordu (exe'de bulundu, düzeltildi).
 **Doğrulama:** `make check` yeşil. Exe derlendi ve açıldı (açılış görseli kapanıyor, `claude_cli` hazır); FakeProvider ile tüm ekranların görüntüsü alındı; claude_cli ile canlı analiz (34.5 sn, 7 bulgu, Sokratik sorular) `docs/img/desktop-live.png`.
 
+## Faz 15 — Notlar (bağlantı merkezi, ADR-0014)
+**Yapılanlar:**
+- Ayarlar ekranı → **Bağlantılar**: 6 sağlayıcı kartı (`widgets/provider_card.py`, `views/connections_view.py`), denetleyici `connections_controller.py`, GUI'siz mantık `connections.py`.
+- Model seçimi: öneriler `data/desktop_models.yaml`; Ollama `/api/tags` ve `agy models` canlı keşif; seçim `DesktopPrefs.providers` (`ProviderOverride`) → `apply_overrides` ile toml'un üstüne (CLI/API etkilenmez). Model seçilmemiş CLI'da da liste keşfedilir.
+- Yetkilendirme: API anahtarları `keyring` (Windows Kimlik Bilgisi Yöneticisi) → yalnız süreç ortamına; dış ortamdaki anahtar ezilmez; `register_secret` ile maskeleme. claude_cli `auth status --json` (hesap gösterilir), agy araç onayı anahtarı (ADR-0012), "Oturum aç" yeni konsolda CLI'nın kendi girişini açar. "Bağlantıyı dene" küçük gerçek istek (`ConnectionPing`).
+- Analiz araç çubuğunda sağlayıcı/model rozeti (tıkla → Bağlantılar); kenar çubuğu seçili sağlayıcının gerçek durumunu gösterir.
+- Testler: `tests/desktop/test_connections.py` (sahte kasa, respx, sahte süreç çalıştırıcı) + GUI (model seçimi kalıcı, varsayılan değişimi, anahtar kaydet/sil → ortam, yoklama sonuçları kartlara). Tk kökü art arda kurulurken Tcl'nin `init.tcl` okuma hatası (Windows, aralıklı) için fikstürde yeniden deneme.
+**Kararlar:** (1) Masaüstü tercihleri yalnız masaüstüne uygulanır; toml kaynak olarak kalır. (2) Anahtar dosyaya asla yazılmaz. (3) Oturum açma CLI'ya bırakılır; uygulama kimlik bilgisi görmez.
+**Doğrulama:** Gerçek ortamda Bağlantılar ekranı: Ollama `qwen2.5-coder:14b` seçilince "hazır" (4 yerel model listelendi), Claude Code "oturum açık" + hesap. Kullanıcının tercihlerine Ollama modeli `qwen2.5-coder:14b` yazıldı (şikâyet edilen "hazır değil" düzeltmesi).
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 15: Bağlantılar'da Ollama modelini indirme (`ollama pull`) düğmesi ve ilerleme göstergesi.
+- Faz 15: Masaüstü tercihleri ile `codementor.toml` arasında "toml'a yaz" seçeneği (CLI/API de aynı modeli kullansın).
 - Faz 14: exe imzası yok; Windows SmartScreen ilk açılışta uyarabilir (kod imzalama sertifikası + Inno Setup kurulum paketi).
 - Faz 14: CI'da Windows exe derleme işi (artefakt olarak zip); şu an elle `make exe`.
 - Faz 14: analiz iptali yok (düğme yok; sonuç kuşak sayacıyla atılabiliyor ama CLI süreci sürer — "CLI ajanı iptali" maddesiyle birlikte).

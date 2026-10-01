@@ -74,6 +74,11 @@ class Bridge:
             self._generation[task] = self._generation.get(task, 0) + 1
         self._threads.pop(task, None)
 
+    def cancel_all(self) -> None:
+        """Kapanışta: tüm görevlerin sonuçlarını yok sayar."""
+        for task in list(self._threads):
+            self.cancel(task)
+
     def is_running(self, task: str) -> bool:
         thread = self._threads.get(task)
         return thread is not None and thread.is_alive()

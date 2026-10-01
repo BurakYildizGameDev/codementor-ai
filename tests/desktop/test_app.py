@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import gc
+import os
 import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
@@ -10,18 +12,33 @@ from pathlib import Path
 import pytest
 
 from codementor.api.state import ApiState
+from codementor.desktop import connections_controller as controller_module
 from codementor.desktop import runtime
 from codementor.desktop.app import App
+from codementor.desktop.connections import KeyStore, Probe
 from codementor.models.enums import Engine, Language
+from codementor.models.provider import ProviderStatus
 from tests.integration.conftest import LINKED_LIST
+
+TK_ATTEMPTS = 3
 
 
 @pytest.fixture
-def app(core: ApiState, prefs_dir: Path) -> Iterator[App]:
-    try:
-        window = App(core, prefs_dir=prefs_dir, check_on_start=False)
-    except tk.TclError as exc:  # ekran yok
-        pytest.skip(f"Tk penceresi açılamadı: {exc}")
+def app(core: ApiState, prefs_dir: Path, store: KeyStore) -> Iterator[App]:
+    window = None
+    error: tk.TclError | None = None
+    # Windows'ta art arda kurulan Tk köklerinde Tcl `init.tcl`'i ara sıra okuyamıyor
+    # ("No error"); önceki kökün artıkları toplanıp yeniden denenir. Ekran yoksa atlanır.
+    for _ in range(TK_ATTEMPTS):
+        gc.collect()
+        try:
+            window = App(core, prefs_dir=prefs_dir, check_on_start=False, key_store=store)
+            break
+        except tk.TclError as exc:
+            error = exc
+            time.sleep(0.2)
+    if window is None:
+        pytest.skip(f"Tk penceresi açılamadı: {error}")
     window.withdraw()
     yield window
     if window.winfo_exists():
@@ -127,10 +144,53 @@ def test_open_file_detects_language_and_size_limit(app: App, tmp_path: Path) -> 
     assert app.analyze_view.editor.get() == "public class Oyuncu {}\n"
 
 
-def test_provider_choice_is_persisted(app: App, prefs_dir: Path) -> None:
-    app.check_environment = lambda: None  # type: ignore[method-assign]
-    app.choose_provider("claude_cli")
+def test_model_choice_overrides_config_and_persists(app: App, prefs_dir: Path) -> None:
+    app.connections.check = lambda _name: None  # type: ignore[method-assign]
+    app.connections.set_model("ollama", "qwen2.5-coder:14b")
+    assert app.settings.providers.ollama.model == "qwen2.5-coder:14b"
+    assert app.core.settings is app.settings
+    assert app.base_settings.providers.ollama.model != "qwen2.5-coder:14b"
+    assert runtime.load_prefs(prefs_dir).providers["ollama"].model == "qwen2.5-coder:14b"
+    assert app.settings_view.cards["ollama"].model.get() == "qwen2.5-coder:14b"
+
+    app.connections.set_base_url("ollama", "ftp://yanlis")
+    assert app.settings.providers.ollama.base_url != "ftp://yanlis"
+
+
+def test_default_provider_switch(app: App, prefs_dir: Path) -> None:
+    app.connections.check = lambda _name: None  # type: ignore[method-assign]
+    app.connections.make_default("claude_cli")
     assert app.provider_name() == "claude_cli"
     assert runtime.load_prefs(prefs_dir).provider == "claude_cli"
-    app.choose_provider(None)
-    assert app.provider_name() == app.settings.providers.default
+    assert "claude_cli" in app.analyze_view.provider_badge.cget("text")
+    app.connections.make_default(app.base_default())
+    assert runtime.load_prefs(prefs_dir).provider is None
+
+
+def test_api_key_saved_to_vault_and_process_env(app: App, store: KeyStore) -> None:
+    app.connections.check = lambda _name: None  # type: ignore[method-assign]
+    app.connections.save_key("openai", "sk-test-1234567890")
+    assert store.get("openai") == "sk-test-1234567890"
+    assert os.environ["OPENAI_API_KEY"] == "sk-test-1234567890"
+    assert "kasasında" in app.settings_view.cards["openai"].key_label.cget("text")
+
+    app.connections.delete_key("openai")
+    assert store.get("openai") is None
+    assert "OPENAI_API_KEY" not in os.environ
+
+
+def test_probe_results_update_cards_and_sidebar(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_probe(name: str, _settings: object) -> Probe:
+        ready = name == "ollama"
+        models = ["qwen2.5-coder:1.5b", "qwen2.5-coder:14b"] if ready else []
+        return Probe(ProviderStatus(name=name, model="m", ready=ready, detail="d"), models)
+
+    monkeypatch.setattr(controller_module, "probe", fake_probe)
+    app.connections.make_default("ollama")
+    app.check_environment()
+    pump(app, lambda: len(app.connections.probes) == 6)
+    card = app.settings_view.cards["ollama"]
+    assert card.status_pill.cget("text").strip() == "hazır"
+    assert "qwen2.5-coder:14b" in card.model.cget("values")
+    assert app.settings_view.cards["openai"].status_pill.cget("text").strip() == "hazır değil"
+    assert app.sidebar.status_text.cget("text") == "ollama"

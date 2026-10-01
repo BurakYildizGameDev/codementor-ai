@@ -1,0 +1,208 @@
+"""Bağlantılar ekranının denetleyicisi (ADR-0014): kart eylemleri, yoklamalar, anahtarlar.
+
+Ana pencereyle (`App`) yalnızca küçük bir arayüzle konuşur: tercihleri kaydetme, ayarları
+yeniden uygulama, arka plan görevi başlatma ve bildirim gösterme.
+"""
+
+from __future__ import annotations
+
+import asyncio
+from typing import TYPE_CHECKING, Any
+
+from codementor.desktop.bridge import Message
+from codementor.desktop.connections import (
+    INFO,
+    PROVIDERS,
+    KeyStore,
+    KeyStoreError,
+    Probe,
+    apply_key,
+    key_env,
+    key_source,
+    load_vault_keys,
+    model_suggestions,
+    open_login_console,
+    probe,
+    try_connection,
+)
+from codementor.desktop.services import compiler_statuses
+from codementor.desktop.widgets.provider_card import CardActions
+from codementor.models.desktop import ProviderOverride
+from codementor.models.provider import ProviderStatus
+from codementor.providers.base import ProviderError
+
+if TYPE_CHECKING:
+    from codementor.desktop.app import App
+    from codementor.desktop.views.connections_view import ConnectionsView
+
+
+class ConnectionsController:
+    def __init__(self, app: App, store: KeyStore) -> None:
+        self.app = app
+        self.store = store
+        self.suggestions = model_suggestions()
+        self.discovered: dict[str, list[str]] = {}
+        self.probes: dict[str, Probe] = {}
+        self.vaulted = load_vault_keys(app.settings.providers, store)
+        self.view: ConnectionsView | None = None
+
+    def actions(self) -> CardActions:
+        return CardActions(
+            make_default=self.make_default,
+            check=self.check,
+            login=self.login,
+            try_connection=self.try_connection,
+            delete_key=self.delete_key,
+            set_model=self.set_model,
+            set_base_url=self.set_base_url,
+            save_key=self.save_key,
+            allow_tool_agent=self.allow_tool_agent,
+        )
+
+    def attach(self, view: ConnectionsView) -> None:
+        self.view = view
+        self.render()
+
+    # --- Görünüm ------------------------------------------------------------------------
+
+    def render(self) -> None:
+        """Kartları güncel ayarlarla doldurur (durum yoklamalarına dokunmaz)."""
+        if self.view is None:
+            return
+        providers = self.app.settings.providers
+        default = self.app.provider_name()
+        for info in PROVIDERS:
+            card = self.view.cards[info.name]
+            cfg = getattr(providers, info.name)
+            choices = [*self.discovered.get(info.name, []), *self.suggestions.get(info.name, [])]
+            card.set_model(cfg.model, choices)
+            card.set_default(info.name == default)
+            if info.kind == "api":
+                card.set_key_source(
+                    key_source(providers, info.name, self.vaulted), key_env(providers, info.name)
+                )
+            elif info.kind == "local":
+                card.set_base_url(cfg.base_url)
+            elif info.name == "agy":
+                card.set_tool_agent(bool(cfg.allow_tool_agent))
+            if info.name in self.probes:
+                card.set_probe(self.probes[info.name])
+
+    def _card_message(self, name: str, text: str, ok: bool) -> None:
+        if self.view is not None:
+            self.view.cards[name].set_message(text, ok)
+
+    # --- Yoklamalar ---------------------------------------------------------------------
+
+    def refresh_all(self) -> None:
+        for info in PROVIDERS:
+            self.check(info.name)
+        settings = self.app.settings
+        self.app.bridge.submit("compilers", lambda _emit: compiler_statuses(settings))
+
+    def check(self, name: str) -> None:
+        settings = self.app.settings
+        self.probes.pop(name, None)
+        if self.view is not None:
+            self.view.cards[name].set_probe(None)
+        if name == self.app.provider_name():
+            self.app.sidebar.set_provider(name, None)
+        self.app.bridge.submit(f"probe:{name}", lambda _emit: asyncio.run(probe(name, settings)))
+
+    def handle(self, message: Message) -> None:
+        kind, _, name = message.task.partition(":")
+        if kind == "compilers":
+            if message.kind == "result" and self.view is not None:
+                self.view.show_compilers(message.payload)  # type: ignore[arg-type]
+        elif kind == "probe":
+            self._on_probe(name, message)
+        elif kind == "test" and message.kind != "event":
+            text = str(message.payload)
+            self._card_message(name, text, message.kind == "result" and text.startswith("Bağlantı"))
+
+    def _on_probe(self, name: str, message: Message) -> None:
+        if message.kind == "result" and isinstance(message.payload, Probe):
+            result = message.payload
+        else:
+            result = Probe(
+                ProviderStatus(name=name, model="—", ready=False, detail=str(message.payload))
+            )
+        self.probes[name] = result
+        if result.models:
+            self.discovered[name] = result.models
+        if name == self.app.provider_name():
+            self.app.sidebar.set_provider(name, result.ready, result.status.model or "")
+            self.app.analyze_view.set_provider_badge(name, result.status.model, result.ready)
+        self.render()
+
+    # --- Eylemler -----------------------------------------------------------------------
+
+    def make_default(self, name: str) -> None:
+        self.app.save_prefs(provider=None if name == self.app.base_default() else name)
+        self.app.toast(f"Varsayılan sağlayıcı: {INFO[name].label if name in INFO else name}")
+        self.render()
+        self.app.analyze_view.set_provider_badge(name, self.app.current_model(), None)
+        self.check(name)
+
+    def _override(self, name: str, **changes: Any) -> None:
+        current = self.app.prefs.providers.get(name, ProviderOverride())
+        updated = {**self.app.prefs.providers, name: current.model_copy(update=changes)}
+        self.app.save_prefs(providers=updated)
+        self.app.apply_settings()
+        self.render()
+        self.check(name)
+
+    def set_model(self, name: str, model: str) -> None:
+        model = model.strip()
+        if model and model != getattr(self.app.settings.providers, name).model:
+            self._override(name, model=model)
+
+    def set_base_url(self, name: str, url: str) -> None:
+        if url and not url.startswith(("http://", "https://")):
+            self._card_message(name, "Adres http:// ya da https:// ile başlamalı.", False)
+            return
+        self._override(name, base_url=url or None)
+
+    def allow_tool_agent(self, name: str, allowed: bool) -> None:
+        self._override(name, allow_tool_agent=allowed)
+
+    def save_key(self, name: str, key: str) -> None:
+        try:
+            self.store.set(name, key)
+        except KeyStoreError as exc:
+            self._card_message(name, str(exc), False)
+            return
+        apply_key(self.app.settings.providers, name, key)
+        self.vaulted.add(name)
+        self.app.toast(f"{INFO[name].label} anahtarı kimlik kasasına kaydedildi")
+        self.render()
+        self.check(name)
+
+    def delete_key(self, name: str) -> None:
+        try:
+            self.store.delete(name)
+        except KeyStoreError as exc:
+            self._card_message(name, str(exc), False)
+            return
+        if name in self.vaulted:
+            apply_key(self.app.settings.providers, name, None)
+            self.vaulted.discard(name)
+        self.render()
+        self.check(name)
+
+    def login(self, name: str) -> None:
+        try:
+            open_login_console(name, self.app.settings.providers)
+        except (ProviderError, OSError) as exc:
+            self._card_message(name, f"Oturum açma başlatılamadı: {exc}", False)
+            return
+        self._card_message(
+            name, "Açılan pencerede oturum aç, sonra bu kartta Denetle'ye bas.", True
+        )
+
+    def try_connection(self, name: str) -> None:
+        settings = self.app.settings
+        self._card_message(name, "Küçük bir deneme isteği gönderiliyor…", True)
+        self.app.bridge.submit(
+            f"test:{name}", lambda _emit: asyncio.run(try_connection(name, settings))
+        )
