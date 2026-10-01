@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
+import threading
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
+from pydantic import BaseModel
 
 from codementor.api.state import ApiState
 from codementor.config import Settings
 from codementor.desktop.connections import KeyStore
+from codementor.models.provider import ChatMessage, GenerationOptions, ProviderResult
 from codementor.providers.base import RetryPolicy
 from codementor.providers.fake import FakeProvider, FakeReply
 from codementor.storage.db import Database
@@ -41,6 +46,35 @@ def scripted() -> FakeProvider:
 @pytest.fixture
 def core(settings: Settings, db: Database) -> ApiState:  # noqa: F811
     return ApiState(settings, db=db, provider_factory=lambda _name: scripted())
+
+
+@dataclass
+class StallingProvider(FakeProvider):
+    """LLM çağrısında takılır (30 sn); iptal edilirse `cancelled` olayını işaretler (Faz 19)."""
+
+    started: threading.Event = field(default_factory=threading.Event)
+    cancelled: threading.Event = field(default_factory=threading.Event)
+
+    async def generate_structured(
+        self, messages: list[ChatMessage], output_model: type[BaseModel], options: GenerationOptions
+    ) -> ProviderResult:
+        self.started.set()
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            self.cancelled.set()
+            raise
+        raise AssertionError("iptal edilmeliydi")
+
+
+@pytest.fixture
+def stalling() -> StallingProvider:
+    return StallingProvider(script=[], retry=RetryPolicy(max_retries=0))
+
+
+@pytest.fixture
+def stalled_core(settings: Settings, db: Database, stalling: StallingProvider) -> ApiState:  # noqa: F811
+    return ApiState(settings, db=db, provider_factory=lambda _name: stalling)
 
 
 @pytest.fixture

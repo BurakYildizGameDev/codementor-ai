@@ -3,16 +3,30 @@
 from __future__ import annotations
 
 import threading
+import time
+
+import pytest
+from structlog.testing import capture_logs
 
 from codementor.api.state import ApiState
-from codementor.desktop.bridge import Bridge, Emit, Message, analysis_work, user_message
+from codementor.desktop.bridge import (
+    AnalysisCancelledError,
+    Bridge,
+    Cancellation,
+    Emit,
+    Message,
+    analysis_work,
+    user_message,
+)
 from codementor.desktop.services import render_export
 from codementor.models.pipeline import StageEvent
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest
 from codementor.pipeline.orchestrator import PipelineError
+from codementor.storage import sessions
 from codementor.storage.cache import list_analyses
-from tests.integration.conftest import LINKED_LIST
+from tests.desktop.conftest import StallingProvider
+from tests.integration.conftest import BROKEN_C, LINKED_LIST
 
 
 def run(bridge: Bridge, task: str) -> list[Message]:
@@ -117,3 +131,109 @@ def test_render_export_formats(core: ApiState) -> None:
     assert render_export(report, "md").startswith("#")
     assert '"version": "2.1.0"' in render_export(report, "sarif")
     assert AnalysisReport.model_validate_json(render_export(report, "json")) == report
+
+
+# --- İptal (Faz 19) ------------------------------------------------------------------------
+
+
+def test_cancel_invokes_cancellation() -> None:
+    calls: list[str] = []
+    cancellation = Cancellation()
+    cancellation.on_cancel(lambda: calls.append("iptal"))
+    bridge = Bridge()
+    bridge.submit("t", lambda _emit: cancellation.event.wait(5), cancellation=cancellation)
+    bridge.cancel("t")
+    bridge.join("t", 5)
+    assert calls == ["iptal"]
+    assert cancellation.cancelled
+    assert bridge.drain() == []
+    # iptalden sonra eklenen geri çağrı hemen çalışır (yarış: görev geç kaydolursa)
+    cancellation.on_cancel(lambda: calls.append("geç"))
+    assert calls == ["iptal", "geç"]
+
+
+def test_analysis_work_cancel_stops_pipeline(
+    stalled_core: ApiState, stalling: StallingProvider
+) -> None:
+    bridge = Bridge()
+    cancellation = Cancellation()
+    work = analysis_work(stalled_core, request(session_id="desktop-iptal"), cancellation)
+    bridge.submit("analyze", work, cancellation=cancellation)
+    assert stalling.started.wait(10), "LLM aşamasına gelinmedi"
+    start = time.perf_counter()
+    bridge.cancel("analyze")
+    bridge.join("analyze", 10)
+    assert not bridge.is_running("analyze")
+    assert time.perf_counter() - start < 3
+    assert stalling.cancelled.is_set()
+    assert bridge.drain() == []  # geç mesajlar atılır
+    assert list_analyses(stalled_core.database()) == []  # yarıda kalan analiz yazılmaz
+    # ipucu merdiveni ilerlemez: bir sonraki gönderim yine ilk deneme
+    assert sessions.next_attempt(stalled_core.database(), "desktop-iptal", None) == 1
+
+
+def test_analysis_cancelled_outside_bridge_is_quiet(
+    stalled_core: ApiState, stalling: StallingProvider
+) -> None:
+    cancellation = Cancellation()
+    work = analysis_work(stalled_core, request(), cancellation)
+    threading.Thread(target=lambda: (stalling.started.wait(10), cancellation.cancel())).start()
+    with pytest.raises(AnalysisCancelledError):
+        work(lambda _payload: None)
+
+
+def test_cancel_all_cancels_running(stalled_core: ApiState, stalling: StallingProvider) -> None:
+    bridge = Bridge()
+    cancellation = Cancellation()
+    bridge.submit(
+        "analyze", analysis_work(stalled_core, request(), cancellation), cancellation=cancellation
+    )
+    assert stalling.started.wait(10)
+    bridge.cancel_all()
+    bridge.join("analyze", 10)
+    assert stalling.cancelled.is_set()
+
+
+def test_cancel_after_finish_is_harmless(core: ApiState) -> None:
+    """Analiz bittikten sonra (ör. pencere kapanışında) gelen iptal ana thread'i bozmaz."""
+    bridge = Bridge()
+    cancellation = Cancellation()
+    bridge.submit(
+        "analyze", analysis_work(core, request(), cancellation), cancellation=cancellation
+    )
+    assert run(bridge, "analyze")[-1].kind == "result"
+    bridge.cancel_all()  # biten işin iptal kaydı temizlendi: hiçbir şey yapmaz
+    assert not cancellation.cancelled
+    cancellation.cancel()  # kapanmış event loop'a çağrı RuntimeError fırlatmamalı
+    assert cancellation.cancelled
+
+
+def test_cancel_on_synchronous_path_not_persisted(core: ApiState) -> None:
+    """Denetim O1: LLM'siz yol (sözdizimi hatası → erken çıkış) `await` içermez; iptal yine de
+    kayıttan önce yakalanmalı (analiz yazılmaz, ipucu merdiveni ilerlemez)."""
+    cancellation = Cancellation()
+    cancellation.cancel()  # Durdur, analiz eşzamanlı aşamalardayken basıldı
+    work = analysis_work(core, request(BROKEN_C, session_id="desktop-esz"), cancellation)
+    with pytest.raises(AnalysisCancelledError):
+        work(lambda _payload: None)
+    assert list_analyses(core.database()) == []
+    assert sessions.next_attempt(core.database(), "desktop-esz", None) == 1
+
+
+def test_cancelled_task_not_logged_as_error() -> None:
+    """Denetim O4: iptal beklenen bir son; ERROR log'u ve 'beklenmeyen hata' metni üretmez."""
+    with capture_logs() as logs:
+        text = user_message(AnalysisCancelledError("Analiz durduruldu."))
+    assert text == "Analiz durduruldu."
+    assert logs == []
+
+
+def test_resubmit_cancels_previous_cancellation() -> None:
+    first, second = Cancellation(), Cancellation()
+    bridge = Bridge()
+    bridge.submit("t", lambda _emit: first.event.wait(5), cancellation=first)
+    bridge.submit("t", lambda _emit: "yeni", cancellation=second)
+    assert first.cancelled  # eski iş durdurulamaz hale gelmez
+    assert not second.cancelled
+    bridge.join("t", 5)
+    assert [m.payload for m in bridge.drain()] == ["yeni"]

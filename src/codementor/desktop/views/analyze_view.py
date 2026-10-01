@@ -6,6 +6,7 @@ Görünüm iş mantığı içermez; düğmeler kurucuya verilen geri çağrılar
 
 from __future__ import annotations
 
+import time
 import tkinter as tk
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -44,11 +45,16 @@ EXPORT_FORMATS: tuple[tuple[str, str], ...] = (
 )
 
 
+# "Denetle"den hemen sonraki tıklama (çift tıklama) analizi durdurmasın (Faz 19 denetimi)
+STOP_GUARD_S = 0.5
+
+
 @dataclass
 class AnalyzeActions:
     """Görünümün tetiklediği işlemler (uygulama denetleyicisi sağlar)."""
 
     analyze: Callable[[], None]
+    stop: Callable[[], None]
     next_hint: Callable[[], None]
     restart: Callable[[], None]
     open_file: Callable[[], None]
@@ -67,6 +73,7 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
         self._questions: list[QuestionPublic] = []
         self.report: AnalysisReport | None = None
         self.busy = False
+        self._busy_since = 0.0
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
@@ -137,7 +144,7 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
         self.run_button = ctk.CTkButton(
             right,
             text="Denetle",
-            command=self.actions.analyze,
+            command=self._run_or_stop,
             width=150,
             height=40,
             corner_radius=12,
@@ -259,12 +266,22 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
 
     # --- Durum ve sonuçlar ----------------------------------------------------------------
 
+    def _run_or_stop(self) -> None:
+        """Aynı düğme: boştayken denetler, analiz sürerken durdurur (Faz 19)."""
+        if self.busy:
+            if time.monotonic() - self._busy_since >= STOP_GUARD_S:
+                self.actions.stop()
+        else:
+            self.actions.analyze()
+
     def set_busy(self, busy: bool) -> None:
         self.busy = busy
+        self._busy_since = time.monotonic()
         self.run_button.configure(
-            state="disabled" if busy else "normal",
-            text="Denetleniyor…" if busy else "Denetle",
-            fg_color=theme.GOLD_DIM if busy else theme.GOLD,
+            text="Durdur" if busy else "Denetle",
+            fg_color=theme.STOP if busy else theme.GOLD,
+            hover_color=theme.STOP_HOVER if busy else theme.GOLD_HOVER,
+            text_color=theme.ERROR if busy else theme.GOLD_INK,
         )
         if busy:
             self.socratic.show_busy()

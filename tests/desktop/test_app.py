@@ -16,10 +16,12 @@ from codementor.desktop import connections_controller as controller_module
 from codementor.desktop import runtime
 from codementor.desktop.app import App
 from codementor.desktop.connections import KeyStore, Probe
+from codementor.desktop.views import analyze_view as analyze_view_module
 from codementor.models.enums import Engine, Language
 from codementor.models.provider import ProviderStatus
 from codementor.providers.base import RetryPolicy
 from codementor.providers.fake import FakeProvider, FakeReply
+from tests.desktop.conftest import StallingProvider
 from tests.integration.conftest import LINKED_LIST
 
 TK_ATTEMPTS = 3
@@ -29,6 +31,15 @@ PY_LINE = "print('merhaba')\n"
 
 @pytest.fixture
 def app(core: ApiState, prefs_dir: Path, store: KeyStore) -> Iterator[App]:
+    yield from _open(core, prefs_dir, store)
+
+
+@pytest.fixture
+def stalled_app(stalled_core: ApiState, prefs_dir: Path, store: KeyStore) -> Iterator[App]:
+    yield from _open(stalled_core, prefs_dir, store)
+
+
+def _open(core: ApiState, prefs_dir: Path, store: KeyStore) -> Iterator[App]:
     window = None
     error: tk.TclError | None = None
     # Windows'ta art arda kurulan Tk köklerinde Tcl `init.tcl`'i ara sıra okuyamıyor
@@ -225,3 +236,72 @@ def test_probe_results_update_cards_and_sidebar(app: App, monkeypatch: pytest.Mo
     assert "qwen2.5-coder:14b" in card.model.cget("values")
     assert app.settings_view.cards["openai"].status_pill.cget("text").strip() == "hazır değil"
     assert app.sidebar.status_text.cget("text") == "ollama"
+
+
+@pytest.fixture
+def no_stop_guard(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Durdur testlerinde çift tıklama korumasını kapatır (koruma ayrıca sınanır)."""
+    monkeypatch.setattr(analyze_view_module, "STOP_GUARD_S", 0.0)
+
+
+@pytest.mark.usefixtures("no_stop_guard")
+def test_stop_button_cancels_analysis(stalled_app: App, stalling: StallingProvider) -> None:
+    """Faz 19: meşgulken düğme "Durdur" olur; tıklanınca LLM çağrısı iptal edilir."""
+    view = stalled_app.analyze_view
+    view.editor.set(LINKED_LIST, Language.C)
+    stalled_app.analyze()
+    assert view.busy
+    assert view.run_button.cget("text") == "Durdur"
+    assert stalling.started.wait(10)
+    view.run_button.invoke()
+    assert not view.busy
+    assert view.run_button.cget("text") == "Denetle"
+    assert "durduruldu" in stalled_app.toast_label.cget("text")
+    pump(stalled_app, lambda: not stalled_app.bridge.is_running("analyze"), timeout=10)
+    assert stalling.cancelled.is_set()
+    assert view.report is None
+    stalled_app.update()  # geç mesaj gelse bile ekrana yazılmaz
+    assert not view.busy
+
+
+def test_quick_double_click_does_not_stop(stalled_app: App, stalling: StallingProvider) -> None:
+    """Denetim O3: "Denetle"ye çift tıklama analizi başlatıp hemen durdurmamalı."""
+    view = stalled_app.analyze_view
+    view.editor.set(LINKED_LIST, Language.C)
+    view.run_button.invoke()
+    view.run_button.invoke()  # ikinci tıklama koruma süresi içinde
+    assert view.busy
+    assert stalling.started.wait(10)
+    stalled_app.stop_analysis()
+
+
+@pytest.mark.usefixtures("no_stop_guard")
+def test_restart_while_previous_closing_shows_toast(
+    stalled_app: App, stalling: StallingProvider, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Denetim O2: önceki iş parçacığı kapanırken "Denetle" sessizce yok sayılmaz."""
+    view = stalled_app.analyze_view
+    view.editor.set(LINKED_LIST, Language.C)
+    stalled_app.analyze()
+    assert stalling.started.wait(10)
+    stalled_app.stop_analysis()
+    monkeypatch.setattr(stalled_app.bridge, "is_running", lambda _task: True)
+    stalled_app.analyze()
+    assert not view.busy
+    assert "kapanıyor" in stalled_app.toast_label.cget("text")
+
+
+@pytest.mark.usefixtures("no_stop_guard")
+def test_escape_stops_only_on_analyze_page(stalled_app: App, stalling: StallingProvider) -> None:
+    view = stalled_app.analyze_view
+    view.editor.set(LINKED_LIST, Language.C)
+    stalled_app.analyze()
+    assert stalling.started.wait(10)
+    stalled_app.navigate("history")
+    stalled_app.on_escape()  # başka sayfada Esc (ör. açılır liste kapatma) analizi durdurmaz
+    assert view.busy
+    stalled_app.navigate("analyze")
+    stalled_app.on_escape()
+    assert not view.busy
+    stalled_app.stop_analysis()  # boşta iken zararsız
+    pump(stalled_app, lambda: not stalled_app.bridge.is_running("analyze"), timeout=10)

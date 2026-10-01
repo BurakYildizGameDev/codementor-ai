@@ -39,6 +39,8 @@ OK = "#4ADE80"
 WARN = "#FBBF24"
 ERROR = "#F87171"
 INFO = "#60A5FA"
+STOP = "#3A1C22"  # "Durdur" düğmesi zemini (Faz 19)
+STOP_HOVER = "#4A222A"
 
 SEVERITY_COLORS: dict[Severity, str] = {
     Severity.HIGH: ERROR,

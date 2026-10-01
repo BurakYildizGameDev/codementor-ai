@@ -302,7 +302,9 @@ class CliHarness:
             runner=self._run,
         )
 
-    def _run(self, argv: list[str], stdin: str, limits: Any, *, extra_env: Any) -> Any:
+    def _run(
+        self, argv: list[str], stdin: str, limits: Any, *, extra_env: Any, cancel: Any = None
+    ) -> Any:
         self.argvs.append(argv)
         return self.outputs.pop(0)
 

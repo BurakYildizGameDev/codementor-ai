@@ -3,6 +3,7 @@ aşamalar `stages.py` / `passes.py`, rapor montajı `assemble.py`'de."""
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
@@ -99,6 +100,10 @@ class Orchestrator:
             report = from_cache(cached, run.analysis_id, run.timer)
         else:
             report = await self._analyze(run, code, provider, version, profile)
+        # İptal kontrol noktası: Tier 0/1, önbellek ve erken çıkış yolları `await` içermez;
+        # bekleyen bir iptal (masaüstü "Durdur", kopan SSE) kayıttan önce burada yükselir,
+        # böylece yarıda kalan analiz yazılmaz ve ipucu merdiveni ilerlemez (Faz 19)
+        await asyncio.sleep(0)
         if self.db is not None:
             latency = sum(report.meta.stage_latency_ms.values())
             cache.save_analysis(

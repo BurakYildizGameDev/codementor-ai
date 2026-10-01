@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import sys
+import threading
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -61,6 +62,7 @@ class FakeRunner:
         limits: ProcessLimits,
         *,
         extra_env: Mapping[str, str] | None = None,
+        cancel: threading.Event | None = None,
     ) -> ProcessResult:
         self.calls.append({"argv": list(argv), "stdin": stdin, "limits": limits, "env": extra_env})
         return self.results.pop(0)

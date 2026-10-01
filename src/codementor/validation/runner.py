@@ -28,6 +28,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,6 +39,7 @@ MAX_PROCESSES = 8
 _FILE_SIZE_LIMIT = 1024 * 1024
 _CHUNK = 8192
 _JOIN_TIMEOUT_S = 5.0
+_CANCEL_POLL_S = 0.1  # iptal olayı bu aralıkla da denetlenir (süreç bitişi poll ile)
 
 if sys.platform == "win32":
     _PASSTHROUGH_ENV = ("PATH", "SYSTEMROOT", "WINDIR")
@@ -83,6 +85,7 @@ class ProcessResult:
     timed_out: bool = False
     truncated: bool = False
     error: str | None = None
+    cancelled: bool = False  # iptal olayıyla durduruldu (Faz 19)
 
 
 class _CappedReader(threading.Thread):
@@ -206,8 +209,13 @@ def run_process(
     limits: ProcessLimits,
     *,
     extra_env: Mapping[str, str] | None = None,
+    cancel: threading.Event | None = None,
 ) -> ProcessResult:
-    """`argv`'yi boş geçici dizinde, temiz ortamda, `stdin` ile çalıştırır."""
+    """`argv`'yi boş geçici dizinde, temiz ortamda, `stdin` ile çalıştırır.
+
+    `cancel` set edilirse süreç ağacı zaman aşımını beklemeden öldürülür ve sonuç
+    `cancelled=True` döner (ör. kullanıcı analizi durdurdu).
+    """
     if isinstance(argv, str) or not argv or not all(isinstance(a, str) for a in argv):
         raise TypeError("argv boş olmayan bir dizge listesi olmalı; kabuk komutu kabul edilmez")
     # Yalnızca mutlak yol: çıplak ad verilirse Windows'ta CreateProcess önce çalışma dizinine
@@ -217,6 +225,8 @@ def run_process(
         return ProcessResult(None, "", "", error=f"çalıştırılabilir mutlak yol olmalı: {argv[0]}")
     if not executable.is_file():
         return ProcessResult(None, "", "", error=f"çalıştırılabilir bulunamadı: {argv[0]}")
+    if cancel is not None and cancel.is_set():
+        return ProcessResult(None, "", "", cancelled=True)
     with tempfile.TemporaryDirectory(prefix="cm-t1-", ignore_cleanup_errors=True) as work:
         tree = _Tree(limits)
         try:
@@ -238,7 +248,7 @@ def run_process(
                 tree.kill(proc)
                 proc.wait()
                 return ProcessResult(None, "", "", error="Job Object kurulamadı")
-            return _supervise(proc, tree, stdin.encode("utf-8"), limits.timeout_s)
+            return _supervise(proc, tree, stdin.encode("utf-8"), limits.timeout_s, cancel)
         except Exception as exc:  # sözleşme: istisna fırlatma, süreci asla sızdırma
             tree.kill(proc)
             return ProcessResult(None, "", "", error=f"{type(exc).__name__}: {exc}")
@@ -253,8 +263,36 @@ def run_process(
             tree.close()
 
 
+def _wait(
+    proc: subprocess.Popen[bytes], timeout_s: float, cancel: threading.Event | None
+) -> tuple[bool, bool]:
+    """Süreç bitene, zaman aşımına ya da iptale kadar bekler → (zaman aşımı, iptal)."""
+    if cancel is None:
+        try:
+            proc.wait(timeout=timeout_s)
+        except subprocess.TimeoutExpired:
+            return True, False
+        return False, False
+    deadline = time.monotonic() + timeout_s
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return True, False
+        try:
+            proc.wait(timeout=min(_CANCEL_POLL_S, remaining))
+        except subprocess.TimeoutExpired:
+            if cancel.is_set():
+                return False, True
+            continue
+        return False, False
+
+
 def _supervise(
-    proc: subprocess.Popen[bytes], tree: _Tree, data: bytes, timeout_s: float
+    proc: subprocess.Popen[bytes],
+    tree: _Tree,
+    data: bytes,
+    timeout_s: float,
+    cancel: threading.Event | None = None,
 ) -> ProcessResult:
     assert proc.stdin is not None
     assert proc.stdout is not None
@@ -263,11 +301,7 @@ def _supervise(
     feeder = threading.Thread(target=_feed_stdin, args=(proc.stdin, data), daemon=True)
     for thread in (feeder, out, err):
         thread.start()
-    timed_out = False
-    try:
-        proc.wait(timeout=timeout_s)
-    except subprocess.TimeoutExpired:
-        timed_out = True
+    timed_out, cancelled = _wait(proc, timeout_s, cancel)
     # Normal çıkışta da: artakalan torunlar pipe'ları açık tutmasın, yaşamasın
     tree.kill(proc)
     with contextlib.suppress(subprocess.TimeoutExpired):
@@ -275,9 +309,10 @@ def _supervise(
     for thread in (feeder, out, err):
         thread.join(_JOIN_TIMEOUT_S)
     return ProcessResult(
-        returncode=None if timed_out else proc.returncode,
+        returncode=None if timed_out or cancelled else proc.returncode,
         stdout=out.text(),
         stderr=err.text(),
         timed_out=timed_out,
         truncated=out.truncated or err.truncated,
+        cancelled=cancelled,
     )

@@ -19,7 +19,7 @@ import customtkinter as ctk
 from codementor.api.state import ApiState
 from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE, Settings
 from codementor.desktop import runtime, theme
-from codementor.desktop.bridge import Bridge, Message, analysis_work
+from codementor.desktop.bridge import Bridge, Cancellation, Message, analysis_work
 from codementor.desktop.connections import KeyStore, apply_overrides
 from codementor.desktop.connections_controller import ConnectionsController
 from codementor.desktop.services import render_export
@@ -42,6 +42,7 @@ ASSETS = Path(__file__).resolve().parent / "assets"
 POLL_MS = 60
 WINDOW_SIZE = (1480, 940)
 TOAST_MS = 2600
+CLOSE_JOIN_S = 2.0  # kapanışta süren analizin iptalini bekleme süresi
 _EXPORT_SUFFIX = {"md": ".md", "sarif": ".sarif", "json": ".json"}
 
 
@@ -83,6 +84,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         self._build()
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.bind_all("<Control-Return>", lambda _e: self.analyze())
+        self.bind_all("<Escape>", lambda _e: self.on_escape())
         self.after(POLL_MS, self._poll)
         if check_on_start:
             self.after(300, self.check_environment)
@@ -105,6 +107,7 @@ class App(ctk.CTk):  # type: ignore[misc]
             stage,
             AnalyzeActions(
                 analyze=self.analyze,
+                stop=self.stop_analysis,
                 next_hint=self.analyze,
                 restart=self.restart,
                 open_file=self.open_file,
@@ -186,6 +189,8 @@ class App(ctk.CTk):  # type: ignore[misc]
     def analyze(self) -> None:
         view = self.analyze_view
         if self.bridge.is_running("analyze"):
+            if not view.busy:  # durdurulan önceki analizin iş parçacığı henüz kapanıyor
+                self.toast("Önceki analiz kapanıyor, birazdan yeniden deneyin.")
             return
         code = view.editor.get()
         if not code.strip():
@@ -205,7 +210,26 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.tracker.reset()
         view.set_busy(True)
         view.show_progress(self.tracker)
-        self.bridge.submit("analyze", analysis_work(self.core, request))
+        cancellation = Cancellation()
+        self.bridge.submit(
+            "analyze", analysis_work(self.core, request, cancellation), cancellation=cancellation
+        )
+
+    def on_escape(self) -> None:
+        """Esc yalnız analiz sayfasında durdurur (başka sayfada açılır liste kapatmak gibi)."""
+        if self.current_view == "analyze":
+            self.stop_analysis()
+
+    def stop_analysis(self) -> None:
+        """Süren analizi durdurur: LLM çağrısı ve CLI süreci iptal edilir, sonuç yazılmaz."""
+        view = self.analyze_view
+        if not view.busy:
+            return
+        self.bridge.cancel("analyze")
+        self.tracker.reset()
+        view.set_busy(False)
+        view.reset_results()
+        self.toast("Analiz durduruldu.")
 
     def restart(self) -> None:
         """İpucu merdivenini sıfırlar: yeni oturum, bir sonraki analiz 1. seviyeden başlar."""
@@ -368,5 +392,7 @@ class App(ctk.CTk):  # type: ignore[misc]
     def close(self) -> None:
         self._closing = True
         self.bridge.cancel_all()
+        # İptal zinciri (loop → CLI süreç ağacı) yorumlayıcı kapanmadan tamamlansın
+        self.bridge.join("analyze", CLOSE_JOIN_S)
         self.core.close()
         self.destroy()

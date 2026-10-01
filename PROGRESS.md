@@ -22,6 +22,7 @@
 | 16 | ✅ | faz-16-diller | 2026-10-01 | Claude Code / — |
 | 17 | ✅ | faz/17-kurallar | 2026-10-01 | Claude Code / kod-denetci |
 | 18 | ✅ | faz/18-eval-diller | 2026-10-01 | Claude Code / kod-denetci |
+| 19 | ✅ | faz/19-durdur | 2026-10-01 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -507,6 +508,25 @@
 - Bire bir en yakın eşleşmede aynı kategoride iki komşu beklenti, bulunan tek satırı "yanlış" beklentiye verebiliyor; FN dökümünü kategorisiz ve satır bazlı da okumak gerekiyor.
 - PowerShell 5.1 yerel komutun stderr'ini `NativeCommandError` olarak sarıyor; arka plan günlüğünde hata gibi görünüyor ama çıkış kodu 0.
 
+## Faz 19 — Notlar (masaüstünde analizi durdurma)
+**Yapılanlar:**
+- `validation/runner.py`: `run_process(..., cancel=threading.Event)`; `_wait` 0,1 sn dilimlerle bekler, iptalde süreç ağacı (Job Object / süreç grubu, torunlar dahil) öldürülür, `ProcessResult.cancelled`. `cancel=None` iken davranış aynı.
+- `providers/cli_agent.py`: `once()` iş parçacığına iptal olayı verir, `asyncio.CancelledError`'da set eder; `cancelled` sonucu `CancelledError` olarak yükselir (retry/fallback'e girmez). API'de kopan SSE bağlantısı da artık CLI sürecini hemen öldürüyor.
+- `desktop/bridge.py`: `Cancellation` (thread güvenli olay + geri çağrılar), `AnalysisCancelledError`, `submit(..., cancellation=)`; `cancel()` işi gerçekten durdurur, yeniden `submit` eski işi iptal eder, biten işin kaydı temizlenir; `analysis_work` asyncio görevini `call_soon_threadsafe(task.cancel)` ile iptal eder (kapanmış loop'ta sessiz).
+- `pipeline/orchestrator.py`: kayıttan önce `await asyncio.sleep(0)` iptal kontrol noktası (Tier 0/1, önbellek, erken çıkış yolları `await` içermiyordu).
+- Masaüstü: analiz sürerken "Denetle" düğmesi kırmızımsı "Durdur" olur (0,5 sn çift tıklama koruması), Esc yalnız analiz sayfasında durdurur, "Analiz durduruldu." bildirimi; önceki iş parçacığı kapanırken yeniden başlatma bildirimle reddedilir; kapanışta iptal + 2 sn bekleme.
+- Testler (23 yeni): gerçek alt süreç + torun iptali (PID dosyasıyla, sabit uyku yok), zaman aşımı/iptal ayrımı, sağlayıcı iptali (retry ve fallback zincirine geçmez), köprü (LLM'de ve eşzamanlı yolda iptal → kayıt yok, ipucu merdiveni ilerlemez; iptal ERROR log'u üretmez; yeniden gönderim), pencere (Durdur, çift tıklama, kapanırken yeniden deneme, Esc sayfa sınırı).
+- Belgeler: ADR-0012'ye güncelleme notu, `UYGULAMA_PLANI.md` Faz 19 bölümü.
+**Doğrulama:** gerçek `claude` CLI ile analiz başlatılıp 3 sn sonra iptal: yeni `claude` süreci 0,23–0,24 sn içinde kapandı.
+**Kararlar:** (1) Ayrı "Durdur" düğmesi yerine aynı düğme (araç çubuğu dar). (2) Yarıda kalan analiz kaydedilmez, ipucu merdiveni ilerlemez. (3) Tier 1 derleyici sürecine iptal iletilmedi: Tier 1 kısa süreli; o arada yeniden "Denetle" bildirimle reddedilir.
+**Mimariden sapmalar (ADR linki):** yok (ADR-0012'ye not).
+**Denetim (kod-denetci):** Kritik yok. Orta: (O1) eşzamanlı yolda (Tier 1 erken çıkış/önbellek) gelen iptal analizi yine kaydediyor ve ipucu merdivenini ilerletiyordu → orkestratörde kontrol noktası + test; (O2) Durdur sonrası "Denetle" sessizce yok sayılıyordu → bildirim; (O3) çift tıklama başlatıp durduruyordu → 0,5 sn koruma; (O4) her iptalde sahte ERROR log'u → `user_message` iptali ayırıyor; (O5) PROGRESS; (O6) testte sabit uyku → PID dosyası. Düşük (uygulanan): yeniden `submit` eski iptali çağırır, biten iş kaydı silinir, kapanışta `join`, Esc yalnız analiz sayfasında, `_wait` normal çıkışı beklemeden fark eder, `cancelled` sonucu sağlayıcı hatasına dönüşmez, fallback zinciri iptal testi.
+**Açık sorular:**
+- Tam pakette bir kez zamanlamaya bağlı tek test hatası görüldü (hangisi olduğu kaydedilmedi); ardından 2 tam koşu ve yeni testlerin 6 tekrarı temiz. Faz 12'deki benzer gözlemle birlikte izlenmeli.
+**Bu fazda öğrendiğim:**
+- `call_soon_threadsafe(task.cancel)` ancak görev askıya alındığında etkili olur; `await` içermeyen yollar için açık bir kontrol noktası (`asyncio.sleep(0)`) gerekiyor.
+- Aynı düğmenin anlamı değişince (Denetle → Durdur) çift tıklama yeni bir hata türü doğuruyor.
+
 ## Sonraya (kapsam dışı fikirler)
 - ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
 - Faz 18: Tier 0 kör noktası: tam bir HTML belgesinde eşi olmayan `</div>` hata sayılmıyor (HTML etiket dengesi maddesiyle birlikte).
@@ -520,7 +540,8 @@
 - Faz 15: Masaüstü tercihleri ile `codementor.toml` arasında "toml'a yaz" seçeneği (CLI/API de aynı modeli kullansın).
 - Faz 14: exe imzası yok; Windows SmartScreen ilk açılışta uyarabilir (kod imzalama sertifikası + Inno Setup kurulum paketi).
 - Faz 14: CI'da Windows exe derleme işi (artefakt olarak zip); şu an elle `make exe`.
-- Faz 14: analiz iptali yok (düğme yok; sonuç kuşak sayacıyla atılabiliyor ama CLI süreci sürer — "CLI ajanı iptali" maddesiyle birlikte).
+- ~~Faz 14: analiz iptali yok~~ → Faz 19'da yapıldı.
+- Faz 19: Tier 1 derleyici/çalıştırma sürecine iptal olayı iletilmiyor (durdurulan analizde Tier 1 kendi zaman aşımına kadar sürebilir; arayüz bu sırada yeni analizi bildirimle reddeder).
 - Faz 14: editörde arama (Ctrl+F), son dosyalar menüsü (`recent_files` kaydediliyor ama gösterilmiyor), sürükle-bırak ile dosya açma (tkinterdnd2).
 - Faz 14: onefile açılışı arşiv çözme nedeniyle birkaç saniye; hızlı açılış için onedir zip önerilir.
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
@@ -561,7 +582,7 @@
 - Faz 10: CLI ilerleme göstergesi yalnızca aşama adını gösteriyor; token/süre canlı gösterilebilir.
 - Faz 11: pipeline'ın senkron aşamalarını (`run_tier0/1`, olgular, SQLite) `asyncio.to_thread`'e taşımak (çok kullanıcılı API).
 - Faz 11: API anahtarı / hız sınırlama (§12); yerel olmayan bağlamada zorunlu kılınabilir. (Faz 13 kararı: v1'de yok, README Sınırlamalar.)
-- CLI ajanı iptali: `asyncio` iptalinde süreci hemen öldürmek için runner'a iptal olayı.
+- ~~CLI ajanı iptali~~ → Faz 19'da yapıldı.
 - ~~Faz 5 hatası (csharp-011): `foreach` koleksiyon ifadesindeki çağrı döngü içinde sayılıyordu → `high` O(n²)~~ → çözüldü (2026-09-30, kullanıcı isteğiyle Faz 12 içinde): `_context.contexts` döngü başlığında bir kez değerlendirilen alanlara (`initializer`, `right`: C `for` başlatıcısı, C++ range-for, C# `foreach`) dış bağlamı verir; `tests/fixtures/complexity/on_{foreach_header_call,range_for_header_call,for_initializer_strlen}` + koşuldaki `strlen` için `on2_strlen_condition`. Dev static-only Big-O %88 → %92.
 - Çağrı maliyeti tablosu eksikleri (eval notları): `std::memset`/`memcpy` (n), `UGameplayStatics::GetAllActorsOfClass` (n), `TArray::Remove` (n); `std::string operator+` / C# `string +=` döngüde karesel (şu an n).
 - Faz 12: eval'e `guard_interventions` metriği (sızıntı korumasının müdahale sayısı; şu an yalnızca rapor uyarılarından sayılabiliyor, ADR-0003'ün ana argümanı).
@@ -575,7 +596,7 @@
 - Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri.
 
 ## Yapılacaklar (2026-10-01 itibarıyla sıra)
-Durum: Faz 0-17 main'de ve push'lu (e1bdb98), CI 3 işte yeşil. Faz 18 (Python/HTML/CSS eval) `faz/18-eval-diller` dalında, commit bekliyor.
+Durum: Faz 0-18 main'de ve push'lu (3bf9ac1), CI 3 işte yeşil. Faz 19 (analizi durdurma) `faz/19-durdur` dalında, commit bekliyor.
 
 **Kullanıcı:** yeni 4 sorunun referans çözümlerini `private/solutions/` altına ekle
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
@@ -584,7 +605,7 @@ Durum: Faz 0-17 main'de ve push'lu (e1bdb98), CI 3 işte yeşil. Faz 18 (Python/
 **Sıradaki fazlar (önerilen sıra):**
 1. ~~Yeni diller için eval~~ → Faz 18.
 2. ~~Faz 6'da ertelenen 10 C/C++/C# kuralı~~ → Faz 17.
-3. Masaüstünde analizi durdurma düğmesi (CLI ajanı süreç iptaliyle birlikte).
+3. ~~Masaüstünde analizi durdurma düğmesi~~ → Faz 19.
 4. Bağlantılar'da "Ollama modeli indir" (`ollama pull`) düğmesi ve ilerleme göstergesi.
 5. HTML etiket dengesi uyarısı (kapanmamış/uyumsuz etiket; stdlib `html.parser`).
 6. Exe: imzalı kurulum paketi (SmartScreen) ve CI'da otomatik exe derleme artefaktı.

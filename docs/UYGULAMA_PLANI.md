@@ -1145,6 +1145,24 @@ UE-MEM-001. Motor ve fixture düzeni Faz 6'daki gibi; yalnızca kural eklenir.
 
 ---
 
+### Faz 19 — Masaüstünde analizi durdurma (CLI ajanı süreç iptaliyle)
+
+**Dal:** `faz/19-durdur` · **Mimari:** §12, ADR-0012, ADR-0013
+
+**Amaç:** Süren analizi durdurmak; CLI ajanı sürecini zaman aşımını beklemeden öldürmek.
+
+**Kabul kriterleri**
+- [x] `run_process` iptal olayıyla süreç ağacını (torunlar dahil) zaman aşımını beklemeden öldürür
+- [x] CLI ajanı sağlayıcısında asyncio iptali çalıştırıcıya iletilir; iptal edilen çağrı yeniden denenmez
+- [x] Masaüstünde analiz sürerken düğme "Durdur" olur (Esc de durdurur); yarıda kalan analiz
+      kaydedilmez, ipucu merdiveni ilerlemez
+- [x] Pencere kapanışında süren analiz de durdurulur
+- [x] Gerçek `claude` CLI ile elle doğrulama: iptalden sonra süreç kalmıyor
+
+**Commit:** `feat(faz-19): masaüstünde analizi durdurma`
+
+---
+
 ## 7. PROGRESS.md Şablonu
 
 ````markdown

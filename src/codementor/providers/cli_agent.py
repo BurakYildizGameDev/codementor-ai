@@ -23,6 +23,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -93,6 +94,7 @@ class Runner(Protocol):
         limits: ProcessLimits,
         *,
         extra_env: Mapping[str, str] | None = None,
+        cancel: threading.Event | None = None,
     ) -> ProcessResult: ...
 
 
@@ -278,16 +280,24 @@ class CliAgentProvider:
         start = time.perf_counter()
 
         async def once() -> ProviderResult:
-            # Not: iptal edilen bir çağrıda iş parçacığı süreci zaman aşımına kadar bekletir
-            # (run_process süreç ağacını yine öldürür); ADR-0012.
-            result = await asyncio.to_thread(
-                self.runner, argv, stdin, limits, extra_env=profile_env()
-            )
+            # asyncio iptali (masaüstünde "Durdur", API'de kopan bağlantı) iş parçacığına
+            # olayla iletilir; run_process süreç ağacını zaman aşımını beklemeden öldürür (Faz 19)
+            cancel = threading.Event()
+            try:
+                result = await asyncio.to_thread(
+                    self.runner, argv, stdin, limits, extra_env=profile_env(), cancel=cancel
+                )
+            except asyncio.CancelledError:
+                cancel.set()
+                raise
             return self._result(result, model, start)
 
         return await self.retry.run(once)
 
     def _result(self, result: ProcessResult, model: str, start: float) -> ProviderResult:
+        if result.cancelled:
+            # İptal bir sağlayıcı hatası değildir: retry/fallback'e girmemeli (Faz 19)
+            raise asyncio.CancelledError
         if result.error is not None:
             raise ProviderConfigError(self.name, f"çalıştırılamadı ({_short(result.error)})")
         if result.timed_out:

@@ -59,6 +59,8 @@ Geliştirici bulut API anahtarı yerine abonelikli CLI ajanlarını kullanıyor:
    içinden istenen ya da en çok çıktı üreten olarak alınır.
    - İptal: `asyncio` görevi iptal edilirse iş parçacığı süreci zaman aşımına kadar bekletir
      (süreç ağacı yine öldürülür); pipeline (Faz 10) zaman aşımını buna göre seçmeli.
+     **Güncelleme (Faz 19):** iptal artık `threading.Event` ile `run_process`'e iletilir; süreç
+     ağacı ~0,1 sn içinde öldürülür (masaüstü "Durdur", API'de kopan bağlantı).
 4. **Şema:** Anthropic varyantı kullanılır. Zorlanamayan kısıtlar artık yalnızca çıkarılmıyor,
    alan açıklamasına Türkçe not olarak ekleniyor ("en fazla 80 karakter", "en fazla 4 öğe");
    bu değişiklik OpenAI ve Anthropic HTTP varyantlarına da uygulanır. Ollama varyantı ise
