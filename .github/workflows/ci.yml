@@ -31,6 +31,26 @@ jobs:
       - if: runner.os == 'Windows'
         run: uv run pytest -m "not live and not compiler"
 
+  # Windows masaüstü paketi (Faz 23): tek dosya exe + onedir zip artefakt olarak indirilir.
+  # PR'larda derlenmez (birkaç dakika); main push'unda ve elle tetiklemede çalışır.
+  exe:
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run python build_exe.py --both
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CodeMentor-win64
+          path: |
+            dist/CodeMentor.exe
+            dist/CodeMentor-*-win64.zip
+          if-no-files-found: error
+          retention-days: 14
+
   web:
     runs-on: ubuntu-latest
     defaults:

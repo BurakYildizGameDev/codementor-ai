@@ -1,8 +1,8 @@
 """Masaüstü çalışma ortamı: kaynak kökü, kullanıcı dizini, tercihler ve kaynak kod arşivi.
 
-Yapılandırmadaki göreli yollar (`data/`, `prompts/`, `tools/`) çalışma dizinine göredir
-(`config.DataSettings`). Exe'de bu dosyalar PyInstaller'ın açtığı `sys._MEIPASS` altındadır;
-kaynaktan çalışırken depo köküdür. Uygulama açılırken çalışma dizini bu köke alınır.
+Yapılandırma yolları çalışma dizininden bağımsız çözülür (`codementor.paths`, ADR-0016).
+Exe'de `data/` ve `prompts/` PyInstaller'ın açtığı `sys._MEIPASS` altındadır; kaynaktan
+çalışırken depo köküdür. Çalışma dizini yine bu köke alınır (zararsız; dosya diyaloğu için).
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from typing import TextIO
 
 from pydantic import ValidationError
 
+from codementor import paths
 from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE
 from codementor.models.desktop import MAX_RECENT_FILES, DesktopPrefs
 
@@ -29,11 +30,7 @@ def is_frozen() -> bool:
 
 def resource_root() -> Path:
     """`data/`, `prompts/` ve varsayılan `codementor.toml`'un bulunduğu kök."""
-    if is_frozen():
-        bundle: str = sys._MEIPASS  # type: ignore[attr-defined]
-        return Path(bundle)
-    # src/codementor/desktop/runtime.py → depo kökü
-    return Path(__file__).resolve().parents[3]
+    return paths.resource_root()
 
 
 def user_dir() -> Path:

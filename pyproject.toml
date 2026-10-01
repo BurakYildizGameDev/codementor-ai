@@ -54,6 +54,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/codementor"]
 
+# Paket verisi (Faz 23, ADR-0016): `codementor.paths.resource_root()` kurulu wheel'de buraya bakar
+[tool.hatch.build.targets.wheel.force-include]
+"data" = "codementor/_resources/data"
+"prompts" = "codementor/_resources/prompts"
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

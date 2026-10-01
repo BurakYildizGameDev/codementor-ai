@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 from pydantic import BaseModel, Field
 from pydantic_settings import (
@@ -18,6 +18,8 @@ from pydantic_settings import (
     SettingsConfigDict,
     TomlConfigSettingsSource,
 )
+
+from codementor.paths import resolve_relative, resource_path
 
 CONFIG_FILE_ENV = "CODEMENTOR_CONFIG_FILE"
 DEFAULT_CONFIG_FILE = "codementor.toml"
@@ -34,8 +36,10 @@ class ValidationSettings(BaseModel):
     tier1_enabled: bool = True
     compile_timeout_s: int = Field(default=10, ge=1)
     compile_memory_mb: int = Field(default=1024, ge=64)
-    stub_header: Path = Path("data/stubs/ue_stubs.h")
-    roslyn_check_dll: Path = Path("tools/roslyn-check/out/RoslynCheck.dll")
+    stub_header: Path = Field(default_factory=lambda: resource_path("data/stubs/ue_stubs.h"))
+    roslyn_check_dll: Path = Field(
+        default_factory=lambda: resource_path("tools/roslyn-check/out/RoslynCheck.dll")
+    )
 
 
 class PipelineSettings(BaseModel):
@@ -45,18 +49,20 @@ class PipelineSettings(BaseModel):
 
 
 class DataSettings(BaseModel):
-    """Veri dizinleri; göreli yollar çalışma dizinine göredir."""
+    """Veri dizinleri; göreli yolların çözümü `codementor.paths` (ADR-0016)."""
 
-    questions_dir: Path = Path("data/questions")
-    checklists_dir: Path = Path("data/checklists")
-    call_costs_file: Path = Path("data/call_costs.yaml")
-    mentor_templates_file: Path = Path("data/mentor_templates.yaml")
+    questions_dir: Path = Field(default_factory=lambda: resource_path("data/questions"))
+    checklists_dir: Path = Field(default_factory=lambda: resource_path("data/checklists"))
+    call_costs_file: Path = Field(default_factory=lambda: resource_path("data/call_costs.yaml"))
+    mentor_templates_file: Path = Field(
+        default_factory=lambda: resource_path("data/mentor_templates.yaml")
+    )
 
 
 class PromptSettings(BaseModel):
     """Prompt şablonları ve token bütçesi (mimari §5.4.4-5.4.5)."""
 
-    dir: Path = Path("prompts/v1")
+    dir: Path = Field(default_factory=lambda: resource_path("prompts/v1"))
     default_context_tokens: int = Field(default=32768, ge=1024)
     reserve_output_tokens: int = Field(default=4096, ge=256)
     max_fewshots: int = Field(default=2, ge=0, le=4)
@@ -89,7 +95,9 @@ class VerifySettings(BaseModel):
     leak_ngram_n: int = Field(default=5, ge=2, le=10)
     leak_ngram_threshold: float = Field(default=0.2, gt=0, le=1)
     leak_min_identifier_length: int = Field(default=3, ge=1)
-    common_identifiers_file: Path = Path("data/leak_common_identifiers.yaml")
+    common_identifiers_file: Path = Field(
+        default_factory=lambda: resource_path("data/leak_common_identifiers.yaml")
+    )
 
 
 class RulesSettings(BaseModel):
@@ -204,8 +212,47 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         toml_file = Path(os.environ.get(CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE))
-        toml_settings = TomlConfigSettingsSource(settings_cls, toml_file=toml_file)
+        toml_settings = _RelativeTomlSource(settings_cls, toml_file)
         return (init_settings, env_settings, toml_settings)
+
+
+def _path_fields(settings_cls: type[BaseSettings]) -> dict[str, list[str]]:
+    """Bölüm adı → `Path` tipli alan adları (iç içe modellerde bir düzey)."""
+    found: dict[str, list[str]] = {}
+    for section, info in settings_cls.model_fields.items():
+        model = info.annotation
+        if not (isinstance(model, type) and issubclass(model, BaseModel)):
+            continue
+        names = [
+            name
+            for name, field in model.model_fields.items()
+            if field.annotation is Path or Path in get_args(field.annotation)
+        ]
+        if names:
+            found[section] = names
+    return found
+
+
+class _RelativeTomlSource(TomlConfigSettingsSource):
+    """`codementor.toml`'daki göreli yolları dosyanın dizinine göre çözer (ADR-0016)."""
+
+    def __init__(self, settings_cls: type[BaseSettings], toml_file: Path) -> None:
+        super().__init__(settings_cls, toml_file=toml_file)
+        self._base = toml_file.absolute().parent
+
+    def __call__(self) -> dict[str, Any]:
+        data = dict(super().__call__())
+        for section, names in _path_fields(self.settings_cls).items():
+            values = data.get(section)
+            if not isinstance(values, dict):
+                continue
+            data[section] = {
+                key: resolve_relative(Path(value), self._base)
+                if key in names and isinstance(value, str)
+                else value
+                for key, value in values.items()
+            }
+        return data
 
 
 def load_settings(**overrides: Any) -> Settings:

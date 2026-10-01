@@ -26,6 +26,7 @@ from codementor.config import ProvidersSettings, Settings
 from codementor.log import register_secret
 from codementor.models.desktop import ConnectionPing, DesktopPrefs
 from codementor.models.provider import ChatMessage, GenerationOptions, ProviderStatus
+from codementor.paths import resource_path
 from codementor.providers._http import HttpTransport
 from codementor.providers.base import ProviderError, RetryPolicy
 from codementor.providers.cli_agent import profile_env, resolve_executable
@@ -35,7 +36,7 @@ from codementor.providers.ollama import OllamaProvider
 from codementor.validation.runner import ProcessLimits, ProcessResult, run_process
 
 KEYRING_SERVICE = "CodeMentor AI"
-MODELS_FILE = Path("data/desktop_models.yaml")
+MODELS_FILE = resource_path("data/desktop_models.yaml")
 PROBE_TIMEOUT_S = 20
 NO_MODEL_DETAIL = "Önce bir model seç (listeden ya da yazarak)"
 _PROBE_LIMITS = ProcessLimits(

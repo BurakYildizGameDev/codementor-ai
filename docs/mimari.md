@@ -1129,6 +1129,7 @@ codementor-ai/
 │   └── eval-findings.md
 ├── src/codementor/
 │   ├── config.py
+│   ├── paths.py       kaynak kökü, göreli yol çözümü (Faz 23, ADR-0016)
 │   ├── models/        enums.py  request.py  facts.py  findings.py  llm_output.py  report.py  bigo.py
 │   ├── ingest/        normalize.py  detect.py
 │   ├── validation/    tier0.py  tier1.py  toolchain.py  runner.py  include_guard.py  diagnostics.py  policy.py
@@ -1170,6 +1171,11 @@ codementor-ai/
 ## 17. Konfigürasyon
 
 Öncelik: CLI bayrağı > ortam değişkeni > `codementor.toml` > varsayılan. `pydantic-settings` ile.
+
+**Yol çözümü (Faz 23, ADR-0016):** göreli bir yol, değerin geldiği yere göre çözülür. Varsayılan
+değer kaynak köküne (depo kökü, kurulu wheel'de `codementor/_resources`, exe'de `sys._MEIPASS`),
+`codementor.toml`'daki değer toml dosyasının dizinine, ortam değişkeni ya da CLI bayrağı çalışma
+dizinine göredir. Böylece uygulama proje dışından da çalışır.
 
 ```toml
 # codementor.toml
@@ -1259,7 +1265,7 @@ Model adları koda gömülmez; sağlayıcılar model adlarını sık değiştird
 
 ## 18. Dağıtım
 
-Varsayılan dağıtım **Docker'sızdır**. **Faz 14 (ADR-0013):** birincil dağıtım Windows masaüstü uygulamasıdır — `uv run python build_exe.py` → `dist/CodeMentor.exe` (tek dosya) ve `dist/CodeMentor-<sürüm>-win64.zip` (klasör); pakette `data/`, `prompts/` ve varsayılan `codementor.toml` bulunur, exe'nin yanındaki `codementor.toml` önceliklidir. Geliştirme/web kurulumu: `uv sync` + `codementor serve` + Web UI için `npm run dev`. Varsayılan sağlayıcı `claude_cli` (Faz 13; Ollama, Anthropic API vb. yapılandırmayla). Tier 1 için isteğe bağlı olarak gcc/clang ve `dotnet` kurulur (ADR-0009).
+Varsayılan dağıtım **Docker'sızdır**. **Faz 14 (ADR-0013):** birincil dağıtım Windows masaüstü uygulamasıdır — `uv run python build_exe.py` → `dist/CodeMentor.exe` (tek dosya) ve `dist/CodeMentor-<sürüm>-win64.zip` (klasör); pakette `data/`, `prompts/` ve varsayılan `codementor.toml` bulunur, exe'nin yanındaki `codementor.toml` önceliklidir. **Faz 23:** wheel `data/` ve `prompts/`'u paket verisi olarak içerir (`pip install` ile kurulan paket tek başına çalışır); CI `main` push'unda Windows exe ve onedir zip'i artefakt olarak üretir (`exe` işi). İmza ve kurulum paketi sertifika gerektirdiği için yok. Geliştirme/web kurulumu: `uv sync` + `codementor serve` + Web UI için `npm run dev`. Varsayılan sağlayıcı `claude_cli` (Faz 13; Ollama, Anthropic API vb. yapılandırmayla). Tier 1 için isteğe bağlı olarak gcc/clang ve `dotnet` kurulur (ADR-0009).
 
 ### 18.1 docker-compose (opsiyonel paketleme)
 
@@ -1336,6 +1342,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0010 | Tier 1 süreç sınırları: `RLIMIT_NPROC` yerine süreç grubu; Windows'ta Job Object | `RLIMIT_NPROC` kullanıcı başına sayılır, derleyiciyi bozar; `RLIMIT_AS` .NET ile uyumsuz ([docs/adr/0010](adr/0010-tier1-surec-sinirlari.md)) |
 | ADR-0011 | Anthropic yapılandırılmış çıktısı `output_config.format` ile | Güncel Claude modelleri zorunlu `tool_choice` ve `temperature`'ı reddediyor ([docs/adr/0011](adr/0011-anthropic-yapilandirilmis-cikti.md)) |
 | ADR-0012 | CLI ajanları (Claude Code, Antigravity) sağlayıcı olarak | Abonelikle API anahtarsız kullanım; araçlar kapalı, prompt stdin'den, süreç yalıtımı ([docs/adr/0012](adr/0012-cli-ajanlari-saglayici.md)) |
+| ADR-0016 | Yapılandırma yollarının çözümü ve paket verisi | Çalışma dizininden bağımsız çalışma; wheel `data/` ve `prompts/`'u içerir ([docs/adr/0016](adr/0016-yol-cozumu.md)) |
 
 ---
 

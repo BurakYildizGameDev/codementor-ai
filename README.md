@@ -72,7 +72,12 @@ uv run python -m codementor.desktop  # derlemeden çalıştırmak için
 
 Sağlayıcı ve model ayarlarını **Bağlantılar** ekranından yaparsın; ileri ayarlar için exe'nin
 yanına bir `codementor.toml` koyarsan paketteki varsayılan yerine o kullanılır. Veritabanı, tercihler ve log `~/.codementor`
-altındadır.
+altındadır. Hazır exe ve zip, GitHub Actions'taki her `main` koşusunda `CodeMentor-win64`
+artefaktı olarak indirilebilir.
+
+Yapılandırmadaki göreli yollar çalışma dizinine bağlı değildir: `codementor.toml`'daki yol
+toml'un bulunduğu dizine, varsayılanlar paketin kendi `data/` ve `prompts/` dizinlerine göre
+çözülür (ADR-0016). Bu yüzden `codementor` komutu her dizinden çalışır.
 
 ## Hızlı başlangıç (Docker gerekmez)
 

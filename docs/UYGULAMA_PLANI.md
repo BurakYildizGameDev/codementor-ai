@@ -1198,6 +1198,24 @@ eski eval etiketlerine Faz 17 bulgularını eklemek (kullanıcı kararı).
 
 **Commit:** `feat(faz-21): statik kural ve maliyet tablosu düzeltmeleri`
 
+### Faz 23 — Dağıtım ve yollar
+
+**Dal:** `faz/23-dagitim-yollar` · **Mimari:** §16, §17, §18 · **ADR:** 0016
+
+**Amaç:** Uygulamanın çalışma dizininden bağımsız çalışması; `pip install` ile kurulan wheel'in
+kendi verisini taşıması; satır sonlarının sabitlenmesi; exe'nin CI'da üretilmesi. (Faz 22 canlı
+eval kotası nedeniyle sonraya bırakıldı.)
+
+**Kabul kriterleri**
+- [x] `codementor.paths`: kaynak kökü (depo / wheel `_resources` / `_MEIPASS`)
+- [x] Varsayılan yollar kaynak köküne, toml'daki göreli yollar toml dizinine, ortam/CLI çalışma dizinine göre çözülür
+- [x] Proje dışı çalışma dizininden soru bankası, kontrol listeleri, şablonlar, stub ve model önerileri bulunur
+- [x] Wheel `data/` ve `prompts/`'u içerir; kurulu wheel proje dışından analiz yapar
+- [x] `.gitattributes` `* text=auto eol=lf` (+ ikili dosyalar)
+- [x] CI `exe` işi: exe + onedir zip artefaktı (`main` push'u ve elle tetikleme)
+
+**Commit:** `feat(faz-23): çalışma dizininden bağımsız yollar, paket verisi, CI exe artefaktı`
+
 ---
 
 ## 7. PROGRESS.md Şablonu

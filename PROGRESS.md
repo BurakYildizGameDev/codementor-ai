@@ -25,6 +25,7 @@
 | 19 | ✅ | faz/19-durdur | 2026-10-01 | Claude Code / kod-denetci |
 | 20 | ✅ | faz/20-html-denge | 2026-10-01 | Claude Code / kod-denetci |
 | 21 | ✅ | faz/21-kural-dogrulugu | 2026-10-01 | Claude Code / kod-denetci |
+| 23 | ✅ | faz/23-dagitim-yollar | 2026-10-01 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -556,8 +557,28 @@
 **Açık sorular:**
 - Test `c-016` 12. satır: etiket `resource_leak` (Faz 12 kararı), C-MEM-002 kural tablosunda `memory_safety`; doğru bulgular kategori uyuşmazlığından FP+FN sayılıyor (test precision %84). Etiket kategorisi `memory_safety`'ye çevrilsin mi, yoksa ikinci bir beklenen bulgu mu eklensin? (kullanıcı kararı)
 **Bu fazda öğrendiğim:** `structlog.testing.capture_logs` yalnız global yapılandırmayı yakalar; kendi işlemci zinciriyle kurulan logger'lar için çıktı akışı yakalanmalı. Pozitif kontrolü olmayan "log yok" testi hiçbir şey kanıtlamaz.
+**Sonradan (2026-10-01, f75499b):** `c-016` kararı verildi: ikinci beklenen bulgu (`memory_safety`, 12. satır, C-MEM-003) eklendi. Static-only C ailesi test koşusu yenilendi (P/R/F1 84/44/58 → 89/46/61, satır doğruluğu %100). LLM satırları eski etiketle puanlandı (README notu).
+
+## Faz 23 — Notlar (dağıtım ve yollar)
+**Kullanıcı kararları:** Faz 22 (canlı, kota) yerine önce çevrimdışı Faz 23.
+**Yapılanlar:**
+- `src/codementor/paths.py`: `resource_root()` (exe `_MEIPASS` → wheel `codementor/_resources` → depo kökü), `resource_path`, `resolve_relative`. `desktop/runtime.resource_root` buna devreder.
+- `config.py`: tüm yol varsayılanları (`data.*`, `prompts.dir`, `validation.stub_header`/`roslyn_check_dll`, `verify.common_identifiers_file`) kaynak köküne göre mutlak; `_RelativeTomlSource` toml'daki göreli `Path` alanlarını toml dizinine göre çözer (alanlar model introspeksiyonuyla bulunur). Ortam/CLI değerleri çalışma dizinine göre kalır.
+- `desktop/connections.MODELS_FILE` kaynak köküne göre.
+- `pyproject.toml`: hatch `force-include` ile `data/`, `prompts/` → `codementor/_resources/`. Elle doğrulama: `uv build --wheel` → geçici venv'e kurulum → proje dışı dizinde `codementor questions list` ve bozulma modunda `analyze` çalıştı (C-BUF-001 bulundu, `prompt_version` depo ile aynı).
+- `.gitattributes`: `* text=auto eol=lf` + ikili uzantılar. `git add --renormalize .` değişiklik üretmedi (indeks zaten LF).
+- CI `exe` işi (windows-latest, `needs: check`, PR'da çalışmaz): `build_exe.py --both` → `CodeMentor-win64` artefaktı (exe + zip, 14 gün).
+- Testler: `tests/unit/test_paths.py` (5), `test_config.py` (+4: varsayılanlar mutlak, toml göreli → toml dizini, env göreli → cwd, yabancı cwd'den veri/şablon/stub/model önerileri), `tests/unit/test_packaging.py` (wheel force-include, `.gitattributes`, CI exe işi). Paket testi ağa çıkmamak için `uv build` yerine yapılandırmayı denetler.
+- Belgeler: ADR-0016, mimari §16/§17/§18 ve ADR tablosu, README (artefakt, yol çözümü), UYGULAMA_PLANI Faz 23.
+**Mimariden sapmalar (ADR linki):** ADR-0016 (yol çözümü kuralı; exe yanındaki toml'un göreli yolları artık exe dizinine göre).
+**Açık sorular:**
+- CI `exe` işi ilk kez push sonrası doğrulanacak (artefakt indirilip açılmalı).
+**Bu fazda öğrendiğim:** hatch `force-include` düzenlenebilir kurulumda `_resources` üretmiyor; bu yüzden kaynak kökü sırası (paket verisi varsa o, yoksa depo kökü) iki kurulum türünde de doğru çalışıyor.
 
 ## Sonraya (kapsam dışı fikirler)
+- Faz 23: `reference_solution_path` (`private/solutions/`) hâlâ çalışma dizinine göre; soru dosyasının ya da kaynak kökünün dizinine göre çözülmeli (sızıntı testi buna göre güncellenmeli).
+- Faz 23: mimari §20 ADR tablosunda ADR-0013/0014/0015 satırları eksik.
+- Faz 23: CI exe işi Roslyn denetleyicisini (`make roslyn-check`, dotnet) derlemiyor; artefakttaki exe'de C# Tier 1 yok.
 - Faz 21 denetimi O3: kurallar sıcak yolu fonksiyon **adıyla** eşliyor (`RuleContext.hot_functions`, `CallFact.function`); aynı dosyada tabansız sınıfta ve MonoBehaviour'da aynı adlı `Update` varsa UNITY-PERF-001/UE-PERF-001 düz sınıfta da bulgu verir (UNITY-GC-001 `in_hot_path` kullandığı için doğru). Olgulara fonksiyon kimliği (satır) eklenmeli.
 - Faz 21: `rules_version` yalnız `rules/*.py` hash'i; `analysis/` ve `data/call_costs.yaml` değişiklikleri önbellek anahtarına yansımıyor (bayat önbellek riski).
 - Faz 21: `log.exception` izi sınırsız ve CLI'da WARNING düzeyinde stderr'e basılır; kural istisna mesajı kullanıcı kodu parçası içerebilir (§12) — iz DEBUG'a ya da kısaltılmış mesaja alınabilir. `captured_logs` teardown'u önceki yapılandırmayı değil varsayılanı geri yükler.
@@ -576,7 +597,7 @@
 - Faz 15: Bağlantılar'da Ollama modelini indirme (`ollama pull`) düğmesi ve ilerleme göstergesi.
 - Faz 15: Masaüstü tercihleri ile `codementor.toml` arasında "toml'a yaz" seçeneği (CLI/API de aynı modeli kullansın).
 - Faz 14: exe imzası yok; Windows SmartScreen ilk açılışta uyarabilir (kod imzalama sertifikası + Inno Setup kurulum paketi).
-- Faz 14: CI'da Windows exe derleme işi (artefakt olarak zip); şu an elle `make exe`.
+- ~~Faz 14: CI'da Windows exe derleme işi (artefakt olarak zip); şu an elle `make exe`.~~ → Faz 23
 - ~~Faz 14: analiz iptali yok~~ → Faz 19'da yapıldı.
 - Faz 19: Tier 1 derleyici/çalıştırma sürecine iptal olayı iletilmiyor (durdurulan analizde Tier 1 kendi zaman aşımına kadar sürebilir; arayüz bu sırada yeni analizi bildirimle reddeder).
 - Faz 14: editörde arama (Ctrl+F), son dosyalar menüsü (`recent_files` kaydediliyor ama gösterilmiyor), sürükle-bırak ile dosya açma (tkinterdnd2).
@@ -584,14 +605,14 @@
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
 - `mask_non_code` C++ ham metinlerini (`R"(...)"`) tanımıyor; içlerinde `"` geçerse maskeleme erken biter (öğrenci kodunda nadir).
-- `data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.
-- Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.
-- `.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.
+- ~~`data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.~~ → Faz 23
+- ~~Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.~~ → Faz 23
+- ~~`.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.~~ → Faz 23
 - `parse_bigo` şu an `log log n`, `n^n`, `Θ(...)`/`Ω(...)`, `max(n,m)` ve `k` gibi değişken üsleri desteklemiyor; eval'de LLM çıktılarında görülürse eklenebilir.
 - `AnalysisReport.analysis_id` için ULID biçim doğrulaması (şu an serbest `str`, §6.4 böyle).
 - CI'a `actions/setup-dotnet` + `make roslyn-check` adımı: C# `compiler` testleri CI'da da çalışsın.
 - `ue_stubs.h` genişletilebilir (`Super` için `GENERATED_BODY` yerine sınıf başına typedef mümkün değil; delegeler `OnDestroyed.AddDynamic`, `FTimerManager`); eval'de Unreal uyarı gürültüsüne göre karar verilmeli.
-- `validation.stub_header` / `roslyn_check_dll` göreli yolları da çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte ele alınmalı).
+- ~~`validation.stub_header` / `roslyn_check_dll` göreli yolları da çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte ele alınmalı).~~ → Faz 23
 - `#pragma` makro genişletmeli biçimleri (`#pragma MACRO`) ve `#line` şu an serbest; derleyici kaynak okumadığı için risk düşük, ama include korumasına izin listesi eklenebilir.
 - gcc kolonları "display" birimli, clang bayt; Tier 0 karakter. Unicode içeren satırlarda kolonlar farklı olabilir (`-fdiagnostics-column-unit=byte` gcc ≥ 11).
 - ~~Faz 6'da ertelenen 10 statik kural~~ → Faz 17'de yapıldı (2026-10-01).
@@ -611,7 +632,7 @@
 - Faz 8: `call_costs.yaml`'a C# `RemoveAll`/`RemoveAt(0)`/`Insert(0, …)` maliyetleri (golden'da `Remove: O(1)` ipucu).
 - ~~Faz 8 denetim D3 (`&lt;` kanıtı)~~ → Faz 9'da çözüldü (`normalize_evidence`).
 - Faz 8 denetim D2: `prompt_version` her build'de şablon dosyalarını okuyor; Faz 10'da mtime tabanlı önbellek.
-- Faz 8 denetim D8: `prompts.dir` ve demo'nun golden dizini çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte).
+- Faz 8 denetim D8: ~~`prompts.dir`~~ Faz 23'te çözüldü; demo'nun golden dizini (`tests/golden/prompts`, geliştirici aracı) hâlâ çalışma dizinine göre.
 - Faz 8: prompt'ların `claude_cli` ile canlı karşılaştırması (analysis vs single_pass) Faz 12 eval'inde; token tahmininin gerçek `usage` ile kalibrasyonu.
 - ~~Faz 9: sızıntı korumasını `reasoning_steps` ve LLM açıklamalarına genişletmek~~ → Faz 10'da yapıldı.
 - Faz 9: `LLMSocraticOutput.guiding_questions` öğelerine şemada `max_length` (şu an doğrulayıcı 1000 karakter üstünü ihlal sayıyor).
@@ -635,12 +656,9 @@
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-01):** Faz 20 (475e200) ve Faz 21 (ebc506e) `main`'de, **push
-edilmedi** → ilk iş `git push origin main` + CI kontrolü (push CI'ı tetiklemezse
-`gh workflow run CI --ref main`). Açık karar: test `c-016` 12. satır etiketi `resource_leak`;
-C-MEM-002/003 `memory_safety` buluyor → kategori `memory_safety`'ye mi çevrilsin, ikinci
-beklenen bulgu mu eklensin? (karar sonrası static-only C ailesi test koşusu ve README tablosu
-yenilenir). Sıradaki faz: 22 (canlı, kota harcar) ya da 23 (çevrimdışı).
+**Kaldığımız yer (2026-10-01):** Faz 20-21 push'lu, CI yeşil; `c-016` kararı uygulandı (f75499b).
+Faz 23 `faz/23-dagitim-yollar` dalında → commit + main ff + push, sonra CI `exe` artefaktını
+doğrula. Sıradaki: Faz 22 (canlı, kota harcar) ya da Faz 24 (masaüstü).
 
 **Kullanıcı işleri:** (a) yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
@@ -659,7 +677,7 @@ yenilenir). Sıradaki faz: 22 (canlı, kota harcar) ya da 23 (çevrimdışı).
    eşleşme, önem filtresi, örnek bazında FP/FN), `guard_interventions` metriği, `breakdown`'a
    süre/token; prompt: işaretleme dillerinde "sorun" ölçütü, kategori tanımları (`design` /
    `edge_case`), `design` yalnız soru gereksinimiyle; Python few-shot; few-shot 0/1 ablasyonu.
-4. **Faz 23 — Dağıtım ve yollar.** `data/` ve `prompts/` paket verisi (`importlib.resources`),
+4. ~~**Faz 23 — Dağıtım ve yollar.**~~ Yapıldı (ADR-0016). `data/` ve `prompts/` paket verisi (`importlib.resources`),
    göreli yolların config'e göre çözülmesi (veri, prompt, stub, Roslyn), `.gitattributes`
    (`eol=lf`), CI'da Windows exe derleme artefaktı (+ onedir zip). İmza/Inno Setup sertifika
    gerektirir (isteğe bağlı).
