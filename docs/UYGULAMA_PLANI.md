@@ -1163,6 +1163,24 @@ UE-MEM-001. Motor ve fixture düzeni Faz 6'daki gibi; yalnızca kural eklenir.
 
 ---
 
+### Faz 20 — HTML etiket dengesi
+
+**Dal:** `faz/20-html-denge` · **Mimari:** §8, §12, ADR-0015
+
+**Amaç:** Kapanmayan, eşi olmayan ve iç içe karışan HTML etiketlerini statik kural olarak
+bildirmek (Faz 18'deki `</div>` kör noktası dahil). Kullanıcı kararı: sözdizimi hatası değil.
+
+**Kabul kriterleri**
+- [x] `HTML-STD-003` kayıtlı; ≥2 pozitif, ≥2 yakın ıskalama negatif fixture (isteğe bağlı
+      kapanışlar, boş öğeler, script/yorum içi etiket metni)
+- [x] 40 KB / 600 satır kötü niyetli HTML girdisinde doğrusal süre
+- [x] Mevcut HTML eval etiketleri etkilenmiyor (geçerli örneklerde yeni bulgu yok)
+- [x] Kural kataloğu yeniden üretildi; ADR-0015'e not
+
+**Commit:** `feat(faz-20): HTML etiket dengesi kuralı (HTML-STD-003)`
+
+---
+
 ## 7. PROGRESS.md Şablonu
 
 ````markdown

@@ -64,5 +64,8 @@ tutuyor ve rapor bunu doğrulayıp gösteriyordu.
   yakalanır ve denetim atlanır.
 - HTML'de kapanmamış/uyumsuz etiketler tree-sitter-html'de hata sayılmaz (tarayıcılar da
   hoşgörülüdür). Etiket dengesi denetimi ileride eklenebilir (PROGRESS "Sonraya").
+  **Güncelleme (Faz 20, 2026-10-01):** statik kural `HTML-STD-003` eklendi (stdlib
+  `html.parser` ile açık etiket yığını). Kullanıcı kararıyla sözdizimi hatası değil bulgudur:
+  analiz durmaz, bulgu LLM'e "statik analizin bulduğu" olarak gider.
 - Yeni sorular için referans çözümler `private/solutions/` altına eklenmelidir. Dosya
   yoksa sızıntı denetimi yalnız soru metni ve n-gram üzerinden yapılır.

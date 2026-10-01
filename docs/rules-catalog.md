@@ -7,7 +7,7 @@ Statik kurallar (mimari §5.3.3, §8.2). "LLM" tespitli maddeler burada değil,
 `data/checklists/` altındaki kontrol listelerindedir. Bir kural `codementor.toml`
 içinde `[rules] disabled = ["KURAL-ID"]` ile kapatılabilir.
 
-Toplam: 33 kural.
+Toplam: 34 kural.
 
 | ID | Başlık | Dil | Motor | Kategori | Önem |
 |---|---|---|---|---|---|
@@ -32,6 +32,7 @@ Toplam: 33 kural.
 | HTML-ACC-003 | Etiketsiz form alanı | html | — | accessibility | medium |
 | HTML-STD-001 | Yinelenen id | html | — | design | medium |
 | HTML-STD-002 | DOCTYPE bildirimi yok | html | — | design | low |
+| HTML-STD-003 | Dengesiz etiket | html | — | design | medium |
 | PY-DESIGN-001 | Değiştirilebilir varsayılan argüman | python | — | design | medium |
 | PY-DESIGN-002 | None ile eşitlik karşılaştırması | python | — | design | low |
 | PY-EDGE-001 | Çıplak except | python | — | edge_case | medium |
@@ -130,6 +131,10 @@ Bu id'ye bağlanan bir etiket, bağlantı ya da betik iki öğeden hangisini bul
 ### HTML-STD-002 — DOCTYPE bildirimi yok
 
 Tarayıcı bu belgeyi hangi kurallara göre çizeceğine nasıl karar veriyor? Bildirim olmadan düzen farklı tarayıcılarda aynı görünür mü?
+
+### HTML-STD-003 — Dengesiz etiket
+
+Bu etiket nerede kapanıyor? Kapanışı tarayıcı kendisi tahmin ederse sayfanın yapısı senin düşündüğünle aynı kalır mı?
 
 ### PY-DESIGN-001 — Değiştirilebilir varsayılan argüman
 

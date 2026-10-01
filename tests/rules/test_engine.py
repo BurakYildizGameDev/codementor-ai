@@ -298,6 +298,37 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
             Language.CPP,
             Engine.NONE,
         ),
+        # Faz 20: HTML-STD-003 — kapanmayan iç içe div'ler, eşsiz kapanışlar, karışık satır içi
+        ("<!DOCTYPE html>\n<body>\n" + "<div>" * 3000 + "\n</body>\n", Language.HTML, Engine.NONE),
+        (
+            "<!DOCTYPE html>\n<body>\n" + "</span>" * 4500 + "\n</body>\n",
+            Language.HTML,
+            Engine.NONE,
+        ),
+        (
+            "<!DOCTYPE html>\n<body>\n" + "<b><i>x</b></i>\n" * 500 + "</body>\n",
+            Language.HTML,
+            Engine.NONE,
+        ),
+        # Derin açık yığın + her kapanışta eşsiz arama (konum listesiyle O(1) olmalı)
+        (
+            "<!DOCTYPE html>\n<body>\n" + "<section>" * 2000 + "</em>" * 2500 + "\n",
+            Language.HTML,
+            Engine.NONE,
+        ),
+        # Denetim: tablo hücresi sınırları ve sınır dışı kapanışlar (kapsam denetimi O(1))
+        (
+            "<!DOCTYPE html>\n<body>\n<div>" + "<table><tr><td></div>" * 1200 + "\n",
+            Language.HTML,
+            Engine.NONE,
+        ),
+        # HTMLParser'ın kendi zayıf noktaları: bitmemiş yorum, `<!` ve `</` tekrarı
+        ("<!DOCTYPE html>\n<body>\n<!--" + "a" * 39000 + "\n", Language.HTML, Engine.NONE),
+        (
+            "<!DOCTYPE html>\n<body>\n" + "<!" * 9000 + "</" * 9000 + "\n",
+            Language.HTML,
+            Engine.NONE,
+        ),
     ],
     ids=[
         "c-malloc",
@@ -317,6 +348,13 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
         "ue-nested-local-structs",
         "unity-nested-update",
         "cpp-nested-by-value",
+        "html-unclosed-divs",
+        "html-stray-ends",
+        "html-misnested-lines",
+        "html-deep-stack-strays",
+        "html-cell-bounds",
+        "html-unterminated-comment",
+        "html-bang-and-slash",
     ],
 )
 def test_linear_time_large_input(text: str, language: Language, engine: Engine) -> None:

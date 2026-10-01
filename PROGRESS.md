@@ -23,6 +23,7 @@
 | 17 | ✅ | faz/17-kurallar | 2026-10-01 | Claude Code / kod-denetci |
 | 18 | ✅ | faz/18-eval-diller | 2026-10-01 | Claude Code / kod-denetci |
 | 19 | ✅ | faz/19-durdur | 2026-10-01 | Claude Code / kod-denetci |
+| 20 | ✅ | faz/20-html-denge | 2026-10-01 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -527,14 +528,28 @@
 - `call_soon_threadsafe(task.cancel)` ancak görev askıya alındığında etkili olur; `await` içermeyen yollar için açık bir kontrol noktası (`asyncio.sleep(0)`) gerekiyor.
 - Aynı düğmenin anlamı değişince (Denetle → Durdur) çift tıklama yeni bir hata türü doğuruyor.
 
+## Faz 20 — Notlar (HTML etiket dengesi, HTML-STD-003)
+**Yapılanlar:**
+- `rules/html_balance.py`: `HTML-STD-003 "Dengesiz etiket"` (design, medium). tree-sitter-html tutarsız olduğundan (tam belgede eşsiz `</div>` hata değil, `<div><span>x</div>` hiç işaretlenmiyor) stdlib `html.parser` ile açık etiket yığını. Boş öğeler, isteğe bağlı kapanışlar (p, li, dt/dd, tablo bölümleri, option…), sade örtük kapanış tablosu (`p` blok/`hr` açılışıyla, `li`→`li` …), kapsam sınırları (`table`, `template`, `object`; hücreler `td/th/caption`), RCDATA (`title`, `textarea` …) kural içinde, `<div/>`/`<script/>` açık sayılır (SVG/MathML içinde `/>` kapatır).
+- Bulgular: eşi olmayan kapanış → kapanış satırı, ayrı Sokratik soru ("Bu kapanışın açılışı nerede?"); kapanmayan / iç içe karışan zorunlu kapanışlı öğe → açılış satırı.
+- Testler: 6 pozitif + 5 negatif fixture (Faz 18'in `</div>` örneği, tablo hücresi sınırı, `/>` JSX alışkanlığı; isteğe bağlı kapanışlar, iç içe tablolar, şablon, SVG/MathML, büyük harf, öznitelikte `>`, `</br>`, `<img></img>`, script/yorum/title/textarea içi etiket metni), `test_html_balance.py` (7), `test_engine.py`'ye 7 kötü niyetli HTML girdisi (en yavaşı 0,46 sn, tüm hat dahil). 34 kural; katalog yeniden üretildi.
+- Mevcut HTML eval etiketleri etkilenmedi (geçerli örneklerde yeni bulgu yok). ADR-0015'e not, `UYGULAMA_PLANI.md` Faz 20 bölümü.
+**Kararlar:** (1) Kullanıcı kararı: sözdizimi hatası/Tier 1 uyarısı değil, statik kural (analiz durmaz, LLM'e "statik analizin bulduğu" olarak gider). (2) Tam HTML5 ağaç kurma algoritması yerine sade tablo; emin olunmayan durumda kaçırma. (3) Belge iskeleti (`html/head/body`) eşsiz kapanışı raporlanmaz.
+**Mimariden sapmalar (ADR linki):** yok (ADR-0015'e not).
+**Denetim (kod-denetci):** Kritik yok. Orta: (O1) kapsam sınırı yoktu, hücredeki tek hatalı `</div>` tablo ve dış div için de yanlış bulgu üretiyordu → sınır konum listeleriyle O(1) kapsam denetimi + fixture; (O2) `title`/`textarea` RCDATA davranışı Python yama sürümüne bağlıydı → kural `set_cdata_mode` ile kendisi ayarlıyor + fixture; (O3) PROGRESS. Düşük (uygulanan): `hr` `p`'yi kapatıyor, `<div/>`/`<script/>` açık sayılıyor, `kind` `Literal`, açıklama türü testi, HTMLParser zayıf nokta girdileri (bitmemiş yorum, `<!`/`</` tekrarı).
+**Açık sorular:** Eski 3.12 yama sürümlerinde HTMLParser'ın `close()` yolunda karesel süre vardı (CVE-2025-6069); yerel 3.12.13'te test 0,08 sn. CI Python sürümü güncel; `requires-python` alt sınırı yükseltilmeli mi?
+**Bu fazda öğrendiğim:** stdlib ayrıştırıcıların davranışı güvenlik yamalarıyla değişebiliyor (RCDATA listesi); kurala özgü davranış açıkça ayarlanmalı ve fixture ile kilitlenmeli.
+
 ## Sonraya (kapsam dışı fikirler)
 - ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
-- Faz 18: Tier 0 kör noktası: tam bir HTML belgesinde eşi olmayan `</div>` hata sayılmıyor (HTML etiket dengesi maddesiyle birlikte).
+- ~~Faz 18: Tier 0 `</div>` kör noktası~~ → Faz 20'de HTML-STD-003 ile bulgu olarak.
+- Faz 20: HTML-STD-003 kaçırmaları: dosya sonunda bitmemiş `<div`, `<p><span>a<div>` (örtük kapanış yalnız yığın tepesine bakıyor), DOCTYPE'sız (quirks) belgede `table` `p`'yi kapatmaz; aynı satırda kapanmayan + eşsiz bulgu varsa motor ilkini tutar (eşsiz sorusu görünmez); katalogda yalnız ana açıklama var.
+- Kural motoru: bulgu sayısına üst sınır yok (600 satırlık kötü niyetli girdi 600 bulgu üretip prompt'a gidebilir).
 - Faz 18: `codementor eval check-drafts` Windows konsolunda (cp1254) `✗` karakterinde çöküyor; `PYTHONIOENCODING=utf-8` gerekiyor. Rich konsolu UTF-8'e zorlanmalı ya da ASCII işaretler kullanılmalı.
 - Faz 18: eski veri seti etiketlerine Faz 17 bulguları (`c-008` 4. satır `memory_safety` C-MEM-003, `csharp-009` 11. satır `garbage_collection` CS-ALLOC-002) eklenmeli mi? (test etiketleri de etkilenebilir; kullanıcı kararı)
 - Faz 18: HTML precision (%22) için işaretleme prompt'unda bulgu ölçütü ("iyi uygulama önerisi" ile "sorun" ayrımı); kategori tanımları (`design` vs `edge_case`). Ayar yalnız dev'de yapılmalı.
 - Faz 18: `eval breakdown` tablosuna gecikme/token sütunları; `breakdown` etiketleri koşu anındaki değil güncel veri setinden alıyor.
-- Faz 16: HTML etiket dengesi denetimi (stdlib `html.parser` ile kapanmamış/uyumsuz etiket uyarısı) Tier 1 karşılığı olarak.
+- ~~Faz 16: HTML etiket dengesi denetimi~~ → Faz 20 (statik kural).
 - Faz 16: Python için few-shot örnekleri; JS (tarayıcı) desteği HTML ile birlikte istenebilir.
 - Faz 15: Bağlantılar'da Ollama modelini indirme (`ollama pull`) düğmesi ve ilerleme göstergesi.
 - Faz 15: Masaüstü tercihleri ile `codementor.toml` arasında "toml'a yaz" seçeneği (CLI/API de aynı modeli kullansın).
@@ -603,7 +618,7 @@ Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 `css-easy-centered-layout.css`); (b) eski eval etiketlerine Faz 17 bulguları eklensin mi
 (`c-008` C-MEM-003, `csharp-009` CS-ALLOC-002)?
 
-1. **Faz 20 — HTML etiket dengesi.** Kapanmamış/uyumsuz/eşsiz etiket uyarısı (stdlib
+1. ~~**Faz 20 — HTML etiket dengesi.**~~ Yapıldı. Kapanmamış/uyumsuz/eşsiz etiket uyarısı (stdlib
    `html.parser`, Tier 1 karşılığı); Faz 18'deki `</div>` kör noktası. Küçük, çevrimdışı.
 2. **Faz 21 — Statik kural ve maliyet tablosu doğruluğu.** C-MEM-001 aynı dosyadaki kullanıcı
    fonksiyonu; UNITY-GC-001 kullanıcı `struct`'ı; UE-GC-001 `TArray<AActor*>`/`FPlain`;
