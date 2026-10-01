@@ -81,6 +81,10 @@ class ApiSettings(BaseModel):
     cors_origins: list[str] = Field(
         default_factory=lambda: ["http://127.0.0.1:5173", "http://localhost:5173"]
     )
+    api_key_env: str | None = Field(
+        default=None,
+        description="Doluysa bu ortam değişkenindeki anahtar `/v1/*` için X-API-Key ister (Faz 26)",
+    )
 
 
 class StorageSettings(BaseModel):

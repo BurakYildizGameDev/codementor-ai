@@ -896,6 +896,7 @@ Temel yol: `/v1`. Tüm yanıtlar JSON; hatalar RFC 7807 (`application/problem+js
 | `POST` | `/v1/analyze/stream` | SSE: `stage` olayları + son `report` olayı |
 | `GET` | `/v1/analyses/{id}` | Kayıtlı raporu getir |
 | `GET` | `/v1/analyses/{id}/sarif` | SARIF dışa aktarım |
+| `GET` | `/v1/analyses/{id}/markdown` | Markdown dışa aktarım (Faz 26) |
 | `GET` | `/v1/questions` | Filtre: `language`, `engine`, `difficulty` |
 | `GET` | `/v1/questions/{id}` | Soru detayı (referans çözüm **hariç**) |
 | `GET` | `/v1/providers` | Etkin sağlayıcılar ve erişilebilirlik durumu |
@@ -932,7 +933,9 @@ data: { ...AnalysisReport... }
 
 Aşama durumları: `started` · `completed` · `skipped` (çalışmayan aşama, ör. erken çıkışta LLM) · `failed`. Akış başladıktan sonra oluşan hata son olay olarak `event: error` (problem+json gövdesi) gelir; istek gövdesi geçersizse akış hiç açılmaz (422). Yanıt başlıkları: `Cache-Control: no-cache`, `X-Accel-Buffering: no`.
 
-**Hata kodları:** `404` soru/analiz bulunamadı · `413` kod çok büyük · `422` dil belirlenemedi / geçersiz istek · `502` tüm sağlayıcılar başarısız (yine de `degraded` rapor döndürülebiliyorsa `200` + `degraded=true` tercih edilir) · `503` sağlayıcı yapılandırması eksik veya servis hazır değil. (Tier 1 derleyicisinin olmaması hata değildir: `SKIPPED`.)
+**İsteğe bağlı API anahtarı (Faz 26):** `api.api_key_env` bir ortam değişkeni adıdır; değişken doluysa `/v1/*` istekleri `X-API-Key` başlığı ister (sabit zamanlı karşılaştırma, yanlış/eksikse `401` + `WWW-Authenticate: ApiKey`). Değişken boşsa koruma kapalıdır; `/health` her zaman açıktır. Hız sınırı yoktur (yerel araç; Sonraya).
+
+**Hata kodları:** `401` API anahtarı eksik/yanlış (yalnız anahtar tanımlıysa) · `404` soru/analiz bulunamadı · `413` kod çok büyük · `422` dil belirlenemedi / geçersiz istek · `502` tüm sağlayıcılar başarısız (yine de `degraded` rapor döndürülebiliyorsa `200` + `degraded=true` tercih edilir) · `503` sağlayıcı yapılandırması eksik veya servis hazır değil. (Tier 1 derleyicisinin olmaması hata değildir: `SKIPPED`.)
 
 ---
 

@@ -38,9 +38,15 @@ async def stream_analysis(
     """Analizi arka planda çalıştırır, olaylarını SSE metni olarak verir."""
     queue: asyncio.Queue[tuple[str, str] | None] = asyncio.Queue()  # None: akış bitti
     bus = EventBus()
+    loop = asyncio.get_running_loop()
+
+    def post(item: tuple[str, str] | None) -> None:
+        # Aşama olayları iş parçacığından da gelir (Faz 26: Tier 0/statik `to_thread`);
+        # asyncio.Queue thread güvenli değil. Hepsi aynı yoldan: sıra korunur (FIFO)
+        loop.call_soon_threadsafe(queue.put_nowait, item)
 
     def on_stage(event: StageEvent) -> None:
-        queue.put_nowait(("stage", event.model_dump_json()))
+        post(("stage", event.model_dump_json()))
 
     bus.subscribe(on_stage)
     orchestrator = make_orchestrator(bus)
@@ -48,19 +54,19 @@ async def stream_analysis(
     async def run() -> None:
         try:
             report: AnalysisReport = await orchestrator.analyze(request)
-            queue.put_nowait(("report", report.model_dump_json()))
+            post(("report", report.model_dump_json()))
         except PipelineError as exc:
             problem = pipeline_problem(exc, path)
-            queue.put_nowait(("error", json.dumps(problem.model_dump(exclude_none=True))))
+            post(("error", json.dumps(problem.model_dump(exclude_none=True))))
         except Exception:
             detail = {
                 "title": "Sunucu hatası",
                 "status": 500,
                 "detail": "Beklenmeyen bir hata oluştu.",
             }
-            queue.put_nowait(("error", json.dumps(detail, ensure_ascii=False)))
+            post(("error", json.dumps(detail, ensure_ascii=False)))
         finally:
-            queue.put_nowait(None)
+            post(None)
 
     task = asyncio.create_task(run())
     try:

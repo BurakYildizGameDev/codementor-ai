@@ -15,6 +15,7 @@ from codementor.models.llm_output import (
     LLMSocraticOutput,
 )
 from codementor.models.pipeline import StageEvent
+from codementor.models.provider import ProviderStatus
 from codementor.models.questions import QuestionPublic
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest
@@ -31,6 +32,7 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "stage_event.schema.json": StageEvent,
     "question_public.schema.json": QuestionPublic,
     "problem.schema.json": Problem,
+    "provider_status.schema.json": ProviderStatus,  # web sağlayıcı seçimi (Faz 26)
 }
 
 

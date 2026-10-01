@@ -28,6 +28,7 @@
 | 23 | ✅ | faz/23-dagitim-yollar | 2026-10-01 | Claude Code / — |
 | 24 | ✅ | faz/24-masaustu-kullanilabilirlik | 2026-10-01 | Claude Code / — |
 | 25 | ✅ | faz/25-saglayicilar | 2026-10-02 | Claude Code / — |
+| 26 | ✅ | faz/26-api-web | 2026-10-02 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -607,7 +608,24 @@
 **Açık sorular:** yok.
 **Bu fazda öğrendiğim:** distlib `ScriptMaker.make()` düz `.py` betiğini Windows'ta exe'ye sarmaz, yalnız kopyalar; exe yalnız `ad = modül:fonksiyon` girişlerinden üretilir.
 
+## Faz 26 — Notlar (API ve web)
+**Yapılanlar:**
+- Olay döngüsü: `Orchestrator._analyze` Tier 0'ı ve `stages.run_static`'i `asyncio.to_thread` ile koşar (Tier 1 Faz 24'ten beri). Aşama olayları artık iş parçacığından da yayınlanabildiği için `api/sse.py` tüm kuyruk yazımlarını `loop.call_soon_threadsafe` ile yapar (tek yol: FIFO sırası korunur, rapor son aşama olayını geçemez). SQLite çağrıları bilinçli olarak döngüde (ms düzeyi; bağlantı paylaşımı riski).
+- `prompts/templates.prompt_version`: (yol, mtime_ns, boyut) imzası `lru_cache` anahtarı; değişmedikçe dosya okunmaz. Sürüm değeri aynı kaldı (`v1+e485058f`).
+- `api/auth.py`: `api.api_key_env` → ortamda anahtar varsa `/v1/*` için ara katman (OPTIONS ve `/health` muaf), `hmac.compare_digest`, 401 problem+json + `WWW-Authenticate: ApiKey`, anahtar log maskesine kayıtlı; CORS `x-api-key` başlığına izin verir. Hız sınırı yok (Sonraya).
+- `GET /v1/analyses/{id}/markdown` (`text/markdown`, kod içermez); mimari §9 tablosu ve hata kodları (401).
+- Şema: `schemas/provider_status.schema.json` + web tipi (web tipleri yalnız şemadan, Faz 13 kuralı).
+- Web: `fetchProviders`, `fetchExport`; `components/ReportDownload.tsx` (JSON tarayıcıdan, Markdown/SARIF sunucudan, `lib/download.saveBlob`); `Controls` sağlayıcı (hazır olmayan devre dışı, model adıyla) ve mod seçimi → istekteki mevcut `provider`/`options.mode`; `CodeEditor` `React.lazy` + `Suspense` iskeleti, `monaco-setup` editör parçasına taşındı. Build: ilk JS 2954 kB → 236 kB (gzip 773 → 75 kB), CSS 102 → 3,6 kB; Monaco `CodeEditor` parçasında 2720 kB.
+- README GIF: e2e'de 4 kare (1440×900; aç → sağlayıcı/mod → analiz → bulguya git) → `tools/make_demo_gif.py` (Pillow; ortak palet tüm karelerden — yalnız ilk kareden alınınca kareler aynılaşıp birleşiyordu, testle sabit) → `docs/img/web-demo.gif` 50 KB. ffmpeg gerekmez.
+- `YAPILANLAR.md` Faz 8-12 özetleri; README'deki "komutlar depo kökünden" cümlesi Faz 23'e göre düzeltildi, API anahtarı notu.
+- Testler: `tests/api/test_api_auth.py` (5), `test_routes.py` (markdown + 404), `tests/integration/test_offloop.py` (yavaşlatılmış Tier 0/statik başka iş parçacığında, döngü ≥ 20 tık), `test_prompt_version.py` (+2), `tests/tools/test_make_demo_gif.py` (2), `test_schema_export.py`; web `App.test.tsx` (+3: tembel editör, sağlayıcı/mod isteğe yansır, indirme), e2e GIF kareleri + yeni denetimlerle mobil taşma testi geçiyor.
+**Mimariden sapmalar (ADR linki):** yok (§9'a uç nokta ve isteğe bağlı anahtar eklendi).
+**Açık sorular:** yok.
+**Bu fazda öğrendiğim:** Bu ortamda kabuk heredoc'undan Python'a geçen `\0`, `\n` gibi kaçışlar gerçek karakterlere dönüşebiliyor (prompt_version'da NUL baytı oluştu) — kaçış içeren kod Write/Edit aracıyla ya da `chr(92)` ile yazılmalı. Projede biçimlendirici olmayan web dosyalarında `npx prettier` çalıştırmak kapsam dışı fark üretir.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 26: API hız sınırı (istemci başına, süreçler arası doğru); web arayüzünün API anahtarı göndermesi.
+- Faz 26: SQLite çağrılarını da iş parçacığına almak (bağlantı başına iş parçacığı ya da havuz).
 - Faz 25: OpenAI katı mod kısıtlarını canlı anahtarla doğrulayıp `SchemaAdapter.openai_strict`'te desteklenenleri korumak.
 - Faz 25: masaüstü ve web raporunda tahmini token/maliyet gösterimi (şu an yalnız CLI alt satırı ve JSON).
 - Faz 25: agy canlı doğrulaması (oturum var; `allow_tool_agent = true` ile tek analiz).
@@ -668,14 +686,14 @@
 - ~~CLI ajanları: gerçek `run_process` ile uçtan uca test~~ → Faz 25; agy canlı doğrulaması hâlâ açık (oturum var).
 - Faz 8: `call_costs.yaml`'a C# `RemoveAll`/`RemoveAt(0)`/`Insert(0, …)` maliyetleri (golden'da `Remove: O(1)` ipucu).
 - ~~Faz 8 denetim D3 (`&lt;` kanıtı)~~ → Faz 9'da çözüldü (`normalize_evidence`).
-- Faz 8 denetim D2: `prompt_version` her build'de şablon dosyalarını okuyor; Faz 10'da mtime tabanlı önbellek.
+- ~~Faz 8 denetim D2: `prompt_version` her build'de şablon dosyalarını okuyor~~ → Faz 26.
 - Faz 8 denetim D8: ~~`prompts.dir`~~ Faz 23'te çözüldü; demo'nun golden dizini (`tests/golden/prompts`, geliştirici aracı) hâlâ çalışma dizinine göre.
 - Faz 8: prompt'ların `claude_cli` ile canlı karşılaştırması (analysis vs single_pass) Faz 12 eval'inde; token tahmininin gerçek `usage` ile kalibrasyonu.
 - ~~Faz 9: sızıntı korumasını `reasoning_steps` ve LLM açıklamalarına genişletmek~~ → Faz 10'da yapıldı.
 - Faz 9: `LLMSocraticOutput.guiding_questions` öğelerine şemada `max_length` (şu an doğrulayıcı 1000 karakter üstünü ihlal sayıyor).
-- Faz 10: `prompt_version` her analizde şablon dosyalarını okuyor (Faz 8 D2); API'de mtime önbelleği.
+- ~~Faz 10: `prompt_version` mtime önbelleği~~ → Faz 26.
 - Faz 10: CLI ilerleme göstergesi yalnızca aşama adını gösteriyor; token/süre canlı gösterilebilir.
-- Faz 11: pipeline'ın senkron aşamalarını (`run_tier0/1`, olgular, SQLite) `asyncio.to_thread`'e taşımak (çok kullanıcılı API).
+- ~~Faz 11: senkron aşamaları `asyncio.to_thread`'e taşımak~~ → Faz 24 (Tier 1) + Faz 26 (Tier 0, olgular); SQLite Sonraya.
 - Faz 11: API anahtarı / hız sınırlama (§12); yerel olmayan bağlamada zorunlu kılınabilir. (Faz 13 kararı: v1'de yok, README Sınırlamalar.)
 - ~~CLI ajanı iptali~~ → Faz 19'da yapıldı.
 - ~~Faz 5 hatası (csharp-011): `foreach` koleksiyon ifadesindeki çağrı döngü içinde sayılıyordu → `high` O(n²)~~ → çözüldü (2026-09-30, kullanıcı isteğiyle Faz 12 içinde): `_context.contexts` döngü başlığında bir kez değerlendirilen alanlara (`initializer`, `right`: C `for` başlatıcısı, C++ range-for, C# `foreach`) dış bağlamı verir; `tests/fixtures/complexity/on_{foreach_header_call,range_for_header_call,for_initializer_strlen}` + koşuldaki `strlen` için `on2_strlen_condition`. Dev static-only Big-O %88 → %92.
@@ -685,17 +703,17 @@
 - Faz 12: precision iyileştirme — `design` bulgularını yalnızca soru gereksinimi varken üretmek, `low` bulguları raporda ayrı göstermek; kategori belirsizliği (sıfıra bölme `edge_case`/`undefined_behavior`, null `edge_case`/`memory_safety`) için prompt'ta kategori tanımları. Değişiklik sonrası dev'de yeniden ölçülmeli (test artık kullanıldı).
 - Faz 12: few-shot 0/1 ablasyonu (§14.4) koşulmadı.
 - CI Windows işi (2026-09-30): `windows-latest`'te g++ (MinGW) ilk derlemede 10 sn sınırını aşıyor (`test_cpp_type_error_failed` → `timeout`); clang++ varsayılan MSVC hedefli olduğundan Unreal stub denetimi `tool_error` ile atlanıyor (2 test). Ürün zarif atlıyor ama Windows'ta clang için `--target=x86_64-w64-mingw32` / başlık yolu ve soğuk başlangıç süresi ele alınmalı; o zamana kadar Windows CI `-m "not live and not compiler"`.
-- Faz 13: README için GIF demo (ffmpeg ile Playwright videosundan); şu an PNG.
-- Faz 13: Web UI'da SARIF/Markdown indirme düğmesi (`/v1/analyses/{id}/sarif` hazır), sağlayıcı seçimi ve mod (two_pass/single_pass) seçeneği.
-- Faz 13: Monaco'yu tembel yükleme (dinamik `import`) ile ilk yükü küçültmek.
-- Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri.
+- ~~Faz 13: README için GIF demo~~ → Faz 26 (Pillow).
+- ~~Faz 13: Web UI'da indirme, sağlayıcı ve mod seçimi~~ → Faz 26.
+- ~~Faz 13: Monaco'yu tembel yükleme~~ → Faz 26.
+- ~~Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri~~ → Faz 26.
 
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-02):** Faz 24 `main`'de, push'lu, CI yeşil. Faz 25 `faz/25-saglayicilar`
-dalında → commit + main ff + push. Sıradaki: Faz 26 (API ve web) ya da Faz 27 (sağlamlık);
-Faz 22 (canlı eval) kota nedeniyle sonda.
+**Kaldığımız yer (2026-10-02):** Faz 25 `main`'de, push'lu, CI yeşil. Faz 26 `faz/26-api-web`
+dalında → commit + main ff + push. Sıradaki: Faz 27 (sağlamlık ve teknik borç); Faz 22 (canlı
+eval) kota nedeniyle sonda.
 
 **Kullanıcı işleri:** (a) yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
@@ -723,7 +741,7 @@ Faz 22 (canlı eval) kota nedeniyle sonda.
 6. ~~**Faz 25 — Sağlayıcılar ve CLI ajanları.**~~ Çevrimdışı kısım yapıldı (agy canlı ve OpenAI katı kısıtlar Sonraya). agy canlı doğrulaması; sahte CLI betiğiyle
    gerçek `run_process` uçtan uca testi; `ProviderResult`'a şema yeteneği; OpenAI katı mod
    kısıtları; token/maliyet tahmini (`pricing.yaml`). (Ollama indirme düğmesi: düşük öncelik.)
-7. **Faz 26 — API ve web.** Senkron aşamaları `asyncio.to_thread`'e taşıma, `prompt_version`
+7. ~~**Faz 26 — API ve web.**~~ Yapıldı (hız sınırı Sonraya). Senkron aşamaları `asyncio.to_thread`'e taşıma, `prompt_version`
    mtime önbelleği, API anahtarı/hız sınırı (isteğe bağlı), web'de SARIF/Markdown indirme,
    sağlayıcı/mod seçimi, Monaco tembel yükleme, README GIF, `YAPILANLAR.md` Faz 8-12 özetleri.
 8. **Faz 27 — Sağlamlık ve teknik borç.** tree-sitter süre sınırı, Tier 0 ERROR özeti (D2),

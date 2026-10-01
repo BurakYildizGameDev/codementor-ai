@@ -8,7 +8,14 @@ import { compile } from "json-schema-to-typescript";
 const here = dirname(fileURLToPath(import.meta.url));
 const schemaDir = join(here, "..", "..", "schemas");
 const outDir = join(here, "..", "src", "types");
-const UI_SCHEMAS = ["report", "request", "stage_event", "question_public", "problem"];
+const UI_SCHEMAS = [
+  "report",
+  "request",
+  "stage_event",
+  "question_public",
+  "problem",
+  "provider_status",
+];
 const BANNER =
   "/* OTOMATİK ÜRETİLDİ — elle düzenlemeyin.\n" +
   " * Kaynak: schemas/{name}.schema.json (Python modelleri). Yeniden üretmek için:\n" +

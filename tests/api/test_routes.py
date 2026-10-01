@@ -69,9 +69,16 @@ async def test_stored_report_and_sarif(client_for: ClientFactory, fake: FakeFact
     Draft4Validator(SARIF_SCHEMA).validate(sarif.json())
     uri = sarif.json()["runs"][0]["artifacts"][0]["location"]["uri"]
     assert uri == f"{report['analysis_id']}.c"
+    markdown = await client.get(f"/v1/analyses/{report['analysis_id']}/markdown")
+    assert markdown.status_code == 200
+    assert markdown.headers["content-type"].startswith("text/markdown")
+    assert report["analysis_id"] in markdown.text
+    assert report["findings"][0]["id"] in markdown.text
 
 
-@pytest.mark.parametrize("path", ["/v1/analyses/yok", "/v1/analyses/yok/sarif"])
+@pytest.mark.parametrize(
+    "path", ["/v1/analyses/yok", "/v1/analyses/yok/sarif", "/v1/analyses/yok/markdown"]
+)
 async def test_missing_analysis_404(client_for: ClientFactory, path: str) -> None:
     response = await client_for().get(path)
     assert response.status_code == 404

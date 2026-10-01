@@ -8,7 +8,7 @@ from importlib.resources import files
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Query, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
 from codementor import __version__
 from codementor.api.errors import ApiProblemError
@@ -24,12 +24,14 @@ from codementor.models.rules import RuleInfo
 from codementor.providers.factory import chain_names
 from codementor.providers.health import check_providers
 from codementor.questions.bank import QuestionNotFoundError
+from codementor.report.markdown import to_markdown
 from codementor.report.sarif import to_sarif
 from codementor.rules.catalog import rule_catalog
 from codementor.storage.cache import get_analysis
 from codementor.validation.toolchain import get_toolchain
 
 SARIF_MEDIA_TYPE = "application/sarif+json"
+MARKDOWN_MEDIA_TYPE = "text/markdown; charset=utf-8"
 _EXTENSIONS = {Language.C: "c", Language.CPP: "cpp", Language.CSHARP: "cs"}
 
 router = APIRouter()
@@ -127,6 +129,17 @@ def get_sarif(request: Request, analysis_id: str) -> JSONResponse:
     report = _stored(request, analysis_id)
     artifact = f"{report.analysis_id}.{_EXTENSIONS[report.language]}"
     return JSONResponse(to_sarif(report, artifact), media_type=SARIF_MEDIA_TYPE)
+
+
+@router.get(
+    "/v1/analyses/{analysis_id}/markdown",
+    responses={200: {"content": {"text/markdown": {}}}, **_problems(404)},
+    tags=["analiz"],
+)
+def get_markdown(request: Request, analysis_id: str) -> PlainTextResponse:
+    """Kayıtlı raporun Markdown dışa aktarımı (Faz 26; kod içermez)."""
+    report = _stored(request, analysis_id)
+    return PlainTextResponse(to_markdown(report), media_type=MARKDOWN_MEDIA_TYPE)
 
 
 @router.get("/v1/questions", response_model=list[QuestionPublic], tags=["sorular"])

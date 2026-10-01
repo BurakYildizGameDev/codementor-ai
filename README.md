@@ -103,7 +103,20 @@ npm run dev                        # arayüz: http://127.0.0.1:5173
 ```
 
 Hazırlık denetimi: `curl http://127.0.0.1:8000/health/ready` (sağlayıcı ve bulunan derleyiciler).
-Komutlar depo kökünden çalıştırılmalı (`data/` ve `codementor.toml` göreli yollarla okunur).
+Komutlar herhangi bir dizinden çalışır (Faz 23, ADR-0016); `codementor.toml` çalışma dizininde
+ya da `CODEMENTOR_CONFIG_FILE` ile verilir.
+
+![Web arayüzü: sağlayıcı/mod seçimi, analiz, bulguya gitme, raporu indirme](docs/img/web-demo.gif)
+
+<sub>Web arayüzünde sağlayıcı ve mod seçilir; rapor gelince bulgular editörde işaretlenir,
+bulguya tıklayınca satıra gidilir, rapor JSON / Markdown / SARIF olarak indirilir. Monaco
+editörü ayrı parçada tembel yüklenir. GIF e2e karelerinden üretilir:
+`cd web && npx playwright test -g GIF` ardından `uv run python tools/make_demo_gif.py`.</sub>
+
+API'yi yerel ağ dışına açacaksan isteğe bağlı anahtar tanımla: `codementor.toml`'da
+`[api] api_key_env = "CODEMENTOR_API_KEY"` ve ortamda `CODEMENTOR_API_KEY=<anahtar>`; bu durumda
+`/v1/*` istekleri `X-API-Key` başlığı ister (`/health` açık kalır). Web arayüzü anahtar
+göndermez; yerel kullanım içindir.
 
 Komut satırından:
 

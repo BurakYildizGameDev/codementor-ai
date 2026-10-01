@@ -205,8 +205,10 @@ class Orchestrator:
     ) -> AnalysisReport:
         timer, settings = run.timer, self.settings
         templates = load_templates(settings.data.mentor_templates_file)
+        # Ağır senkron aşamalar iş parçacığında: olay döngüsü (API'de diğer istekler, SSE)
+        # kilitlenmez (Faz 26). Olaylar bu iş parçacığından yayınlanabilir; aboneler güvenli.
         with timer.stage("tier0"):
-            tier0 = run_tier0(code)
+            tier0 = await asyncio.to_thread(run_tier0, code)
         tier1 = None
         if tier0.has_errors:
             timer.skip("tier1", "Tier 0 hatası")
@@ -221,7 +223,9 @@ class Orchestrator:
             return self._report(run, code, parts, None, version)
 
         tags = list(run.question.concept_tags) if run.question else []
-        static = stages.run_static(code, run.context, tags, settings, timer, run.attempt)
+        static = await asyncio.to_thread(
+            stages.run_static, code, run.context, tags, settings, timer, run.attempt
+        )
         run.warnings += static.warnings
         reference, notes = stages.load_reference(run.question)
         run.warnings += notes

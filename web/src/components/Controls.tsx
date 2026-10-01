@@ -1,20 +1,33 @@
 import { ENGINE_LABELS, LANGUAGES, enginesFor } from "../lib/samples";
+import type { ProviderStatus } from "../types/provider_status";
 import type { QuestionPublic } from "../types/question_public";
-import type { Engine, Language } from "../types/request";
+import type { Engine, Language, PipelineMode } from "../types/request";
+
+export const MODE_LABELS: Record<PipelineMode, string> = {
+  two_pass: "İki geçiş (denetim + mentor)",
+  single_pass: "Tek geçiş (hızlı)",
+};
 
 interface Props {
   language: Language;
   engine: Engine;
   questionId: string;
   questions: QuestionPublic[];
+  providers: ProviderStatus[];
+  /** Boş: yapılandırmadaki varsayılan sağlayıcı. */
+  provider: string;
+  /** Boş: yapılandırmadaki varsayılan mod. */
+  mode: PipelineMode | "";
   busy: boolean;
   onLanguage: (language: Language) => void;
   onEngine: (engine: Engine) => void;
   onQuestion: (id: string) => void;
+  onProvider: (name: string) => void;
+  onMode: (mode: PipelineMode | "") => void;
   onAnalyze: () => void;
 }
 
-/** Dil, motor ve soru seçimi + analiz düğmesi. */
+/** Dil, motor, soru, sağlayıcı ve mod seçimi + analiz düğmesi. */
 export function Controls(props: Props) {
   return (
     <div className="controls">
@@ -57,6 +70,36 @@ export function Controls(props: Props) {
           {props.questions.map((q) => (
             <option key={q.id} value={q.id}>
               {q.title}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Sağlayıcı
+        <select
+          value={props.provider}
+          onChange={(e) => props.onProvider(e.target.value)}
+          disabled={props.busy}
+        >
+          <option value="">Varsayılan</option>
+          {props.providers.map((p) => (
+            <option key={p.name} value={p.name} disabled={!p.ready} title={p.detail}>
+              {p.ready ? `${p.name} · ${p.model}` : `${p.name} (hazır değil)`}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Mod
+        <select
+          value={props.mode}
+          onChange={(e) => props.onMode(e.target.value as PipelineMode | "")}
+          disabled={props.busy}
+        >
+          <option value="">Varsayılan</option>
+          {(Object.keys(MODE_LABELS) as PipelineMode[]).map((m) => (
+            <option key={m} value={m}>
+              {MODE_LABELS[m]}
             </option>
           ))}
         </select>

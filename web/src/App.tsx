@@ -1,19 +1,23 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { analyzeStream, fetchQuestions } from "./api/client";
-import { CodeEditor } from "./components/CodeEditor";
+import { Suspense, lazy, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { analyzeStream, fetchProviders, fetchQuestions } from "./api/client";
 import { ComplexityCard } from "./components/ComplexityCard";
 import { Controls } from "./components/Controls";
 import { FindingList } from "./components/FindingList";
+import { ReportDownload } from "./components/ReportDownload";
 import { SocraticPanel } from "./components/SocraticPanel";
 import { StageProgress } from "./components/StageProgress";
 import { lineDecorations } from "./lib/markers";
 import { initialProgress, progressReducer } from "./lib/progress";
 import { SAMPLES, enginesFor, monacoLanguage } from "./lib/samples";
 import { getSessionId } from "./lib/session";
+import type { ProviderStatus } from "./types/provider_status";
 import type { QuestionPublic } from "./types/question_public";
 import type { AnalysisReport } from "./types/report";
-import type { Engine, Language } from "./types/request";
+import type { Engine, Language, PipelineMode } from "./types/request";
 import type { StageEvent } from "./types/stage_event";
+
+// Monaco (~3 MB) ayrı parçada; editör görünene kadar iskelet gösterilir (Faz 26)
+const CodeEditor = lazy(() => import("./components/CodeEditor"));
 
 type ProgressAction = { type: "reset" } | { type: "event"; event: StageEvent };
 
@@ -26,6 +30,9 @@ export default function App() {
   const [engine, setEngine] = useState<Engine>("none");
   const [questionId, setQuestionId] = useState("");
   const [questions, setQuestions] = useState<QuestionPublic[]>([]);
+  const [providers, setProviders] = useState<ProviderStatus[]>([]);
+  const [provider, setProvider] = useState("");
+  const [mode, setMode] = useState<PipelineMode | "">("");
   const [code, setCode] = useState(SAMPLES.c);
   const [busy, setBusy] = useState(false);
   const [stages, dispatch] = useReducer(progress, initialProgress);
@@ -43,6 +50,16 @@ export default function App() {
       cancelled = true;
     };
   }, [language, engine]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchProviders()
+      .then((list) => !cancelled && setProviders(list))
+      .catch(() => !cancelled && setProviders([]));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -84,6 +101,8 @@ export default function App() {
           engine,
           question_id: questionId || null,
           session_id: getSessionId(),
+          provider: provider || null,
+          ...(mode ? { options: { mode } } : {}),
         },
         (event) => dispatch({ type: "event", event }),
         controller.signal,
@@ -110,20 +129,33 @@ export default function App() {
         engine={engine}
         questionId={questionId}
         questions={questions}
+        providers={providers}
+        provider={provider}
+        mode={mode}
         busy={busy}
         onLanguage={changeLanguage}
         onEngine={changeEngine}
         onQuestion={setQuestionId}
+        onProvider={setProvider}
+        onMode={setMode}
         onAnalyze={() => void run()}
       />
       <main className="layout">
-        <CodeEditor
-          value={code}
-          language={monacoLanguage(language)}
-          decorations={decorations}
-          focusLine={selectedLine}
-          onChange={setCode}
-        />
+        <Suspense
+          fallback={
+            <div className="editor editor-loading" role="status">
+              Editör yükleniyor…
+            </div>
+          }
+        >
+          <CodeEditor
+            value={code}
+            language={monacoLanguage(language)}
+            decorations={decorations}
+            focusLine={selectedLine}
+            onChange={setCode}
+          />
+        </Suspense>
         <aside className="panel">
           {error && (
             <div className="card error" role="alert">
@@ -145,6 +177,7 @@ export default function App() {
             onNextHint={() => void run()}
           />
           <ComplexityCard complexity={report?.complexity ?? null} />
+          {report && <ReportDownload report={report} onError={setError} />}
           {report && (
             <FindingList
               findings={report.findings}

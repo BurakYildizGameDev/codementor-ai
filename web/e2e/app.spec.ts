@@ -4,6 +4,8 @@ import { QUESTIONS, finding, report, stage } from "../src/test-fixtures";
 
 // Ekran görüntüleri README için docs/img/ altına yazılır.
 const IMG = fileURLToPath(new URL("../../docs/img/", import.meta.url));
+// README GIF'inin kareleri (Faz 26): `uv run python tools/make_demo_gif.py` birleştirir
+const FRAMES = fileURLToPath(new URL("../test-results/demo-frames/", import.meta.url));
 
 const REPORT = report({
   findings: [
@@ -38,6 +40,14 @@ function sse(events: [string, unknown][]): string {
 }
 
 async function mockApi(page: Page): Promise<void> {
+  await page.route("**/v1/providers", (route) =>
+    route.fulfill({
+      json: [
+        { name: "claude_cli", model: "claude-opus-5-5", ready: true, detail: "hazır" },
+        { name: "ollama", model: "qwen2.5-coder:14b", ready: false, detail: "sunucu yok" },
+      ],
+    }),
+  );
   await page.route("**/v1/questions?*", (route) =>
     route.fulfill({ json: QUESTIONS.filter((q) => route.request().url().includes(`language=${q.language}`)) }),
   );
@@ -91,4 +101,27 @@ test("mobil genişlikte yatay kaydırma yok, paneller alt alta", async ({ page }
   const mentor = await page.getByRole("region", { name: "Sokratik sorular" }).boundingBox();
   expect(mentor!.y).toBeGreaterThan(editor!.y + editor!.height - 1);
   await page.screenshot({ path: `${IMG}web-mobile.png`, fullPage: true });
+});
+
+test("README GIF kareleri: aç → analiz et → bulguya git → indir", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockApi(page);
+  await page.goto("/");
+  await expect(page.locator(".monaco-editor")).toBeVisible();
+  const frame = async (n: number) => {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: `${FRAMES}${n}.png` });
+  };
+  await frame(1);
+  await page.getByLabel("Sağlayıcı").selectOption("claude_cli");
+  await page.getByRole("combobox", { name: /^Mod/ }).selectOption("two_pass");
+  await frame(2);
+  await page.getByRole("button", { name: "Analiz et" }).click();
+  await expect(page.getByRole("region", { name: "Sokratik sorular" })).toBeVisible();
+  await frame(3);
+  await page.getByRole("button", { name: /Satır 10/ }).click();
+  await expect(page.locator(".view-overlays .cm-line-medium")).toHaveCount(1);
+  await frame(4);
+  // 1440×900'de indirme kartı da görünür: son kare akışın tamamını gösterir
+  await expect(page.getByRole("region", { name: "Raporu indir" })).toBeInViewport();
 });

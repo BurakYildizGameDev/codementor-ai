@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from codementor import __version__
+from codementor.api.auth import API_KEY_HEADER, install_api_key
 from codementor.api.errors import install_error_handlers
 from codementor.api.routes import router
 from codementor.api.state import ApiState
@@ -40,11 +41,12 @@ def create_app(
         lifespan=lifespan,
     )
     app.state.codementor = state
+    install_api_key(app, settings)  # CORS'tan önce: ön uçuş (OPTIONS) anahtarsız geçer
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.api.cors_origins,
         allow_methods=["GET", "POST"],
-        allow_headers=["content-type"],
+        allow_headers=["content-type", API_KEY_HEADER],
     )
     install_error_handlers(app)
     app.include_router(router)

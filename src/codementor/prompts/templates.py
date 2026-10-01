@@ -93,13 +93,25 @@ def render(directory: Path, name: str, **context: Any) -> str:
 
 
 def prompt_version(directory: Path) -> str:
-    """`"v1+" + sha256(şablonlar + few-shot'lar)[:8]`; satır sonu farkı sürümü değiştirmez."""
+    """`"v1+" + sha256(şablonlar + few-shot'lar)[:8]`; satır sonu farkı sürümü değiştirmez.
+
+    Her analizde çağrılır; dosya listesi, boyut ve mtime değişmedikçe hash yeniden hesaplanmaz
+    (Faz 26, yalnızca `stat`).
+    """
     root = _require_dir(directory)
-    digest = hashlib.sha256()
-    files = sorted(
-        p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in TEMPLATE_SUFFIXES
+    files = tuple(
+        sorted(p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in TEMPLATE_SUFFIXES)
     )
-    for path in files:
-        digest.update(path.relative_to(root).as_posix().encode("utf-8") + b"\0")
+    signature = tuple((str(p), p.stat().st_mtime_ns, p.stat().st_size) for p in files)
+    return _hash_templates(str(root), signature)
+
+
+@lru_cache(maxsize=8)
+def _hash_templates(root: str, signature: tuple[tuple[str, int, int], ...]) -> str:
+    base = Path(root)
+    digest = hashlib.sha256()
+    for name, _mtime, _size in signature:
+        path = Path(name)
+        digest.update(path.relative_to(base).as_posix().encode("utf-8") + b"\0")
         digest.update(path.read_bytes().replace(b"\r\n", b"\n") + b"\0")
-    return f"{root.name}+{digest.hexdigest()[:8]}"
+    return f"{base.name}+{digest.hexdigest()[:8]}"

@@ -20,6 +20,7 @@ EXPECTED = {
     "stage_event.schema.json",
     "question_public.schema.json",
     "problem.schema.json",
+    "provider_status.schema.json",
 }
 REPO_SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 

@@ -11,12 +11,26 @@ vi.mock("@monaco-editor/react", () => ({
     <textarea aria-label="Kod" value={value} onChange={(e) => onChange(e.target.value)} />
   ),
 }));
+// Gerçek Monaco kurulumu (çalışan, dil kayıtları) jsdom'da yüklenmez
+vi.mock("./monaco-setup", () => ({}));
+
+const PROVIDERS = [
+  {
+    name: "claude_cli",
+    model: "claude-opus-5-5",
+    ready: true,
+    detail: "hazır",
+  },
+  { name: "openai", model: "gpt", ready: false, detail: "anahtar yok" },
+];
+let exportRequests: string[];
 
 let analyzeBodies: AnalysisRequest[];
 let reports: ReturnType<typeof report>[];
 
 beforeEach(() => {
   analyzeBodies = [];
+  exportRequests = [];
   reports = [
     report(),
     report({
@@ -34,6 +48,13 @@ beforeEach(() => {
     if (url.startsWith("/v1/questions")) {
       const language = new URL(url, "http://x").searchParams.get("language");
       return new Response(JSON.stringify(QUESTIONS.filter((q) => q.language === language)));
+    }
+    if (url === "/v1/providers") return new Response(JSON.stringify(PROVIDERS));
+    if (/^\/v1\/analyses\/[^/]+\/(markdown|sarif)$/.test(url)) {
+      exportRequests.push(url);
+      return new Response("# Rapor", {
+        headers: { "Content-Type": "text/markdown" },
+      });
     }
     if (url === "/v1/analyze/stream") {
       analyzeBodies.push(JSON.parse(String(init?.body)) as AnalysisRequest);
@@ -126,4 +147,57 @@ it("API hatası Türkçe mesajla gösterilir", async () => {
   render(<App />);
   await user.click(screen.getByRole("button", { name: "Analiz et" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("API'ye ulaşılamadı");
+});
+
+it("editör tembel yüklenir: önce iskelet, sonra editör", async () => {
+  render(<App />);
+  expect(await screen.findByLabelText("Kod")).toBeInTheDocument();
+});
+
+it("sağlayıcı ve mod seçimi isteğe yansır; hazır olmayan sağlayıcı seçilemez", async () => {
+  const user = userEvent.setup();
+  render(<App />);
+  const providerSelect = screen.getByLabelText("Sağlayıcı");
+  const unready = await within(providerSelect).findByRole("option", {
+    name: /openai \(hazır değil\)/,
+  });
+  expect(unready).toBeDisabled();
+
+  await analyze(user);
+  expect(analyzeBodies[0]?.provider).toBeNull();
+  expect(analyzeBodies[0]?.options).toBeUndefined();
+
+  await user.selectOptions(providerSelect, "claude_cli");
+  await user.selectOptions(screen.getByLabelText("Mod"), "single_pass");
+  await user.click(screen.getByRole("button", { name: /Sonraki ipucu/ }));
+  await waitFor(() => expect(analyzeBodies).toHaveLength(2));
+  expect(analyzeBodies[1]).toMatchObject({
+    provider: "claude_cli",
+    options: { mode: "single_pass" },
+  });
+});
+
+it("rapor JSON ve sunucudan Markdown/SARIF olarak indirilir", async () => {
+  const created: Blob[] = [];
+  const createObjectURL = vi.fn((blob: Blob) => {
+    created.push(blob);
+    return "blob:x";
+  });
+  Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+  const clicks = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  const user = userEvent.setup();
+  render(<App />);
+  await analyze(user);
+
+  const download = screen.getByRole("region", { name: "Raporu indir" });
+  await user.click(within(download).getByRole("button", { name: "JSON" }));
+  expect(JSON.parse(await created[0]!.text())).toMatchObject({
+    analysis_id: reports[0]!.analysis_id,
+  });
+
+  await user.click(within(download).getByRole("button", { name: "Markdown" }));
+  await waitFor(() => expect(created).toHaveLength(2));
+  expect(exportRequests).toEqual([`/v1/analyses/${reports[0]!.analysis_id}/markdown`]);
+  expect(await created[1]!.text()).toBe("# Rapor");
+  expect(clicks).toHaveBeenCalledTimes(2);
 });

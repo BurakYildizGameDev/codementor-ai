@@ -63,3 +63,35 @@ def test_missing_template_dir_error_is_turkish(tmp_path: Path) -> None:
         build_analysis_messages(
             analysis_input(tmp_path), settings=prompt_settings(tmp_path / "yok")
         )
+
+
+def test_prompt_version_cached_until_files_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz 26: dosya listesi/mtime/boyut değişmedikçe şablonlar yeniden okunmaz."""
+    directory = tmp_path / "v1"
+    shutil.copytree(REPO_PROMPTS, directory)
+    first = prompt_version(directory)
+    reads: list[Path] = []
+    original = Path.read_bytes
+
+    def counting(self: Path) -> bytes:
+        reads.append(self)
+        return original(self)
+
+    monkeypatch.setattr(Path, "read_bytes", counting)
+    assert prompt_version(directory) == first
+    assert reads == []
+
+    template = directory / "analysis.user.j2"
+    template.write_text(template.read_text(encoding="utf-8") + "\nek satır", encoding="utf-8")
+    assert prompt_version(directory) != first
+    assert reads
+
+
+def test_prompt_version_detects_new_file(tmp_path: Path) -> None:
+    directory = tmp_path / "v1"
+    shutil.copytree(REPO_PROMPTS, directory)
+    first = prompt_version(directory)
+    (directory / "yeni.j2").write_text("{{ x }}", encoding="utf-8")
+    assert prompt_version(directory) != first

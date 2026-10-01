@@ -1,0 +1,32 @@
+{
+  "$id": "provider_status.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "`codementor providers check` satırı.",
+  "properties": {
+    "detail": {
+      "title": "Detail",
+      "type": "string"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "ready": {
+      "title": "Ready",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "model",
+    "ready",
+    "detail"
+  ],
+  "title": "ProviderStatus",
+  "type": "object"
+}

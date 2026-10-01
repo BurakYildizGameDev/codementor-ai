@@ -256,6 +256,71 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 
 ---
 
+## Faz 8 — Prompt Orkestrasyonu ✅
+
+### Ne yapıldı
+- Jinja2 şablonları (`prompts/v1/`): analiz, Sokratik, tek geçiş ve onarım; ortak çekirdek kurallar (kodu düzeltme, satır numarasıyla kanıt, Türkçe açıklama).
+- Dil/motor başına few-shot örnekleri; kanıtları kodla birebir doğrulanıyor.
+- Bağlam bütçesi: sığmazsa sırasıyla few-shot → kontrol listesi → olgular kırpılır; kod asla kırpılmaz (sığmazsa Türkçe hata).
+- Zorluk ve deneme sayısına göre ipucu seviyesi (mentorluk profili).
+- `prompt_version`: şablon ve few-shot içeriğinin hash'i; önbellek anahtarına girer.
+
+### Güvenlik
+- Kod her zaman `<user_code>` sınırlayıcısı içinde ve numaralı; koddaki sınırlayıcı taklitleri (Unicode varyantları dahil) kaçışlanır.
+- Referans çözüm hiçbir prompt'a girmez (yapısal olarak taşınmaz).
+
+---
+
+## Faz 9 — Doğrulama ve Uzlaştırma (K5) ✅
+
+### Ne yapıldı
+- LLM yanıtının şeması, satır aralığı ve kanıtı denetlenir; kanıtı 1-2 satır kaymış bulgu düzeltilir, hiç bulunmayan atılır (Türkçe uyarıyla).
+- Statik ve LLM aynı sorunu bulursa tek `confirmed` bulgu olur; karmaşıklık çatışmasında gerekçesizse onarım istenir.
+- Sızıntı koruması: kod bloğu, referans çözümle 5-gram örtüşmesi ve yasaklı tanımlayıcılar ayrı ayrı yakalanır.
+- Güven skoru 0–1 aralığında, formülü hypothesis ile sınandı.
+
+### Testler
+- Gerçek claude_cli yanıtlarından türetilmiş halüsinasyon fixture'ları; her kontrol için pozitif ve negatif test (148 test).
+
+---
+
+## Faz 10 — Pipeline, Önbellek ve CLI ✅
+
+### Ne yapıldı
+- Uçtan uca akış: giriş → Tier 0/1 → erken çıkış → statik olgular ve kurallar → LLM geçişleri → doğrulama → rapor.
+- SQLite önbelleği (aynı istek ikinci kez sağlayıcıya gitmez: 44 sn → 1,2 sn) ve ipucu merdiveni (aynı oturumda seviye yükselir).
+- Sağlayıcı düşerse zarif bozulma: rapor yine döner, Sokratik bölüm şablondan.
+- `codementor analyze` (Rich, JSON, Markdown, SARIF 2.1.0 çıktıları).
+
+---
+
+## Faz 11 — REST API ve SSE ✅
+
+### Ne yapıldı
+- FastAPI: analiz (senkron ve SSE akışlı), kayıtlı rapor, SARIF, sorular, sağlayıcılar, kurallar, sağlık uç noktaları; `/docs`'ta örnekli OpenAPI.
+- Hatalar RFC 7807 (`application/problem+json`, Türkçe); SSE'de aşama olayları sırayla, sonda `report` ya da `error`.
+- Varsayılan bağlama `127.0.0.1`; CORS yalnızca web arayüzü kökenlerine.
+
+### Önemli kararlar
+- Tüm sağlayıcılar düşse de bozulmuş rapor üretilebildiği için 502 yerine 200 + `degraded=true`.
+- İstek başına orkestratör ve olay yolu (eşzamanlı akışlar karışmaz).
+
+---
+
+## Faz 12 — Değerlendirme (Eval) ✅
+
+### Ne yapıldı
+- 80 örneklik etiketli veri seti (dev 31 / test 49; %25 sözdizimi hatalı, %12,5 prompt injection; her dil/motor 16 örnek).
+- `codementor eval run/compare/check-drafts/promote`; test bölümü yalnızca `--final` ile koşar.
+- Metrikler: şema geçerliliği, erken çıkış P/R, Big-O doğruluğu, denetim P/R/F1, satır doğruluğu, sızıntı, injection direnci, gecikme, token.
+- Ablasyonlar: olgular, satır numaraları, few-shot sayısı. Sonuçlar `eval/results/`, README tabloları bunlardan.
+
+### Önemli kararlar
+- **ADR-0003:** iki geçiş varsayılan (güvenlik payı).
+- Etiket belirsizse (dosya düzeyinde tek karmaşıklık yoksa) alan boş bırakıldı.
+
+---
+
 ## Faz 13 — Web UI, Kurulum ve Dokümantasyon ✅
 
 **Dal:** `faz/13-sunum` · **Mimari:** §5.7, §18, §23

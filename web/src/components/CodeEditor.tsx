@@ -1,4 +1,6 @@
 import Editor, { type OnMount } from "@monaco-editor/react";
+// Monaco yalnız bu modülle (tembel parça) yüklenir; ilk sayfa paketi küçük kalır (Faz 26)
+import "../monaco-setup";
 import { useEffect, useRef } from "react";
 import type { LineDecoration } from "../lib/markers";
 
@@ -62,3 +64,5 @@ export function CodeEditor({ value, language, decorations, focusLine, onChange }
     </div>
   );
 }
+
+export default CodeEditor;

@@ -1247,6 +1247,24 @@ tahmini maliyeti rapora taşımak. agy canlı denemesi kullanıcı isteğiyle ya
 
 **Commit:** `feat(faz-25): sahte CLI uçtan uca testi, token tahmini ve maliyet`
 
+### Faz 26 — API ve web
+
+**Dal:** `faz/26-api-web` · **Mimari:** §9, §12, §13
+
+**Amaç:** API'nin çok istekli kullanımda olay döngüsünü kilitlememesi, isteğe bağlı erişim
+denetimi; web arayüzünde rapor indirme, sağlayıcı/mod seçimi ve hızlı ilk yükleme.
+
+**Kabul kriterleri**
+- [x] `api.api_key_env` tanımlı ve değişken doluysa `/v1/*` `X-API-Key` ister (401 problem+json); değilse açık; `/health` her zaman açık
+- [x] `GET /v1/analyses/{id}/markdown`
+- [x] Tier 0 ve statik olgu/kural aşaması `asyncio.to_thread`; SSE aboneliği thread güvenli
+- [x] `prompt_version` stat imzası değişmedikçe dosya okumaz
+- [x] Web: JSON/Markdown/SARIF indirme, sağlayıcı (hazır olmayan devre dışı) ve mod seçimi
+- [x] Monaco ayrı parçada (`React.lazy`); ilk paket 2954 kB → 236 kB
+- [x] README GIF'i (Playwright kareleri + Pillow), `YAPILANLAR.md` Faz 8-12
+
+**Commit:** `feat(faz-26): API anahtarı, Markdown dışa aktarım, iş parçacığına alınan aşamalar, web indirme ve seçimler`
+
 ---
 
 ## 7. PROGRESS.md Şablonu

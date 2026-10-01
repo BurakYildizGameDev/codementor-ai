@@ -1,5 +1,6 @@
 /** CodeMentor REST/SSE API istemcisi (mimari §9). Tipler şemadan üretilmiş dosyalardan gelir. */
 import type { Problem } from "../types/problem";
+import type { ProviderStatus } from "../types/provider_status";
 import type { QuestionPublic } from "../types/question_public";
 import type { AnalysisReport } from "../types/report";
 import type { AnalysisRequest, Engine, Language } from "../types/request";
@@ -75,4 +76,18 @@ export async function analyzeStream(
     }
   }
   throw new ApiError("Analiz akışı rapor gelmeden kapandı.");
+}
+
+/** Yapılandırılmış sağlayıcılar ve hazır olup olmadıkları (Faz 26: web'de seçim). */
+export async function fetchProviders(): Promise<ProviderStatus[]> {
+  const response = await request("/v1/providers");
+  return (await response.json()) as ProviderStatus[];
+}
+
+export type ExportFormat = "markdown" | "sarif";
+
+/** Kayıtlı raporun sunucuda üretilen dışa aktarımı (Markdown ya da SARIF). */
+export async function fetchExport(analysisId: string, format: ExportFormat): Promise<Blob> {
+  const response = await request(`/v1/analyses/${encodeURIComponent(analysisId)}/${format}`);
+  return response.blob();
 }

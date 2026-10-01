@@ -126,6 +126,19 @@ button.primary {
   overflow: hidden;
 }
 
+.editor-loading {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.download .row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .panel {
   display: flex;
   flex-direction: column;
