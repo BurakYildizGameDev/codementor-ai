@@ -428,3 +428,13 @@ def test_runner_receives_cancel_event() -> None:
     cancel = threading.Event()
     run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner, cancel=cancel)
     assert runner.cancels == [cancel]
+
+
+def test_roslyn_env_keeps_fsize_limit_compatible() -> None:
+    """Faz 27: Linux'ta RLIMIT_FSIZE altında CoreCLR açılabilsin (W^X kapalı, GC sınırlı)."""
+    runner = FakeRunner()
+    run_tier1(_code(CS_CODE, Language.CSHARP), SETTINGS, toolchain=FULL, runner=runner)
+    _argv, _stdin, limits, env = runner.calls[0]
+    assert env["DOTNET_EnableWriteXorExecute"] == "0"
+    assert "DOTNET_GCHeapHardLimit" in env
+    assert not limits.limit_address_space

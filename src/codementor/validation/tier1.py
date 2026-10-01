@@ -43,6 +43,10 @@ _DOTNET_ENV = {
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
     "DOTNET_NOLOGO": "1",
     "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
+    # Linux'ta W^X çift eşlemesi memfd'yi büyütür; POSIX RLIMIT_FSIZE (1 MB) bunu engeller ve
+    # CoreCLR açılışta "Out Of Memory" ile düşer (Faz 27, CI'da görüldü). Roslyn kod çalıştırmaz,
+    # yalnızca ayrıştırır; dosya boyutu sınırı korunur, W^X bu süreçte kapatılır
+    "DOTNET_EnableWriteXorExecute": "0",
 }
 _TARGET_NAMES = {
     (Language.C, Engine.NONE): "C",
