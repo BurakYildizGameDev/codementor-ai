@@ -1,0 +1,15 @@
+# Boş listede sıfıra bölme
+id: python-011
+language: python
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: edge_case, line: 5, note: "boş listede sıfıra bölme" }
+  must_not_contain: []
+tags: [edge-case, complexity]
+split: test
+reviewed: true

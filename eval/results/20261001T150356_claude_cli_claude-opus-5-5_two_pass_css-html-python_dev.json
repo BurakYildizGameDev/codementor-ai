@@ -1,0 +1,1519 @@
+{
+  "config": {
+    "split": "dev",
+    "provider": "claude_cli",
+    "model": "claude-opus-5-5",
+    "mode": "two_pass",
+    "static_only": false,
+    "ablations": [],
+    "prompt_version": "v1+e485058f",
+    "rules_version": "r1+286dfb2f",
+    "schema_version": "1.0",
+    "started_at": "2026-10-01T15:03:56.629888Z",
+    "sample_ids": [
+      "css-001",
+      "css-004",
+      "css-006",
+      "css-008",
+      "css-012",
+      "html-001",
+      "html-004",
+      "html-006",
+      "html-008",
+      "html-012",
+      "python-001",
+      "python-004",
+      "python-006",
+      "python-008",
+      "python-012"
+    ],
+    "reviewed_only": true,
+    "languages": [
+      "css",
+      "html",
+      "python"
+    ]
+  },
+  "metrics": {
+    "samples": 15,
+    "schema_valid_first_try": 1.0,
+    "schema_valid_after_repair": 1.0,
+    "early_exit_precision": 1.0,
+    "early_exit_recall": 1.0,
+    "complexity_time_exact_acc": 1.0,
+    "complexity_time_class_acc": 1.0,
+    "audit_precision": 0.5428571428571428,
+    "audit_recall": 0.95,
+    "audit_f1": 0.6909090909090908,
+    "line_accuracy": 0.8947368421052632,
+    "leak_rate": 0.0,
+    "injection_resistance": 1.0,
+    "latency_p50_ms": 16171.0,
+    "latency_p95_ms": 34230.0,
+    "tokens_mean": 9530.25,
+    "cost_est": null,
+    "errors": 0
+  },
+  "samples": [
+    {
+      "id": "css-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZWPENAAX2DETT21G041JE",
+        "created_at": "2026-10-01T15:03:56.633998Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 2,
+              "column": 3,
+              "message": "Beklenmeyen sözdizimi: 'font-size 2rem;'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "2. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'font-size 2rem;'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 5,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "css-004",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZWPESHC8Z3KR48G9QBYY0",
+        "created_at": "2026-10-01T15:04:23.783323Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": "css-easy-centered-layout",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "grid-template-columns: repeat(3, 1fr) !important;",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "high",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "width: 960px !important;",
+            "description": "Sabit 960px genişlik, 960px'ten dar her ekranda yatay kaydırma çıkarır. Kartlar ekrana sığmaz; özellikle mobilde düzen bozulur.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "width: 960px !important;",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-004",
+            "rule_id": null,
+            "category": "design",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "margin-left: 160px !important;",
+            "description": "Ortalama, sabit bir sol kenar boşluğuyla taklit edilmiş. Bu yalnızca 1280px genişliğindeki ekranda ortalı görünür; diğer genişliklerde kaymış ya da taşmış olur. Ödev bu tür kenar boşluğu hilelerini açıkça yasaklıyor.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-005",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "margin-left: 160px !important;",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-006",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "high",
+            "line_start": 10,
+            "line_end": null,
+            "evidence": "outline: none;",
+            "description": "Odaklanılan kartın outline'ı kaldırılmış ve yerine başka bir gösterge konmamış. Klavyeyle gezen kullanıcı hangi kartta olduğunu göremez. Bu, ödevdeki 'odak göstergesi kaldırılmamalı' kısıtını da doğrudan çiğniyor.",
+            "source": "llm",
+            "confidence": 0.6
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Sabit genişlik/kenar boşluğu duyarlılığı bozuyor; odak göstergesi silinmiş",
+          "hint_level": 2,
+          "guiding_questions": [
+            "5. satırdaki `width: 960px` kuralı, 600 pikselden dar bir telefon ekranında açıldığında kartlara ne olur, sayfa ekrana sığar mı?",
+            "6. satırdaki `margin-left: 160px` listeyi yalnızca hangi ekran genişliğinde tam ortaya koyar, pencereyi daraltıp genişlettiğinde ne görürsün?",
+            "10. satırda `.card:focus` için outline'ı kaldırdıktan sonra, Tab tuşuyla gezen biri hangi kartta olduğunu nereden anlayacak?"
+          ],
+          "next_step_hint": "Pencereyi 600px'in altına daraltıp Tab ile kartlarda gez. Ayrıca bir kuralın diğerini ezmesi için !important dışında hangi yollar olduğunu düşün: seçici özgüllüğü (specificity) ve kuralların dosyadaki sırası buna nasıl etki eder?",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 11085,
+          "tokens_out": 2441,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 29,
+            "llm_a": 12126,
+            "verify_a": 0,
+            "prompt_b": 6,
+            "llm_b": 14944,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 1,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 27143,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "css-006",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZXGZ7807WEBMJC8Y02A72",
+        "created_at": "2026-10-01T15:04:39.259403Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": "css-easy-centered-layout",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 18,
+            "line_end": null,
+            "evidence": "@media (max-width: 600px) {",
+            "description": "max-width: 600px, genişlik tam 600px olduğunda da geçerlidir. Bu yüzden düzen tam 600px'de tek sütuna geçer. Soru ise '600 pikselden dar' ekranda tek sütun istiyor. Sınır değerin hangi tarafta kaldığını gözden geçir.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Media query sınır değeri: max-width 600px'i de kapsar (kapsayıcı karşılaştırma)",
+          "hint_level": 2,
+          "guiding_questions": [
+            "18. satırdaki `@media (max-width: 600px)` koşulu, ekran genişliği tam 600px olduğunda doğru mu sayılır, yoksa yanlış mı?",
+            "Soruda istenen '600 pikselden dar' ifadesi 600px'in kendisini kapsıyor mu, kapsamıyor mu? Bu durumda 18. satırdaki sınır değer hangi tarafta kalmalı?",
+            "Tarayıcıyı tam 600px genişliğe getirip test etseydin, `.cards` kaç sütun gösterirdi ve bu, sorunun beklediğiyle örtüşür müydü?"
+          ],
+          "next_step_hint": "Genel yapın sağlam görünüyor. 18. satırdaki koşulu tek bir sayı üzerinden düşün: 599px, 600px ve 601px genişliklerde hangisinde tek sütun görmek istiyorsun? Sonra koşulunun bu üç değerde gerçekte nasıl davrandığını karşılaştır.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6419,
+          "tokens_out": 1225,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 7552,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 7882,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 15476,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "css-008",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZY02V728XA7XRHJ2DTYHT",
+        "created_at": "2026-10-01T15:04:55.515759Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "high",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": "color: #bbbbbb;",
+            "description": "#bbbbbb rengindeki metnin beyaz (#ffffff) arka plana karşı kontrast oranı yaklaşık 1.9:1. WCAG AA normal metin için en az 4.5:1 ister. Bu bağlantılar az gören kullanıcılar için zor okunur.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "high",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "outline: 0;",
+            "description": "Bütün bağlantılarda odak çerçevesi kaldırılmış ve yerine başka bir odak stili tanımlanmamış. Klavyeyle gezinen kullanıcılar hangi bağlantının odakta olduğunu göremez. Bu, WCAG 2.4.7 (Odak Görünürlüğü) ölçütünü ihlal eder.",
+            "source": "llm",
+            "confidence": 0.6
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Metin ile arka plan arasındaki renk kontrastı yetersiz (WCAG AA 4.5:1)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bağlantı metninin rengiyle arkasındaki rengin birbirinden ne kadar ayırt edilebildiğini, az gören ya da parlak güneş altında ekrana bakan biri açısından düşündün mü?",
+            "Metnin okunabilir sayılması için iki renk arasında ne kadar fark olması gerektiğini ölçen bir standart olabilir mi ve senin seçtiğin renkler bu ölçüte göre nerede kalıyor?"
+          ],
+          "next_step_hint": "Seçtiğin iki rengi bir renk karşılaştırma aracına girip sonucu erişilebilirlik ölçütleriyle kıyasla. Sonra sayfayı yalnızca Tab tuşuyla gez ve hangi bağlantıda olduğunu her an görebiliyor musun, bunu da kontrol et.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 5591,
+          "tokens_out": 1272,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 7380,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 8853,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 16256,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "css-012",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZYFYVH7XA0QCZXEYHHM01",
+        "created_at": "2026-10-01T15:05:09.098602Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "gap: 8px;",
+            "description": "4. satırdaki display: block, flex düzenini geçersiz kılıyor. Bu yüzden gap: 8px de çalışmıyor; gap normal blok kutularında öğeler arasına boşluk koymaz. Menü öğeleri arasında beklediğin boşluk oluşmayacak. Menünün flex mi yoksa blok mu olması gerektiğine karar vermelisin.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": "CSS-STD-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "display: block;",
+            "description": "Bu blokta aynı özelliğe iki değer verilmiş. Tarayıcı hangisini kullanıyor ve öteki satır ne işe yarıyor?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-003",
+            "rule_id": "CSS-MAINT-002",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": ".menu-item:hover {",
+            "description": "Bu seçici için bir stil yazılmamış. Kalması gerekiyor mu, yoksa yarım kalmış bir düzenlemenin izi mi?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "CSS kaskadı: aynı blokta tekrarlanan özellikte sonraki değer öncekini ezer",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bir kural bloğunda aynı özelliğe iki farklı değer yazdığında tarayıcı hangisini uygular, sence bunu neye bakarak seçer?",
+            "Öğeler arasında boşluk bırakmak için yazdığın özellik, kutunun hangi düzen biçiminde olmasına bağlı çalışıyor ve sonunda geçerli olan düzen biçimi bu koşulu karşılıyor mu?"
+          ],
+          "next_step_hint": "Tarayıcının geliştirici araçlarında menü öğesini inceleyip hangi bildirimlerin üstünün çizildiğine bak; sonra menünün nasıl bir düzende görünmesini istediğine karar ver. Ayrıca içi boş kalan kuralın gerçekten gerekli olup olmadığını düşün.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 5846,
+          "tokens_out": 920,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 6953,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 6618,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 13594,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "html-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZYX7A5HZ9F7GHNAM65XA1",
+        "created_at": "2026-10-01T15:05:09.112759Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 2,
+              "column": 1,
+              "message": "Beklenmeyen sözdizimi: '<html lang=\"tr\">'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "2. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: '<html lang=\"tr\">'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "html-004",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZYX7RXD9J0RDX21KYQANM",
+        "created_at": "2026-10-01T15:05:27.578805Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": "html-easy-profile-card",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "<head>",
+            "description": "head içinde viewport meta etiketi yok. Bu yüzden dar ekranlı mobil cihazlarda sayfa masaüstü genişliğinde ölçeklenip küçük görünebilir, kullanıcı da yakınlaştırmak zorunda kalabilir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "design",
+            "severity": "medium",
+            "line_start": 9,
+            "line_end": null,
+            "evidence": "<div class=\"card\">",
+            "description": "Sayfa yalnızca div ile kurulmuş: main gibi bir ana bölge ya da kartı bağımsız bir içerik olarak belirten anlamsal bir kapsayıcı yok. Bu durum \"her şey div olmamalı\" kısıtını ihlal ediyor. Ayrıca yardımcı teknolojiler sayfada kullanılabilecek bölge işaretlerini (landmark) bulamıyor.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": "HTML-ACC-001",
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 10,
+            "line_end": null,
+            "evidence": "<img src=\"ada.jpg\">",
+            "description": "Bu görseli göremeyen bir kullanıcı (ekran okuyucu, yüklenemeyen resim) burada ne duyar ya da görür?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-004",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 13,
+            "line_end": null,
+            "evidence": "<a href=\"mailto:ada@example.com\">tıkla</a>",
+            "description": "Bağlantı metni \"tıkla\" nereye gidildiğini anlatmıyor. Ekran okuyucu kullanıcıları bağlantıları çoğu zaman bağlamından ayrı bir liste olarak dinler; bu listede \"tıkla\" yazısı e-posta gönderileceğini ya da kime gönderileceğini belirtmez.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Anlamsal HTML eksikliği: her şey div olduğu için bölge işareti (landmark) yok",
+          "hint_level": 2,
+          "guiding_questions": [
+            "9. satırdaki `<div class=\"card\">` ve 11. satırdaki `<div class=\"name\">` öğelerine bakınca, bir ekran okuyucu bunların sayfanın ana içeriği, bağımsız bir kart ya da bir başlık olduğunu etiketin kendisinden anlayabilir mi, yoksa bu bilgi yalnızca class adında ve görünüşte mi kalıyor?",
+            "Klavyeyle gezinen bir ekran okuyucu kullanıcısı sayfadaki bölge işaretleri (landmark) arasında atlamak istediğinde, 9-14. satırlardaki yapı ona gidebileceği hangi bölgeleri sunuyor?",
+            "10. satırdaki görsel yüklenemezse ya da bir ekran okuyucu onu seslendirirse, kullanıcı bu fotoğrafın kime ait olduğunu hangi bilgiden öğrenebilir?"
+          ],
+          "next_step_hint": "Kartındaki her parçanın ne olduğunu kendine sor: ana içerik mi, kendi başına anlamlı bir içerik mi, yoksa bir başlık mı? Sonra bu anlamı class adı yerine etiketin kendisinin taşıyıp taşımadığını kontrol et. Ardından görselin ve 'tıkla' bağlantısının, görmeden ne anlattığını düşün.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6993,
+          "tokens_out": 1622,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 8670,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 9752,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 18464,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "html-006",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZZF8TF3PS5RQ48DVC79H1",
+        "created_at": "2026-10-01T15:05:43.750027Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": "html-easy-profile-card",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "<head>",
+            "description": "head içinde viewport meta etiketi yok. Bu yüzden mobil tarayıcılar sayfayı geniş bir masaüstü ekranı gibi çizip küçültür. Dar ekranlarda metin çok küçük görünür, kullanıcı yakınlaştırıp sayfayı yana kaydırmak zorunda kalır.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "performance",
+            "severity": "low",
+            "line_start": 10,
+            "line_end": null,
+            "evidence": "<img src=\"ada.jpg\" alt=\"Ada Lovelace'ın siyah beyaz portresi\">",
+            "description": "Görselde width ve height öznitelikleri yok. Tarayıcı görsel yüklenene kadar ona ne kadar yer ayıracağını bilemez. Görsel geldiğinde alttaki başlık ve metin aşağı kayar (düzen kayması).",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Mobil uyumluluk: head içinde viewport meta etiketi eksik",
+          "hint_level": 2,
+          "guiding_questions": [
+            "3. satırdaki <head> bölümünde tarayıcıya yalnızca karakter kodlamasını ve başlığı söylüyorsun; bir mobil tarayıcı sayfayı hangi genişliğe göre çizeceğini buradan nasıl anlayacak?",
+            "Bu kartı dar bir telefon ekranında açsan, tarayıcı sayfayı geniş bir masaüstü gibi çizip küçültürse adı ve tanıtım metnini okumak için kullanıcı ne yapmak zorunda kalır?",
+            "10. satırdaki <img> etiketinde tarayıcı, ada.jpg yüklenmeden önce görsele ne kadar yer ayıracağını hangi bilgiden öğrenebilir ve görsel geç yüklenirse altındaki <h1> ile <p>'ye ne olur?"
+          ],
+          "next_step_hint": "Anlamsal yapın ve alt metnin zaten iyi durumda. Şimdi önce 3. satırdaki <head> bölümünü 'viewport' kavramı açısından, sonra 10. satırdaki görseli 'düzen kayması' açısından incele. Sayfayı tarayıcının mobil görünüm modunda açıp ne değiştiğine bakabilirsin.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6630,
+          "tokens_out": 1262,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 3,
+            "llm_a": 6849,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 9280,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 16171,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "html-008",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZZZ26QRWS5PFZM3MNEMEE",
+        "created_at": "2026-10-01T15:05:58.261196Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "HTML-STD-002",
+            "category": "design",
+            "severity": "low",
+            "line_start": 1,
+            "line_end": null,
+            "evidence": "<html lang=\"tr\">",
+            "description": "Tarayıcı bu belgeyi hangi kurallara göre çizeceğine nasıl karar veriyor? Bildirim olmadan düzen farklı tarayıcılarda aynı görünür mü?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": "<head><title>Menü</title></head>",
+            "description": "Belgede karakter kodlaması bildirilmemiş. 'Menü' ve 'Günün' gibi Türkçe karakterlerin her ortamda doğru görüneceğinden nasıl emin olabilirsin? Sunucu kodlamayı farklı gönderirse bu harfler bozuk görünebilir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": "HTML-STD-001",
+            "category": "design",
+            "severity": "medium",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "<section id=\"menu\">",
+            "description": "Bu id'ye bağlanan bir etiket, bağlantı ya da betik iki öğeden hangisini bulur?",
+            "source": "confirmed",
+            "confidence": 0.95
+          },
+          {
+            "id": "F-004",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "<h2>Günün menüsü</h2>",
+            "description": "Sayfada h1 olmadan başlıklar h2'den başlıyor. Ekran okuyucu kullanan biri sayfanın ana başlığını nerede bulacak? Başlık sırasında bir seviye atlanmış oluyor.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Karakter kodlaması (charset) bildirimi eksik",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Tarayıcı, sayfadaki 'ü' gibi Türkçe harfleri ekrana basmadan önce dosyadaki baytları hangi kurala göre harflere çevireceğini nereden öğreniyor?",
+            "Bu sayfa farklı ayarlara sahip bir sunucudan gönderilseydi, başlıktaki ve menüdeki Türkçe harflerin bozulmadan görüneceğini belgenin kendisi garanti edebilir miydi?"
+          ],
+          "next_step_hint": "Belgenin baş kısmında tarayıcıya hangi bilgileri verdiğini gözden geçir. Metnin nasıl okunacağını tarayıcıya açıkça söyleyen bir bilgi var mı, yoksa tarayıcı bunu tahmin etmek zorunda mı kalıyor?",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6116,
+          "tokens_out": 1182,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 8295,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 6196,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 14514,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "html-012",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W00D7NHNKWHKD1CMTDBK0Q",
+        "created_at": "2026-10-01T15:06:12.123772Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "<head><title>Arama</title></head>",
+            "description": "<head> içinde karakter kodlaması (meta charset) belirtilmemiş. Tarayıcı kodlamayı tahmin etmek zorunda kalır; ş, ğ, ı gibi Türkçe karakterler bozuk görünebilir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "<form role=\"search\">",
+            "description": "Sayfada <main> gibi bir ana bölge yok; form doğrudan <body> içinde. Ekran okuyucu kullanıcıları ana içeriğe atlamak için landmark'lara güvenir. Sayfa büyüdükçe bu yapı yetersiz kalır.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": "HTML-ACC-003",
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "<input type=\"search\" name=\"q\">",
+            "description": "Bu alana klavyeyle gelen bir ekran okuyucu kullanıcısı, alanın ne istediğini nereden öğreniyor?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-004",
+            "rule_id": "HTML-ACC-001",
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "<button><img src=\"ara.svg\"></button>",
+            "description": "Bu görseli göremeyen bir kullanıcı (ekran okuyucu, yüklenemeyen resim) burada ne duyar ya da görür?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Karakter kodlaması (meta charset) belirtilmemiş",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Tarayıcı, sunucudan gelen baytları ekranda harflere çevirirken hangi kuralı kullanacağını nereden biliyor?",
+            "Sayfanda ş, ğ veya ı gibi Türkçe harfler olsaydı, tarayıcı bunları her bilgisayarda aynı şekilde gösterebilir miydi; bundan nasıl emin olabilirdin?"
+          ],
+          "next_step_hint": "Sayfanın baş kısmını tekrar incele: tarayıcıya sayfanın nasıl okunacağı hakkında hangi bilgileri veriyorsun ve hangi önemli bilgi orada eksik olabilir?",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6073,
+          "tokens_out": 1118,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 8550,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 5284,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 13858,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "python-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W00TRVGF0E81H3Y6PSZAQ1",
+        "created_at": "2026-10-01T15:06:12.123772Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 1,
+              "column": 1,
+              "message": "Beklenmeyen sözdizimi: 'def average(values)'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "1. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'def average(values)'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "python-004",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W00TRV73A46TS3XW725CKR",
+        "created_at": "2026-10-01T15:06:33.741630Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": "py-medium-two-sum",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "1",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "4. satırdaki dış döngü i = 0..n-1 için n kez döner.",
+            "5. satırdaki iç döngü her dış adımda j = i+1'den yeniden başlar; sayaç dış döngüler arasında taşınmaz, yani bu bir two-pointer ya da amortize yapı değildir.",
+            "İç döngü toplamda (n-1) + (n-2) + ... + 1 = n(n-1)/2 kez döner; her adımda yapılan toplama ve karşılaştırma O(1) sürer.",
+            "En kötü durumda (çift yoksa ya da çift listenin sonundaysa) süre O(n^2) olur. n = 1.000.000 için yaklaşık 5·10^11 karşılaştırma yapılır; Python'da bu pratikte bitmez.",
+            "Ek veri yapısı kullanılmıyor; yalnızca i ve j değişkenleri var, bu yüzden ek bellek O(1).",
+            "Statik ipucundaki O(n^2) sonucu doğru: iç döngünün sıfırlanmadığı uyarısı yanlış alarm, çünkü range(i + 1, ...) her dış adımda yeniden oluşturuluyor. Bu yüzden ipucuna katılıyorum.",
+            "Sorunun hedefi O(n) zaman ve O(n) bellek; mevcut çözüm bellekten tasarruf ediyor ama zaman kısıtını sağlamıyor."
+          ],
+          "is_optimal": false,
+          "optimal_time_target": "n",
+          "static_hint": "n^2",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "def two_sum(numbers, target):",
+            "description": "Soruda istenen imza tip açıklamaları içeriyor: list[int], int ve tuple[int, int] | None. Fonksiyonda bunlar yok. Tip açıklamaları sözleşmeyi belgeler ve hataları erken yakalamayı kolaylaştırır.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "performance",
+            "severity": "high",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "for j in range(i + 1, len(numbers)):",
+            "description": "Her eleman için listenin geri kalanı baştan taranıyor. Bu yüzden süre O(n^2) oluyor ve sorudaki O(n) kısıtı ihlal ediliyor. Bir milyon elemanlı listede yaklaşık 5·10^11 karşılaştırma gerekir; fonksiyon makul sürede bitmez. Daha önce görülen değerlere O(1) sürede erişmeyi sağlayan bir yapı kullanmayı düşünmelisin.",
+            "source": "llm",
+            "confidence": 0.6
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "İç içe tarama O(n^2) süre veriyor; görülen değerlere hızlı erişim eksik",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Listendeki her sayının toplamı hedefe tutan bir eşi var mı diye bakarken kaç sayıyı kontrol ediyorsun, liste bir milyon elemana çıkınca toplamda kaç kontrol yapmış olursun?",
+            "Bir sayının eşinin tam olarak hangi değer olması gerektiğini önceden biliyorsan, o değeri daha önce görüp görmediğini her seferinde listeyi baştan taramadan nasıl anlayabilirsin?"
+          ],
+          "next_step_hint": "Listeyi baştan sona tek bir kez geçtiğini düşün. Her adımda o ana kadar gördüğün sayıları ve indekslerini aklında tutsaydın, eşi aramak için yine de geri dönüp bakman gerekir miydi? Bunu bir de bellek açısından değerlendir.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 7651,
+          "tokens_out": 1838,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 11,
+            "rules": 12,
+            "prompt_a": 5,
+            "llm_a": 14576,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 6981,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 21613,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "python-006",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W01FWD1YA06ZJAFRGQA6XP",
+        "created_at": "2026-10-01T15:06:56.111270Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": "py-easy-word-count",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "n",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "6. satır: text.split() metni bir kez tarar ve n kelimelik bir liste oluşturur; metin uzunluğu L için bu O(L) sürer.",
+            "Döngü her kelime için bir kez, yani n kez döner.",
+            "7. satır: strip ve lower kelime uzunluğuyla orantılı iş yapar; toplamda bu, metin uzunluğuyla doğrusaldır.",
+            "9. satır: dict.get ve atama ortalamada O(1) sürer (hash hesabı kelime uzunluğuyla orantılıdır, bu da toplamda doğrusaldır).",
+            "Bellek: split listesi O(n) ve en kötü durumda n farklı anahtarlı sözlük O(n) yer kaplar.",
+            "Boş metinde split boş liste döndürür, döngü hiç çalışmaz ve {} döner; kısıt sağlanıyor."
+          ],
+          "is_optimal": true,
+          "optimal_time_target": "n",
+          "static_hint": "n",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "raw.strip(string.punctuation)",
+            "description": "string.punctuation yalnızca ASCII noktalama işaretlerini içerir. “merhaba” veya merhaba… gibi Unicode tırnak ve üç nokta karakterleri temizlenmez; bu yüzden aynı kelime farklı anahtarlar altında sayılabilir.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "string.punctuation yalnızca ASCII; Unicode noktalama temizlenmiyor",
+          "hint_level": 2,
+          "guiding_questions": [
+            "7. satırda `raw.strip(string.punctuation)` çağrısına “merhaba” (kıvrık tırnaklarla) ya da merhaba… (tek karakterlik üç nokta) gibi bir kelime gelirse, sonuçta hangi karakterler kelimenin üzerinde kalır?",
+            "`string.punctuation` içinde tam olarak hangi karakterlerin bulunduğunu yazdırıp baktığında, bunların hangi karakter kümesiyle sınırlı olduğunu görüyorsun?",
+            "Unicode noktalama karakterleri temizlenmediğinde, `counts` sözlüğünde aynı kelime için kaç farklı anahtar oluşabilir ve bu, sayımları nasıl etkiler?"
+          ],
+          "next_step_hint": "Karmaşıklık açısından kodun zaten hedefte: sözlükte arama ortalamada O(1) ve boş metin durumu da doğru çalışıyor. Şimdi 7. satıra odaklan: kıvrık tırnak ve üç nokta içeren küçük bir metin üzerinde dene, sonra çıkan anahtarları incele.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 7107,
+          "tokens_out": 1904,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 12873,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 9454,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [
+            "Karmaşıklık gerekçesinden çözümü ele veren adımlar çıkarıldı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 22370,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "python-008",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W025QF14AZ21X6RBM7DHSR",
+        "created_at": "2026-10-01T15:07:20.275317Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": "py-easy-word-count",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "n",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "text.lower() ve split() metin uzunluğunda doğrusal iş yapar ve n kelimelik bir liste oluşturur.",
+            "4. satırdaki döngü her kelime için bir kez, yani n kez döner.",
+            "5. satırdaki `word not in seen` listeyi baştan sona tarar. seen en fazla u (farklı kelime sayısı) eleman tutar, dolayısıyla her arama O(u) sürer.",
+            "En kötü durumda tüm kelimeler farklıdır (u = n). Toplam iş 1 + 2 + ... + n = O(n^2) olur. Statik ipucuyla aynı sonuca vardım.",
+            "Sözlük işlemleri (7. ve 8. satırlar) ortalamada O(1) sürer ve toplama etki etmez.",
+            "Bellek: split listesi O(n), seen ve result O(u) yer kaplar. Toplam bellek O(n).",
+            "Hedef O(n) zamandır. Üyelik kontrolü sözlük gibi hash tabanlı bir yapıyla yapılsaydı bu hedefe ulaşılırdı."
+          ],
+          "is_optimal": false,
+          "optimal_time_target": "n",
+          "static_hint": "n^2",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": "seen = []",
+            "description": "result sözlüğü hangi kelimelerin görüldüğünü zaten tutuyor. seen listesi aynı bilgiyi ikinci kez saklıyor: hem fazladan bellek harcıyor hem de iki yapının birbiriyle tutarlı kalmasını gerektiriyor. Sözlüğün kendisi üyelik bilgisini nasıl verebilir, düşün.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "text.lower()",
+            "description": "Türkçe metinlerde lower() beklenen sonucu vermeyebilir. \"İ\".lower() sonucu \"i\" değil, \"i\" artı birleşik nokta işaretidir. Bu yüzden \"İstanbul\" ile \"istanbul\" ayrı kelimeler olarak sayılabilir. Büyük/küçük harf eşleştirmesinin Türkçe girdide nasıl davrandığını test et.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": null,
+            "category": "input_handling",
+            "severity": "high",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "for word in text.lower().split():",
+            "description": "Soru, kelimeye yapışık noktalamanın (. , ! ?) yok sayılmasını istiyor, ancak kod yalnızca boşluklardan bölüyor. Bu yüzden \"kedi.\" ile \"kedi\" farklı kelimeler olarak sayılır. Noktalama temizlenmeye başlandığında, tek başına duran \"!\" gibi parçaların boş kelimeye dönüşüp sayıma girmemesine de dikkat et.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-004",
+            "rule_id": "PY-PERF-001",
+            "category": "performance",
+            "severity": "medium",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "if word not in seen:",
+            "description": "Bu işlem listenin ne kadarını kaydırıyor ya da tarıyor? Döngüyle birlikte toplam iş girdi büyüdükçe nasıl artıyor?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Kelimeye yapışık noktalama temizlenmiyor; \"kedi.\" ve \"kedi\" ayrı sayılıyor",
+          "hint_level": 2,
+          "guiding_questions": [
+            "4. satırdaki split() yalnızca boşluklardan bölüyor; \"Kedi geldi. Kedi!\" metninde \"kedi\", \"kedi.\" ve \"kedi!\" sence aynı anahtara mı düşer?",
+            "Noktalamayı temizlemeye başladığında, metinde tek başına duran bir \"!\" geriye ne bırakır ve bu parça sayıma girmeli mi?",
+            "5. satırdaki `word not in seen` kontrolünde seen listesi büyüdükçe her arama ne kadar uzar ve yüz bin farklı kelimede bu toplam iş nasıl artar?"
+          ],
+          "next_step_hint": "Önce kodu \"Kedi geldi. Kedi!\" gibi küçük bir metinle çalıştırıp çıktıya bak. Sonra 2. ve 3. satırları karşılaştır: result zaten hangi kelimeleri gördüğünü biliyor mu? seen listesinde yapılan aramanın maliyetini de düşün.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 7786,
+          "tokens_out": 2203,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 12,
+            "prompt_a": 4,
+            "llm_a": 14791,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 9342,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 24176,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "python-012",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W02XB34YT24E8RBDDPZNB1",
+        "created_at": "2026-10-01T15:07:54.520610Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "n^2",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "Satır 3'teki dış döngü i = 0..n-1 için n kez döner.",
+            "Satır 4'teki iç döngü her dış adımda range(i + 1, len(items)) ile yeniden başlar, yani n-1-i kez döner. Statik ipucundaki 'sayaç sıfırlanmıyor' notu yanlış: j her dış adımda baştan kurulur, bu bir two-pointer deseni değildir.",
+            "Toplam karşılaştırma sayısı (n-1) + (n-2) + ... + 0 = n(n-1)/2, yani O(n^2). Karşılaştırma ve append amortize O(1) olduğu için zaman O(n^2). İpucuna katılıyorum.",
+            "Bellek: duplicates listesi eşit olan her (i, j) çifti için bir eleman alır. En kötü durumda tüm elemanlar eşitse n(n-1)/2 ekleme yapılır, bu yüzden ek bellek O(n^2) olur, O(n) değil.",
+            "Elemanlar hashlenebiliyorsa aynı amaç beklenen O(n) sürede gerçekleştirilebilir. Hashlenemeyen ama sıralanabilen elemanlar için O(n log n) mümkündür."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n",
+          "static_hint": "n^2",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "high",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "duplicates.append(items[i])",
+            "description": "Ekleme her eşit çift için yapılıyor, değer başına bir kez değil. k kez geçen bir değer sonuca k(k-1)/2 kez eklenir. Örneğin [1,1,1] için sonuç [1,1,1] olur. Sonuçta tekrarlar var ve bu muhtemelen istenen davranış değil.",
+            "source": "llm",
+            "confidence": 0.6
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "performance",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "duplicates.append(items[i])",
+            "description": "Çift başına ekleme yapıldığı için çıktı listesinin boyutu en kötü durumda (tüm elemanlar eşitken) n^2 ölçeğinde büyür. Büyük girdilerde gereksiz yere çok bellek harcanır.",
+            "source": "llm",
+            "confidence": 0.6
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Değer başına değil, eşit çift başına sonuç ekleme",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Aynı değer listede üç kez geçtiğinde fonksiyonun, o değeri sonuca kaç kez eklediğini elle adım adım izleyerek bulabilir misin?",
+            "Bir değerin sonuçta kaç kez görünmesini beklersin ve kodun şu anki çıktısı bu beklentiyle örtüşüyor mu?"
+          ],
+          "next_step_hint": "[1, 1, 1] gibi küçük bir girdiyle fonksiyonu çalıştır ve çıktıyı beklediğinle karşılaştır. Ardından bir değerin sonuca daha önce eklenip eklenmediğini kodun nasıl anlayabileceğini düşün.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 16601,
+          "tokens_out": 3478,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 12,
+            "prompt_a": 4,
+            "llm_a": 24992,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 9210,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 1,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 34230,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    }
+  ]
+}

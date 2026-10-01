@@ -1,0 +1,16 @@
+# Üç ayrı kuralda !important + boş blok
+id: css-010
+language: css
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: maintainability, line: 1, rule_id: CSS-MAINT-001 }
+    - { category: maintainability, line: 2, rule_id: CSS-MAINT-001 }
+    - { category: maintainability, line: 3, rule_id: CSS-MAINT-001 }
+    - { category: maintainability, line: 4, rule_id: CSS-MAINT-002 }
+  must_not_contain: []
+tags: [maintainability]
+split: test
+reviewed: true

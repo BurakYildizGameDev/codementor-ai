@@ -1,0 +1,14 @@
+# Aynı blokta display iki kez + boş hover bloğu
+id: css-012
+language: css
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: maintainability, line: 4, rule_id: CSS-STD-001 }
+    - { category: maintainability, line: 7, rule_id: CSS-MAINT-002 }
+  must_not_contain: []
+tags: [maintainability]
+split: dev
+reviewed: true

@@ -1,0 +1,12 @@
+# Sözdizimi: medya sorgusunda kapanmayan parantez
+id: css-003
+language: css
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

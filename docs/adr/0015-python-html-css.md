@@ -58,7 +58,8 @@ tutuyor ve rapor bunu doğrulayıp gösteriyordu.
 - Prompt sürümü değişti (sistem cümlesine "ve Python"). Golden prompt dosyaları güncellendi;
   önceki eval sonuçları eski sürüme aittir.
 - Eval veri seti genişletilmedi: yeni dillerin precision/recall ve sızıntı oranı ölçülmedi.
-  README "Sınırlamalar" bunu belirtir.
+  README "Sınırlamalar" bunu belirtir. **Güncelleme (Faz 18, 2026-10-01):** dil başına 12
+  örnek eklendi ve ölçüldü; sonuçlar `docs/eval-findings.md` §4.
 - Python Tier 1 süreç içinde çalışır. Çok derin iç içe girdide `RecursionError`
   yakalanır ve denetim atlanır.
 - HTML'de kapanmamış/uyumsuz etiketler tree-sitter-html'de hata sayılmaz (tarayıcılar da

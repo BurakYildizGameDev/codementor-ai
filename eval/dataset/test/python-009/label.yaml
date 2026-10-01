@@ -1,0 +1,14 @@
+# Değiştirilebilir varsayılan argüman + None ile ==
+id: python-009
+language: python
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: design, line: 1, rule_id: PY-DESIGN-001 }
+    - { category: design, line: 2, rule_id: PY-DESIGN-002 }
+  must_not_contain: []
+tags: [design]
+split: test
+reviewed: true

@@ -18,7 +18,14 @@ from codementor.questions._loader import DataFileError, load_model
 DATASET_DIR = Path("eval/dataset")
 DRAFT = "_draft"
 SPLITS: tuple[Split, ...] = ("dev", "test")
-_CODE_SUFFIXES = {"c": ".c", "cpp": ".cpp", "csharp": ".cs"}
+_CODE_SUFFIXES = {
+    "c": ".c",
+    "cpp": ".cpp",
+    "csharp": ".cs",
+    "python": ".py",
+    "html": ".html",
+    "css": ".css",
+}
 
 
 class DatasetError(DataFileError):

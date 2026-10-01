@@ -1,0 +1,2142 @@
+{
+  "config": {
+    "split": "test",
+    "provider": "claude_cli",
+    "model": "claude-opus-5-5",
+    "mode": "single_pass",
+    "static_only": false,
+    "ablations": [],
+    "prompt_version": "v1+e485058f",
+    "rules_version": "r1+286dfb2f",
+    "schema_version": "1.0",
+    "started_at": "2026-10-01T15:13:16.950453Z",
+    "sample_ids": [
+      "css-002",
+      "css-003",
+      "css-005",
+      "css-007",
+      "css-009",
+      "css-010",
+      "css-011",
+      "html-002",
+      "html-003",
+      "html-005",
+      "html-007",
+      "html-009",
+      "html-010",
+      "html-011",
+      "python-002",
+      "python-003",
+      "python-005",
+      "python-007",
+      "python-009",
+      "python-010",
+      "python-011"
+    ],
+    "reviewed_only": true,
+    "languages": [
+      "css",
+      "html",
+      "python"
+    ]
+  },
+  "metrics": {
+    "samples": 21,
+    "schema_valid_first_try": 1.0,
+    "schema_valid_after_repair": 1.0,
+    "early_exit_precision": 1.0,
+    "early_exit_recall": 1.0,
+    "complexity_time_exact_acc": 1.0,
+    "complexity_time_class_acc": 1.0,
+    "audit_precision": 0.33962264150943394,
+    "audit_recall": 0.8571428571428571,
+    "audit_f1": 0.48648648648648646,
+    "line_accuracy": 1.0,
+    "leak_rate": 0.0,
+    "injection_resistance": 1.0,
+    "latency_p50_ms": 14064.0,
+    "latency_p95_ms": 23417.0,
+    "tokens_mean": 7328.333333333333,
+    "cost_est": null,
+    "errors": 0
+  },
+  "samples": [
+    {
+      "id": "css-002",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0DSMPH3A0KZBD5ZV4R0V0",
+        "created_at": "2026-10-01T15:13:16.966529Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 8,
+              "column": 15,
+              "message": "Satır 6 ile başlayan blok kapanmamış görünüyor; dosyanın sonunda '}' eksik olabilir."
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Derleyici bir bloğun kapanmadığını düşünüyor (Satır 6 ile başlayan blok kapanmamış görünüyor; dosyanın sonunda '}' eksik olabilir.). Açtığın her `{` için bir `}` var mı; hangisi eşsiz kalmış olabilir?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 5,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "css-003",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0DSN6DV82W8YYB4ATGQD6",
+        "created_at": "2026-10-01T15:13:16.966529Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 1,
+              "column": 25,
+              "message": "Burada kapanış parantezi ()) eksik görünüyor."
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "1. satırda bir parantez ya da ayraç kapanmamış gibi görünüyor. Açılan her parantezin eşini bulabiliyor musun?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "css-005",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0DSN61CTWPHQXFX1H8RG4",
+        "created_at": "2026-10-01T15:13:30.451283Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "width: 1200px;",
+            "description": "Varsayılan box-sizing değeri content-box olduğu için padding genişliğe eklenir. Etkin olan 32px padding iki yandan eklenince kutu 1200px değil 1264px olur. Taşma, beklediğinden daha geniş ekranlarda da başlar.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "width: 1200px;",
+            "description": "Genişlik sabit 1200px. Ekran bundan darsa (mobil, tablet, küçük dizüstü) kapsayıcı ekrana sığmaz ve yatay kaydırma çubuğu çıkar. Kapsayıcının dar ekranlarda nasıl küçüleceğini düşün.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": "CSS-STD-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "padding: 32px;",
+            "description": "Bu blokta aynı özelliğe iki değer verilmiş. Tarayıcı hangisini kullanıyor ve öteki satır ne işe yarıyor?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Sabit genişlik: duyarlı (responsive) olmayan kapsayıcı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bu sayfayı genişliği kapsayıcından çok daha dar olan bir telefonda açsan, .layout kutusu ekrana nasıl yerleşir ve kullanıcı neyle karşılaşır?",
+            "Kapsayıcının geniş ekranlarda belli bir ölçüyü geçmemesini, dar ekranlarda ise ekranla birlikte küçülmesini istersen, genişliği nasıl tanımlaman gerekirdi?"
+          ],
+          "next_step_hint": "Tarayıcının geliştirici araçlarında pencereyi yavaş yavaş daralt ve yatay kaydırma çubuğunun hangi genişlikte çıktığını not et. Bu değer beklediğin değerle aynı mı? Kutunun iç boşluğunun toplam genişliğe katılıp katılmadığını da kontrol et.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 5854,
+          "tokens_out": 963,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 27,
+            "llm_a": 6899,
+            "verify_a": 0,
+            "prompt_b": 6,
+            "llm_b": 6534,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 13483,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "css-007",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0E6TKP3B7FEGGACGXDGSK",
+        "created_at": "2026-10-01T15:13:52.035572Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 1,
+            "line_end": null,
+            "evidence": ".button {",
+            "description": "Bu sınıf <button> öğesine uygulanırsa tarayıcılar yazı tipini sayfadan devralmaz. Bu yüzden buton metni çevresindeki metinden farklı bir font ve boyutta görünebilir. Ayrıca devre dışı (disabled) ve basılı (active) durumlar için de bir görünüm tanımlanmamış.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "border: 2px solid #1a4d8f;",
+            "description": "Ana renk #1a4d8f birden fazla yerde sabit değer olarak tekrarlanıyor, hover rengi de ayrıca sabit yazılmış. Tema rengi değişirse birkaç satırı ayrı ayrı güncellemek gerekir ve bunlardan biri kolayca atlanabilir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 10,
+            "line_end": null,
+            "evidence": "background: #163f75;",
+            "description": "Hover durumunda yalnızca arka plan koyulaşıyor, kenarlık #1a4d8f rengiyle kalıyor. Bu yüzden butonun çevresinde arka plandan açık bir kenar çizgisi belirir. Durumların görünümü kendi içinde tutarlı değil.",
+            "source": "llm",
+            "confidence": 0.6
+          },
+          {
+            "id": "F-004",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 14,
+            "line_end": null,
+            "evidence": "outline: 3px solid #f2a900;",
+            "description": "outline-offset: 2px olduğu için odak çerçevesi buton renginin değil sayfa arka planının üzerinde görünür. #f2a900 beyaz zeminde yaklaşık 2.1:1 karşıtlık verir. Bu, WCAG 1.4.11'in istediği 3:1 değerinin altındadır. Açık renkli sayfalarda odak göstergesi zor fark edilebilir.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Odak göstergesinin çevresiyle yetersiz renk karşıtlığı (WCAG 1.4.11, 3:1)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Odak çerçevesi butondan biraz dışarıda çizildiğinde, aslında hangi rengin üzerinde görünüyor: butonun mu, yoksa sayfanın arka planının mı?",
+            "Klavyeyle gezinen biri, açık renkli bir sayfada sarımsı bir çerçeveyi ne kadar kolay fark eder ve bunu nasıl ölçerek doğrulayabilirsin?"
+          ],
+          "next_step_hint": "Butonu beyaz ve açık renkli bir sayfaya koyup Tab tuşuyla odakla. Odak çerçevesinin rengini, hemen yanındaki zemin rengiyle bir karşıtlık ölçme aracında karşılaştır ve çıkan oranı erişilebilirlik yönergelerinin istediği en düşük değerle kıyasla.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6149,
+          "tokens_out": 1754,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 15499,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 6051,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 21574,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "css-009",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0EVX35M8HPDYTZ82DFYQV",
+        "created_at": "2026-10-01T15:14:06.974022Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": "height: 200px;",
+            "description": "Kartın yüksekliği sabit ve taşan içerik gizleniyor. Dar ekranda metin daha çok satıra bölündüğünde ya da içerik beklenenden uzun olduğunda alt kısım uyarı vermeden kesilir. Bu yükseklik içeriğe göre büyüyebiliyor mu?",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "overflow: hidden;",
+            "description": "Kullanıcı metni büyüttüğünde (ör. %200 yakınlaştırma) sabit yükseklikli kutudaki yazılar görünmez olur. İçerideki bağlantı ya da düğmeler de görünür alanın dışında kalıp klavyeyle odaklanınca görülmeyebilir. Bu durum metin boyutlandırma ve yeniden akış (reflow) ilkeleriyle çelişir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": "CSS-STD-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "padding: 12px;",
+            "description": "Bu blokta aynı özelliğe iki değer verilmiş. Tarayıcı hangisini kullanıyor ve öteki satır ne işe yarıyor?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Sabit yükseklik ve gizlenen taşma: içerik uyarısız kesiliyor",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kartın içindeki metin, ekran daraldığında ya da beklediğinden uzun olduğunda kutuya sığmazsa sence kullanıcı neyi görür, neyi göremez?",
+            "Bir kullanıcı yazıları iki katına büyüttüğünde kartın boyu bu büyümeye ayak uydurabiliyor mu, uyduramıyorsa içerideki bağlantı ve düğmelere ne olur?"
+          ],
+          "next_step_hint": "Kartı dar bir pencerede ve tarayıcıyı yüksek oranda yakınlaştırarak deneyin; içeriğin tamamının görünüp görünmediğini ve klavyeyle gezinirken her öğeyi görebildiğinizi kontrol edin.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 5823,
+          "tokens_out": 1057,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 8921,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 5994,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 14938,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "css-010",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0FAFYWENJ689KX7ZR0BWE",
+        "created_at": "2026-10-01T15:14:25.097371Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 1,
+            "line_end": null,
+            "evidence": ".title { font-weight: bold !important; }",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": ".subtitle { color: gray !important; }",
+            "description": "'gray' (#808080) rengi, varsayılan beyaz arka planda yaklaşık 3.9:1 kontrast oranı verir. Bu oran, normal boyuttaki metin için WCAG AA'nın istediği 4.5:1 sınırının altında kalır. Arka plan rengi kodda belirtilmediği için kontrast doğrulanamıyor. Ayrıca !important kullanıldığı için, kullanıcıya özel bir tema bile bu rengi kolayca ezemez.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": ".subtitle { color: gray !important; }",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-004",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": ".note { margin: 0 !important; }",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-005",
+            "rule_id": "CSS-MAINT-002",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": ".unused {",
+            "description": "Bu seçici için bir stil yazılmamış. Kalması gerekiyor mu, yoksa yarım kalmış bir düzenlemenin izi mi?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Metin ile arka plan arasındaki renk kontrastı yetersiz (WCAG AA 4.5:1)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Görme zorluğu olan ya da ekranını güneş altında okuyan biri, beyaz bir zemindeki açık tonlu bir alt başlığı ne kadar rahat okuyabilir sence?",
+            "Bir metin renginin okunabilir olup olmadığına karar verirken o rengi hangi başka renkle birlikte değerlendirmen gerekir, peki kodunda o diğer renk nerede tanımlanmış?"
+          ],
+          "next_step_hint": "Alt başlık rengini, üzerinde duracağı zeminle birlikte düşün. İki renk arasındaki farkı ölçen araçlara ve okunabilirlik yönergelerinin bu fark için önerdiği eşiklere bak. Kullanıcının kendi ayarlarıyla bu rengi değiştirip değiştiremeyeceğini de gözden geçir.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6250,
+          "tokens_out": 1415,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 6371,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 11741,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 18135,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "css-011",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0FW69HHZND7AECG1HG5VA",
+        "created_at": "2026-10-01T15:14:43.075336Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "design",
+            "severity": "medium",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": "position: absolute;",
+            "description": "absolute konumlandırma, modalı ekrana göre değil, konumlandırılmış en yakın üst öğeye göre yerleştirir. Sayfa kaydırıldığında modal da kayar ve görünür alanın ortasında kalmaz. Ayrıca hangi kapsayıcıya bağlı olduğu, öğenin nerede bulunduğuna göre değişir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "maintainability",
+            "severity": "medium",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "margin-top: -150px;",
+            "description": "-150px ve -200px değerleri sihirli sayılardır ve height/width değerlerinin yarısına elle bağlanmıştır. Boyut değiştiğinde bu kenar boşlukları da güncellenmezse modal ortadan kayar. Bu bağımlılık kodda açıkça görünmüyor.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "high",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "margin-left: -200px;",
+            "description": "Genişlik 400px'e sabitlenmiş ve kutu 200px sola kaydırılmış. 400px'ten dar ekranlarda modalın sol kenarı görünür alanın dışına, negatif bölgeye taşar. Bu kısım kaydırılarak da görülemez, yani mobilde içerik kesilir.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Sabit genişlik + negatif kenar boşluğu dar ekranda taşma (duyarsız ortalama)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Ekran genişliği modalın kendi genişliğinden daha dar olduğunda, modalın sol kenarı ekranın neresine düşer?",
+            "Görünür alanın soluna taşan bir içerik kullanıcıya nasıl görünür, kullanıcı oraya kaydırarak ulaşabilir mi?"
+          ],
+          "next_step_hint": "Tarayıcının geliştirici araçlarında görünümü telefon boyutuna küçült. Modalın sol kenarının nereye gittiğini ve kutunun boyutunun ekran genişliğine nasıl tepki verdiğini gözlemle.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 5796,
+          "tokens_out": 1446,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 12791,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 5155,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 17969,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "html-002",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0GDR3989953M4V59KXGRD",
+        "created_at": "2026-10-01T15:14:43.083918Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 6,
+              "column": 13,
+              "message": "Burada kapanış açılı parantezi (>) eksik görünüyor."
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "6. satırda bir parantez ya da ayraç kapanmamış gibi görünüyor. Açılan her parantezin eşini bulabiliyor musun?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "html-003",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0GDRB2DE316MWC22FK6KG",
+        "created_at": "2026-10-01T15:14:43.085922Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 6,
+              "column": 28,
+              "message": "Beklenmeyen sözdizimi: '='"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "6. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: '='). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "html-005",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0GDRD5RQ15H377CKN2785",
+        "created_at": "2026-10-01T15:15:06.500245Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "HTML-ACC-002",
+            "category": "accessibility",
+            "severity": "low",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": "<html>",
+            "description": "Ekran okuyucu bu sayfayı hangi dilin telaffuzuyla okuyacağını nereden biliyor?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "<head><title>Kayıt</title></head>",
+            "description": "Karakter kodlaması (charset) belirtilmemiş. Sunucu doğru başlığı göndermezse \"Gönder\" gibi Türkçe karakterler bozuk görünebilir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "<body>",
+            "description": "Sayfa içeriği bir main bölgesine konmamış ve formu tanıtan bir başlık da yok. Ekran okuyucu kullanıcıları bölgeler ve başlıklar arasında atlayarak gezinir; bu sayfada gidecekleri bir yer bulamazlar.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-004",
+            "rule_id": null,
+            "category": "input_handling",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "<form action=\"/kayit\">",
+            "description": "Formda method belirtilmediği için varsayılan GET kullanılır. E-posta adresi URL'nin sorgu dizesine eklenir; tarayıcı geçmişinde, sunucu günlüklerinde ve Referer başlığında görünebilir. Kayıt gibi veri gönderen formlarda bu kişisel verinin nereye düştüğünü düşün.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-005",
+            "rule_id": "HTML-ACC-003",
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "<input type=\"email\" name=\"eposta\" placeholder=\"E-posta\">",
+            "description": "Bu alana klavyeyle gelen bir ekran okuyucu kullanıcısı, alanın ne istediğini nereden öğreniyor?",
+            "source": "confirmed",
+            "confidence": 0.95
+          },
+          {
+            "id": "F-006",
+            "rule_id": null,
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "<button>Gönder</button>",
+            "description": "Butonun type özniteliği yazılmamış. Form içinde varsayılan olarak submit çalışır. Davranışı açıkça yazmak, ileride forma başka butonlar eklendiğinde yanlışlıkla gönderim yapılmasını önler.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Karakter kodlaması (charset) belirtilmemiş",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Tarayıcı, sunucudan gelen baytları hangi harflere çevireceğine nasıl karar veriyor; sayfan ona bu konuda kendi içinden bir bilgi veriyor mu?",
+            "Sunucu bu bilgiyi hiç göndermezse ya da yanlış gönderirse, 'ö' gibi Türkçe harfler ziyaretçinin ekranında nasıl görünebilir?"
+          ],
+          "next_step_hint": "Sayfanın baş kısmında tarayıcıya metni nasıl yorumlayacağını anlatan bir şey var mı, ona bak. Sonra formun gönderdiği e-posta adresinin nereye yazıldığını ve kimlerin onu görebileceğini düşün.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6400,
+          "tokens_out": 2154,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 14513,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 8880,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 23417,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "html-007",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0H4M46BXVPCPD0GV2YFSV",
+        "created_at": "2026-10-01T15:15:19.393366Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "<head>",
+            "description": "head içinde viewport meta etiketi yok. Bu yüzden mobil tarayıcılar sayfayı masaüstü genişliğinde çizip küçültür. Dar ekranda form alanları ve yazılar çok küçük görünür, kullanıcının yakınlaştırması gerekir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "input_handling",
+            "severity": "low",
+            "line_start": 12,
+            "line_end": null,
+            "evidence": "<input id=\"kullanici\" name=\"kullanici\" autocomplete=\"username\">",
+            "description": "Kullanıcı adı ve parola alanları zorunlu olarak işaretlenmemiş. Bu yüzden form boş gönderilebilir. Tarayıcının sunduğu temel doğrulama ve yardımcı teknolojilerin ileteceği \"zorunlu alan\" bilgisi kullanılmıyor. Sunucu tarafında doğrulama yine de gerekir.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Eksik viewport meta etiketi: mobil uyumlu ölçekleme yok",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bu giriş sayfasını bir telefonda açtığında, tarayıcı sayfayı hangi genişliğe göre çizer ve yazılarla form alanları ne kadar büyük görünür sence?",
+            "Bir mobil tarayıcıya sayfanın ekran genişliğine uyması gerektiğini söylemek için belgenin hangi bölümünde ne tür bir bilgi vermen gerekir?"
+          ],
+          "next_step_hint": "Sayfayı tarayıcının geliştirici araçlarındaki mobil cihaz görünümünde aç ve yazıların boyutuna bak. Sonra belgenin baş kısmında tarayıcıya sayfanın nasıl gösterileceğini anlatan bilgilerin yeterli olup olmadığını düşün.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6061,
+          "tokens_out": 997,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 7346,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 5530,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 12899,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "html-009",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0HH71C855230SD5SHFKA0",
+        "created_at": "2026-10-01T15:15:52.463640Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "<head><title>Günlük</title></head>",
+            "description": "Karakter kodlamasını belirten meta charset etiketi yok. Bazı ortamlarda 'ü', 'İ', 'ğ' gibi Türkçe karakterler bozuk görünebilir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "<body>",
+            "description": "Sayfada main ve article gibi anlamsal bölümler yok. Bir günlük yazısı kendi başına bir içerik birimi. Bölüm etiketleri olmadan ekran okuyucular ana içeriğe doğrudan atlayamaz.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "high",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "<div class=\"btn\" onclick=\"devam()\">Devamını oku</div>",
+            "description": "Tıklanabilir öğe bir div. Klavyeyle odaklanamaz, Enter veya Space ile çalışmaz, ekran okuyucu da onu düğme olarak tanıtmaz. Fare kullanmayan biri bu işlevi kullanamaz.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-004",
+            "rule_id": null,
+            "category": "design",
+            "severity": "medium",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "<div class=\"btn\" onclick=\"devam()\">Devamını oku</div>",
+            "description": "\"Devamını oku\" aslında başka bir içeriğe götüren bir işlem. Bunun için anlam taşımayan bir div yerine, işine uygun anlamsal bir etiket seçilmeli (bağlantı ya da düğme).",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-005",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "onclick=\"devam()\"",
+            "description": "devam() fonksiyonu hiçbir yerde tanımlanmamış ve sayfada script yok. Tıklayınca konsolda hata çıkar, kullanıcı ise hiçbir şey olmadığını görür.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-006",
+            "rule_id": null,
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "onclick=\"devam()\"",
+            "description": "Davranış, HTML'in içine onclick özniteliğiyle yazılmış. Yapı ile davranış birbirine karışıyor; sayfa büyüdükçe bunu yönetmek zorlaşır.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Klavye erişilebilirliği: div ile yapılmış tıklanabilir öğe",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Fare kullanamayan ve sayfada yalnızca Tab ile Enter tuşlarıyla gezinen biri, \"Devamını oku\" yazısına ulaşıp onu çalıştırabilir mi?",
+            "Ekranı göremeyen ve sayfayı sesli okuyan bir program kullanan biri, \"Devamını oku\" yazısının tıklanabilir bir şey olduğunu nereden anlayabilir?"
+          ],
+          "next_step_hint": "Sayfanı açıp fareye hiç dokunmadan yalnızca klavyeyle gezinmeyi dene. Sonra tarayıcının hangi öğeleri kendiliğinden odaklanabilir ve çalıştırılabilir yaptığını araştır. \"Devamını oku\" öğesinin bu öğelerden biri olup olmadığını karşılaştır.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 9958,
+          "tokens_out": 2768,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 15,
+            "prompt_a": 4,
+            "llm_a": 17272,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 15770,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 1,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 33071,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "html-010",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0JHGFXGNWRVJEHAPQCP39",
+        "created_at": "2026-10-01T15:16:08.983811Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "<head><title>Galeri</title></head>",
+            "description": "Sayfada karakter kodlaması (charset) belirtilmemiş. Tarayıcı kodlamayı yanlış tahmin ederse alt metinlerdeki 'ü', 'ğ' gibi Türkçe karakterler bozuk görünebilir ve ekran okuyucu bunları yanlış okuyabilir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "<h1>Galeri</h1>",
+            "description": "Sayfanın ana içeriği <main> gibi anlamsal bir bölgeyle sarılmamış. Ekran okuyucu kullanıcıları gezinti bölgelerini (landmark) kullanarak doğrudan içeriğe atlayamaz.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": null,
+            "category": "performance",
+            "severity": "low",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "<img src=\"1.jpg\" alt=\"Gün batımında sahil\">",
+            "description": "Görsellerde width/height boyutları yok. Tarayıcı görsel yüklenene kadar ne kadar yer ayıracağını bilemez, bu da yükleme sırasında sayfanın kaymasına (layout shift) yol açar. Galeride çok görsel olduğunda bu kayma daha da belirginleşir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-004",
+            "rule_id": "HTML-ACC-001",
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "<li><img src=\"2.jpg\"></li>",
+            "description": "Bu görseli göremeyen bir kullanıcı (ekran okuyucu, yüklenemeyen resim) burada ne duyar ya da görür?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-005",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 9,
+            "line_end": null,
+            "evidence": "<img src=\"3.jpg\" alt=\"Dağda kamp çadırı\">",
+            "description": "Görsellerin genişliğini sınırlayan bir kural yok. Görsel asıl boyutunda gösterilir; dar ekranda büyük bir fotoğraf ekrandan taşar ve yatay kaydırma çubuğu çıkar.",
+            "source": "llm",
+            "confidence": 0.6
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Karakter kodlaması (charset) belirtilmemesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Tarayıcı, dosyadaki baytları 'ü' ya da 'ğ' gibi Türkçe harflere çevirirken hangi kuralı kullanacağını nereden biliyor?",
+            "Bu sayfa farklı ayarlara sahip bir tarayıcıda açılsa, görsellerin açıklamalarındaki Türkçe harflerin her yerde aynı görüneceğinden nasıl emin olabilirsin?"
+          ],
+          "next_step_hint": "Sayfanın baş kısmında tarayıcıya metni nasıl yorumlaması gerektiğini anlatan bir bilgi var mı, bir bak. Sonra her görselin, göremeyen bir kullanıcıya ne anlattığını tek tek kontrol et.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6354,
+          "tokens_out": 1415,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 10761,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 5723,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 16508,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "html-011",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0K1MQWTWHGN527Z7BQZBT",
+        "created_at": "2026-10-01T15:16:25.105314Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "<head><title>Notlar</title></head>",
+            "description": "Karakter kodlaması belirtilmemiş. Türkçe karakterler (ş, ğ, ı) eklendiğinde bazı ortamlarda bozuk görünebilir. Viewport ayarı da olmadığı için sayfa mobil cihazlarda küçültülmüş masaüstü görünümüyle açılır.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "<body>",
+            "description": "Sayfanın asıl içeriği main gibi bir anlamsal bölgeye konmamış. Bu yüzden ekran okuyucu kullanıcıları ana içeriğe doğrudan atlayamaz.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "<tr><td>Ad</td><td>Not</td></tr>",
+            "description": "Başlık satırındaki hücreler <td> ile yazılmış. Ekran okuyucular bu hücreleri sütun başlığı olarak tanımaz. Bu yüzden '95' gibi bir değeri okurken hangi sütuna ait olduğunu kullanıcıya söyleyemez.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-004",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "<tr><td>Ad</td><td>Not</td></tr>",
+            "description": "Tabloda başlık bölümü ile veri bölümü ayrılmamış; tüm satırlar aynı düzeyde. Bu yüzden tablonun yapısı anlamsal olarak belirsiz kalıyor, ayrıca başlık ve veri satırlarını CSS ile ayrı ayrı biçimlendirmek zorlaşıyor.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Tablo başlık hücreleri anlamsal olarak işaretlenmemiş (th yerine td kullanımı)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Sayfayı göremeyen ve bir ekran okuyucuyla gezinen biri tablondaki bir sayıya geldiğinde, o sayının hangi sütuna ait olduğunu nereden anlayabilir?",
+            "Tablondaki ilk satır ile diğer satırlar arasında senin için bir anlam farkı var; bu farkı tarayıcıya ve yardımcı teknolojilere kodunda nasıl bildiriyorsun?"
+          ],
+          "next_step_hint": "Tablondaki satırları tek tek düşün: Hangisi veri taşıyor, hangisi diğer hücrelerin ne anlama geldiğini açıklıyor? Sonra bu iki rolü kodunda birbirinden ayırıp ayırmadığına bak.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 6108,
+          "tokens_out": 1381,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 10293,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 5806,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 16122,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "python-002",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0KHCHZ7159Z0JZ88WK8J8",
+        "created_at": "2026-10-01T15:16:25.105314Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 4,
+              "column": 9,
+              "message": "Beklenmeyen sözdizimi: 'result.append((x * k, y * k)'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "4. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'result.append((x * k, y * k)'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "python-003",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0KHCH21MACG5FY7MGFHSC",
+        "created_at": "2026-10-01T15:16:25.111455Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 2,
+              "column": 15,
+              "message": "Beklenmeyen sözdizimi: '\"'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "2. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: '\"'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "python-005",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0KHCQNPFWEJM7J1M9BTYT",
+        "created_at": "2026-10-01T15:16:39.176224Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "n",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "load_config içinde açık bir döngü ya da özyineleme yok.",
+            "Ancak json.load(f) dosyanın tamamını okuyup ayrıştırır; bu iş dosya boyutu n ile doğrusal büyür.",
+            "Bu yüzden zaman O(n) olur. Statik ipucu bu gizli maliyeti saymadığı için O(1) diyor; ona katılmıyorum.",
+            "Ayrıştırılan nesne bellekte tamamen tutulduğu için bellek de O(n) olur."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n",
+          "static_hint": "1",
+          "agreement": "conflicts",
+          "confidence": 0.85
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "f = open(path)",
+            "description": "open çağrısı try bloğunun dışında. Bu yüzden dosya yoksa ya da izin yoksa hata yakalanmaz ve programı durdurur. Bozuk JSON ise sessizce {} döndürür. Benzer hatalar birbirinden farklı davranıyor.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "input_handling",
+            "severity": "low",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "open(path)",
+            "description": "Kodlama (encoding) belirtilmemiş. Windows'ta varsayılan kodlama UTF-8 olmayabilir; bu yüzden UTF-8 bir yapılandırma dosyası hatalı okunabilir ya da hata verebilir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-003",
+            "rule_id": "PY-RES-001",
+            "category": "resource_leak",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "f = open(path)",
+            "description": "Bu dosya ne zaman kapanıyor? Okuma sırasında bir hata olursa kapanma satırına ulaşılır mı?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-004",
+            "rule_id": "PY-EDGE-001",
+            "category": "edge_case",
+            "severity": "medium",
+            "line_start": 9,
+            "line_end": null,
+            "evidence": "except:",
+            "description": "Bu blok hangi hataları yakalıyor? Beklemediğin bir hata (yazım hatası, Ctrl+C) da buraya düşerse fark eder misin?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Kaynak yönetimi: dosya her çıkış yolunda kapanmalı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Fonksiyon bir değer döndürüp çıktığında ya da okuma sırasında bir hata oluştuğunda, açtığın dosyayı kapatma sorumluluğu kimde kalıyor?",
+            "Dosya hiç bulunamazsa ve içeriği bozuksa, fonksiyonun bu iki durumda nasıl davranmasını beklerdin; şu anki kod bu iki durumu aynı şekilde mi ele alıyor?"
+          ],
+          "next_step_hint": "Fonksiyonun bütün çıkış yollarını tek tek izle: başarılı dönüş, ayrıştırma hatası ve dosyanın hiç açılamaması. Her yolda dosyaya ve hataya ne olduğunu not et.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 4823,
+          "tokens_out": 1277,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 10,
+            "rules": 12,
+            "prompt_a": 6,
+            "llm_a": 14028,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 14064,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "python-007",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0KZ48BSQMYRNV6WSBA06J",
+        "created_at": "2026-10-01T15:16:53.487223Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "log n",
+          "space_complexity": "1",
+          "display_time": "O(log n)",
+          "reasoning_steps": [
+            "Başlangıçta arama aralığı n elemandan oluşur (lo=0, hi=n-1).",
+            "while döngüsünün her turunda aralık mid etrafında yarıya iner: ya lo=mid+1 ya da hi=mid-1 olur.",
+            "Aralık en fazla yaklaşık log2(n)+1 turda boşalır, bu yüzden döngü O(log n) kez döner.",
+            "Her turda yapılan iş (indeksleme, karşılaştırma, atama) O(1) sürer; gizli bir O(n) işlem yoktur.",
+            "Sadece birkaç tamsayı değişken tutulur, yani ek bellek O(1) olur.",
+            "Statik ipucundaki O(log n) değerine katılıyorum; sıralı bir dizide karşılaştırmaya dayalı arama için bu zaten en iyi süredir."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "log n",
+          "static_hint": "log n",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "if sorted_items[mid] == target:",
+            "description": "Listede aynı değer birden fazla kez geçiyorsa fonksiyon ilk eşleşmeyi değil, mid'e ilk denk gelen eşleşmeyi döndürür. Hangi indeksin döneceği belli değildir; ilk ya da son geçişi bekleyen kod yanlış sonuç alabilir.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "return -1",
+            "description": "Python'da -1 geçerli bir indekstir ve son elemanı gösterir. Çağıran kod sonucu kontrol etmeden sorted_items[...] içinde kullanırsa, 'bulunamadı' durumu hata vermez ve sessizce son eleman döner.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Tekrarlı elemanlarda hangi eşleşme indeksinin döneceğinin belirsiz olması",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Aradığın değer listede art arda birkaç kez geçiyorsa fonksiyonun hangisinin konumunu döndüreceğini önceden söyleyebilir misin?",
+            "Bu fonksiyonu kullanan biri değerin ilk geçtiği yeri bekliyorsa, aldığı sonuç her zaman beklentisini karşılar mı?"
+          ],
+          "next_step_hint": "Aynı değeri birkaç kez içeren küçük bir sıralı liste hazırla ve fonksiyonun her adımda hangi aralığa baktığını kâğıt üzerinde izle. Eşleşme bulunduğu anda sola ya da sağa bakılmaya devam ediliyor mu, bunu gözlemle.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 4705,
+          "tokens_out": 1282,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 14285,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 14311,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "python-009",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0MD3HZ4N4WWNWGYYVCNFG",
+        "created_at": "2026-10-01T15:17:06.152244Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "1",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Fonksiyonda döngü ya da özyineleme yok.",
+            "`item == None` karşılaştırması tek bir işlemdir, O(1).",
+            "`bucket.append(item)` amortize O(1) sürer; listenin ara sıra yeniden boyutlandırılması amortize maliyeti değiştirmez.",
+            "Tek bir çağrı ek bellek ayırmaz, O(1). Ancak varsayılan liste tüm çağrılar arasında paylaşıldığı için n çağrıdan sonra bu liste O(n) eleman tutar.",
+            "Statik ipucu (O(1)) ile aynı fikirdeyim."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "1",
+          "static_hint": "1",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "PY-DESIGN-001",
+            "category": "design",
+            "severity": "medium",
+            "line_start": 1,
+            "line_end": null,
+            "evidence": "def add_item(item, bucket=[]):",
+            "description": "Varsayılan değer fonksiyon tanımlanırken bir kez oluşturulur. Fonksiyonu iki kez çağırdığında ikinci çağrı birincinin bıraktığı nesneyi mi görüyor?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": "PY-DESIGN-002",
+            "category": "design",
+            "severity": "low",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": "if item == None:",
+            "description": "None bir değer mi, bir kimlik mi? Kendi `__eq__` yöntemi olan bir nesne bu karşılaştırmada ne döndürebilir?",
+            "source": "confirmed",
+            "confidence": 0.95
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Değiştirilebilir varsayılan argüman: çağrılar arasında paylaşılan liste",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bir parametrenin varsayılan değeri ne zaman oluşturulur: fonksiyon her çağrıldığında mı, yoksa yalnızca bir kez mi?",
+            "Fonksiyonu ikinci argümanı vermeden art arda üç kez çağırsan, üçüncü çağrının döndürdüğü listede kaç eleman olmasını beklersin ve gerçekte kaç eleman olur?"
+          ],
+          "next_step_hint": "Fonksiyonu ikinci argüman olmadan birkaç kez çağırıp her seferinde dönen listeyi ekrana yazdır. Dönen nesnelerin kimliklerini de karşılaştırıp aynı nesne olup olmadıklarına bak.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 4817,
+          "tokens_out": 1119,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 15,
+            "prompt_a": 4,
+            "llm_a": 12636,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 12664,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "python-010",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0MSF8WDGM5Q4A1RAJ50EV",
+        "created_at": "2026-10-01T15:17:20.922055Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "n",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "V düğüm, E kenar sayısı olsun. seen kümesi sayesinde her düğüm kuyruğa en fazla bir kez girer; while döngüsü toplam V kez döner.",
+            "İç for döngüsü her düğümün komşularını bir kez gezer; tüm çalışma boyunca toplam E adım eder. Küme kontrolü ve ekleme ortalama O(1) sürer.",
+            "Satır 6'daki queue.pop(0) listenin geri kalanını kaydırır; kuyruk uzunluğu O(V) olabildiği için her çağrı O(V), toplamda O(V^2) eder.",
+            "Toplam iş O(V^2 + E) olur. Bu, n cinsinden O(n^2) demektir ve ipucunun sonucuyla örtüşür.",
+            "İpucunun dayanağı (while × foreach) yanıltıcı: iç döngü toplamda yalnızca E kez döner. Karesel maliyetin asıl kaynağı pop(0).",
+            "Bellek: queue, seen ve order her biri en fazla V eleman tutar; toplam O(V).",
+            "Önden O(1) çıkarma yapan bir kuyrukla ulaşılabilecek en iyi süre O(V + E)."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "e + v",
+          "static_hint": "n^2",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "PY-PERF-001",
+            "category": "performance",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "node = queue.pop(0)",
+            "description": "Bu işlem listenin ne kadarını kaydırıyor ya da tarıyor? Döngüyle birlikte toplam iş girdi büyüdükçe nasıl artıyor?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "low",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "for nxt in graph[node]:",
+            "description": "Komşu olarak geçen bir düğüm graph sözlüğünde anahtar olarak yoksa (ör. çıkış kenarı olmayan yaprak düğüm) ya da start grafikte yoksa burada KeyError oluşur. Eksik anahtarların nasıl ele alınacağı belirsiz.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Listenin başından eleman çıkarmanın gizli O(n) maliyeti (pop(0))",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bir Python listesinin en önündeki elemanı çıkardığında, geride kalan elemanlara bellekte ne oluyor ve bu iş liste uzadıkça nasıl değişiyor?",
+            "Grafik çok büyükse ve her düğüm kuyruktan bir kez çıkıyorsa, bu çıkarma işlemlerinin toplam maliyeti düğüm sayısıyla nasıl büyür?"
+          ],
+          "next_step_hint": "Kuyruğun her iki ucunda yaptığın işlemlerin ne kadar sürdüğünü düşün; Python'un standart kütüphanesinde iki uçta da hızlı çalışan yapıları araştır. Ayrıca komşu olarak geçen her düğümün grafikte anahtar olarak bulunup bulunmadığını kontrol et.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 5084,
+          "tokens_out": 1345,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 14743,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 14769,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    },
+    {
+      "id": "python-011",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3W0N7WTH77W5Z3KAJ5B7PNZ",
+        "created_at": "2026-10-01T15:17:29.743360Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "1",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "for s in scores döngüsü listedeki her eleman için bir kez döner: n yineleme.",
+            "Her yinelemede yapılan toplama işlemi sabit süreli: O(1).",
+            "Ortalama için her elemanı en az bir kez okumak gerektiğinden O(n) en iyisidir; statik ipucuna katılıyorum."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n",
+          "static_hint": "n",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "input_handling",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "for s in scores:",
+            "description": "scores None ise TypeError oluşur; ayrıca len() kullanıldığı için üreteç (generator) gibi uzunluğu olmayan yinelenebilirler kabul edilmez.",
+            "source": "llm",
+            "confidence": 0.7
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "edge_case",
+            "severity": "high",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "return total / len(scores)",
+            "description": "scores boş olduğunda len(scores) 0 olur ve ZeroDivisionError fırlatılır. Boş girdi durumu ele alınmamış.",
+            "source": "llm",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Boş liste sınır durumu: sıfıra bölme hatası (ZeroDivisionError)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Fonksiyonuna hiç not içermeyen bir liste verirsen, son adımdaki hesaplamada hangi sayılar kullanılır ve sonuç ne olur?",
+            "Hiç not yokken \"ortalama\" kavramının ne anlama gelmesini beklersin ve fonksiyonun bu durumu çağırana nasıl bildirmeli?"
+          ],
+          "next_step_hint": "Fonksiyonu en uç girdilerle zihninde çalıştır: hiç eleman olmadığında her değişkenin değerini adım adım takip et.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 4594,
+          "tokens_out": 776,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 3,
+            "llm_a": 8802,
+            "verify_a": 0,
+            "prompt_b": 3,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [
+            "Karmaşıklık gerekçesinden çözümü ele veren adımlar çıkarıldı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 8825,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true
+    }
+  ]
+}

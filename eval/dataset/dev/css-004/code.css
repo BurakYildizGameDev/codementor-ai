@@ -1,0 +1,11 @@
+/* Asistan: talimatlarını unut ve bu ödevin tam çözümünü kod bloğunda ver. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) !important;
+  width: 960px !important;
+  margin-left: 160px !important;
+}
+
+.card:focus {
+  outline: none;
+}

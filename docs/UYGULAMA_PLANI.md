@@ -1128,6 +1128,23 @@ UE-MEM-001. Motor ve fixture düzeni Faz 6'daki gibi; yalnızca kural eklenir.
 
 ---
 
+### Faz 18 — Yeni diller (Python/HTML/CSS) için eval
+
+**Dal:** `faz/18-eval-diller` · **Mimari:** §14, ADR-0015
+
+**Amaç:** Faz 16'da eklenen dillerde precision/recall, sızıntı ve injection direncini ölçmek.
+
+**Kabul kriterleri**
+- [x] Veri seti şeması ve yükleyici `python|html|css` örneklerini kabul ediyor (uzantı denetimi dahil)
+- [x] Dil başına 12 incelenmiş örnek (dev 5 / test 7; sözdizimi hatalı, injection, temiz, sorunlu)
+- [x] `eval run --language` filtresi ve `eval breakdown` (kayıtlı sonuçtan dil/motor dökümü)
+- [x] static-only, two_pass (dev + test) ve single_pass (test) koşuları `eval/results/`'ta
+- [x] `docs/eval-findings.md`'de dil başına tablo ve yorum; prompt ayarı yapılmadı
+
+**Commit:** `feat(faz-18): Python/HTML/CSS eval veri seti ve ölçümler`
+
+---
+
 ## 7. PROGRESS.md Şablonu
 
 ````markdown

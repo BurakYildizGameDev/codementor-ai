@@ -1,0 +1,8 @@
+.nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.footer {
+  padding: 1rem;
+  color: #555;

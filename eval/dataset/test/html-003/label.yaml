@@ -1,0 +1,12 @@
+# Sözdizimi: değeri boş öznitelik (alt=)
+id: html-003
+language: html
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

@@ -1,0 +1,12 @@
+# Sözdizimi: append çağrısında kapanmayan parantez
+id: python-002
+language: python
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: test
+reviewed: true

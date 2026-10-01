@@ -1,0 +1,14 @@
+# DOCTYPE yok + yinelenen id
+id: html-008
+language: html
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: design, line: 1, rule_id: HTML-STD-002 }
+    - { category: design, line: 7, rule_id: HTML-STD-001 }
+  must_not_contain: []
+tags: [standards]
+split: dev
+reviewed: true

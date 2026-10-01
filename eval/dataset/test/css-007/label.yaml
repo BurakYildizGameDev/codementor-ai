@@ -1,0 +1,12 @@
+# Temiz: düğme durumları ve görünür odak
+id: css-007
+language: css
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings: []
+  must_not_contain: []
+tags: [clean]
+split: test
+reviewed: true

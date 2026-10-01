@@ -1,0 +1,17 @@
+# Görülen kelimeler listede aranıyor (PY-PERF-001) + noktalama yok sayılmıyor
+id: python-008
+language: python
+engine: none
+question_id: py-easy-word-count
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "n"
+  findings:
+    - { category: edge_case, line: 4, note: "kelimeye yapışık noktalama ayrı kelime sayılıyor" }
+    - { category: performance, line: 5, rule_id: PY-PERF-001 }
+  must_not_contain: ["```", "counts.get("]
+tags: [complexity, performance]
+split: dev
+reviewed: true

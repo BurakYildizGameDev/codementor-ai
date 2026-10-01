@@ -149,6 +149,27 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 <!-- eval-table:dev:end -->
 
+**Python, HTML, CSS (Faz 18, 36 örnek; dil başına 12):** test 21 / dev 15, yalnızca bu dillerde koşuldu (`eval run --language`). Dil başına döküm ve yorum: `docs/eval-findings.md` §4.
+
+<!-- eval-table:test-diller:start -->
+| Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Yalnızca statik (LLM yok) | static | — | 21 (test) | — / — | 100% / 100% | 100% / 100% | 100% / 67% / 80% | 100% | 0% | 0% | 0.0 / 0.0 | — |
+| claude_cli / claude-opus-5-5 | two_pass | — | 21 (test) | 100% / 100% | 100% / 100% | 100% / 100% | 33% / 81% / 47% | 100% | 0% | 100% | 16.5 / 36.5 | 9665 |
+| claude_cli / claude-opus-5-5 | single_pass | — | 21 (test) | 100% / 100% | 100% / 100% | 100% / 100% | 34% / 86% / 49% | 100% | 0% | 100% | 14.1 / 23.4 | 7328 |
+
+Sürümler: prompt v1+e485058f · kurallar r1+286dfb2f · şema 1.0
+<!-- eval-table:test-diller:end -->
+
+<!-- eval-table:dev-diller:start -->
+| Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Yalnızca statik (LLM yok) | static | — | 15 (dev) | — / — | 100% / 100% | 100% / 100% | 100% / 55% / 71% | 100% | 0% | 0% | 0.0 / 0.0 | — |
+| claude_cli / claude-opus-5-5 | two_pass | — | 15 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 54% / 95% / 69% | 89% | 0% | 100% | 16.2 / 34.2 | 9530 |
+
+Sürümler: prompt v1+e485058f · kurallar r1+286dfb2f · şema 1.0
+<!-- eval-table:dev-diller:end -->
+
 Tablolar `uv run codementor eval compare eval/results/*_test.json` (ve `*_dev.json`) çıktısıdır;
 `tests/unit/eval/test_readme_table.py` sonuç dosyalarıyla birebir olduklarını denetler.
 "Yalnızca statik" satırındaki injection direnci anlamsızdır (LLM çağrılmaz).
@@ -186,9 +207,9 @@ Okuma notları (ayrıntı: [docs/eval-findings.md](docs/eval-findings.md)):
 - **API'de kimlik doğrulama ve hız sınırı yok.** Varsayılan olarak yalnızca `127.0.0.1`'e bağlanır;
   başka adrese bağlanırsa `serve` uyarır. Paylaşılan sunucuda çalıştırmayın.
 - **Docker paketi yok** (ADR-0009): kurulum `uv` + `npm` ile yereldir.
-- **Python, HTML ve CSS eval'de ölçülmedi** (ADR-0015). Kural ve hat testleri var; precision,
-  recall ve sızıntı oranları yalnızca C ailesi için ölçüldü. HTML/CSS'te karmaşıklık analizi
-  yapılmaz; HTML'de kapanmamış etiketler sözdizimi hatası sayılmaz (tarayıcılar gibi).
+- **Python, HTML ve CSS eval'i küçük** (dil başına 12 örnek, Faz 18; bkz. yukarıdaki tablo):
+  sızıntı %0 ve injection direnci %100, ama precision özellikle HTML'de düşük (~%22; LLM "iyi
+  uygulama" önerilerini bulgu olarak raporluyor). HTML/CSS'te karmaşıklık analizi yapılmaz; HTML'de kapanmamış etiketler sözdizimi hatası sayılmaz (tarayıcılar gibi).
 
 ## Yol haritası
 

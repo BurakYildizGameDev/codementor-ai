@@ -1,0 +1,1215 @@
+{
+  "config": {
+    "split": "dev",
+    "provider": null,
+    "model": null,
+    "mode": "static",
+    "static_only": true,
+    "ablations": [],
+    "prompt_version": "v1+e485058f",
+    "rules_version": "r1+286dfb2f",
+    "schema_version": "1.0",
+    "started_at": "2026-10-01T15:03:24.149625Z",
+    "sample_ids": [
+      "css-001",
+      "css-004",
+      "css-006",
+      "css-008",
+      "css-012",
+      "html-001",
+      "html-004",
+      "html-006",
+      "html-008",
+      "html-012",
+      "python-001",
+      "python-004",
+      "python-006",
+      "python-008",
+      "python-012"
+    ],
+    "reviewed_only": true,
+    "languages": [
+      "css",
+      "html",
+      "python"
+    ]
+  },
+  "metrics": {
+    "samples": 15,
+    "schema_valid_first_try": null,
+    "schema_valid_after_repair": null,
+    "early_exit_precision": 1.0,
+    "early_exit_recall": 1.0,
+    "complexity_time_exact_acc": 1.0,
+    "complexity_time_class_acc": 1.0,
+    "audit_precision": 1.0,
+    "audit_recall": 0.55,
+    "audit_f1": 0.7096774193548387,
+    "line_accuracy": 1.0,
+    "leak_rate": 0.0,
+    "injection_resistance": 0.0,
+    "latency_p50_ms": 20.0,
+    "latency_p95_ms": 48.0,
+    "tokens_mean": null,
+    "cost_est": null,
+    "errors": 0
+  },
+  "samples": [
+    {
+      "id": "css-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPQNNZFB10RT8032NP2Y",
+        "created_at": "2026-10-01T15:03:24.149625Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 2,
+              "column": 3,
+              "message": "Beklenmeyen sözdizimi: 'font-size 2rem;'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "2. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'font-size 2rem;'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 5,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "css-004",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPR2439S7MF3ZZKYREAB",
+        "created_at": "2026-10-01T15:03:24.196986Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": "css-easy-centered-layout",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "grid-template-columns: repeat(3, 1fr) !important;",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "width: 960px !important;",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-003",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "margin-left: 160px !important;",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Bakım kolaylığı",
+          "hint_level": 2,
+          "guiding_questions": [
+            "Bir kuralın diğerini ezmesi için !important dışında hangi yolların var?",
+            "4. satırdaki kural başka bir yerde değişiklik yapınca nasıl davranır?",
+            "5. satırdaki kural başka bir yerde değişiklik yapınca nasıl davranır?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 9,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 44,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "css-006",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPS4C20HTKCCGC04TD3T",
+        "created_at": "2026-10-01T15:03:24.244886Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": "css-easy-centered-layout",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 2,
+          "guiding_questions": [
+            "Bir kuralın diğerini ezmesi için !important dışında hangi yolların var?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 36,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "css-008",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPTN8C4VD575YPDWMPBS",
+        "created_at": "2026-10-01T15:03:24.262877Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 17,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "css-012",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPV6KKFQDGJTYRHFENG3",
+        "created_at": "2026-10-01T15:03:24.278956Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CSS-STD-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "display: block;",
+            "description": "Bu blokta aynı özelliğe iki değer verilmiş. Tarayıcı hangisini kullanıyor ve öteki satır ne işe yarıyor?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": "CSS-MAINT-002",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": ".menu-item:hover {",
+            "description": "Bu seçici için bir stil yazılmamış. Kalması gerekiyor mu, yoksa yarım kalmış bir düzenlemenin izi mi?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Bakım kolaylığı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bu kodu altı ay sonra değiştirmen gerekse en çok nerede zorlanırsın?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 16,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "html-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPVPQG5X3P1HF4VT8S5J",
+        "created_at": "2026-10-01T15:03:24.280582Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 2,
+              "column": 1,
+              "message": "Beklenmeyen sözdizimi: '<html lang=\"tr\">'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "2. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: '<html lang=\"tr\">'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "html-004",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPVRHDN1TBH48JW3SFJP",
+        "created_at": "2026-10-01T15:03:24.314949Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": "html-easy-profile-card",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "HTML-ACC-001",
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 10,
+            "line_end": null,
+            "evidence": "<img src=\"ada.jpg\">",
+            "description": "Bu görseli göremeyen bir kullanıcı (ekran okuyucu, yüklenemeyen resim) burada ne duyar ya da görür?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Erişilebilirlik",
+          "hint_level": 2,
+          "guiding_questions": [
+            "Ekran okuyucu bir öğenin ne olduğunu hangi bilgilerden anlar: etiketinden mi, görünüşünden mi?",
+            "10. satırdaki öğe ekranı göremeyen bir kullanıcıya ne söylüyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 35,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "html-006",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPWTGFK7TFMW08DB4VW8",
+        "created_at": "2026-10-01T15:03:24.356117Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": "html-easy-profile-card",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 2,
+          "guiding_questions": [
+            "Ekran okuyucu bir öğenin ne olduğunu hangi bilgilerden anlar: etiketinden mi, görünüşünden mi?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 4,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 37,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "html-008",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPY4RCV6E6JRSW0RM2AX",
+        "created_at": "2026-10-01T15:03:24.374139Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "HTML-STD-002",
+            "category": "design",
+            "severity": "low",
+            "line_start": 1,
+            "line_end": null,
+            "evidence": "<html lang=\"tr\">",
+            "description": "Tarayıcı bu belgeyi hangi kurallara göre çizeceğine nasıl karar veriyor? Bildirim olmadan düzen farklı tarayıcılarda aynı görünür mü?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": "HTML-STD-001",
+            "category": "design",
+            "severity": "medium",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "<section id=\"menu\">",
+            "description": "Bu id'ye bağlanan bir etiket, bağlantı ya da betik iki öğeden hangisini bulur?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Tasarım ve mantık",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun yapmasını istediğin şeyi tek cümleyle anlatsan, kod gerçekten bunu mu yapıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 17,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "html-012",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPYPQNFTFANV27M230JZ",
+        "created_at": "2026-10-01T15:03:24.391305Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "HTML-ACC-003",
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "<input type=\"search\" name=\"q\">",
+            "description": "Bu alana klavyeyle gelen bir ekran okuyucu kullanıcısı, alanın ne istediğini nereden öğreniyor?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": "HTML-ACC-001",
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "<button><img src=\"ara.svg\"></button>",
+            "description": "Bu görseli göremeyen bir kullanıcı (ekran okuyucu, yüklenemeyen resim) burada ne duyar ya da görür?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Erişilebilirlik",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Sayfanı ekran okuyucuyla ya da yalnızca klavyeyle kullanan biri neyi kaçırır?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 17,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "python-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPZ7W2M6480HTJW2BM49",
+        "created_at": "2026-10-01T15:03:24.393310Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 1,
+              "column": 1,
+              "message": "Beklenmeyen sözdizimi: 'def average(values)'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "1. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'def average(values)'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": []
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "python-004",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVPZ90B1PHTNQCFG3NBJB",
+        "created_at": "2026-10-01T15:03:24.432531Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": "py-medium-two-sum",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "?",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "two_sum: satır 4 foreach (linear) × satır 5 foreach (linear) → n^2",
+            "satır 5: iç döngü sayacı dış döngüde sıfırlanmıyor (two-pointer/amortize olabilir; iç içe çarpım abartabilir)"
+          ],
+          "is_optimal": false,
+          "optimal_time_target": null,
+          "static_hint": "n^2",
+          "agreement": "no_hint",
+          "confidence": 0.3
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Her sayı için 'eşini' bulmak üzere kaç sayıya bakıyorsun?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 11,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 48,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "python-006",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVQ0GBFA665QT8QD5DZ42",
+        "created_at": "2026-10-01T15:03:24.478860Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": "py-easy-word-count",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "word_count: satır 6 foreach (linear) → n"
+          ],
+          "is_optimal": true,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 2,
+          "guiding_questions": [
+            "Kelimeleri tuttuğun yapıda arama yapmak, yapı büyüdükçe nasıl yavaşlıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 35,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "python-008",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVQ1YHKW8CXHXR5PXM7VT",
+        "created_at": "2026-10-01T15:03:24.516354Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": "py-easy-word-count",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "?",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "word_count: satır 5 `list.__contains__` (n) × satır 4 foreach (linear) → n^2"
+          ],
+          "is_optimal": false,
+          "optimal_time_target": null,
+          "static_hint": "n^2",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "PY-PERF-001",
+            "category": "performance",
+            "severity": "medium",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "if word not in seen:",
+            "description": "Bu işlem listenin ne kadarını kaydırıyor ya da tarıyor? Döngüyle birlikte toplam iş girdi büyüdükçe nasıl artıyor?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Performans",
+          "hint_level": 2,
+          "guiding_questions": [
+            "Kelimeleri tuttuğun yapıda arama yapmak, yapı büyüdükçe nasıl yavaşlıyor?",
+            "5. satırdaki iş girdi boyutuyla birlikte nasıl büyüyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 37,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "python-012",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3VZVQ340P4G8E42W1C85A0J",
+        "created_at": "2026-10-01T15:03:24.535723Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "?",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "find_duplicates: satır 3 foreach (linear) × satır 4 foreach (linear) → n^2",
+            "satır 4: iç döngü sayacı dış döngüde sıfırlanmıyor (two-pointer/amortize olabilir; iç içe çarpım abartabilir)",
+            "find_duplicates: satır 6 `list.append` (1*) × satır 3 foreach (linear) × satır 4 foreach (linear) → n^2"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n^2",
+          "agreement": "no_hint",
+          "confidence": 0.3
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+286dfb2f",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ]
+        }
+      },
+      "error": null,
+      "latency_ms": 20,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    }
+  ]
+}

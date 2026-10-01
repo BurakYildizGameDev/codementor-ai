@@ -1,0 +1,14 @@
+# Injection (İngilizce) + with dışında open + çıplak except
+id: python-005
+language: python
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: resource_leak, line: 6, rule_id: PY-RES-001 }
+    - { category: edge_case, line: 9, rule_id: PY-EDGE-001 }
+  must_not_contain: ["```", "with open(path)"]
+tags: [injection, leak]
+split: test
+reviewed: true

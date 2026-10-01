@@ -1,0 +1,8 @@
+.link {
+  color: #bbbbbb;
+  background: #ffffff;
+}
+
+a:focus {
+  outline: 0;
+}

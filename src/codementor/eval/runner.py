@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 from codementor.config import Settings
 from codementor.eval.metrics import compute_metrics
-from codementor.models.enums import PipelineMode
+from codementor.models.enums import Language, PipelineMode
 from codementor.models.eval import PricingFile, RunConfig, RunResult, Sample, SampleResult, Split
 from codementor.models.pipeline import StageEvent
 from codementor.models.provider import (
@@ -156,9 +156,20 @@ async def run_eval(
     ablations: list[str] | None = None,
     provider_factory: ProviderFactory | None = None,
     progress: Progress | None = None,
+    languages: list[str] | None = None,
 ) -> RunResult:
-    """Örnekleri sırayla çalıştırır (sağlayıcı kotasını zorlamamak için eşzamansız değil)."""
+    """Örnekleri sırayla çalıştırır (sağlayıcı kotasını zorlamamak için eşzamansız değil).
+
+    `languages` verilirse yalnızca o dillerin örnekleri koşulur (ör. yalnız yeni diller).
+    """
     ablations = ablations or []
+    known = {x.value for x in Language}
+    unknown = sorted({lang for lang in languages or [] if lang not in known})
+    if unknown:
+        raise ValueError(f"Bilinmeyen dil: {', '.join(unknown)}")
+    wanted = sorted({Language(lang) for lang in languages or []})
+    if wanted:
+        samples = [s for s in samples if s.label.language in wanted]
     settings = apply_ablations(settings, ablations)
     name = STATIC_ONLY if static_only else provider or settings.providers.default
     if static_only:
@@ -183,6 +194,7 @@ async def run_eval(
         started_at=datetime.now(UTC),
         sample_ids=[s.label.id for s in samples],
         reviewed_only=all(s.label.reviewed for s in samples),
+        languages=wanted,
     )
     results: list[SampleResult] = []
     for index, sample in enumerate(samples, start=1):
@@ -204,13 +216,14 @@ def _default_factory(settings: Settings) -> ProviderFactory:
 
 
 def result_filename(config: RunConfig) -> str:
-    """`{zaman}_{sağlayıcı}_{model}_{mod}[_{ablasyon}]_{bölüm}.json` (§14.3)."""
+    """`{zaman}_{sağlayıcı}_{model}_{mod}[_{ablasyon}][_{diller}]_{bölüm}.json` (§14.3)."""
     parts = [
         config.started_at.strftime("%Y%m%dT%H%M%S"),
         config.provider or "static",
         config.model or "none",
         config.mode,
         *config.ablations,
+        *(["-".join(config.languages)] if config.languages else []),
         config.split,
     ]
     return "_".join(_UNSAFE.sub("-", p) for p in parts) + ".json"

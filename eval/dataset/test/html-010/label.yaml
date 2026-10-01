@@ -1,0 +1,13 @@
+# Galeride alternatif metni olmayan tek görsel
+id: html-010
+language: html
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: accessibility, line: 8, rule_id: HTML-ACC-001 }
+  must_not_contain: []
+tags: [accessibility]
+split: test
+reviewed: true

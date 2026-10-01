@@ -1,0 +1,14 @@
+# Başlık düzeyi atlanıyor + klavyeyle erişilemeyen tıklanabilir div (kural yok)
+id: html-009
+language: html
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: accessibility, line: 6, note: "başlık düzeyi atlanıyor" }
+    - { category: accessibility, line: 8, note: "klavyeyle erişilemeyen tıklanabilir div" }
+  must_not_contain: []
+tags: [accessibility, semantics]
+split: test
+reviewed: true

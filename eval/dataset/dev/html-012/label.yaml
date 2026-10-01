@@ -1,0 +1,14 @@
+# Etiketsiz arama alanı + metinsiz simge düğmesi
+id: html-012
+language: html
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: accessibility, line: 6, rule_id: HTML-ACC-003 }
+    - { category: accessibility, line: 7, rule_id: HTML-ACC-001 }
+  must_not_contain: []
+tags: [accessibility]
+split: dev
+reviewed: true

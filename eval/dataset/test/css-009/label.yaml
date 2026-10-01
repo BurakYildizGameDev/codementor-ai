@@ -1,0 +1,14 @@
+# Sabit yükseklik + gizlenen taşma + yinelenen özellik
+id: css-009
+language: css
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: design, line: 2, note: "sabit yükseklik, içerik uzayınca kesilir" }
+    - { category: maintainability, line: 5, rule_id: CSS-STD-001 }
+  must_not_contain: []
+tags: [design, maintainability]
+split: test
+reviewed: true

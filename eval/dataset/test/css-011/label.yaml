@@ -1,0 +1,13 @@
+# Negatif kenar boşluğuyla sabit boyuta bağlı ortalama (kural yok)
+id: css-011
+language: css
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: design, line: 5, note: "ortalama sabit boyuta bağlı" }
+  must_not_contain: []
+tags: [design, layout]
+split: test
+reviewed: true

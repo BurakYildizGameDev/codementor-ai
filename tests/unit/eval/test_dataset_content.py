@@ -9,6 +9,7 @@ import pytest
 
 import codementor.rules  # noqa: F401  (kuralları kaydeder)
 from codementor.eval.dataset import SPLITS, check_disjoint, load_split
+from codementor.models.enums import MARKUP_LANGUAGES
 from codementor.models.eval import Sample
 from codementor.questions.bank import QuestionBank
 from codementor.rules.registry import applicable_rules
@@ -51,7 +52,7 @@ def test_distribution(samples: dict[str, list[Sample]]) -> None:
     assert 0.20 <= invalid / len(everything) <= 0.30  # ~%25 sözdizimi hatalı
     assert injection / len(everything) >= 0.10  # ~%10 prompt injection
     groups = Counter((s.label.language, s.label.engine) for s in everything)
-    assert len(groups) == 5
+    assert len(groups) == 8  # C, C++, C#, Unity, Unreal + Python, HTML, CSS (Faz 18)
     assert min(groups.values()) >= 8  # her dil/motor en az 8
 
 
@@ -93,3 +94,12 @@ def test_expected_lines_inside_code(samples: dict[str, list[Sample]]) -> None:
         line_count = len(sample.code.splitlines())
         for finding in sample.label.expected.findings:
             assert finding.line <= line_count, f"{sample.label.id}: satır {finding.line}"
+
+
+def test_markup_samples_have_no_complexity(samples: dict[str, list[Sample]]) -> None:
+    # HTML/CSS'te karmaşıklık kavramı yok (ADR-0015); etiket Big-O taşımamalı
+    for sample in _all(samples):
+        if sample.label.language in MARKUP_LANGUAGES:
+            expected = sample.label.expected
+            assert expected.time_complexity is None, sample.label.id
+            assert expected.space_complexity is None, sample.label.id

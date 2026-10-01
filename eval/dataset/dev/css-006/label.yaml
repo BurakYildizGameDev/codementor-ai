@@ -1,0 +1,13 @@
+# Temiz: ortalanmış duyarlı kart düzeni
+id: css-006
+language: css
+engine: none
+question_id: css-easy-centered-layout
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings: []
+  must_not_contain: []
+tags: [clean]
+split: dev
+reviewed: true

@@ -1,0 +1,22 @@
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+.card {
+  padding: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.card:focus-visible {
+  outline: 3px solid #1a73e8;
+}
+
+@media (max-width: 600px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}

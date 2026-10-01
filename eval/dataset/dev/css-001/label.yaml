@@ -1,0 +1,12 @@
+# Sözdizimi: özellikten sonra iki nokta eksik
+id: css-001
+language: css
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: dev
+reviewed: true

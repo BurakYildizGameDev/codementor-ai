@@ -1,0 +1,14 @@
+# Düşük kontrast + odak göstergesi yok (kural yok)
+id: css-008
+language: css
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: accessibility, line: 2, note: "beyaz zeminde düşük kontrast" }
+    - { category: accessibility, line: 7, note: "odak göstergesi kaldırılmış" }
+  must_not_contain: []
+tags: [accessibility]
+split: dev
+reviewed: true

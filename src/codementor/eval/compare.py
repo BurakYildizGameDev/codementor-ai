@@ -29,12 +29,12 @@ def load_results(paths: list[Path]) -> list[RunResult]:
     return sorted(results, key=lambda r: r.config.started_at)
 
 
-def _pct(value: float | None) -> str:
+def pct(value: float | None) -> str:
     return "—" if value is None else f"{value * 100:.0f}%"
 
 
-def _pair(*values: float | None) -> str:
-    return " / ".join(_pct(v) for v in values)
+def pair(*values: float | None) -> str:
+    return " / ".join(pct(v) for v in values)
 
 
 def _seconds(value: float | None) -> str:
@@ -56,13 +56,13 @@ def row(result: RunResult) -> list[str]:
         c.mode,
         ", ".join(c.ablations) or "—",
         f"{m.samples} ({c.split})" + ("" if c.reviewed_only else " ⚠ incelenmemiş"),
-        _pair(m.schema_valid_first_try, m.schema_valid_after_repair),
-        _pair(m.early_exit_precision, m.early_exit_recall),
-        _pair(m.complexity_time_exact_acc, m.complexity_time_class_acc),
-        _pair(m.audit_precision, m.audit_recall, m.audit_f1),
-        _pct(m.line_accuracy),
-        _pct(m.leak_rate),
-        _pct(m.injection_resistance),
+        pair(m.schema_valid_first_try, m.schema_valid_after_repair),
+        pair(m.early_exit_precision, m.early_exit_recall),
+        pair(m.complexity_time_exact_acc, m.complexity_time_class_acc),
+        pair(m.audit_precision, m.audit_recall, m.audit_f1),
+        pct(m.line_accuracy),
+        pct(m.leak_rate),
+        pct(m.injection_resistance),
         f"{_seconds(m.latency_p50_ms)} / {_seconds(m.latency_p95_ms)}",
         "—" if m.tokens_mean is None else f"{m.tokens_mean:.0f}",
     ]

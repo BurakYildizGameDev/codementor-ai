@@ -1,7 +1,8 @@
 """README'deki eval tabloları `eval/results/` dosyalarıyla birebir (Faz 13 kabul kriteri).
 
 Tablo elle yazılmaz: `codementor eval compare <dosyalar>` çıktısı işaretler arasına konur.
-Sonuç dosyası değişirse ya da tablo elle düzenlenirse bu test düşer.
+Sonuç dosyası değişirse ya da tablo elle düzenlenirse bu test düşer. Dil filtreli koşular
+(`eval run --language`, Faz 18) ayrı `{bölüm}-diller` tablosundadır.
 """
 
 from __future__ import annotations
@@ -17,7 +18,8 @@ ROOT = Path(__file__).resolve().parents[3]
 README = ROOT / "README.md"
 RESULTS = ROOT / "eval" / "results"
 BLOCK = re.compile(
-    r"<!-- eval-table:(?P<split>\w+):start -->\n(?P<body>.*?)\n<!-- eval-table:(?P=split):end -->",
+    r"<!-- eval-table:(?P<split>[\w-]+):start -->\n"
+    r"(?P<body>.*?)\n<!-- eval-table:(?P=split):end -->",
     re.DOTALL,
 )
 
@@ -27,16 +29,27 @@ def _blocks() -> dict[str, str]:
     return {m["split"]: m["body"].strip() for m in BLOCK.finditer(text)}
 
 
+BLOCKS = ["test", "dev", "test-diller", "dev-diller"]
+# `-diller` blokları yalnızca Faz 18'in Python/HTML/CSS koşularını gösterir; başka bir dil
+# filtresiyle yapılan deneme koşusu iki tabloya da girmez
+NEW_LANGUAGES = {"python", "html", "css"}
+
+
 def test_readme_has_test_and_dev_tables() -> None:
-    assert set(_blocks()) == {"test", "dev"}
+    assert set(_blocks()) == set(BLOCKS)
 
 
-@pytest.mark.parametrize("split", ["test", "dev"])
-def test_readme_eval_table_matches_results(split: str) -> None:
-    files = sorted(RESULTS.glob(f"*_{split}.json"))
-    assert files, f"eval/results/*_{split}.json yok"
-    expected = compare_table(load_results(files)).strip()
-    assert _blocks()[split] == expected, (
-        f"README {split} tablosu güncel değil: "
-        f"`uv run codementor eval compare eval/results/*_{split}.json` çıktısını yapıştırın"
+@pytest.mark.parametrize("block", BLOCKS)
+def test_readme_eval_table_matches_results(block: str) -> None:
+    split, _, kind = block.partition("-")
+    results = [
+        r
+        for r in load_results(sorted(RESULTS.glob(f"*_{split}.json")))
+        if set(r.config.languages) == (NEW_LANGUAGES if kind == "diller" else set())
+    ]
+    assert results, f"{block}: sonuç dosyası yok"
+    expected = compare_table(results).strip()
+    assert _blocks()[block] == expected, (
+        f"README {block} tablosu güncel değil: ilgili sonuç dosyalarıyla "
+        "`uv run codementor eval compare ...` çıktısını yapıştırın"
     )

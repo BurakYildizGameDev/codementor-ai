@@ -21,6 +21,7 @@
 | 15 | ✅ | faz-15-baglantilar | 2026-10-01 | Claude Code / — |
 | 16 | ✅ | faz-16-diller | 2026-10-01 | Claude Code / — |
 | 17 | ✅ | faz/17-kurallar | 2026-10-01 | Claude Code / kod-denetci |
+| 18 | ✅ | faz/18-eval-diller | 2026-10-01 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -488,8 +489,31 @@
 - `function_nodes` iç içe (yerel fonksiyon/sınıf metodu) düğümler içerir; fonksiyon başına alt ağaç gezen her kural yalnız en dıştakini gezmeli.
 - Bash heredoc'u `\b`/`\w` kaçışlarını yine bozdu; regex içeren düzenlemeler Edit ile.
 
+## Faz 18 — Notlar (Python/HTML/CSS eval)
+**Yapılanlar:**
+- Altyapı: `SAMPLE_ID_PATTERN` + `python|html|css`, veri seti uzantıları (`.py/.html/.css`), `RunConfig.languages: list[Language]` (eski sonuç dosyaları varsayılan boş listeyle yüklenir), `eval run --language` (filtre `--limit`'ten önce; filtre sonrası örnek yoksa çıkış 2), sonuç dosya adına dil eki (`_css-html-python_test.json`).
+- `eval/breakdown.py` + `codementor eval breakdown <sonuç.json>`: kayıtlı sonuçtan dil/motor grubuna göre metrik tablosu (LLM çağrısı yok). `compare.py` `pct`/`pair` public oldu.
+- Veri seti: 36 yeni örnek (dil başına 12; dev 5 / test 7; her dilde 3 sözdizimi hatalı, 2 injection, 2 temiz). Kullanıcı etiketleri onayladı, `eval promote` ile taşındı (dev 46 / test 70, toplam 116). `check-drafts` 36/36 uyumlu. `test_dataset_content`: 8 grup, işaretleme dillerinde Big-O etiketi yok.
+- Ölçüm (`claude_cli` / `claude-opus-5-5`, prompt ayarı yok): static-only dev+test, two_pass dev, two_pass test `--final`, single_pass test `--final`; 42 LLM örneğinin hepsi hatasız. Koşular uykuyu yalnız süreç boyunca engelleyen bir sarmalayıcıyla yapıldı (`SetThreadExecutionState`; kalıcı ayar değişmedi).
+- Belgeler: `docs/eval-findings.md` §4 (dil başına tablo ve yorum), README'ye `test-diller`/`dev-diller` tabloları (`test_readme_table` dil filtreli koşuları ayrı blokta denetler) ve "Sınırlamalar" güncellemesi, ADR-0015'e Faz 18 notu, `UYGULAMA_PLANI.md` Faz 18 bölümü. `pyproject.toml`: ruff `extend-exclude` + `eval/dataset` (bilerek hatalı öğrenci kodu).
+**Sonuçlar (test, 21 örnek):** statik P/R/F1 100/67/80 · two_pass 33/81/47 · single_pass 34/86/49; sızıntı %0, injection direnci %100, erken çıkış 100/100, Python Big-O 2/2 (dev 4/4). HTML precision en düşük (%22–23). CSS kaçırmaları satır doğru, kategori farklı (`design` → `edge_case`); gerçekten kaçırılan: başlık düzeyi atlama, başlık yerine `div`.
+**Kararlar:** (1) Dil başına 12 örnek (16 yerine; kota ve inceleme yükü). (2) Dil filtreli koşular eski C ailesi tablolarına karışmaz; README'de ayrı blok. (3) `--language csharp` Unity'yi, `cpp` Unreal'ı da kapsar (filtre dil, döküm motor bazlı; yardım metninde). (4) Faz 17'nin eski veri setine etkisi yalnız raporlandı, etiketler değişmedi.
+**Mimariden sapmalar (ADR linki):** yok (§14; ADR-0015'e not).
+**Denetim (kod-denetci):** Kritik yok. Orta: §4'te Python Big-O paydası 7/7 yazılmıştı (doğrusu test 2/2), FP sayıları HTML'e bağlanmıştı (üç dilin toplamıydı), PROGRESS ve ADR-0015 notu eksikti → düzeltildi. Düşük (uygulanan): `languages` modelde `list[Language]`, filtre sonrası boş örnekte hata, yardım metninde motor notu, `breakdown` docstring'inde maliyet/etiket sınırları, README `-diller` ölçütü yalnız Python/HTML/CSS, testler (filtre `--limit`'ten önce, eski JSON yüklenir, `breakdown` uyarısı).
+**Açık sorular:**
+- Faz 17 kuralları eski 80 örnekte iki etiketlenmemiş doğru bulgu üretiyor (`c-008` C-MEM-003, `csharp-009` CS-ALLOC-002); dev statik precision %100 → %85. Etiket güncellemesi kullanıcı kararı (Sonraya).
+- `private/solutions/` hâlâ yok; sızıntı `must_not_contain` ile ölçülüyor.
+**Bu fazda öğrendiğim:**
+- Bire bir en yakın eşleşmede aynı kategoride iki komşu beklenti, bulunan tek satırı "yanlış" beklentiye verebiliyor; FN dökümünü kategorisiz ve satır bazlı da okumak gerekiyor.
+- PowerShell 5.1 yerel komutun stderr'ini `NativeCommandError` olarak sarıyor; arka plan günlüğünde hata gibi görünüyor ama çıkış kodu 0.
+
 ## Sonraya (kapsam dışı fikirler)
-- Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm (precision/recall, sızıntı).
+- ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
+- Faz 18: Tier 0 kör noktası: tam bir HTML belgesinde eşi olmayan `</div>` hata sayılmıyor (HTML etiket dengesi maddesiyle birlikte).
+- Faz 18: `codementor eval check-drafts` Windows konsolunda (cp1254) `✗` karakterinde çöküyor; `PYTHONIOENCODING=utf-8` gerekiyor. Rich konsolu UTF-8'e zorlanmalı ya da ASCII işaretler kullanılmalı.
+- Faz 18: eski veri seti etiketlerine Faz 17 bulguları (`c-008` 4. satır `memory_safety` C-MEM-003, `csharp-009` 11. satır `garbage_collection` CS-ALLOC-002) eklenmeli mi? (test etiketleri de etkilenebilir; kullanıcı kararı)
+- Faz 18: HTML precision (%22) için işaretleme prompt'unda bulgu ölçütü ("iyi uygulama önerisi" ile "sorun" ayrımı); kategori tanımları (`design` vs `edge_case`). Ayar yalnız dev'de yapılmalı.
+- Faz 18: `eval breakdown` tablosuna gecikme/token sütunları; `breakdown` etiketleri koşu anındaki değil güncel veri setinden alıyor.
 - Faz 16: HTML etiket dengesi denetimi (stdlib `html.parser` ile kapanmamış/uyumsuz etiket uyarısı) Tier 1 karşılığı olarak.
 - Faz 16: Python için few-shot örnekleri; JS (tarayıcı) desteği HTML ile birlikte istenebilir.
 - Faz 15: Bağlantılar'da Ollama modelini indirme (`ollama pull`) düğmesi ve ilerleme göstergesi.
@@ -551,14 +575,14 @@
 - Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri.
 
 ## Yapılacaklar (2026-10-01 itibarıyla sıra)
-Durum: Faz 0-16 main'de ve push'lu (842279e), CI 3 işte yeşil. Faz 17 (10 statik kural) `faz/17-kurallar` dalında, commit bekliyor.
+Durum: Faz 0-17 main'de ve push'lu (e1bdb98), CI 3 işte yeşil. Faz 18 (Python/HTML/CSS eval) `faz/18-eval-diller` dalında, commit bekliyor.
 
 **Kullanıcı:** yeni 4 sorunun referans çözümlerini `private/solutions/` altına ekle
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
 `css-easy-centered-layout.css`); yoksa bu görevlerde sızıntı koruması daha zayıf.
 
 **Sıradaki fazlar (önerilen sıra):**
-1. Yeni diller için eval: Python/HTML/CSS örnekleri, precision/recall ve sızıntı ölçümü.
+1. ~~Yeni diller için eval~~ → Faz 18.
 2. ~~Faz 6'da ertelenen 10 C/C++/C# kuralı~~ → Faz 17.
 3. Masaüstünde analizi durdurma düğmesi (CLI ajanı süreç iptaliyle birlikte).
 4. Bağlantılar'da "Ollama modeli indir" (`ollama pull`) düğmesi ve ilerleme göstergesi.

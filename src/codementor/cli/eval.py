@@ -20,6 +20,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from codementor.config import Settings, load_settings
+from codementor.eval.breakdown import breakdown, breakdown_table
 from codementor.eval.compare import compare_table, load_results
 from codementor.eval.dataset import (
     DATASET_DIR,
@@ -66,6 +67,13 @@ def run(
         list[str] | None, typer.Option(help=f"Ablasyon: {', '.join(ABLATIONS)}")
     ] = None,
     limit: Annotated[int | None, typer.Option(help="İlk N örnek (deneme için).")] = None,
+    language: Annotated[
+        list[str] | None,
+        typer.Option(
+            help="Yalnızca bu dil(ler): c, cpp, csharp, python, html, css "
+            "(csharp Unity'yi, cpp Unreal'ı da kapsar)."
+        ),
+    ] = None,
     final: Annotated[
         bool, typer.Option("--final", help="test bölümünü çalıştırmaya izin ver.")
     ] = False,
@@ -90,7 +98,12 @@ def run(
     except DatasetError as exc:
         console.print(f"[red]Hata:[/red] {escape(str(exc))}")
         raise typer.Exit(EXIT_SYSTEM_ERROR) from exc
+    if language:
+        samples = [s for s in samples if s.label.language.value in set(language)]
     samples = samples[:limit] if limit else samples
+    if language and not samples:
+        console.print("[red]Hata:[/red] Seçilen dillerde bu bölümde örnek yok.")
+        raise typer.Exit(EXIT_USAGE)
     unreviewed = [s.label.id for s in samples if not s.label.reviewed]
     if unreviewed:
         console.print(f"[yellow]Uyarı:[/yellow] incelenmemiş örnekler: {', '.join(unreviewed)}")
@@ -110,6 +123,7 @@ def run(
                 static_only=static_only,
                 ablations=list(ablate or []),
                 progress=progress,
+                languages=list(language or []),
             )
         )
     except ValueError as exc:
@@ -118,6 +132,30 @@ def run(
     path = save_result(result, out_dir)
     console.print(f"yazıldı: {path}")
     typer.echo(compare_table([result]))
+
+
+@eval_app.command("breakdown")
+def breakdown_cmd(
+    path: Annotated[Path, typer.Argument(help="Sonuç dosyası.")],
+    dataset: Annotated[Path, typer.Option(help="Veri seti kökü.")] = DATASET_DIR,
+) -> None:
+    """Sonucu dil/motor grubuna göre döker (LLM çağrısı yok; etiketler veri setinden)."""
+    console = Console(stderr=True)
+    try:
+        (result,) = load_results([path])
+        labels = {
+            s.label.id: s.label
+            for split in ("dev", "test")
+            if (dataset / split).is_dir()
+            for s in load_split(dataset, split)
+        }
+    except (DatasetError, ValidationError, OSError) as exc:
+        console.print(f"[red]Hata:[/red] {escape(str(exc))}")
+        raise typer.Exit(EXIT_SYSTEM_ERROR) from exc
+    groups, missing = breakdown(result, labels)
+    if missing:
+        console.print(f"[yellow]Uyarı:[/yellow] etiketi bulunamayan örnekler: {', '.join(missing)}")
+    typer.echo(breakdown_table(groups))
 
 
 @eval_app.command("compare")

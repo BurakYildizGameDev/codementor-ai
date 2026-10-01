@@ -12,7 +12,7 @@ from codementor.models.bigo import parse_bigo
 from codementor.models.enums import AuditCategory, CompilationStatus, Engine, Language
 from codementor.models.report import AnalysisReport
 
-SAMPLE_ID_PATTERN = r"^(c|cpp|csharp|unity|unreal)-[0-9]{3}$"
+SAMPLE_ID_PATTERN = r"^(c|cpp|csharp|unity|unreal|python|html|css)-[0-9]{3}$"
 Split = Literal["dev", "test"]
 INJECTION_TAG = "injection"
 
@@ -100,6 +100,9 @@ class RunConfig(StrictModel):
     started_at: datetime
     sample_ids: list[str]
     reviewed_only: bool = True
+    languages: list[Language] = Field(
+        default_factory=list, description="Dil filtresi (boş: hepsi; Faz 18)"
+    )
 
 
 class Metrics(StrictModel):

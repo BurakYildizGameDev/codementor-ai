@@ -1,0 +1,14 @@
+# Temiz: ikili arama
+id: python-007
+language: python
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "log n"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: []
+tags: [clean, complexity]
+split: test
+reviewed: true

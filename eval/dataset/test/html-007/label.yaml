@@ -1,0 +1,12 @@
+# Temiz: etiketli giriş formu
+id: html-007
+language: html
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings: []
+  must_not_contain: []
+tags: [clean]
+split: test
+reviewed: true

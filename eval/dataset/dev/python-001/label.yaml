@@ -1,0 +1,12 @@
+# Sözdizimi: def satırında iki nokta eksik
+id: python-001
+language: python
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: dev
+reviewed: true

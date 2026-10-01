@@ -1,0 +1,13 @@
+# Kuyruk olarak liste: döngüde pop(0)
+id: python-010
+language: python
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: performance, line: 6, rule_id: PY-PERF-001 }
+  must_not_contain: []
+tags: [performance]
+split: test
+reviewed: true

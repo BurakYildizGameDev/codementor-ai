@@ -59,7 +59,8 @@ line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
 # Öğrenci kodu fixture'ları (bilerek hatalı Python dahil) biçimlendirilmez/denetlenmez
-extend-exclude = ["tests/fixtures", "tests/rules/fixtures", "tests/golden"]
+# eval/dataset: öğrenci kodu örnekleri (bilerek hatalı/sorunlu; Faz 18)
+extend-exclude = ["tests/fixtures", "tests/rules/fixtures", "tests/golden", "eval/dataset"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "N", "PT"]

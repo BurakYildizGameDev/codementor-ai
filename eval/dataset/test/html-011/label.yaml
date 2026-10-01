@@ -1,0 +1,13 @@
+# Tabloda başlık hücresi yok (kural yok)
+id: html-011
+language: html
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: accessibility, line: 7, note: "başlık hücreleri th değil" }
+  must_not_contain: []
+tags: [accessibility, semantics]
+split: test
+reviewed: true

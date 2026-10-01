@@ -1,0 +1,15 @@
+# Her çift karşılaştırılıyor: O(n²) tekrar bulma (kural yok)
+id: python-012
+language: python
+engine: none
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "n"
+  findings:
+    - { category: performance, line: 4, note: "her çift karşılaştırılıyor" }
+  must_not_contain: []
+tags: [complexity, performance]
+split: dev
+reviewed: true

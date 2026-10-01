@@ -109,3 +109,53 @@ Dev bulguları test'te de tutuyor:
   daha az yaslanması (güvenlik payı). `single_pass` kalite kaybı olmadan hızlı mod.
 - Precision'ı artırmak için (Sonraya): `design` bulgularını yalnızca soru
   gereksinimi varken üretmek; önem eşiği (`low` bulguları raporda ayrı göstermek).
+
+## 4. Python, HTML, CSS (Faz 18)
+
+Faz 16'da eklenen diller için 36 yeni incelenmiş örnek (dil başına 12; dev 5 / test 7; her
+dilde 3 sözdizimi hatalı, 2 injection, 2 temiz). Koşular yalnızca bu dillerde
+(`eval run --language python --language html --language css`); dil dökümü
+`codementor eval breakdown <sonuç.json>`. Sürümler: prompt `v1+e485058f` · kurallar
+`r1+286dfb2f` · şema `1.0`. Prompt ayarı yapılmadı; test bölümü bir kez (`--final`).
+HTML/CSS'te karmaşıklık yok (ADR-0015): Big-O metrikleri yalnızca Python örneklerinden gelir.
+
+| Koşu | Mod | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Yalnızca statik | static | 15 (dev) | — / — | 100% / 100% | 100% | 100% / 55% / 71% | 100% | 0% | — | 0.0 / 0.0 | — |
+| Yalnızca statik | static | 21 (test) | — / — | 100% / 100% | 100% | 100% / 67% / 80% | 100% | 0% | — | 0.0 / 0.0 | — |
+| claude-opus-5-5 | two_pass | 15 (dev) | 100% / 100% | 100% / 100% | 100% | 54% / 95% / 69% | 89% | 0% | 100% | 16.2 / 34.2 | 9530 |
+| claude-opus-5-5 | two_pass | 21 (test) | 100% / 100% | 100% / 100% | 100% | 33% / 81% / 47% | 100% | 0% | 100% | 16.5 / 36.5 | 9665 |
+| claude-opus-5-5 | single_pass | 21 (test) | 100% / 100% | 100% / 100% | 100% | 34% / 86% / 49% | 100% | 0% | 100% | 14.1 / 23.4 | 7328 |
+
+Test bölümü, dil başına (denetim P / R / F1):
+
+| Dil | Statik | two_pass | single_pass |
+|---|---|---|---|
+| Python | 100% / 83% / 91% | 46% / 100% / 63% | 50% / 100% / 67% |
+| HTML | 100% / 50% / 67% | 23% / 83% / 36% | 22% / 83% / 34% |
+| CSS | 100% / 67% / 80% | 38% / 67% / 48% | 39% / 78% / 52% |
+
+LLM'e giden 42 örneğin (3 koşu; sözdizimi hatalılar LLM'e gitmez) hepsi hatasız (`degraded` 0); şema ilk denemede %100.
+
+- **Erken çıkış ve injection:** 9 sözdizimi hatalı örneğin hepsi Tier 0'da yakalandı; 6 injection
+  örneğinin (Türkçe ve İngilizce, Python `#`, HTML `<!-- -->`, CSS `/* */` yorumu) hepsinde
+  direnç %100, sızıntı %0 (kod bloğu ya da çözüm parçası çıkmadı).
+- **Big-O (Python):** Big-O etiketli örneklerde statik ipucu ve LLM test 2/2, dev 4/4 birebir
+  (diğer Python örnekleri sözdizimi hatalı ya da dosya düzeyinde tek karmaşıklık yok).
+- **Recall:** CSS'teki kaçırmalar (`css-005`, `css-009`, `css-011` sabit boyut/ortalama) satır
+  doğru bulunup `design` yerine `edge_case`/`maintainability` kategorisiyle raporlandı; Faz 12'deki
+  kategori belirsizliğinin aynısı. Gerçekten bulunmayanlar: `html-009` başlık düzeyi atlama (h1→h4)
+  ve `html-004` başlık yerine `div` (dev); ikisi de "anlamsal yapı" gözlemi.
+- **Precision:** HTML'de en düşük (22–23%; HTML FP'leri two_pass / single_pass `edge_case` 7 / 7,
+  `design` 5 / 6). Üç dilin test toplamında da FP'lerin başı `edge_case` (15 / 14) ve `design`
+  (7 / 9): etiketlenmemiş küçük gözlemler (eksik `meta charset`, `onclick` adlandırması,
+  form doğrulaması). İşaretleme dillerinde LLM'in "iyi uygulama" önerileri bulgu olarak geliyor.
+- **two_pass vs single_pass:** C ailesindeki gibi kalite eşit (F1 47 vs 49), single_pass p95
+  %36, token %24 daha düşük.
+- **Ortam notu:** tam bir HTML belgesinde eşi olmayan `</div>` Tier 0'da hata sayılmıyor
+  (tree-sitter-html hoşgörülü); veri setinde bu örnek yakalanan bir hatayla değiştirildi.
+
+**Faz 17 kurallarının eski veri setine etkisi** (dev, C/C++/C#/Unity/Unreal, static-only): denetim
+P / R / F1 100 / 38 / 55 → 85 / 46 / 59. İki "yanlış pozitif" aslında etiketlenmemiş doğru
+bulgular: `c-008` NULL denetimsiz `malloc` (C-MEM-003), `csharp-009` döngüde `Average()`
+(CS-ALLOC-002). Etiketler bu fazda değiştirilmedi (Sonraya).

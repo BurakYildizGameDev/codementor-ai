@@ -1,0 +1,13 @@
+# Temiz: erişilebilir profil kartı
+id: html-006
+language: html
+engine: none
+question_id: html-easy-profile-card
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings: []
+  must_not_contain: []
+tags: [clean]
+split: dev
+reviewed: true

@@ -1,0 +1,15 @@
+# Temiz: sözlükle doğrusal kelime sayımı
+id: python-006
+language: python
+engine: none
+question_id: py-easy-word-count
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings: []
+  must_not_contain: []
+tags: [clean, complexity]
+split: dev
+reviewed: true

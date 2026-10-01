@@ -1,0 +1,12 @@
+# Sözdizimi: kapanmayan öznitelik tırnağı
+id: html-001
+language: html
+engine: none
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: []
+tags: [syntax]
+split: dev
+reviewed: true
