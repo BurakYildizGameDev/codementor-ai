@@ -36,24 +36,26 @@ def test_rules_list_language_filter() -> None:
 def test_rules_list_all() -> None:
     result = _invoke("list")
     assert result.exit_code == 0, result.output
-    assert "Kurallar (23)" in result.output  # 10 C ailesi + 13 Python/HTML/CSS (ADR-0015)
+    assert "Kurallar (33)" in result.output  # 20 C ailesi (Faz 6 + 17) + 13 Python/HTML/CSS
 
 
 def test_rules_list_engine_none_is_engine_agnostic() -> None:
     ids = {r.id for r in rule_catalog(engine=Engine.NONE)}
     assert ids == {
-        "C-BUF-001",
-        "C-MEM-001",
-        "CPP-OWN-001",
-        "CS-ALLOC-001",
-        "CS-PERF-001",
+        *(f"C-{k}" for k in ("BUF-001", "IO-001", "UB-001", "MEM-001", "MEM-002", "MEM-003")),
+        "C-PERF-001",
+        *(f"CPP-{k}" for k in ("OWN-001", "SP-001", "PERF-001")),
+        *(f"CS-{k}" for k in ("ALLOC-001", "ALLOC-002", "PERF-001")),
         *(f"PY-{k}" for k in ("DESIGN-001", "DESIGN-002", "EDGE-001", "PERF-001", "RES-001")),
         *(f"HTML-{k}" for k in ("ACC-001", "ACC-002", "ACC-003", "STD-001", "STD-002")),
         *(f"CSS-{k}" for k in ("MAINT-001", "MAINT-002", "STD-001")),
     }
     assert {r.id for r in rule_catalog(Language.CPP, Engine.UNREAL)} == {
         "CPP-OWN-001",
+        "CPP-SP-001",
+        "CPP-PERF-001",
         "UE-GC-001",
+        "UE-MEM-001",
         "UE-PERF-001",
     }
 

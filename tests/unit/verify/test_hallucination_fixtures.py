@@ -18,6 +18,7 @@ from codementor.ingest.normalize import normalize
 from codementor.models.enums import Engine, FindingSource, Language
 from codementor.models.llm_output import LLMAnalysisOutput, LLMSocraticOutput
 from codementor.models.request import LanguageHint
+from codementor.rules import all_rules
 from codementor.rules.engine import run_rules
 from codementor.verify.analysis import verify_analysis, verify_socratic
 from codementor.verify.schema_check import check_schema
@@ -25,6 +26,7 @@ from codementor.verify.schema_check import check_schema
 REPO = Path(__file__).resolve().parents[3]
 FIXTURES = REPO / "tests" / "fixtures" / "llm_responses"
 CASES = sorted(FIXTURES.glob("*.json"))
+RULES = {r.id: r for r in all_rules()}
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -117,7 +119,7 @@ def test_analysis_fixture(path: Path) -> None:
     for rule, line in expect.get("confirmed", []):
         (merged,) = [f for f in result.findings if f.rule_id == rule and f.line_start == line]
         assert merged.source == FindingSource.CONFIRMED
-        assert merged.severity.value == "high"  # statik önem öncelikli
+        assert merged.severity == RULES[rule].default_severity  # statik önem öncelikli
 
 
 @pytest.mark.parametrize(

@@ -60,22 +60,33 @@ def test_bad_id_format_rejected(bad: str) -> None:
 def test_unity_rule_not_applied_to_plain_csharp() -> None:
     plain = _ids(Language.CSHARP, Engine.NONE)
     assert not any(i.startswith("UNITY-") for i in plain)
-    assert {"CS-ALLOC-001", "CS-PERF-001"} <= plain
+    assert {"CS-ALLOC-001", "CS-PERF-001", "CS-ALLOC-002"} <= plain
+    assert "UNITY-PERF-002" not in plain
 
 
 def test_csharp_rule_applies_to_unity() -> None:
     unity = _ids(Language.CSHARP, Engine.UNITY)
-    assert {"CS-ALLOC-001", "CS-PERF-001", "UNITY-GC-001", "UNITY-EVT-001"} <= unity
+    assert {"CS-ALLOC-001", "CS-ALLOC-002", "UNITY-GC-001", "UNITY-PERF-002"} <= unity
 
 
 def test_unreal_rule_not_applied_to_plain_cpp() -> None:
     assert not any(i.startswith("UE-") for i in _ids(Language.CPP, Engine.NONE))
-    assert {"UE-GC-001", "UE-PERF-001", "CPP-OWN-001"} <= _ids(Language.CPP, Engine.UNREAL)
+    assert {"UE-GC-001", "UE-MEM-001", "CPP-OWN-001", "CPP-SP-001"} <= _ids(
+        Language.CPP, Engine.UNREAL
+    )
 
 
 def test_c_rules_only_for_c() -> None:
     assert not any(i.startswith("C-") for i in _ids(Language.CPP, Engine.NONE))
-    assert {"C-BUF-001", "C-MEM-001"} == _ids(Language.C, Engine.NONE)
+    assert _ids(Language.C, Engine.NONE) == {
+        "C-BUF-001",
+        "C-IO-001",
+        "C-UB-001",
+        "C-MEM-001",
+        "C-MEM-002",
+        "C-MEM-003",
+        "C-PERF-001",
+    }
 
 
 def test_disabled_rule_skipped() -> None:

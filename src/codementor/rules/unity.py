@@ -13,11 +13,11 @@ from codementor.rules.registry import register_rule
 UNITY = frozenset({Engine.UNITY})
 CSHARP = frozenset({Language.CSHARP})
 
+# LINQ burada değil: daha özgül CS-ALLOC-002 raporlar (aynı satırda çift bulgu olmasın)
 _HEAP = frozenset(
     {
         AllocationKind.CSHARP_NEW,
         AllocationKind.STRING_CONCAT,
-        AllocationKind.LINQ,
         AllocationKind.CLOSURE,
     }
 )
@@ -64,10 +64,13 @@ class HotPathAllocation(Rule):
     default_severity = Severity.HIGH
 
     def check(self, ctx: RuleContext) -> list[Finding]:
+        hot = [a for a in ctx.facts.allocations if a.in_hot_path]
+        # LINQ'e verilen lambda'nın closure'ı LINQ bulgusunun parçası (CS-ALLOC-002)
+        linq_lines = {a.line for a in hot if a.kind is AllocationKind.LINQ}
         return [
             self.finding(ctx, a.line)
-            for a in ctx.facts.allocations
-            if a.in_hot_path and a.kind in _HEAP
+            for a in hot
+            if a.kind in _HEAP and not (a.kind is AllocationKind.CLOSURE and a.line in linq_lines)
         ]
 
 
@@ -109,8 +112,10 @@ class HotPathLookup(Rule):
             for c in ctx.facts.calls
             if c.function in hot and _expensive_lookup(c.name)
         ]
-        for fn in ctx.function_nodes:
-            if fn.fact.is_hot_path:
+        covered = -1  # iç içe yerel fonksiyonlar dıştakiyle bir kez gezilir (Faz 17 denetimi)
+        for fn in sorted(ctx.function_nodes, key=lambda f: f.node.start_byte):
+            if fn.fact.is_hot_path and fn.node.start_byte >= covered:
+                covered = fn.node.end_byte
                 found += [
                     self.finding(ctx, line(n))
                     for n in ctx.nodes_in(fn.node, "member_access_expression")
@@ -246,4 +251,94 @@ class UnbalancedSubscription(Rule):
                 found.append(self.finding(ctx, line(n), description=self.LAMBDA_DESCRIPTION))
             elif (target, _norm(handler)) not in removed:
                 found.append(self.finding(ctx, line(n)))
+        return found
+
+
+# Her fizik adımında çağrılan geri çağrılar; `*Enter`/`*Exit` olay başına bir kez çalışır
+_PHYSICS_STAY = ("OnTriggerStay", "OnTriggerStay2D", "OnCollisionStay", "OnCollisionStay2D")
+
+
+# `tag` özelliği olan Unity tipleri; başka bir tiple bildirilmiş alıcının (`Item item`)
+# `tag`'i kullanıcının kendi alanıdır
+_TAGGED = frozenset(
+    {
+        "GameObject",
+        "Component",
+        "Transform",
+        "Collider",
+        "Collider2D",
+        "Collision",
+        "Collision2D",
+        "Rigidbody",
+        "Rigidbody2D",
+        "MonoBehaviour",
+        "Behaviour",
+        "Renderer",
+        "Camera",
+    }
+)
+
+
+def _is_tag(node: Node | None, types: dict[str, str]) -> bool:
+    """Unity `tag` özelliği: `tag`, `target.tag`, `other.gameObject.tag`.
+
+    Kodda `tag` adlı değişken/alan bildirilmişse yalın `tag` o değişkendir; alıcı Unity
+    dışı bir tiple bildirilmişse (`Item item; item.tag`) bulgu yok.
+    """
+    if node is None:
+        return False
+    if node.type == "identifier":
+        return text(node) == "tag" and "tag" not in types
+    if node.type != "member_access_expression":
+        return False
+    name, receiver = node.child_by_field_name("name"), node.child_by_field_name("expression")
+    if name is None or text(name) != "tag":
+        return False
+    if receiver is None or receiver.end_byte - receiver.start_byte > _MAX_NAME_BYTES:
+        return True
+    declared = types.get(simple_name(text(receiver).removeprefix("this.")))
+    return declared is None or declared in _TAGGED
+
+
+@register_rule
+class StringTagComparison(Rule):
+    """UNITY-PERF-002: sıcak yolda `tag ==` (`CompareTag` yerine)."""
+
+    id = "UNITY-PERF-002"
+    title = "Sıcak yolda string etiket karşılaştırma"
+    description = (
+        "`tag` özelliği her okunduğunda yeni bir string ayırır ve bu karşılaştırma sık "
+        "çalışıyor. Unity etiket karşılaştırması için ayırma yapmayan hangi metodu sunar?"
+    )
+    languages = CSHARP
+    engines = UNITY
+    category = AuditCategory.PERFORMANCE
+    default_severity = Severity.LOW
+
+    def check(self, ctx: RuleContext) -> list[Finding]:
+        found: list[Finding] = []
+        types = ctx.types
+        covered = -1  # iç içe yerel fonksiyonlar dıştakiyle bir kez gezilir (mimari §12)
+        for fn in sorted(ctx.function_nodes, key=lambda f: f.node.start_byte):
+            if fn.node.start_byte < covered:
+                continue
+            if not (fn.fact.is_hot_path or simple_name(fn.fact.name) in _PHYSICS_STAY):
+                continue
+            covered = fn.node.end_byte
+            for n in ctx.nodes_in(fn.node, "binary_expression", "invocation_expression"):
+                if n.type == "binary_expression":
+                    hit = operator_of(n) in ("==", "!=") and (
+                        _is_tag(n.child_by_field_name("left"), types)
+                        or _is_tag(n.child_by_field_name("right"), types)
+                    )
+                else:
+                    callee = n.child_by_field_name("function")
+                    hit = (
+                        callee is not None
+                        and callee.type == "member_access_expression"
+                        and text(callee.child_by_field_name("name")) == "Equals"
+                        and _is_tag(callee.child_by_field_name("expression"), types)
+                    )
+                if hit:
+                    found.append(self.finding(ctx, line(n)))
         return found

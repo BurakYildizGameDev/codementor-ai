@@ -697,6 +697,7 @@ uv run python -m codementor.analysis.extractor tests/golden/facts/unity-01/code.
 > C-UB-001, C-MEM-002, C-MEM-003, C-PERF-001, CPP-SP-001, CPP-PERF-001, CS-ALLOC-002,
 > UNITY-PERF-002, UE-MEM-001) uçtan uca akış (Faz 7–10) bittikten sonra eklenecek; motor ve
 > fixture düzeni değişmeden kural eklemeye hazır. Kabul kriterlerindeki "20 kural" buna göre okunur.
+> **Tamamlandı:** kalan 10 kural Faz 17'de eklendi.
 
 **Çıktılar**
 - `rules/base.py` (`Rule`, `RuleContext`, `finding()` yardımcısı), `rules/registry.py` (`@register_rule`)
@@ -1105,6 +1106,25 @@ uv run codementor serve &   # ve: cd web && npm run dev
 **Tuzaklar:** UI'da kapsam kayması çok kolaydır (tema, animasyon, hesaplar). Kabul kriterlerine sadık kal; güzelleştirme v1.1.
 
 **Commit:** `feat(faz-13): web arayüzü, kurulum ve portföy dokümantasyonu`
+
+---
+
+### Faz 17 — Faz 6'da ertelenen 10 C/C++/C# statik kuralı
+
+**Dal:** `faz/17-kurallar` · **Mimari:** §8.2, §5.3.3, §12
+
+**Amaç:** §8.2'deki "Statik"/"Statik + LLM" kurallarının kalan 10'u: C-IO-001, C-UB-001,
+C-MEM-002, C-MEM-003, C-PERF-001, CPP-SP-001, CPP-PERF-001, CS-ALLOC-002, UNITY-PERF-002,
+UE-MEM-001. Motor ve fixture düzeni Faz 6'daki gibi; yalnızca kural eklenir.
+
+**Kabul kriterleri**
+- [ ] 10 kural kayıtlı; her biri ≥2 pozitif (`// EXPECT:`) ve ≥2 "yakın ıskalama" negatif fixture
+- [ ] Dil/motor filtresi: C kuralları yalnız C'de, UNITY/UE kuralları yalnız kendi motorunda
+- [ ] 40 KB / 600 satır kötü niyetli girdide doğrusal süre (yeni kurallar için ayrı girdiler)
+- [ ] Unity'de aynı LINQ satırı için tek GC bulgusu (CS-ALLOC-002; UNITY-GC-001 tekrar etmez)
+- [ ] `docs/rules-catalog.md` yeniden üretildi; few-shot ve golden prompt'lar motorla tutarlı
+
+**Commit:** `feat(faz-17): ertelenen 10 C/C++/C# statik kuralı`
 
 ---
 

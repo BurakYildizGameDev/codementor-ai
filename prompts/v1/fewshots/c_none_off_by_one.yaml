@@ -20,6 +20,10 @@ static_findings:
     line: 4
     evidence: "int *buf = malloc(n * sizeof(int));"
     description: "Ayrılan bellek fonksiyondan çıkmadan serbest bırakılıyor mu?"
+  - rule_id: C-MEM-003
+    line: 4
+    evidence: "int *buf = malloc(n * sizeof(int));"
+    description: "malloc NULL döndürürse bu işaretçi denetlenmeden kullanılıyor mu?"
 analysis:
   complexity:
     reasoning_steps:
@@ -36,12 +40,6 @@ analysis:
       line_end: null
       evidence: "i <= n"
       description: "Döngünün son turunda i = n olur; n elemanlık dizilerin dışına yazılıp okunuyor."
-    - category: edge_case
-      severity: medium
-      line_start: 7
-      line_end: null
-      evidence: "buf[i] = src[i];"
-      description: "malloc başarısız olursa buf NULL olur; dönüş değeri denetlenmeden kullanılıyor."
 socratic:
   key_flaw_concept: "Dizi sınırının aşılması (off-by-one)"
   guiding_questions:

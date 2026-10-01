@@ -79,7 +79,9 @@ Satırlar "numara | kod" biçimindedir. evidence alanına yalnızca "|" işareti
 Karmaşıklık: zaman O(n), bellek O(n)
 Gerekçe:
 - Statik ipucuyla uyumlu: O(n).
-Doğrulanmış bulgu yok; sorularını karmaşıklığa ve hedefe dayandır.
+Bulgular (önem sırasıyla):
+- (medium) 10. satır: `Node *n = malloc(sizeof(Node));`: `malloc`/`calloc`/`realloc` bellek ayıramazsa NULL döndürür. Bu işaretçi denetlenmeden kullanılıyor; tahsis başarısız olursa bu satırdan sonra ne olur?
+- (medium) 17. satır: `Node *n = malloc(sizeof(Node));`: `malloc`/`calloc`/`realloc` bellek ayıramazsa NULL döndürür. Bu işaretçi denetlenmeden kullanılıyor; tahsis başarısız olursa bu satırdan sonra ne olur?
 
 ## Mentorluk ayarı
 - İpucu seviyesi: 1 (kavramsal soru, satır numarası verme)

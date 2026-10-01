@@ -30,9 +30,9 @@ Aşağıdaki örnekler yalnızca yanıt biçimini gösterir; öğrencinin koduyl
 11 | }
 </example_code>
 Statik ipucu: O(n)
-Statik analizin zaten bulduğu: C-MEM-001 (4. satır: `int *buf = malloc(n * sizeof(int));`)
+Statik analizin zaten bulduğu: C-MEM-001 (4. satır: `int *buf = malloc(n * sizeof(int));`); C-MEM-003 (4. satır: `int *buf = malloc(n * sizeof(int));`)
 Doğru yanıt:
-{"complexity": {"reasoning_steps": ["6. satırdaki for döngüsü n + 1 kez döner; gövdedeki işlemler O(1).", "4. satırda n elemanlık tampon ayrılıyor: ek bellek O(n)."], "time_complexity": "O(n)", "space_complexity": "O(n)", "optimal_time_target": "O(n)", "agreement": "agrees"}, "additional_findings": [{"category": "memory_safety", "severity": "high", "line_start": 6, "line_end": null, "evidence": "i <= n", "description": "Döngünün son turunda i = n olur; n elemanlık dizilerin dışına yazılıp okunuyor."}, {"category": "edge_case", "severity": "medium", "line_start": 7, "line_end": null, "evidence": "buf[i] = src[i];", "description": "malloc başarısız olursa buf NULL olur; dönüş değeri denetlenmeden kullanılıyor."}]}
+{"complexity": {"reasoning_steps": ["6. satırdaki for döngüsü n + 1 kez döner; gövdedeki işlemler O(1).", "4. satırda n elemanlık tampon ayrılıyor: ek bellek O(n)."], "time_complexity": "O(n)", "space_complexity": "O(n)", "optimal_time_target": "O(n)", "agreement": "agrees"}, "additional_findings": [{"category": "memory_safety", "severity": "high", "line_start": 6, "line_end": null, "evidence": "i <= n", "description": "Döngünün son turunda i = n olur; n elemanlık dizilerin dışına yazılıp okunuyor."}]}
 
 ## Soru: Tek yönlü bağlı liste: ekleme, silme, temizleme
 Zorluk: orta
@@ -107,7 +107,9 @@ Dayanak: push_back: satır 21 while (unknown) → n; satır 21: sınırı belirl
 Bu bir ipucudur, gerçek değil: kendin doğrula ve agreement alanında belirt.
 
 ## Statik analizin zaten bulduğu sorunlar
-Statik analiz sorun bulmadı; bu, kodun sorunsuz olduğu anlamına gelmez.
+Bunlar zaten bulundu ve rapora eklenecek: tekrarlama. Gerekirse açıklamanda onlara atıf yap; senin işin statik analizin kaçırdıklarını bulmak ve eksikleri tamamlamak.
+- C-MEM-003 (medium), 10. satır: `Node *n = malloc(sizeof(Node));`: `malloc`/`calloc`/`realloc` bellek ayıramazsa NULL döndürür. Bu işaretçi denetlenmeden kullanılıyor; tahsis başarısız olursa bu satırdan sonra ne olur?
+- C-MEM-003 (medium), 17. satır: `Node *n = malloc(sizeof(Node));`: `malloc`/`calloc`/`realloc` bellek ayıramazsa NULL döndürür. Bu işaretçi denetlenmeden kullanılıyor; tahsis başarısız olursa bu satırdan sonra ne olur?
 
 ## Statik olgular (özet)
 Fonksiyonlar:

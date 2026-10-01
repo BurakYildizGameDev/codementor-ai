@@ -5,7 +5,7 @@ Kural modülleri içe aktarılınca `@register_rule` ile kayıt defterine ekleni
 
 from __future__ import annotations
 
-from codementor.rules import c, cpp, csharp, css, html, python, unity, unreal
+from codementor.rules import c, c_memory, cpp, csharp, css, html, python, unity, unreal
 from codementor.rules.engine import run_rules
 from codementor.rules.registry import all_rules, applicable_rules
 
@@ -13,6 +13,7 @@ __all__ = [
     "all_rules",
     "applicable_rules",
     "c",
+    "c_memory",
     "cpp",
     "csharp",
     "css",

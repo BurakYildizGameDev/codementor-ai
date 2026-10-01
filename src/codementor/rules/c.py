@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from tree_sitter import Node
 
 from codementor.analysis._symbols import declarator_name, line, operator_of, text
@@ -15,7 +17,7 @@ _UNSAFE_BUFFER = frozenset({"gets", "strcpy", "strcat", "sprintf", "vsprintf"})
 _ALLOCATORS = frozenset({"malloc", "calloc"})
 # İşaretçiyi sahiplenmediği bilinen standart fonksiyonlar; başka bir fonksiyona geçirilen
 # işaretçi "sahiplik aktarıldı" sayılır (fonksiyonlar arası analiz yok, mimari §8.2).
-_NON_OWNING = frozenset(
+NON_OWNING = frozenset(
     {
         "memset",
         "memcpy",
@@ -73,21 +75,21 @@ class UnsafeBufferFunction(Rule):
         return [self.finding(ctx, c.line) for c in ctx.facts.calls if c.name in _UNSAFE_BUFFER]
 
 
-def _unwrap(node: Node | None) -> Node | None:
+def unwrap_call(node: Node | None) -> Node | None:
     """`(int *)malloc(...)`, `(malloc(...))` → çağrı düğümü."""
     while node is not None and node.type in ("cast_expression", "parenthesized_expression"):
         node = node.child_by_field_name("value") or next(iter(node.named_children), None)
     return node
 
 
-def _callee(node: Node) -> str:
+def callee_name(node: Node) -> str:
     """Çağrılan fonksiyonun adı; yalın ad değilse boş (uzun ifadenin metni alınmaz)."""
     fn = node.child_by_field_name("function")
     return text(fn) if fn is not None and fn.type == "identifier" else ""
 
 
 def _is_alloc(node: Node | None) -> bool:
-    return node is not None and node.type == "call_expression" and _callee(node) in _ALLOCATORS
+    return node is not None and node.type == "call_expression" and callee_name(node) in _ALLOCATORS
 
 
 def _value_only(node: Node) -> bool:
@@ -145,7 +147,7 @@ class _Owners:
         if kind == "return_statement":
             return [(c, True) for c in node.named_children]
         if kind == "call_expression":
-            owning = _callee(node) not in _NON_OWNING | _ALLOCATORS  # `free` dahil
+            owning = callee_name(node) not in NON_OWNING | _ALLOCATORS  # `free` dahil
             return [(c, owning and c.type == "argument_list") for c in node.named_children]
         if _value_only(node):
             return [(c, False) for c in node.named_children]
@@ -154,7 +156,7 @@ class _Owners:
     def _assign(
         self, target: Node | None, value: Node | None, node: Node, escaping: bool
     ) -> list[tuple[Node, bool]]:
-        if value is not None and _is_alloc(_unwrap(value)):
+        if value is not None and _is_alloc(unwrap_call(value)):
             self._bind(target, value)
             flag = False  # tahsis argümanları (`sizeof *p`) kaçış değil
         else:
@@ -187,3 +189,136 @@ class MallocWithoutFree(Rule):
             if fn.fact.name in owners
             for n in _Owners(fn.node).leaked_lines()
         ]
+
+
+_SCANF = frozenset({"scanf", "fscanf", "sscanf"})
+_LOOPS = ("for_statement", "while_statement", "do_statement")
+_ASSIGNING = re.compile(r"%(?!\*)")  # `%%` önceden atılır
+_READERS = frozenset({"fgets", "getline", "gets", "scanf", "fscanf", "fread", "getchar", "getc"})
+
+
+@register_rule
+class UncheckedScanf(Rule):
+    """C-IO-001: `scanf` ailesinin dönüş değeri kullanılmıyor."""
+
+    id = "C-IO-001"
+    title = "scanf dönüş değeri denetlenmiyor"
+    description = (
+        "`scanf` kaç alanı başarıyla okuduğunu döndürür ama bu değer kullanılmıyor. "
+        "Kullanıcı sayı yerine harf girerse ya da girdi biterse değişkende ne olur?"
+    )
+    languages = frozenset({Language.C})
+    category = AuditCategory.INPUT_HANDLING
+    default_severity = Severity.MEDIUM
+
+    def check(self, ctx: RuleContext) -> list[Finding]:
+        if not any(c.name in _SCANF for c in ctx.facts.calls):
+            return []
+        # Dönüş değeri atılan çağrı: deyimin kendisi çağrı. `(void)scanf(...)` bilinçli
+        # atmadır (cast_expression); koşul, atama ve karşılaştırma içindekiler denetlenmiş sayılır.
+        found: list[Finding] = []
+        for stmt in ctx.nodes_in(ctx.root, "expression_statement"):
+            call = next(iter(stmt.named_children), None)
+            while call is not None and call.type == "parenthesized_expression":
+                call = next(iter(call.named_children), None)
+            if (
+                call is not None
+                and call.type == "call_expression"
+                and callee_name(call) in _SCANF
+                and _assigns(call)
+            ):
+                found.append(self.finding(ctx, line(call)))
+        return found
+
+
+def _assigns(call: Node) -> bool:
+    """Biçim metninde atama yapan dönüşüm var mı (`%*[^\\n]`, `%*c` yalnızca girdiyi atar).
+
+    Biçim metin sabiti değilse (değişken) atama yaptığı varsayılır.
+    """
+    args = call.child_by_field_name("arguments")
+    index = 0 if callee_name(call) == "scanf" else 1  # fscanf/sscanf: önce akış/kaynak
+    fmt = args.named_child(index) if args is not None and args.named_child_count > index else None
+    if fmt is None or fmt.type != "string_literal" or fmt.end_byte - fmt.start_byte > 200:
+        return True
+    return _ASSIGNING.search(text(fmt).replace("%%", "")) is not None
+
+
+@register_rule
+class FlushStdin(Rule):
+    """C-UB-001: `fflush(stdin)`."""
+
+    id = "C-UB-001"
+    title = "fflush(stdin)"
+    description = (
+        "C standardı `fflush`'ı yalnızca çıkış akışları için tanımlar; `stdin` üzerinde "
+        "davranış tanımsızdır ve derleyiciden derleyiciye değişir. Satırın geri kalanını "
+        "atmak için girişten ne okuyabilirsin?"
+    )
+    languages = frozenset({Language.C})
+    category = AuditCategory.UNDEFINED_BEHAVIOR
+    default_severity = Severity.MEDIUM
+
+    def check(self, ctx: RuleContext) -> list[Finding]:
+        if not any(c.name == "fflush" for c in ctx.facts.calls):
+            return []
+        found: list[Finding] = []
+        for call in ctx.nodes_in(ctx.root, "call_expression"):
+            args = call.child_by_field_name("arguments")
+            if (
+                callee_name(call) == "fflush"
+                and args is not None
+                and args.named_child_count == 1
+                and (arg := args.named_child(0)) is not None
+                and arg.type == "identifier"
+                and text(arg) == "stdin"
+            ):
+                found.append(self.finding(ctx, line(call)))
+        return found
+
+
+@register_rule
+class StrlenInLoopCondition(Rule):
+    """C-PERF-001: döngü koşulunda `strlen`."""
+
+    id = "C-PERF-001"
+    title = "Döngü koşulunda strlen"
+    description = (
+        "Döngü koşulu her turda yeniden değerlendirilir ve `strlen` her seferinde metni "
+        "sonuna kadar tarar. n karakterlik bir metinde toplam kaç karakter okunur?"
+    )
+    languages = frozenset({Language.C})
+    category = AuditCategory.PERFORMANCE
+    default_severity = Severity.LOW
+
+    def check(self, ctx: RuleContext) -> list[Finding]:
+        if not any(c.name == "strlen" for c in ctx.facts.calls):
+            return []
+        found: list[Finding] = []
+        for loop in ctx.nodes_in(ctx.root, *_LOOPS):
+            condition = loop.child_by_field_name("condition")
+            if condition is None:
+                continue
+            calls = _condition_calls(condition)
+            # `fgets(line, ...) && strlen(line) > 1`: her turda yeni okunan metin ölçülüyor
+            if not any(callee_name(c) in _READERS for c in calls):
+                found += [self.finding(ctx, line(c)) for c in calls if callee_name(c) == "strlen"]
+        return found
+
+
+def _condition_calls(condition: Node) -> list[Node]:
+    """Koşuldaki çağrılar; GNU deyim ifadesinin (`({ ... })`) gövdesine inilmez.
+
+    Gövdedeki döngüler kendi koşullarıyla ayrıca gezilir; inilseydi iç içe deyim
+    ifadelerinde aynı alt ağaç her seviyede yeniden gezilirdi (karesel süre, mimari §12).
+    """
+    calls: list[Node] = []
+    stack = [condition]
+    while stack:
+        node = stack.pop()
+        if node.type == "compound_statement":
+            continue
+        if node.type == "call_expression":
+            calls.append(node)
+        stack.extend(node.named_children)
+    return calls

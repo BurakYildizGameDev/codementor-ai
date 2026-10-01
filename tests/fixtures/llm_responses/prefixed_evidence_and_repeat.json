@@ -2,7 +2,7 @@
   "code": "tests/golden/facts/unity-03/code.cs",
   "language": "csharp",
   "engine": "unity",
-  "description": "Faz 7'de yerel modelde görülen hata: 'Line 23:' / '33 |' önekli kanıt ve statik UNITY-GC-001 bulgusunun tekrarı; önek atılır, tekrar tek confirmed bulguya birleşir.",
+  "description": "Faz 7'de yerel modelde görülen hata: 'Line 23:' / '33 |' önekli kanıt ve statik LINQ bulgusunun (Faz 17: CS-ALLOC-002) tekrarı; önek atılır, tekrar tek confirmed bulguya birleşir.",
   "source": "synthetic (Faz 7 deepseek-r1:8b gözlemi)",
   "pass": "analysis",
   "response": {
@@ -51,7 +51,7 @@
     ],
     "confirmed": [
       [
-        "UNITY-GC-001",
+        "CS-ALLOC-002",
         23
       ]
     ]

@@ -20,6 +20,7 @@
 | 14 | ✅ | faz-14-masaustu | 2026-10-01 | Claude Code / — |
 | 15 | ✅ | faz-15-baglantilar | 2026-10-01 | Claude Code / — |
 | 16 | ✅ | faz-16-diller | 2026-10-01 | Claude Code / — |
+| 17 | ✅ | faz/17-kurallar | 2026-10-01 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -462,6 +463,31 @@
 **Doğrulama:** `make check` yeşil (2000+ test). claude_cli canlı: Python örneği 28 sn, O(n²) + PY-PERF-001; HTML örneği 26 sn, karmaşıklık yok, 3 statik + 5 LLM erişilebilirlik bulgusu.
 **Açık sorular:** Yeni 4 sorunun referans çözümleri `private/solutions/` altına kullanıcı tarafından eklenmeli (bu klasör erişim dışında).
 
+## Faz 17 — Notlar (Faz 6'da ertelenen 10 statik kural)
+**Yapılanlar:**
+- C: `c.py`'ye C-IO-001 (dönüşü atılan `scanf/fscanf/sscanf`), C-UB-001 (`fflush(stdin)`), C-PERF-001 (döngü koşulunda `strlen`); yeni `c_memory.py`'de C-MEM-002 (`X = realloc(X, …)`), C-MEM-003 (deref edilen ama NULL'a karşı hiç denetlenmeyen tahsis). C-MEM-001 yardımcıları public oldu (`unwrap_call`, `callee_name`, `NON_OWNING`).
+- C++: CPP-SP-001 (sınıf alanlarındaki `shared_ptr<T>` grafiğinde güçlü bağlı bileşen; yinelemeli Tarjan), CPP-PERF-001 (değerle geçirilen `std::vector/string/map/…`, `TArray/TMap/TSet/FString`).
+- C#/Unity/Unreal: CS-ALLOC-002 (LINQ, Update/Tick ya da döngüde), UNITY-PERF-002 (`tag ==`/`tag.Equals`), UE-MEM-001 (sayılı döngüde `Reserve`'siz `TArray::Add`).
+- 52 yeni fixture (her kurala ≥2+2, denetim regresyonları dahil), `test_engine.py`'ye 11 kötü niyetli girdi ve `test_linq_in_update_reported_once`; kayıt/CLI sayımları (33 kural); `docs/rules-catalog.md` yeniden üretildi.
+- Few-shot `c_none_off_by_one.yaml`: statik listeye C-MEM-003 eklendi, aynı konudaki LLM ek bulgusu çıkarıldı (örnek statik bulguyu tekrar etmeyi öğretmesin; `test_repo_fewshots_match_static_engine`). Golden prompt'lar güncellendi (bağlı liste örneğinde 10. ve 17. satırda C-MEM-003).
+- `prefixed_evidence_and_repeat.json` beklentisi: LINQ satırındaki tekrar artık CS-ALLOC-002 ile birleşiyor; test, birleşen bulgunun önemini kuralın varsayılan önemiyle karşılaştırıyor (sabit "high" yerine).
+**Kararlar (ve neden):**
+- **CS-ALLOC-002 "sıcak yol" = Update/Tick ya da döngü gövdesi.** Düz C#'ta Update yok; döngü sayılmasaydı kural düz C#'ta hiç çalışmazdı.
+- **LINQ tek kuralda:** UNITY-GC-001 artık LINQ'i ve LINQ satırındaki closure'ı raporlamıyor (aynı satırda iki GC bulgusu olmasın). Closure bastırma satır bazlı (aynı satırdaki bağımsız lambda da düşer; etkisi düşük).
+- **UNITY-PERF-002** `OnTriggerStay/OnCollisionStay(2D)`'yi kapsar, `*Enter/*Exit`'i kapsamaz (her karede değil). Kodda `tag` adlı değişken ya da Unity dışı tiple bildirilmiş alıcı (`Item item; item.tag`) bulgu vermez.
+- **CPP-SP-001 öz-referans** yalnız geri işaretçi sözcüğü (`parent`, `prev`, `previous`, `owner`, `back`; camelCase/`_` ile bölünmüş) olan alanda; `left/right/next`, `fallback/preview` ve `std::function<…>` içindeki `shared_ptr` sayılmaz. Güven 0,7 (şüphe).
+- **CPP-PERF-001** `std::move(param)` ya da `return param;` varsa (sink / kopyala-değiştir-döndür) bulgu yok.
+- **C-MEM-003** muhafazakâr: kullanıcı fonksiyonuna geçirilen işaretçi (`die_if_null(p)`) denetlenmiş sayılır; denetimin kullanımdan sonra olması fark edilmez. **C-MEM-002** fonksiyonda `exit/abort` varsa bulgu vermez. **C-IO-001** atama yapmayan biçimleri (`%*[^\n]`, `%*c`) saymaz. **C-PERF-001** koşulda okuyucu (`fgets`, `getline`…) varsa bulgu vermez.
+- **UE-MEM-001** döngüde `break/continue/return/goto` varsa ya da `Add` bir `if`/`switch` altındaysa bulgu yok; `Reserve/SetNum/Init` ya da sayılı `Empty(n)/Reset(n)` yer ayırmış sayılır.
+**Mimariden sapmalar (ADR linki):** yok (§8.2 tablosunun yorumu).
+**Denetim (kod-denetci):** Kritik ×5: 40 KB girdide karesel süre. C-MEM-003 sola iç içe atama zinciri 29,8 sn'den 0,16 sn'ye indi (`_key` açma adımı sınırlı). C-PERF-001 iç içe GNU deyim ifadesi 14,9 sn'den 0,18 sn'ye (koşulda `compound_statement`'e inilmiyor). UE-MEM-001 yerel struct metotları 8,8 sn'den 0,14 sn'ye ve UNITY-PERF-002 iç içe `Update` 5,1 sn'den 0,01 sn'ye (yalnız en dıştaki fonksiyon geziliyor). CPP-PERF-001 3,2 sn'den doğrusala (kök bir kez geziliyor, bayt aralığında ikili arama). Önemli: bu girdiler testlere eklendi; yanlış pozitifler (`scanf("%*c")`, kopyala-değiştir-döndür, `continue` ile süzme, `fallback`/`std::function`, `fgets && strlen`) negatif fixture'larla sabitlendi. Küçük: `reserved.cpp`'deki hatalı `SetNum`+`Add` örneği `Empty(Count)` oldu; `item.tag`, `die_if_null`, `(void *)0`, `exit` sonrası `realloc` düzeltildi; CS-ALLOC-002 ve UE-MEM-001 açıklamaları çözümü söylemeyen sorulara çevrildi. **Kapsam dışı düzeltme:** Faz 6'dan gelen UNITY-PERF-001 aynı iç içe `Update` girdisinde 5,1 sn sürüyordu; aynı dört satırlık düzeltme uygulandı (test bunu birlikte ölçüyor).
+**Açık sorular:**
+- Bağlı liste golden'ında iki C-MEM-003 bulgusu prompt'a giriyor; Sokratik odağı asıl hatadan (boş listede `cur->next`) uzaklaştırabilir. Eval'de izlenmeli.
+**Bu fazda öğrendiğim:**
+- "Sarmalayıcıyı aç" döngüsü her düğümde çağrılınca sola iç içe zincirde karesel olur; adım sınırı ya da tek geçiş şart.
+- `function_nodes` iç içe (yerel fonksiyon/sınıf metodu) düğümler içerir; fonksiyon başına alt ağaç gezen her kural yalnız en dıştakini gezmeli.
+- Bash heredoc'u `\b`/`\w` kaçışlarını yine bozdu; regex içeren düzenlemeler Edit ile.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm (precision/recall, sızıntı).
 - Faz 16: HTML etiket dengesi denetimi (stdlib `html.parser` ile kapanmamış/uyumsuz etiket uyarısı) Tier 1 karşılığı olarak.
@@ -486,7 +512,8 @@
 - `validation.stub_header` / `roslyn_check_dll` göreli yolları da çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte ele alınmalı).
 - `#pragma` makro genişletmeli biçimleri (`#pragma MACRO`) ve `#line` şu an serbest; derleyici kaynak okumadığı için risk düşük, ama include korumasına izin listesi eklenebilir.
 - gcc kolonları "display" birimli, clang bayt; Tier 0 karakter. Unicode içeren satırlarda kolonlar farklı olabilir (`-fdiagnostics-column-unit=byte` gcc ≥ 11).
-- Faz 6'da ertelenen 10 statik kural: C-IO-001, C-UB-001, C-MEM-002, C-MEM-003, C-PERF-001, CPP-SP-001, CPP-PERF-001, CS-ALLOC-002, UNITY-PERF-002, UE-MEM-001 (motor ve fixture düzeni hazır).
+- ~~Faz 6'da ertelenen 10 statik kural~~ → Faz 17'de yapıldı (2026-10-01).
+- Faz 17: C-MEM-003 denetimin kullanımdan sonra yapıldığını görmüyor (akış duyarlılığı yok); UNITY-GC-001 closure bastırması satır bazlı.
 - C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi (`print_arr(arr, n)`) sahiplik aktarımı sayılıyor (sık kaçırma); çağrılan fonksiyon aynı dosyadaysa ve `free`/saklama yoksa bulgu verilebilir. Aynı değişkene iki kez `malloc`, gölgeleme ve `realloc` de bilinçli sınırlar.
 - UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı için `new Hit(3)` yanlış bulgu (değer tipi); Faz 5 `CSHARP_VALUE_TYPES` dosyadaki struct adlarıyla genişletilebilir.
 - UE-GC-001: `TArray<AActor*>`/`TMap<..., UObject*>` kapsayıcı alanları kaçırılıyor; UCLASS olmayan sınıfta (`FPlain`) öneri `UPROPERTY` değil `TStrongObjectPtr`/`FGCObject` olmalı.
@@ -524,7 +551,7 @@
 - Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri.
 
 ## Yapılacaklar (2026-10-01 itibarıyla sıra)
-Durum: Faz 0-16 main'de ve push'lu (842279e), CI 3 işte yeşil.
+Durum: Faz 0-16 main'de ve push'lu (842279e), CI 3 işte yeşil. Faz 17 (10 statik kural) `faz/17-kurallar` dalında, commit bekliyor.
 
 **Kullanıcı:** yeni 4 sorunun referans çözümlerini `private/solutions/` altına ekle
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
@@ -532,7 +559,7 @@ Durum: Faz 0-16 main'de ve push'lu (842279e), CI 3 işte yeşil.
 
 **Sıradaki fazlar (önerilen sıra):**
 1. Yeni diller için eval: Python/HTML/CSS örnekleri, precision/recall ve sızıntı ölçümü.
-2. Faz 6'da ertelenen 10 C/C++/C# kuralı (Sonraya listesinde).
+2. ~~Faz 6'da ertelenen 10 C/C++/C# kuralı~~ → Faz 17.
 3. Masaüstünde analizi durdurma düğmesi (CLI ajanı süreç iptaliyle birlikte).
 4. Bağlantılar'da "Ollama modeli indir" (`ollama pull`) düğmesi ve ilerleme göstergesi.
 5. HTML etiket dengesi uyarısı (kapanmamış/uyumsuz etiket; stdlib `html.parser`).

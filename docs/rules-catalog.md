@@ -7,14 +7,22 @@ Statik kurallar (mimari §5.3.3, §8.2). "LLM" tespitli maddeler burada değil,
 `data/checklists/` altındaki kontrol listelerindedir. Bir kural `codementor.toml`
 içinde `[rules] disabled = ["KURAL-ID"]` ile kapatılabilir.
 
-Toplam: 23 kural.
+Toplam: 33 kural.
 
 | ID | Başlık | Dil | Motor | Kategori | Önem |
 |---|---|---|---|---|---|
 | C-BUF-001 | Sınır denetimsiz tampon fonksiyonu | c | — | memory_safety | high |
+| C-IO-001 | scanf dönüş değeri denetlenmiyor | c | — | input_handling | medium |
 | C-MEM-001 | Serbest bırakılmayan bellek | c | — | resource_leak | high |
+| C-MEM-002 | realloc sonucu aynı işaretçiye atanıyor | c | — | memory_safety | high |
+| C-MEM-003 | Tahsis sonucu NULL denetimi yok | c | — | memory_safety | medium |
+| C-PERF-001 | Döngü koşulunda strlen | c | — | performance | low |
+| C-UB-001 | fflush(stdin) | c | — | undefined_behavior | medium |
 | CPP-OWN-001 | Çıplak new/delete | cpp | — | memory_safety | medium |
+| CPP-PERF-001 | Büyük nesne değerle geçiriliyor | cpp | — | performance | low |
+| CPP-SP-001 | Döngüsel shared_ptr şüphesi | cpp | — | resource_leak | high |
 | CS-ALLOC-001 | Döngüde string birleştirme | csharp | — | garbage_collection | medium |
+| CS-ALLOC-002 | Sıcak yolda LINQ | csharp | — | garbage_collection | medium |
 | CS-PERF-001 | Döngüde doğrusal arama | csharp | — | performance | medium |
 | CSS-MAINT-001 | Çok sayıda !important | css | — | maintainability | low |
 | CSS-MAINT-002 | Boş kural bloğu | css | — | maintainability | low |
@@ -30,10 +38,12 @@ Toplam: 23 kural.
 | PY-PERF-001 | Döngüde doğrusal liste işlemi | python | — | performance | medium |
 | PY-RES-001 | with dışında open() | python | — | resource_leak | medium |
 | UE-GC-001 | UPROPERTY'siz UObject alanı | cpp | unreal | garbage_collection | high |
+| UE-MEM-001 | Reserve olmadan TArray::Add | cpp | unreal | performance | low |
 | UE-PERF-001 | Tick içinde ağır iş | cpp | unreal | performance | medium |
 | UNITY-EVT-001 | Kaldırılmayan olay aboneliği | csharp | unity | resource_leak | medium |
 | UNITY-GC-001 | Sıcak yolda heap tahsisi | csharp | unity | garbage_collection | high |
 | UNITY-PERF-001 | Sıcak yolda bileşen/sahne araması | csharp | unity | performance | high |
+| UNITY-PERF-002 | Sıcak yolda string etiket karşılaştırma | csharp | unity | performance | low |
 
 ## Açıklamalar
 
@@ -41,17 +51,49 @@ Toplam: 23 kural.
 
 `gets`, `strcpy`, `strcat` ve `sprintf` hedef tamponun boyutunu bilmez; girdi tampondan uzunsa bellek taşar. Hedefin kaç bayt aldığını nereden biliyorsun?
 
+### C-IO-001 — scanf dönüş değeri denetlenmiyor
+
+`scanf` kaç alanı başarıyla okuduğunu döndürür ama bu değer kullanılmıyor. Kullanıcı sayı yerine harf girerse ya da girdi biterse değişkende ne olur?
+
 ### C-MEM-001 — Serbest bırakılmayan bellek
 
 Bu fonksiyonda `malloc`/`calloc` ile ayrılan bellek ne `free` ediliyor ne de fonksiyondan dışarı veriliyor. Fonksiyon bittiğinde bu bellek kimde kalıyor?
+
+### C-MEM-002 — realloc sonucu aynı işaretçiye atanıyor
+
+`realloc` başarısız olursa NULL döndürür ama eski blok serbest bırakılmaz. Sonuç doğrudan aynı işaretçiye yazıldığında eski bloğun adresi nerede kalır?
+
+### C-MEM-003 — Tahsis sonucu NULL denetimi yok
+
+`malloc`/`calloc`/`realloc` bellek ayıramazsa NULL döndürür. Bu işaretçi denetlenmeden kullanılıyor; tahsis başarısız olursa bu satırdan sonra ne olur?
+
+### C-PERF-001 — Döngü koşulunda strlen
+
+Döngü koşulu her turda yeniden değerlendirilir ve `strlen` her seferinde metni sonuna kadar tarar. n karakterlik bir metinde toplam kaç karakter okunur?
+
+### C-UB-001 — fflush(stdin)
+
+C standardı `fflush`'ı yalnızca çıkış akışları için tanımlar; `stdin` üzerinde davranış tanımsızdır ve derleyiciden derleyiciye değişir. Satırın geri kalanını atmak için girişten ne okuyabilirsin?
 
 ### CPP-OWN-001 — Çıplak new/delete
 
 Nesnenin ömrü elle yönetiliyor. Arada bir istisna ya da erken `return` olursa `delete` çalışır mı? Sahipliği kim taşıyor?
 
+### CPP-PERF-001 — Büyük nesne değerle geçiriliyor
+
+Bu parametre değerle geçiriliyor; her çağrıda kapsayıcının tamamı kopyalanır. Fonksiyon bu kopyayı değiştirmeye ya da saklamaya ihtiyaç duyuyor mu?
+
+### CPP-SP-001 — Döngüsel shared_ptr şüphesi
+
+Bu alan, kendisini de `shared_ptr` ile tutan bir nesneyi gösteriyor. İki nesne birbirini tutarsa sayaçları hiç sıfıra iner mi? Bağlardan biri sahiplik gerektirmiyorsa hangi tür daha uygun olur?
+
 ### CS-ALLOC-001 — Döngüde string birleştirme
 
 `string` değiştirilemez: her `+=` yeni bir metin ayırıp eskisini kopyalar. Döngü n kez dönerse toplam kaç karakter kopyalanır?
+
+### CS-ALLOC-002 — Sıcak yolda LINQ
+
+LINQ her çağrıda yineleyici ve çoğu zaman temsilci nesneleri ayırır; bu satır her karede ya da döngünün her turunda çalışıyor. Bu satır kaç kez çalışıyor ve ürettiği sonuç her seferinde gerçekten değişiyor mu?
 
 ### CS-PERF-001 — Döngüde doğrusal arama
 
@@ -113,6 +155,10 @@ Bu dosya ne zaman kapanıyor? Okuma sırasında bir hata olursa kapanma satırı
 
 Çöp toplayıcı yalnızca `UPROPERTY` ile işaretli alanları görür. Bu alanın gösterdiği nesne başka hiçbir yerden tutulmuyorsa GC onu toplar; alan ne gösterir?
 
+### UE-MEM-001 — Reserve olmadan TArray::Add
+
+Döngünün kaç kez döneceği belli ve her turda diziye bir eleman ekleniyor. Dizinin kapasitesi dolduğunda `Add` ne yapmak zorunda kalır ve bu döngüde kaç kez olabilir?
+
 ### UE-PERF-001 — Tick içinde ağır iş
 
 `Tick` her karede çalışır. Bu iş gerçekten her karede mi gerekli, yoksa bir olaya, zamanlayıcıya ya da önbelleğe taşınabilir mi?
@@ -128,3 +174,7 @@ Bu satır her karede yeni bir nesne ayırıyor; çöp toplayıcı bunları bir n
 ### UNITY-PERF-001 — Sıcak yolda bileşen/sahne araması
 
 Bu arama her karede yeniden yapılıyor ama sonucu kareden kareye değişiyor mu? Sonucu bir kez bulup saklamak mümkün mü?
+
+### UNITY-PERF-002 — Sıcak yolda string etiket karşılaştırma
+
+`tag` özelliği her okunduğunda yeni bir string ayırır ve bu karşılaştırma sık çalışıyor. Unity etiket karşılaştırması için ayırma yapmayan hangi metodu sunar?

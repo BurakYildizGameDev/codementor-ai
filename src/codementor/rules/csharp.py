@@ -5,7 +5,7 @@ from __future__ import annotations
 from tree_sitter import Node
 
 from codementor.analysis._symbols import line, operator_of, simple_name, text
-from codementor.models.enums import AuditCategory, Language, Severity
+from codementor.models.enums import AllocationKind, AuditCategory, Language, Severity
 from codementor.models.findings import Finding
 from codementor.rules.base import Rule, RuleContext
 from codementor.rules.registry import register_rule
@@ -123,4 +123,28 @@ class LinearSearchInLoop(Rule):
             and c.known_cost == "n"
             and c.name.split(".")[0] in _LINEAR_COLLECTIONS
             and simple_name(c.name) in _LINEAR_SEARCH
+        ]
+
+
+@register_rule
+class LinqOnHotPath(Rule):
+    """CS-ALLOC-002: sıcak yolda (Update/Tick ya da döngü) LINQ."""
+
+    id = "CS-ALLOC-002"
+    title = "Sıcak yolda LINQ"
+    description = (
+        "LINQ her çağrıda yineleyici ve çoğu zaman temsilci nesneleri ayırır; bu satır her "
+        "karede ya da döngünün her turunda çalışıyor. Bu satır kaç kez çalışıyor ve "
+        "ürettiği sonuç her seferinde gerçekten değişiyor mu?"
+    )
+    languages = frozenset({Language.CSHARP})
+    category = AuditCategory.GARBAGE_COLLECTION
+    default_severity = Severity.MEDIUM
+
+    def check(self, ctx: RuleContext) -> list[Finding]:
+        # Düz C#'ta Update yok; döngü gövdesi de sıcak yol sayılır (Faz 17 kararı)
+        return [
+            self.finding(ctx, a.line)
+            for a in ctx.facts.allocations
+            if a.kind is AllocationKind.LINQ and (a.in_hot_path or a.loop_depth >= 1)
         ]
