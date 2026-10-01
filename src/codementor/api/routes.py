@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from functools import lru_cache
 from importlib.resources import files
 from typing import Annotated, Any
@@ -18,7 +19,7 @@ from codementor.models.api import PROBLEM_JSON, CompilerStatus, Health, Problem,
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.provider import ProviderStatus
 from codementor.models.questions import QuestionPublic
-from codementor.models.report import AnalysisReport
+from codementor.models.report import ULID_PATTERN, AnalysisReport
 from codementor.models.request import AnalysisRequest
 from codementor.models.rules import RuleInfo
 from codementor.providers.factory import chain_names
@@ -102,7 +103,9 @@ async def analyze_stream(request: Request, body: AnalyzeBody) -> StreamingRespon
 
 
 def _stored(request: Request, analysis_id: str) -> AnalysisReport:
-    report = get_analysis(_state(request).database(), analysis_id)
+    # Biçimi bozuk kimlik veritabanına hiç gitmez; varlığı sızdırmamak için yine 404 (Faz 27)
+    valid = re.fullmatch(ULID_PATTERN, analysis_id) is not None
+    report = get_analysis(_state(request).database(), analysis_id) if valid else None
     if report is None:
         raise ApiProblemError(404, f"'{analysis_id}' kimlikli analiz bulunamadı.")
     return report

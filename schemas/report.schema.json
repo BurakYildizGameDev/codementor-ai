@@ -486,7 +486,8 @@
   "description": "Bir analizin tam sonucu.",
   "properties": {
     "analysis_id": {
-      "description": "ULID",
+      "description": "ULID (Crockford base32, 26 karakter)",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
       "title": "Analysis Id",
       "type": "string"
     },

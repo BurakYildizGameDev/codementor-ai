@@ -3,7 +3,7 @@
  * `make schema` ardından `npm run gen:types`. */
 
 /**
- * ULID
+ * ULID (Crockford base32, 26 karakter)
  */
 export type AnalysisId = string;
 export type Column = number | null;

@@ -29,6 +29,7 @@
 | 24 | ✅ | faz/24-masaustu-kullanilabilirlik | 2026-10-01 | Claude Code / — |
 | 25 | ✅ | faz/25-saglayicilar | 2026-10-02 | Claude Code / — |
 | 26 | ✅ | faz/26-api-web | 2026-10-02 | Claude Code / — |
+| 27 | ✅ | faz/27-saglamlik | 2026-10-02 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -623,6 +624,18 @@
 **Açık sorular:** yok.
 **Bu fazda öğrendiğim:** Bu ortamda kabuk heredoc'undan Python'a geçen `\0`, `\n` gibi kaçışlar gerçek karakterlere dönüşebiliyor (prompt_version'da NUL baytı oluştu) — kaçış içeren kod Write/Edit aracıyla ya da `chr(92)` ile yazılmalı. Projede biçimlendirici olmayan web dosyalarında `npx prettier` çalıştırmak kapsam dışı fark üretir.
 
+## Faz 27 — Notlar (sağlamlık, dar kapsam)
+**Yapılanlar:**
+- CI: Linux `check` işine `actions/setup-dotnet` (10.0.x) + `dotnet build tools/roslyn-check`; pytest adımında `CODEMENTOR_REQUIRE_ROSLYN=1` → `test_roslyn_available_when_required` Roslyn yoksa başarısız (C# derleyici testleri artık sessizce atlanamaz). `exe` işi de Roslyn'i derler; `build_exe.py` `tools/roslyn-check/out` varsa pakete koyar (Faz 23 Sonraya maddesi).
+- `cli/encoding.py` `ensure_utf8_console()`: Typer geri çağrısında stdout/stderr UTF-8 değilse `reconfigure(encoding="utf-8", errors="replace")`. Yerelde yeniden üretildi: cp1254'te Rich `✗` → `UnicodeEncodeError`; artık `PYTHONIOENCODING` gerekmez.
+- `LLMSocraticOutput.guiding_questions` öğeleri `max_length=1000` (`MAX_QUESTION_CHARS`; sızıntı denetimi aynı sabiti kullanır). Şemalar (`llm_socratic`, `llm_single_pass`) yeniden üretildi; Anthropic/OpenAI adaptörleri kısıtı zaten çıkarıyor (K5 doğrular).
+- `AnalysisReport.analysis_id` `ULID_PATTERN` (Crockford base32, 26). Mevcut 398 kimlik (eval sonuçları, örnekler, golden) önceden tarandı: hepsi uyumlu. API `_stored`: biçim dışı kimlik veritabanına gitmeden 404 (varlık sızdırmaz).
+- Testler: `test_cli_encoding.py` (3), `test_models.py` (+9: 7 bozuk kimlik, `new_ulid` uyumu, soru uzunluğu), `test_routes.py` (+2 yol), `test_packaging.py` (CI Roslyn adımları ve sırası), `tests/compiler` koruma testi.
+**Mimariden sapmalar (ADR linki):** yok (§6.3, §6.4 biçim sınırları eklendi).
+**Kapsam dışı (gerekçeli):** tree-sitter süre sınırı (ölçüm: en kötü kötü niyetli girdi `"a<"*20000` = 40 KB sınırı içinde ~380 ms; ayrıştırma Faz 26'dan beri iş parçacığında; `parse` `None` dönerse tüm çağıranların ele alması gerekir), gcc kolon birimi ve Windows g++ zaman aşımı (yerelde gcc yok, doğrulanamaz), C++ ham metin maskeleme ve Tier 0 ERROR özeti D2 (include koruması fail-closed, nadir), `parse_bigo` uzantıları (eval'de görülmeden erken), `#pragma` izin listesi, `ue_stubs.h` (eval gürültüsüne göre). "Ara sıra düşen test" için somut kayıt yok; Tk açılış hatası zaten yeniden denemeyle ele alınıyor.
+**Açık sorular:** yok.
+**Bu fazda öğrendiğim:** Atlanabilir (skipif) testler CI'da araç kurulumu bozulduğunda sessizce yeşil kalır; zorunluluk bayrağıyla bir koruma testi bunu yakalar.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 26: API hız sınırı (istemci başına, süreçler arası doğru); web arayüzünün API anahtarı göndermesi.
 - Faz 26: SQLite çağrılarını da iş parçacığına almak (bağlantı başına iş parçacığı ya da havuz).
@@ -633,7 +646,7 @@
 - Faz 24: toml'a yazıldıktan sonra masaüstü tercihlerindeki aynı geçersiz kılmalar gereksizleşir (zararsız); "toml'dan yeniden yükle" düğmesi yok.
 - Faz 23: `reference_solution_path` (`private/solutions/`) hâlâ çalışma dizinine göre; soru dosyasının ya da kaynak kökünün dizinine göre çözülmeli (sızıntı testi buna göre güncellenmeli).
 - Faz 23: mimari §20 ADR tablosunda ADR-0013/0014/0015 satırları eksik.
-- Faz 23: CI exe işi Roslyn denetleyicisini (`make roslyn-check`, dotnet) derlemiyor; artefakttaki exe'de C# Tier 1 yok.
+- ~~Faz 23: CI exe işi Roslyn denetleyicisini derlemiyor~~ → Faz 27.
 - Faz 21 denetimi O3: kurallar sıcak yolu fonksiyon **adıyla** eşliyor (`RuleContext.hot_functions`, `CallFact.function`); aynı dosyada tabansız sınıfta ve MonoBehaviour'da aynı adlı `Update` varsa UNITY-PERF-001/UE-PERF-001 düz sınıfta da bulgu verir (UNITY-GC-001 `in_hot_path` kullandığı için doğru). Olgulara fonksiyon kimliği (satır) eklenmeli.
 - Faz 21: `rules_version` yalnız `rules/*.py` hash'i; `analysis/` ve `data/call_costs.yaml` değişiklikleri önbellek anahtarına yansımıyor (bayat önbellek riski).
 - Faz 21: `log.exception` izi sınırsız ve CLI'da WARNING düzeyinde stderr'e basılır; kural istisna mesajı kullanıcı kodu parçası içerebilir (§12) — iz DEBUG'a ya da kısaltılmış mesaja alınabilir. `captured_logs` teardown'u önceki yapılandırmayı değil varsayılanı geri yükler.
@@ -643,7 +656,7 @@
 - ~~Faz 18: Tier 0 `</div>` kör noktası~~ → Faz 20'de HTML-STD-003 ile bulgu olarak.
 - Faz 20: HTML-STD-003 kaçırmaları: dosya sonunda bitmemiş `<div`, `<p><span>a<div>` (örtük kapanış yalnız yığın tepesine bakıyor), DOCTYPE'sız (quirks) belgede `table` `p`'yi kapatmaz; aynı satırda kapanmayan + eşsiz bulgu varsa motor ilkini tutar (eşsiz sorusu görünmez); katalogda yalnız ana açıklama var.
 - Kural motoru: bulgu sayısına üst sınır yok (600 satırlık kötü niyetli girdi 600 bulgu üretip prompt'a gidebilir).
-- Faz 18: `codementor eval check-drafts` Windows konsolunda (cp1254) `✗` karakterinde çöküyor; `PYTHONIOENCODING=utf-8` gerekiyor. Rich konsolu UTF-8'e zorlanmalı ya da ASCII işaretler kullanılmalı.
+- ~~Faz 18: `codementor eval check-drafts` Windows konsolunda (cp1254) çöküyor~~ → Faz 27 (konsol UTF-8).
 - Faz 18: eski veri seti etiketlerine Faz 17 bulguları (`c-008` 4. satır `memory_safety` C-MEM-003, `csharp-009` 11. satır `garbage_collection` CS-ALLOC-002) eklenmeli mi? (test etiketleri de etkilenebilir; kullanıcı kararı)
 - Faz 18: HTML precision (%22) için işaretleme prompt'unda bulgu ölçütü ("iyi uygulama önerisi" ile "sorun" ayrımı); kategori tanımları (`design` vs `edge_case`). Ayar yalnız dev'de yapılmalı.
 - Faz 18: `eval breakdown` tablosuna gecikme/token sütunları; `breakdown` etiketleri koşu anındaki değil güncel veri setinden alıyor.
@@ -664,8 +677,8 @@
 - ~~Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.~~ → Faz 23
 - ~~`.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.~~ → Faz 23
 - `parse_bigo` şu an `log log n`, `n^n`, `Θ(...)`/`Ω(...)`, `max(n,m)` ve `k` gibi değişken üsleri desteklemiyor; eval'de LLM çıktılarında görülürse eklenebilir.
-- `AnalysisReport.analysis_id` için ULID biçim doğrulaması (şu an serbest `str`, §6.4 böyle).
-- CI'a `actions/setup-dotnet` + `make roslyn-check` adımı: C# `compiler` testleri CI'da da çalışsın.
+- ~~`AnalysisReport.analysis_id` için ULID biçim doğrulaması~~ → Faz 27.
+- ~~CI'a `actions/setup-dotnet` + `make roslyn-check` adımı~~ → Faz 27.
 - `ue_stubs.h` genişletilebilir (`Super` için `GENERATED_BODY` yerine sınıf başına typedef mümkün değil; delegeler `OnDestroyed.AddDynamic`, `FTimerManager`); eval'de Unreal uyarı gürültüsüne göre karar verilmeli.
 - ~~`validation.stub_header` / `roslyn_check_dll` göreli yolları da çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte ele alınmalı).~~ → Faz 23
 - `#pragma` makro genişletmeli biçimleri (`#pragma MACRO`) ve `#line` şu an serbest; derleyici kaynak okumadığı için risk düşük, ama include korumasına izin listesi eklenebilir.
@@ -690,7 +703,7 @@
 - Faz 8 denetim D8: ~~`prompts.dir`~~ Faz 23'te çözüldü; demo'nun golden dizini (`tests/golden/prompts`, geliştirici aracı) hâlâ çalışma dizinine göre.
 - Faz 8: prompt'ların `claude_cli` ile canlı karşılaştırması (analysis vs single_pass) Faz 12 eval'inde; token tahmininin gerçek `usage` ile kalibrasyonu.
 - ~~Faz 9: sızıntı korumasını `reasoning_steps` ve LLM açıklamalarına genişletmek~~ → Faz 10'da yapıldı.
-- Faz 9: `LLMSocraticOutput.guiding_questions` öğelerine şemada `max_length` (şu an doğrulayıcı 1000 karakter üstünü ihlal sayıyor).
+- ~~Faz 9: `guiding_questions` öğelerine şemada `max_length`~~ → Faz 27.
 - ~~Faz 10: `prompt_version` mtime önbelleği~~ → Faz 26.
 - Faz 10: CLI ilerleme göstergesi yalnızca aşama adını gösteriyor; token/süre canlı gösterilebilir.
 - ~~Faz 11: senkron aşamaları `asyncio.to_thread`'e taşımak~~ → Faz 24 (Tier 1) + Faz 26 (Tier 0, olgular); SQLite Sonraya.
@@ -711,9 +724,9 @@
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-02):** Faz 25 `main`'de, push'lu, CI yeşil. Faz 26 `faz/26-api-web`
-dalında → commit + main ff + push. Sıradaki: Faz 27 (sağlamlık ve teknik borç); Faz 22 (canlı
-eval) kota nedeniyle sonda.
+**Kaldığımız yer (2026-10-02):** Faz 26 `main`'de, push'lu, CI yeşil. Faz 27 `faz/27-saglamlik`
+dalında → commit + main ff + push (CI'da ilk kez dotnet/Roslyn adımları koşacak). Yol haritasında
+kalan tek faz: Faz 22 (canlı eval, claude_cli kotası harcar).
 
 **Kullanıcı işleri:** (a) yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
@@ -744,7 +757,7 @@ eval) kota nedeniyle sonda.
 7. ~~**Faz 26 — API ve web.**~~ Yapıldı (hız sınırı Sonraya). Senkron aşamaları `asyncio.to_thread`'e taşıma, `prompt_version`
    mtime önbelleği, API anahtarı/hız sınırı (isteğe bağlı), web'de SARIF/Markdown indirme,
    sağlayıcı/mod seçimi, Monaco tembel yükleme, README GIF, `YAPILANLAR.md` Faz 8-12 özetleri.
-8. **Faz 27 — Sağlamlık ve teknik borç.** tree-sitter süre sınırı, Tier 0 ERROR özeti (D2),
+8. ~~**Faz 27 — Sağlamlık ve teknik borç.**~~ Dar kapsam yapıldı (kalanlar gerekçeyle Sonraya). tree-sitter süre sınırı, Tier 0 ERROR özeti (D2),
    C++ ham metin maskeleme, `parse_bigo` uzantıları, ULID doğrulaması, `guiding_questions`
    `max_length`, `#pragma` izin listesi, gcc/clang kolon birimi, `ue_stubs.h`; CI'da dotnet +
    Roslyn, Windows g++ zaman aşımı; `check-drafts` Windows kodlaması; ara sıra düşen test.

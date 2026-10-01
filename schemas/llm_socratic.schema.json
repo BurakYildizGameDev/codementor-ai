@@ -6,6 +6,7 @@
   "properties": {
     "guiding_questions": {
       "items": {
+        "maxLength": 1000,
         "type": "string"
       },
       "maxItems": 4,

@@ -45,3 +45,19 @@ def test_exe_job_uploads_artifact() -> None:
     ]
     assert uploads
     assert "dist/" in str(uploads[0]["with"]["path"])
+
+
+def test_ci_builds_roslyn_for_tests_and_exe() -> None:
+    """Faz 27: Linux'ta C# derleyici testleri koşar, exe Roslyn denetleyicisini içerir."""
+    workflow = yaml.safe_load((REPO / ".github" / "workflows" / "ci.yml").read_text("utf-8"))
+    roslyn = "dotnet build tools/roslyn-check"
+    check = workflow["jobs"]["check"]["steps"]
+    assert any(roslyn in str(step.get("run", "")) for step in check)
+    linux_pytest = 'uv run pytest -m "not live"'
+    pytest_steps = [s for s in check if str(s.get("run", "")).strip() == linux_pytest]
+    assert pytest_steps[0]["env"]["CODEMENTOR_REQUIRE_ROSLYN"] == "1"
+    exe = workflow["jobs"]["exe"]["steps"]
+    runs = [str(step.get("run", "")) for step in exe]
+    assert runs.index(next(r for r in runs if roslyn in r)) < runs.index(
+        next(r for r in runs if "build_exe.py" in r)
+    )

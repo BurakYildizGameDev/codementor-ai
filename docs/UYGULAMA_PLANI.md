@@ -1265,6 +1265,22 @@ denetimi; web arayüzünde rapor indirme, sağlayıcı/mod seçimi ve hızlı il
 
 **Commit:** `feat(faz-26): API anahtarı, Markdown dışa aktarım, iş parçacığına alınan aşamalar, web indirme ve seçimler`
 
+### Faz 27 — Sağlamlık ve teknik borç (dar kapsam)
+
+**Dal:** `faz/27-saglamlik` · **Mimari:** §6.3, §6.4, §9, §18
+
+**Amaç:** Görünür etkisi olan teknik borçlar: CI'da C# derleyici testleri ve exe'de Roslyn,
+Windows konsolunda CLI çökmesi, şemada eksik biçim sınırları.
+
+**Kabul kriterleri**
+- [x] Linux CI'da dotnet + Roslyn derlenir; C# `compiler` testleri koşar (`CODEMENTOR_REQUIRE_ROSLYN=1` atlanmayı başarısızlığa çevirir)
+- [x] CI `exe` işi Roslyn denetleyicisini pakete koyar
+- [x] CLI cp125x konsolda UTF-8'e geçer; `PYTHONIOENCODING` gerekmez
+- [x] `guiding_questions` öğeleri şemada en fazla 1000 karakter
+- [x] `analysis_id` ULID deseniyle doğrulanır; API'de bozuk kimlik veritabanına gitmeden 404
+
+**Commit:** `feat(faz-27): CI'da Roslyn, konsol UTF-8, şema biçim sınırları`
+
 ---
 
 ## 7. PROGRESS.md Şablonu

@@ -142,3 +142,10 @@ def test_roslyn_handles_unicode_and_preprocessor() -> None:
         Engine.UNITY,
     )
     assert _run(code).status is CompilationStatus.PASSED
+
+
+def test_roslyn_available_when_required() -> None:
+    """CI (Faz 27) `CODEMENTOR_REQUIRE_ROSLYN=1` verir: C# testleri sessizce atlanmasın."""
+    if os.environ.get("CODEMENTOR_REQUIRE_ROSLYN") != "1":
+        pytest.skip("yalnızca CI'da zorunlu")
+    assert CHAIN.csharp is not None, "dotnet ya da tools/roslyn-check/out/RoslynCheck.dll yok"

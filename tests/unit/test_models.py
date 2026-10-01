@@ -529,3 +529,39 @@ def test_complexity_hint_normalizes_value() -> None:
 def test_complexity_hint_rejects_unparseable_value() -> None:
     with pytest.raises(ValidationError, match="ayrıştırılamadı"):
         ComplexityHint(value="çok yavaş", confidence="low", basis=[])
+
+
+# ---------------------------------------------------------------- Faz 27: biçim sınırları
+
+
+@pytest.mark.parametrize(
+    "bad_id",
+    [
+        "",
+        "01J9ZK4M8Q3W6Y2T5R7N1B0C9",
+        "01J9ZK4M8Q3W6Y2T5R7N1B0C9DX",
+        "01J9ZK4M8Q3W6Y2T5R7N1B0C9U",
+        "01j9zk4m8q3w6y2t5r7n1b0c9d",
+        "../../etc/passwd000000000",
+        "01J9ZK4M8Q3W6Y2T5R7N1B0CI0",
+    ],
+)
+def test_report_rejects_non_ulid_id(bad_id: str) -> None:
+    with pytest.raises(ValidationError):
+        AnalysisReport.model_validate(_report(analysis_id=bad_id))
+
+
+def test_new_ulid_matches_report_pattern() -> None:
+    from codementor.pipeline.ids import new_ulid
+
+    for _ in range(50):
+        AnalysisReport.model_validate(_report(analysis_id=new_ulid()))
+
+
+def test_guiding_question_length_limited_in_schema() -> None:
+    ok = {"key_flaw_concept": "x", "guiding_questions": ["a" * 1000]}
+    LLMSocraticOutput.model_validate(ok)
+    with pytest.raises(ValidationError):
+        LLMSocraticOutput.model_validate({**ok, "guiding_questions": ["a" * 1001]})
+    items = LLMSocraticOutput.model_json_schema()["properties"]["guiding_questions"]["items"]
+    assert items["maxLength"] == 1000

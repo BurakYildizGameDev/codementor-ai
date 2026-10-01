@@ -9,6 +9,7 @@ import typer
 
 from codementor import __version__
 from codementor.cli.analyze import analyze
+from codementor.cli.encoding import ensure_utf8_console
 from codementor.cli.eval import eval_app
 from codementor.cli.providers import providers_app
 from codementor.cli.questions import questions_app
@@ -32,6 +33,7 @@ def main(
     ),
 ) -> None:
     """CodeMentor AI — kodu düzeltmeyen, sorgulatan mentor."""
+    ensure_utf8_console()  # Windows cp125x konsolunda Rich çıktısı çökmesin (Faz 27)
 
 
 schema_app = typer.Typer(name="schema", no_args_is_help=True, help="JSON şema işlemleri.")

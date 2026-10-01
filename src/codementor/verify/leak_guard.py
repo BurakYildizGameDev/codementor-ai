@@ -16,6 +16,7 @@ from pathlib import Path
 
 from codementor.config import VerifySettings, get_settings
 from codementor.models.enums import Engine, Language
+from codementor.models.llm_output import MAX_QUESTION_CHARS
 from codementor.models.verification import (
     CommonIdentifiers,
     LeakCheck,
@@ -32,7 +33,7 @@ class CommonIdentifiersError(DataFileError):
 
 
 FENCE = "```"
-MAX_TEXT_CHARS = 1000  # soru/ipucu başına; üstü ihlal (regex süresi doğrusal kalsın)
+MAX_TEXT_CHARS = MAX_QUESTION_CHARS  # soru/ipucu başına; üstü ihlal (şema da sınırlar, Faz 27)
 Hit = tuple[LeakKind, str]  # (ihlal türü, ayrıntı)
 _WHITESPACE = re.compile(r"\s+")
 _ELLIPSIS = re.compile(r"\.\.\.|…")

@@ -11,6 +11,9 @@ from codementor.models._base import StrictModel
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.findings import CompilationBlock, Finding
 
+# Faz 27: kimlik dosya adına ve URL yoluna girer; yalnızca ULID alfabesi (I, L, O, U yok)
+ULID_PATTERN = r"^[0-9A-HJKMNP-TV-Z]{26}$"
+
 
 class ComplexityResult(StrictModel):
     time_complexity: str = Field(description='Kanonik Big-O, ör. "n^2"')
@@ -59,7 +62,9 @@ class AnalysisReport(StrictModel):
     """Bir analizin tam sonucu."""
 
     schema_version: Literal["1.0"] = "1.0"
-    analysis_id: str = Field(description="ULID")
+    analysis_id: str = Field(
+        pattern=ULID_PATTERN, description="ULID (Crockford base32, 26 karakter)"
+    )
     created_at: datetime
     language: Language
     engine: Engine

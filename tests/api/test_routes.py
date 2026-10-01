@@ -77,7 +77,14 @@ async def test_stored_report_and_sarif(client_for: ClientFactory, fake: FakeFact
 
 
 @pytest.mark.parametrize(
-    "path", ["/v1/analyses/yok", "/v1/analyses/yok/sarif", "/v1/analyses/yok/markdown"]
+    "path",
+    [
+        "/v1/analyses/yok",
+        "/v1/analyses/yok/sarif",
+        "/v1/analyses/yok/markdown",
+        "/v1/analyses/01J9ZK4M8Q3W6Y2T5R7N1B0C9D",  # biçim geçerli, kayıt yok (Faz 27)
+        "/v1/analyses/01j9zk4m8q3w6y2t5r7n1b0c9d",  # küçük harf: biçim dışı
+    ],
 )
 async def test_missing_analysis_404(client_for: ClientFactory, path: str) -> None:
     response = await client_for().get(path)

@@ -6,12 +6,15 @@ Bu modül rapor modellerini içe aktarmaz: sistem alanları (`source`, `confiden
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field
 
 from codementor.models._base import StrictModel
 from codementor.models.enums import AuditCategory, Severity
+
+# Soru başına üst sınır (Faz 27): sızıntı denetiminin regex süresi doğrusal kalsın
+MAX_QUESTION_CHARS = 1000
 
 
 class LLMFinding(StrictModel):
@@ -48,7 +51,9 @@ class LLMSocraticOutput(StrictModel):
     """Geçiş B çıktısı: Sokratik yönlendirme soruları."""
 
     key_flaw_concept: str = Field(max_length=80)
-    guiding_questions: list[str] = Field(min_length=1, max_length=4)
+    guiding_questions: list[Annotated[str, Field(max_length=MAX_QUESTION_CHARS)]] = Field(
+        min_length=1, max_length=4
+    )
     next_step_hint: str | None = Field(default=None, max_length=300)
 
 
