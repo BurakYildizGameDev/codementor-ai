@@ -197,6 +197,9 @@ def main() -> None:
         "--console", action="store_true", help="konsol penceresiyle (hata ayıklama)"
     )
     args = parser.parse_args()
+    for stream in (sys.stdout, sys.stderr):  # cp1252 konsolda Türkçe çıktı çökmesin (CI)
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
 
     version = project_version()
     outputs: list[Path] = []

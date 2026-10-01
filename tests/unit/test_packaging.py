@@ -37,6 +37,7 @@ def test_exe_job_uploads_artifact() -> None:
     job = workflow["jobs"]["exe"]
     assert job["runs-on"] == "windows-latest"
     assert job["needs"] == "check"
+    assert job["env"]["PYTHONIOENCODING"] == "utf-8"
     runs = " ".join(str(step.get("run", "")) for step in job["steps"])
     assert "build_exe.py --both" in runs
     uploads = [

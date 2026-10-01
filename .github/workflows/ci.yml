@@ -37,6 +37,8 @@ jobs:
     needs: check
     if: github.event_name != 'pull_request'
     runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8  # runner konsolu cp1252; Türkçe çıktı çökertmesin
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
