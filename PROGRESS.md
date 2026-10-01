@@ -595,18 +595,39 @@
 - Faz 13: Monaco'yu tembel yükleme (dinamik `import`) ile ilk yükü küçültmek.
 - Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri.
 
-## Yapılacaklar (2026-10-01 itibarıyla sıra)
-Durum: Faz 0-18 main'de ve push'lu (3bf9ac1), CI 3 işte yeşil. Faz 19 (analizi durdurma) `faz/19-durdur` dalında, commit bekliyor.
+## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
+Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kullanıcı:** yeni 4 sorunun referans çözümlerini `private/solutions/` altına ekle
+**Kullanıcı işleri:** (a) yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
-`css-easy-centered-layout.css`); yoksa bu görevlerde sızıntı koruması daha zayıf.
+`css-easy-centered-layout.css`); (b) eski eval etiketlerine Faz 17 bulguları eklensin mi
+(`c-008` C-MEM-003, `csharp-009` CS-ALLOC-002)?
 
-**Sıradaki fazlar (önerilen sıra):**
-1. ~~Yeni diller için eval~~ → Faz 18.
-2. ~~Faz 6'da ertelenen 10 C/C++/C# kuralı~~ → Faz 17.
-3. ~~Masaüstünde analizi durdurma düğmesi~~ → Faz 19.
-4. Bağlantılar'da "Ollama modeli indir" (`ollama pull`) düğmesi ve ilerleme göstergesi.
-5. HTML etiket dengesi uyarısı (kapanmamış/uyumsuz etiket; stdlib `html.parser`).
-6. Exe: imzalı kurulum paketi (SmartScreen) ve CI'da otomatik exe derleme artefaktı.
-7. agy canlı doğrulaması (kartta model seç + araç onayı).
+1. **Faz 20 — HTML etiket dengesi.** Kapanmamış/uyumsuz/eşsiz etiket uyarısı (stdlib
+   `html.parser`, Tier 1 karşılığı); Faz 18'deki `</div>` kör noktası. Küçük, çevrimdışı.
+2. **Faz 21 — Statik kural ve maliyet tablosu doğruluğu.** C-MEM-001 aynı dosyadaki kullanıcı
+   fonksiyonu; UNITY-GC-001 kullanıcı `struct`'ı; UE-GC-001 `TArray<AActor*>`/`FPlain`;
+   CS-PERF-001 `IList`; sıcak yolda sınıf tabanı (MonoBehaviour/UCLASS); C-MEM-003 akış
+   duyarlılığı; maliyet tablosu (`memset`, `GetAllActorsOfClass`, `TArray::Remove`, C#
+   `RemoveAt(0)`/`Insert(0)`, döngüde `string +=` karesel); çöken kural için `log.exception`;
+   eski eval etiket kararı (b) uygulanır. Çevrimdışı.
+3. **Faz 22 — Eval araçları ve precision (canlı, yalnız dev).** `eval analyze` (kategorisiz
+   eşleşme, önem filtresi, örnek bazında FP/FN), `guard_interventions` metriği, `breakdown`'a
+   süre/token; prompt: işaretleme dillerinde "sorun" ölçütü, kategori tanımları (`design` /
+   `edge_case`), `design` yalnız soru gereksinimiyle; Python few-shot; few-shot 0/1 ablasyonu.
+4. **Faz 23 — Dağıtım ve yollar.** `data/` ve `prompts/` paket verisi (`importlib.resources`),
+   göreli yolların config'e göre çözülmesi (veri, prompt, stub, Roslyn), `.gitattributes`
+   (`eol=lf`), CI'da Windows exe derleme artefaktı (+ onedir zip). İmza/Inno Setup sertifika
+   gerektirir (isteğe bağlı).
+5. **Faz 24 — Masaüstü kullanılabilirlik.** Editörde Ctrl+F, son dosyalar menüsü, sürükle-bırak,
+   tercihleri `codementor.toml`'a yazma, Tier 1 sürecine iptal olayı.
+6. **Faz 25 — Sağlayıcılar ve CLI ajanları.** agy canlı doğrulaması; sahte CLI betiğiyle
+   gerçek `run_process` uçtan uca testi; `ProviderResult`'a şema yeteneği; OpenAI katı mod
+   kısıtları; token/maliyet tahmini (`pricing.yaml`). (Ollama indirme düğmesi: düşük öncelik.)
+7. **Faz 26 — API ve web.** Senkron aşamaları `asyncio.to_thread`'e taşıma, `prompt_version`
+   mtime önbelleği, API anahtarı/hız sınırı (isteğe bağlı), web'de SARIF/Markdown indirme,
+   sağlayıcı/mod seçimi, Monaco tembel yükleme, README GIF, `YAPILANLAR.md` Faz 8-12 özetleri.
+8. **Faz 27 — Sağlamlık ve teknik borç.** tree-sitter süre sınırı, Tier 0 ERROR özeti (D2),
+   C++ ham metin maskeleme, `parse_bigo` uzantıları, ULID doğrulaması, `guiding_questions`
+   `max_length`, `#pragma` izin listesi, gcc/clang kolon birimi, `ue_stubs.h`; CI'da dotnet +
+   Roslyn, Windows g++ zaman aşımı; `check-drafts` Windows kodlaması; ara sıra düşen test.
