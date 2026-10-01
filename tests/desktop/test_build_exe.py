@@ -29,6 +29,8 @@ def test_pyinstaller_args_bundle_runtime_data(tmp_path: Path) -> None:
     for target in ("data", "prompts", "codementor/desktop/assets"):
         assert any(d.endswith(target) for d in data), target
     assert all(Path(d.rsplit(";" if ";" in d else ":", 1)[0]).exists() for d in data)
+    collected = [onefile[i + 1] for i, arg in enumerate(onefile) if arg == "--collect-all"]
+    assert "tkinterdnd2" in collected  # tkdnd ikilileri olmadan sürükle-bırak çalışmaz
 
     onedir = build_exe.pyinstaller_args(onefile=False, console=True, work=tmp_path)
     assert {"--onedir", "--console"} <= set(onedir)

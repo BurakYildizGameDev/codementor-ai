@@ -4,6 +4,7 @@ aşamalar `stages.py` / `passes.py`, rapor montajı `assemble.py`'de."""
 from __future__ import annotations
 
 import asyncio
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
@@ -16,7 +17,7 @@ from codementor.models.prompts import MentoringProfile, QuestionContext
 from codementor.models.questions import Question
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest, LanguageHint, NormalizedCode
-from codementor.models.validation import Toolchain
+from codementor.models.validation import Tier1Result, Toolchain
 from codementor.pipeline import stages
 from codementor.pipeline.assemble import ReportParts, assemble_report, from_cache
 from codementor.pipeline.events import EventBus, StageTimer
@@ -33,8 +34,9 @@ from codementor.questions.bank import QuestionBank, QuestionNotFoundError
 from codementor.storage import cache, sessions
 from codementor.storage.db import Database
 from codementor.validation.policy import decide
+from codementor.validation.runner import run_process
 from codementor.validation.tier0 import run_tier0
-from codementor.validation.tier1 import run_tier1
+from codementor.validation.tier1 import Runner, run_tier1
 
 ProviderFactory = Callable[[str], LLMProvider]
 
@@ -76,6 +78,7 @@ class Orchestrator:
     provider_factory: ProviderFactory | None = None
     bus: EventBus = field(default_factory=EventBus)
     toolchain: Toolchain | None = None
+    tier1_runner: Runner = run_process
 
     async def analyze(self, request: AnalysisRequest) -> AnalysisReport:
         """§4 yaşam döngüsü. Kullanıcı hatasında `PipelineError`; sağlayıcı hatası bozulmadır."""
@@ -168,6 +171,23 @@ class Orchestrator:
             schema_version=SCHEMA_VERSION,
         )
 
+    async def _tier1(self, code: NormalizedCode, request: AnalysisRequest) -> Tier1Result:
+        """Tier 1 iş parçacığında koşar (olay döngüsünü kilitlemez); görev iptal edilirse
+        derleyici süreci zaman aşımını beklemeden öldürülür (Faz 24)."""
+        cancel = threading.Event()
+        try:
+            return await asyncio.to_thread(
+                run_tier1,
+                code,
+                self._validation(request),
+                toolchain=self.toolchain,
+                runner=self.tier1_runner,
+                cancel=cancel,
+            )
+        except asyncio.CancelledError:
+            cancel.set()
+            raise
+
     def _validation(self, request: AnalysisRequest) -> ValidationSettings:
         tier1 = request.options.tier1
         if tier1 is None:
@@ -191,7 +211,7 @@ class Orchestrator:
             timer.skip("tier1", "Tier 0 hatası")
         else:
             with timer.stage("tier1"):
-                tier1 = run_tier1(code, self._validation(run.request), toolchain=self.toolchain)
+                tier1 = await self._tier1(code, run.request)
         policy = decide(tier0, tier1)
         run.warnings += policy.warnings
         if policy.early_exit:  # §5.2.4: LLM hiç çağrılmaz

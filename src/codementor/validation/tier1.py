@@ -12,6 +12,7 @@ Sınıflandırma (§5.2.4): kesin hata → `FAILED`; yalnızca uyarı → `WARNI
 from __future__ import annotations
 
 import re
+import threading
 from collections.abc import Mapping, Sequence
 from typing import Protocol
 
@@ -60,6 +61,7 @@ class Runner(Protocol):
         limits: ProcessLimits,
         *,
         extra_env: Mapping[str, str] | None = None,
+        cancel: threading.Event | None = None,
     ) -> ProcessResult: ...
 
 
@@ -209,8 +211,12 @@ def run_tier1(
     *,
     toolchain: Toolchain | None = None,
     runner: Runner = run_process,
+    cancel: threading.Event | None = None,
 ) -> Tier1Result:
-    """Kodu uygun yerel derleyiciyle denetler; araç yoksa veya güvenli değilse `SKIPPED`."""
+    """Kodu uygun yerel derleyiciyle denetler; araç yoksa veya güvenli değilse `SKIPPED`.
+
+    `cancel` set edilince derleyici süreci zaman aşımını beklemeden öldürülür (Faz 24).
+    """
     if code.language in MARKUP_LANGUAGES:  # derleyici kavramı yok; uyarı da yok (ADR-0015)
         return Tier1Result(status=CompilationStatus.SKIPPED, skip_reason=SkipReason.NOT_APPLICABLE)
     if not settings.tier1_enabled:
@@ -230,7 +236,7 @@ def run_tier1(
         return prepared
     argv, stdin, limits, env = prepared
     try:
-        outcome = runner(argv, stdin, limits, extra_env=env)
+        outcome = runner(argv, stdin, limits, extra_env=env, cancel=cancel)
     except Exception:  # runner sözleşmesi istisna fırlatmamak; yine de sistemi düşürme
         outcome = ProcessResult(None, "", "", error="runner exception")
     return _interpret(

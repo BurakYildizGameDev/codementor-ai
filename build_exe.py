@@ -43,6 +43,7 @@ ROSLYN_OUT = ROOT / "tools" / "roslyn-check" / "out"
 # Veri dosyaları ya da dinamik yüklenen uzantılar içeren paketler
 COLLECT_ALL = [
     "customtkinter",
+    "tkinterdnd2",  # sürükle-bırak: tkdnd yerel eklentisi (Faz 24)
     "tree_sitter_c",
     "tree_sitter_cpp",
     "tree_sitter_c_sharp",

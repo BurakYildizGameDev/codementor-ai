@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,6 +33,7 @@ class FakeRunner:
 
     result: ProcessResult = field(default_factory=lambda: ProcessResult(0, "", ""))
     calls: list[tuple[list[str], str, ProcessLimits, dict[str, str]]] = field(default_factory=list)
+    cancels: list[threading.Event | None] = field(default_factory=list)
 
     def __call__(
         self,
@@ -40,7 +42,9 @@ class FakeRunner:
         limits: ProcessLimits,
         *,
         extra_env: Mapping[str, str] | None = None,
+        cancel: threading.Event | None = None,
     ) -> ProcessResult:
+        self.cancels.append(cancel)
         self.calls.append((list(argv), stdin, limits, dict(extra_env or {})))
         return self.result
 
@@ -257,9 +261,10 @@ def test_user_code_never_written_to_disk() -> None:
         limits: ProcessLimits,
         *,
         extra_env: Mapping[str, str] | None = None,
+        cancel: threading.Event | None = None,
     ) -> ProcessResult:
         assert all(marker not in a for a in argv)
-        result = run_process(argv, stdin, limits, extra_env=extra_env)
+        result = run_process(argv, stdin, limits, extra_env=extra_env, cancel=cancel)
         captured.append(result)
         return result
 
@@ -399,3 +404,10 @@ def test_unreal_continued_include_line_not_blanked() -> None:
     assert out.startswith('#include "a.h" \\\n')
     assert '"b.h"' not in out
     assert len(out) == len(text)
+
+
+def test_runner_receives_cancel_event() -> None:
+    runner = FakeRunner()
+    cancel = threading.Event()
+    run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner, cancel=cancel)
+    assert runner.cancels == [cancel]

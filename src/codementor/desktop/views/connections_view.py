@@ -30,6 +30,7 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
         actions: CardActions,
         open_folder: Callable[[str], None],
         locations: list[tuple[str, str]],
+        write_config: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(master, fg_color="transparent")
         self.grid_columnconfigure(0, weight=1)
@@ -94,6 +95,21 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
                 font=theme.font(12),
                 command=lambda p=path: open_folder(p),
             ).grid(row=2 * i, column=1, rowspan=2, padx=(10, 0))
+        if write_config is not None:  # Faz 24: CLI/API de aynı modeli kullansın
+            self.write_config_button = ctk.CTkButton(
+                where.body,
+                text="Seçimleri codementor.toml'a yaz",
+                height=32,
+                corner_radius=8,
+                fg_color=theme.SURFACE_2,
+                hover_color=theme.SURFACE_3,
+                text_color=theme.TEXT,
+                font=theme.font(12, "bold"),
+                command=write_config,
+            )
+            self.write_config_button.grid(
+                row=2 * len(locations), column=0, columnspan=2, sticky="w", pady=(14, 0)
+            )
 
     def show_compilers(self, compilers: list[CompilerStatus]) -> None:
         clear(self.compiler_status)

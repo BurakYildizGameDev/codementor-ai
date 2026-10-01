@@ -1,4 +1,4 @@
-"""Kod editörü: satır numaraları, sözdizimi renkleri, bulgu işaretleri ve alt bilgi şeridi."""
+"""Kod editörü: satır numaraları, sözdizimi renkleri, bulgu işaretleri, arama ve alt bilgi."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import customtkinter as ctk
 from codementor.desktop import theme
 from codementor.desktop.highlight import tokenize
 from codementor.desktop.viewmodel import LineMark
+from codementor.desktop.widgets.find_bar import FindBar
 from codementor.models.enums import Language, Severity
 
 HIGHLIGHT_DELAY_MS = 120
@@ -108,6 +109,9 @@ class CodeEditor(ctk.CTkFrame):  # type: ignore[misc]
         self.text.bind("<KeyRelease>", lambda _e: self._update_footer(), add="+")
         self.text.bind("<ButtonRelease-1>", lambda _e: self._update_footer(), add="+")
         self.text.bind("<Configure>", lambda _e: self._redraw_gutter(), add="+")
+        self.find_bar = FindBar(self, self.text)
+        for sequence in ("<Control-f>", "<Control-F>"):
+            self.text.bind(sequence, self._open_find)
 
     # --- Genel API ----------------------------------------------------------------------
 
@@ -160,6 +164,10 @@ class CodeEditor(ctk.CTkFrame):  # type: ignore[misc]
         self.text.yview(*args)
         self._redraw_gutter()
 
+    def _open_find(self, _event: Any) -> str:
+        self.find_bar.open()
+        return "break"
+
     def _insert_tab(self, _event: Any) -> str:
         self.text.insert("insert", TAB)
         return "break"
@@ -172,6 +180,8 @@ class CodeEditor(ctk.CTkFrame):  # type: ignore[misc]
             self.after_cancel(self._pending)
         self._pending = self.after(HIGHLIGHT_DELAY_MS, self._highlight)
         self._redraw_gutter()
+        if self.find_bar.is_open:
+            self.find_bar.refresh()
         if self._marks:  # işaretler analiz edilen koda aitti
             self.set_marks([])
         if self._on_change is not None:

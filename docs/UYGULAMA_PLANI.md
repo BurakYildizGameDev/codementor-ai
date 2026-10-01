@@ -1216,6 +1216,22 @@ eval kotası nedeniyle sonraya bırakıldı.)
 
 **Commit:** `feat(faz-23): çalışma dizininden bağımsız yollar, paket verisi, CI exe artefaktı`
 
+### Faz 24 — Masaüstü kullanılabilirlik
+
+**Dal:** `faz/24-masaustu-kullanilabilirlik` · **Mimari:** §5.2.3, §18 · **ADR:** 0013, 0014
+
+**Amaç:** Masaüstü editöründe günlük kullanım eksiklerini kapatmak ve Durdur'un Tier 1
+derleyicisini de anında kesmesi.
+
+**Kabul kriterleri**
+- [x] Ctrl+F arama çubuğu: eşleşmeleri boyar, Enter/Shift+Enter döngüsel gezer, Esc yalnız çubuğu kapatır
+- [x] "Son ▾" menüsü son dosyaları açar; kaybolan dosya listeden düşer
+- [x] Dosya editöre sürüklenip bırakılarak açılır (tkinterdnd2; yoksa özellik sessizce kapanır)
+- [x] Model/varsayılan sağlayıcı seçimleri `codementor.toml`'a yazılır (yorumlar korunur, anahtar yazılmaz)
+- [x] Analiz iptali Tier 1 derleyici sürecini zaman aşımını beklemeden öldürür
+
+**Commit:** `feat(faz-24): editörde arama, son dosyalar, sürükle-bırak, toml'a yazma, Tier 1 iptali`
+
 ---
 
 ## 7. PROGRESS.md Şablonu

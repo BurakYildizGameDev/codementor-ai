@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gc
 import os
+import sys
 import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
@@ -148,14 +149,14 @@ def test_language_switch_limits_engines(app: App) -> None:
 def test_open_file_detects_language_and_size_limit(app: App, tmp_path: Path) -> None:
     source = tmp_path / "Oyuncu.cs"
     source.write_text("public class Oyuncu {}\n", encoding="utf-8")
-    app.load_file(str(source))
+    app.files.load(str(source))
     assert app.analyze_view.language is Language.CSHARP
     assert app.analyze_view.editor.get() == "public class Oyuncu {}\n"
     assert app.prefs.recent_files[0] == str(source)
 
     big = tmp_path / "buyuk.c"
     big.write_text("x" * (app.settings.limits.max_bytes + 1), encoding="utf-8")
-    app.load_file(str(big))
+    app.files.load(str(big))
     assert app.analyze_view.editor.get() == "public class Oyuncu {}\n"
 
 
@@ -181,7 +182,7 @@ def test_html_report_hides_complexity_card(app: App, core: ApiState) -> None:
 def test_open_python_file(app: App, tmp_path: Path) -> None:
     source = tmp_path / "ornek.py"
     source.write_text(PY_LINE, encoding="utf-8")
-    app.load_file(str(source))
+    app.files.load(str(source))
     assert app.analyze_view.language is Language.PYTHON
     assert app.analyze_view.engine is Engine.NONE
 
@@ -305,3 +306,108 @@ def test_escape_stops_only_on_analyze_page(stalled_app: App, stalling: StallingP
     assert not view.busy
     stalled_app.stop_analysis()  # boşta iken zararsız
     pump(stalled_app, lambda: not stalled_app.bridge.is_running("analyze"), timeout=10)
+
+
+# --- Faz 24: arama, son dosyalar, sürükle-bırak -----------------------------------------------
+
+
+def test_ctrl_f_highlights_and_cycles_matches(app: App) -> None:
+    editor = app.analyze_view.editor
+    editor.set("int x = 1;\nint y = x + x;\n", Language.C)
+    bar = editor.find_bar
+    editor._open_find(None)
+    assert bar.is_open
+    bar.entry.insert(0, "x")
+    bar.refresh()
+    assert len(bar.matches) == 3
+    assert bar.count.cget("text") == "1/3"
+    assert editor.text.tag_ranges("search")
+    bar.next()
+    bar.next()
+    assert bar.count.cget("text") == "3/3"
+    bar.next()
+    assert bar.count.cget("text") == "1/3"
+    bar.previous()
+    assert bar.count.cget("text") == "3/3"
+    current = editor.text.tag_ranges("search_current")
+    assert [str(i) for i in current] == ["2.12", "2.13"]
+    editor.text.insert("end", "x\n")  # metin değişince eşleşmeler yenilenir
+    app.update()
+    assert len(bar.matches) == 4
+    bar.entry.delete(0, "end")
+    bar.entry.insert(0, "yok")
+    bar.refresh()
+    assert bar.count.cget("text") == "Sonuç yok"
+
+
+def test_escape_closes_find_bar_without_stopping(
+    stalled_app: App, stalling: StallingProvider
+) -> None:
+    view = stalled_app.analyze_view
+    view.editor.set(LINKED_LIST, Language.C)
+    stalled_app.analyze()
+    assert stalling.started.wait(10)
+    view.editor._open_find(None)
+    assert view.editor.find_bar._close_event() == "break"  # Esc'in uygulamaya ulaşmasını keser
+    assert not view.editor.find_bar.is_open
+    assert not view.editor.text.tag_ranges("search")
+    assert view.busy
+    stalled_app.stop_analysis()
+    pump(stalled_app, lambda: not stalled_app.bridge.is_running("analyze"), timeout=10)
+
+
+def test_recent_menu_opens_file_and_drops_missing(app: App, tmp_path: Path) -> None:
+    first, second = tmp_path / "bir.c", tmp_path / "iki.py"
+    first.write_text("int main(void) { return 0; }\n", encoding="utf-8")
+    second.write_text(PY_LINE, encoding="utf-8")
+    app.files.load(str(first))
+    app.files.load(str(second))
+    labels = [label for label, _ in app.analyze_view.recent_items()]
+    assert labels[0].startswith("iki.py")
+    assert labels[1].startswith("bir.c")
+
+    app.analyze_view.recent_items()[1][1]()  # menüden "bir.c"
+    assert app.analyze_view.editor.get() == first.read_text(encoding="utf-8")
+    assert app.analyze_view.language is Language.C
+
+    second.unlink()
+    app.files.open_recent(str(second))
+    assert str(second) not in app.prefs.recent_files
+    assert str(second) not in runtime.load_prefs(app.prefs_dir).recent_files
+    assert app.analyze_view.language is Language.C  # editör değişmedi
+
+
+def test_drop_opens_file(app: App, tmp_path: Path) -> None:
+    folder = tmp_path / "boşluklu klasör"
+    folder.mkdir()
+    source = folder / "Oyuncu.cs"
+    source.write_text("public class Oyuncu {}\n", encoding="utf-8")
+    app.files.on_drop("{" + source.as_posix() + "} " + (tmp_path / "yok.c").as_posix())
+    assert app.analyze_view.language is Language.CSHARP
+    assert app.analyze_view.editor.get() == "public class Oyuncu {}\n"
+    app.files.on_drop(folder.as_posix())  # klasör: açılmaz
+    assert app.analyze_view.editor.get() == "public class Oyuncu {}\n"
+
+
+def test_drag_and_drop_registered_on_windows(app: App) -> None:
+    if sys.platform == "win32":  # tkdnd ikilileri tkinterdnd2 paketinde
+        assert app.files.drop_enabled
+
+
+def test_write_toml_button(app: App, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    target = tmp_path / "codementor.toml"
+    target.write_text('# yorum\n[providers]\ndefault = "ollama"\n', encoding="utf-8")
+    monkeypatch.setattr(runtime, "writable_config_file", lambda: target)
+    app.connections.check = lambda _name: None  # type: ignore[method-assign]
+    app.connections.make_default("claude_cli")
+    app.connections.set_model("ollama", "qwen2.5-coder:14b")
+    app.settings_view.write_config_button.invoke()
+    text = target.read_text(encoding="utf-8")
+    assert text.startswith("# yorum")
+    assert 'default = "claude_cli"' in text
+    assert 'model = "qwen2.5-coder:14b"' in text
+    assert str(target) in app.toast_label.cget("text")
+
+    target.write_text("[bozuk", encoding="utf-8")
+    app.write_config()
+    assert "yazılamadı" in app.toast_label.cget("text")

@@ -20,10 +20,12 @@ from codementor.api.state import ApiState
 from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE, Settings
 from codementor.desktop import runtime, theme
 from codementor.desktop.bridge import Bridge, Cancellation, Message, analysis_work
+from codementor.desktop.config_writer import write_provider_prefs
 from codementor.desktop.connections import KeyStore, apply_overrides
 from codementor.desktop.connections_controller import ConnectionsController
+from codementor.desktop.files import FileController
 from codementor.desktop.services import render_export
-from codementor.desktop.viewmodel import SAMPLES, SOURCE_PATTERNS, StageTracker, language_for_path
+from codementor.desktop.viewmodel import SAMPLES, StageTracker
 from codementor.desktop.views.analyze_view import AnalyzeActions, AnalyzeView
 from codementor.desktop.views.connections_view import ConnectionsView
 from codementor.desktop.views.history_view import HistoryView
@@ -70,6 +72,7 @@ class App(ctk.CTk):  # type: ignore[misc]
             self._new_session()
         self.bridge = Bridge()
         self.connections = ConnectionsController(self, key_store or KeyStore())
+        self.files = FileController(self)
         self.tracker = StageTracker()
         self._closing = False
         self._last_code = ""
@@ -110,7 +113,9 @@ class App(ctk.CTk):  # type: ignore[misc]
                 stop=self.stop_analysis,
                 next_hint=self.analyze,
                 restart=self.restart,
-                open_file=self.open_file,
+                open_file=self.files.open_dialog,
+                recent_files=self.files.recent,
+                open_recent=self.files.open_recent,
                 load_sample=self.load_sample,
                 export=self.export,
                 questions=self.questions_for,
@@ -119,10 +124,15 @@ class App(ctk.CTk):  # type: ignore[misc]
         )
         self.analyze_view.select(self.prefs.language, self.prefs.engine, None)
         self.analyze_view.editor.set(SAMPLES[self.prefs.language], self.prefs.language)
+        self.files.enable_drop(self.analyze_view.editor.text)
         self.questions_view = QuestionsView(stage, self._questions_by_language, self.start_question)
         self.history_view = HistoryView(stage, self._history_rows, self.open_history)
         self.settings_view = ConnectionsView(
-            stage, self.connections.actions(), self.open_folder, self._locations()
+            stage,
+            self.connections.actions(),
+            self.open_folder,
+            self._locations(),
+            write_config=self.write_config,
         )
         self.connections.attach(self.settings_view)
         self.views: dict[str, ctk.CTkFrame] = {
@@ -266,35 +276,6 @@ class App(ctk.CTk):  # type: ignore[misc]
 
     # --- Dosyalar -----------------------------------------------------------------------
 
-    def open_file(self) -> None:
-        path = filedialog.askopenfilename(
-            title="Kaynak dosyası aç",
-            filetypes=[("Kaynak dosyaları", SOURCE_PATTERNS), ("Tüm dosyalar", "*.*")],
-        )
-        if path:
-            self.load_file(path)
-
-    def load_file(self, path: str) -> None:
-        limit = self.settings.limits.max_bytes
-        try:
-            size = os.path.getsize(path)
-            if size > limit:
-                self.toast(f"Dosya çok büyük ({size // 1024} KB); sınır {limit // 1024} KB.")
-                return
-            code = Path(path).read_text(encoding="utf-8", errors="replace")
-        except OSError as exc:
-            self.toast(f"Dosya okunamadı: {exc.strerror or exc}")
-            return
-        language = language_for_path(path) or self.analyze_view.language
-        view = self.analyze_view
-        if language is not view.language:
-            view.select(language, Engine.NONE, view.question.id if view.question else None)
-        view.editor.set(code, language)
-        view.reset_results()
-        self.prefs = runtime.remember_file(self.prefs, path)
-        runtime.save_prefs(self.prefs, self.prefs_dir)
-        self.toast(f"{Path(path).name} açıldı")
-
     def load_sample(self) -> None:
         view = self.analyze_view
         view.editor.set(SAMPLES[view.language], view.language)
@@ -375,6 +356,15 @@ class App(ctk.CTk):  # type: ignore[misc]
             ("Veritabanı", str(resolve_db_path(self.settings))),
             ("Kullanıcı verisi", str(runtime.user_dir())),
         ]
+
+    def write_config(self) -> None:
+        """Model ve varsayılan sağlayıcı seçimlerini `codementor.toml`'a işler (anahtar hariç)."""
+        try:
+            path = write_provider_prefs(runtime.writable_config_file(), self.prefs)
+        except (OSError, ValueError) as exc:  # salt okunur konum, bozuk toml
+            self.toast(f"codementor.toml yazılamadı: {exc}")
+            return
+        self.toast(f"Seçimler yazıldı: {path}")
 
     def save_prefs(self, **changes: Any) -> None:
         self.prefs = self.prefs.model_copy(update=changes)

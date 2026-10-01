@@ -60,7 +60,11 @@ sağlayıcının hazır olup olmadığını gösterir.
   birer kart. Model seçimi (Ollama'da kurulu modeller, agy'de hesabındaki modeller listelenir),
   **Oturum aç** (CLI'nın kendi girişini yeni pencerede açar), API anahtarı (Windows Kimlik
   Bilgisi Yöneticisi'nde saklanır, dosyaya yazılmaz), **Bağlantıyı dene** ve **Varsayılan yap**.
-  Analiz ekranındaki rozet hangi model ile çalıştığını gösterir (ADR-0014).
+  Analiz ekranındaki rozet hangi model ile çalıştığını gösterir (ADR-0014). **Seçimleri
+  codementor.toml'a yaz** düğmesi model ve varsayılan sağlayıcıyı yapılandırmaya işler (yorumlar
+  korunur, anahtar yazılmaz); böylece CLI ve API de aynı modeli kullanır.
+- **Editör:** Ctrl+F ile arama (Enter / Shift+Enter gezinir, Esc kapatır), **Son ▾** menüsünde
+  son açılan dosyalar, dosyayı editöre sürükleyip bırakarak açma.
 
 Derlemek için (Windows, depo kökünde):
 

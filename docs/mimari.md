@@ -270,6 +270,7 @@ Derleyici "yalnızca sözdizimi" modunda bile saldırı yüzeyidir (ör. `#inclu
 - Yerel bulunamayan başlık (`"WaveSpawner.h": file not found`) kesin hata sayılmaz → `WARNING`.
 - Derleyici çıktısı `file:line:col: severity: message` regex'iyle `Diagnostic` nesnelerine çevrilir (gcc ve clang biçimleri).
 - Paylaşılan / dışa açık sunucuda `validation.tier1_enabled = false` önerilir (§12).
+- **İptal (Faz 24):** Tier 1 orkestratörde `asyncio.to_thread` ile ayrı iş parçacığında koşar (olay döngüsünü kilitlemez). Analiz görevi iptal edilirse bir `threading.Event` set edilir ve `run_process` derleyici süreç ağacını zaman aşımını beklemeden öldürür (Faz 19'daki CLI ajanı iptaliyle aynı mekanizma).
 
 #### 5.2.4 Erken çıkış politikası
 

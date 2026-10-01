@@ -26,6 +26,7 @@
 | 20 | ✅ | faz/20-html-denge | 2026-10-01 | Claude Code / kod-denetci |
 | 21 | ✅ | faz/21-kural-dogrulugu | 2026-10-01 | Claude Code / kod-denetci |
 | 23 | ✅ | faz/23-dagitim-yollar | 2026-10-01 | Claude Code / — |
+| 24 | ✅ | faz/24-masaustu-kullanilabilirlik | 2026-10-01 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -572,10 +573,26 @@
 - Belgeler: ADR-0016, mimari §16/§17/§18 ve ADR tablosu, README (artefakt, yol çözümü), UYGULAMA_PLANI Faz 23.
 **Mimariden sapmalar (ADR linki):** ADR-0016 (yol çözümü kuralı; exe yanındaki toml'un göreli yolları artık exe dizinine göre).
 **Açık sorular:**
-- CI `exe` işi ilk kez push sonrası doğrulanacak (artefakt indirilip açılmalı).
+- ~~CI `exe` işi ilk kez push sonrası doğrulanacak~~ → ilk koşu derlemeden sonra cp1252 konsolda Türkçe çıktıda çöktü; `PYTHONIOENCODING=utf-8` + `build_exe.py` stdout'u UTF-8'e alıyor (8300441). Sonraki koşu yeşil, `CodeMentor-win64` artefaktı ~70 MB.
 **Bu fazda öğrendiğim:** hatch `force-include` düzenlenebilir kurulumda `_resources` üretmiyor; bu yüzden kaynak kökü sırası (paket verisi varsa o, yoksa depo kökü) iki kurulum türünde de doğru çalışıyor.
 
+## Faz 24 — Notlar (masaüstü kullanılabilirlik)
+**Kullanıcı kararları:** Faz 22 (canlı) yerine önce Faz 24.
+**Yapılanlar:**
+- Arama: `desktop/search.py` (Tk'siz `find_all`/`step`, satır içi, örtüşmesiz, en fazla 2000 eşleşme), `widgets/find_bar.py` (editörün sağ üstünde; yazdıkça boyar, "i/N" sayacı, Enter/Shift+Enter, Esc `"break"` döndürerek uygulamanın Esc'ini — analizi durdurma — tetiklemez; tek satırlık seçim sorgu olur; metin değişince yenilenir). `CodeEditor` Ctrl+F bağlar.
+- Dosyalar: yeni `desktop/files.py` `FileController` (`open_dialog`, `load`, `open_recent`, `on_drop`, `enable_drop`); `app.py`'deki `open_file`/`load_file` buraya taşındı (app 388 satır). `parse_drop_data` (tkdnd Tcl listesi, `{boşluklu yol}`), `recent_label`, `runtime.forget_file`. Araç çubuğunda "Son ▾" (dışa aktarma menüsüyle ortak `_popup`).
+- Sürükle-bırak: `tkinterdnd2` bağımlılığı; `TkinterDnD._require(root)` + editör metnine `drop_target_register`. Yüklenemezse `drag_drop_unavailable` uyarısı, özellik kapalı. `build_exe.py` `--collect-all tkinterdnd2`. Kaynaktan çalışmada testle, exe'de dolaylı doğrulandı (exe açıldı, log'da uyarı yok); elle sürükleme kullanıcıya kaldı.
+- toml'a yazma: `tomlkit` bağımlılığı; `desktop/config_writer.write_provider_prefs` yalnız `[providers] default` ve sağlayıcı başına `model`/`base_url`/`allow_tool_agent` yazar (yorumlar ve sıra korunur, boş geçersiz kılma bölüm açmaz, anahtar asla). `runtime.writable_config_file()`: exe'de exe yanındaki toml (yoksa paketteki varsayılan kopyalanır), kaynaktan etkin yapılandırma. Bağlantılar → Konumlar kartında "Seçimleri codementor.toml'a yaz"; bozuk toml/yazılamayan konumda Türkçe bildirim.
+- Tier 1 iptali: `Runner` protokolü ve `run_tier1` `cancel: threading.Event` alır; `Orchestrator._tier1` `asyncio.to_thread` + `CancelledError`'da olayı set eder; `Orchestrator.tier1_runner` (test enjeksiyonu). Yan etki: API'de de Tier 1 olay döngüsünü kilitlemiyor.
+- Testler: `test_search.py` (5), `test_files.py` (4), `test_config_writer.py` (5), `test_app.py` (+6: Ctrl+F, Esc analizi durdurmaz, son dosyalar + kaybolan dosya, bırakma, Windows'ta DnD kayıtlı, toml düğmesi + bozuk toml), `test_tier1.py` (+1 + spy imzası), `tests/integration/test_tier1_cancel.py` (bloklayan runner; iptal < 2 sn), `test_build_exe.py` (tkinterdnd2).
+**Mimariden sapmalar (ADR linki):** yok; mimari §5.2.3'e iptal notu (Faz 19 kararının uzantısı).
+**Açık sorular:**
+- Sürükle-bırak exe'de elle denenmeli (dosyayı editöre sürükle).
+**Bu fazda öğrendiğim:** `tkinterdnd2` içe aktarılınca `tkinter.BaseWidget`'a `drop_target_register`/`dnd_bind` ekler; CustomTkinter kökünde `TkinterDnD._require(root)` yeterli, `TkinterDnD.Tk` kökü gerekmez. Runner sahtesi imzası eksikse `run_tier1`'in geniş `except`'i hatayı yutar — test sahteleri protokolle birlikte güncellenmeli.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 24: arama büyük/küçük harf ve "tam sözcük" seçenekleri, değiştir (Ctrl+H); bırakılan klasördeki kaynak dosyalarını listeleme.
+- Faz 24: toml'a yazıldıktan sonra masaüstü tercihlerindeki aynı geçersiz kılmalar gereksizleşir (zararsız); "toml'dan yeniden yükle" düğmesi yok.
 - Faz 23: `reference_solution_path` (`private/solutions/`) hâlâ çalışma dizinine göre; soru dosyasının ya da kaynak kökünün dizinine göre çözülmeli (sızıntı testi buna göre güncellenmeli).
 - Faz 23: mimari §20 ADR tablosunda ADR-0013/0014/0015 satırları eksik.
 - Faz 23: CI exe işi Roslyn denetleyicisini (`make roslyn-check`, dotnet) derlemiyor; artefakttaki exe'de C# Tier 1 yok.
@@ -595,12 +612,12 @@
 - ~~Faz 16: HTML etiket dengesi denetimi~~ → Faz 20 (statik kural).
 - Faz 16: Python için few-shot örnekleri; JS (tarayıcı) desteği HTML ile birlikte istenebilir.
 - Faz 15: Bağlantılar'da Ollama modelini indirme (`ollama pull`) düğmesi ve ilerleme göstergesi.
-- Faz 15: Masaüstü tercihleri ile `codementor.toml` arasında "toml'a yaz" seçeneği (CLI/API de aynı modeli kullansın).
+- ~~Faz 15: Masaüstü tercihleri ile `codementor.toml` arasında "toml'a yaz" seçeneği.~~ → Faz 24
 - Faz 14: exe imzası yok; Windows SmartScreen ilk açılışta uyarabilir (kod imzalama sertifikası + Inno Setup kurulum paketi).
 - ~~Faz 14: CI'da Windows exe derleme işi (artefakt olarak zip); şu an elle `make exe`.~~ → Faz 23
 - ~~Faz 14: analiz iptali yok~~ → Faz 19'da yapıldı.
-- Faz 19: Tier 1 derleyici/çalıştırma sürecine iptal olayı iletilmiyor (durdurulan analizde Tier 1 kendi zaman aşımına kadar sürebilir; arayüz bu sırada yeni analizi bildirimle reddeder).
-- Faz 14: editörde arama (Ctrl+F), son dosyalar menüsü (`recent_files` kaydediliyor ama gösterilmiyor), sürükle-bırak ile dosya açma (tkinterdnd2).
+- ~~Faz 19: Tier 1 derleyici/çalıştırma sürecine iptal olayı iletilmiyor~~ → Faz 24 (durdurulan analizde Tier 1 kendi zaman aşımına kadar sürebilir; arayüz bu sırada yeni analizi bildirimle reddeder).
+- ~~Faz 14: editörde arama (Ctrl+F), son dosyalar menüsü, sürükle-bırak ile dosya açma (tkinterdnd2).~~ → Faz 24
 - Faz 14: onefile açılışı arşiv çözme nedeniyle birkaç saniye; hızlı açılış için onedir zip önerilir.
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
@@ -656,9 +673,9 @@
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-01):** Faz 20-21 push'lu, CI yeşil; `c-016` kararı uygulandı (f75499b).
-Faz 23 `faz/23-dagitim-yollar` dalında → commit + main ff + push, sonra CI `exe` artefaktını
-doğrula. Sıradaki: Faz 22 (canlı, kota harcar) ya da Faz 24 (masaüstü).
+**Kaldığımız yer (2026-10-01):** Faz 23 `main`'de ve push'lu (CI + exe artefaktı yeşil). Faz 24
+`faz/24-masaustu-kullanilabilirlik` dalında → commit + main ff + push. Sıradaki: Faz 22 (canlı,
+kota harcar) ya da Faz 25 (sağlayıcılar).
 
 **Kullanıcı işleri:** (a) yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
@@ -681,7 +698,7 @@ doğrula. Sıradaki: Faz 22 (canlı, kota harcar) ya da Faz 24 (masaüstü).
    göreli yolların config'e göre çözülmesi (veri, prompt, stub, Roslyn), `.gitattributes`
    (`eol=lf`), CI'da Windows exe derleme artefaktı (+ onedir zip). İmza/Inno Setup sertifika
    gerektirir (isteğe bağlı).
-5. **Faz 24 — Masaüstü kullanılabilirlik.** Editörde Ctrl+F, son dosyalar menüsü, sürükle-bırak,
+5. ~~**Faz 24 — Masaüstü kullanılabilirlik.**~~ Yapıldı. Editörde Ctrl+F, son dosyalar menüsü, sürükle-bırak,
    tercihleri `codementor.toml`'a yazma, Tier 1 sürecine iptal olayı.
 6. **Faz 25 — Sağlayıcılar ve CLI ajanları.** agy canlı doğrulaması; sahte CLI betiğiyle
    gerçek `run_process` uçtan uca testi; `ProviderResult`'a şema yeteneği; OpenAI katı mod

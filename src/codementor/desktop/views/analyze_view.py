@@ -16,6 +16,7 @@ from typing import Any
 import customtkinter as ctk
 
 from codementor.desktop import theme
+from codementor.desktop.files import recent_label
 from codementor.desktop.viewmodel import (
     ENGINE_LABELS,
     LANGUAGE_LABELS,
@@ -58,6 +59,8 @@ class AnalyzeActions:
     next_hint: Callable[[], None]
     restart: Callable[[], None]
     open_file: Callable[[], None]
+    recent_files: Callable[[], list[str]]
+    open_recent: Callable[[str], None]
     load_sample: Callable[[], None]
     export: Callable[[str], None]
     questions: Callable[[Language, Engine], list[QuestionPublic]]
@@ -137,6 +140,8 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
         right = ctk.CTkFrame(bar, fg_color="transparent", width=1, height=1)
         right.grid(row=0, column=4, sticky="e")
         self._ghost(right, "Aç", self.actions.open_file).pack(side="left", padx=(0, 6))
+        self.recent_button = self._ghost(right, "Son ▾", self._recent_menu)
+        self.recent_button.pack(side="left", padx=(0, 6))
         self._ghost(right, "Örnek", self.actions.load_sample).pack(side="left", padx=(0, 6))
         self.export_button = self._ghost(right, "Dışa aktar ▾", self._export_menu)
         self.export_button.configure(state="disabled")
@@ -197,7 +202,7 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
             border_color=theme.BORDER,
         )
 
-    def _export_menu(self) -> None:
+    def _popup(self, button: ctk.CTkButton, items: list[tuple[str, Callable[[], None]]]) -> None:
         menu = tk.Menu(
             self,
             tearoff=0,
@@ -205,13 +210,31 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
             fg=theme.TEXT,
             activebackground=theme.SURFACE_3,
             activeforeground=theme.TEXT,
+            disabledforeground=theme.MUTED,
             borderwidth=0,
             font=(theme.ui_family(), 11),
         )
-        for fmt, label in EXPORT_FORMATS:
-            menu.add_command(label=label, command=partial(self.actions.export, fmt))
-        button = self.export_button
+        for label, command in items:
+            menu.add_command(label=label, command=command)
+        if not items:
+            menu.add_command(label="Henüz açılmış dosya yok", state="disabled")
         menu.tk_popup(button.winfo_rootx(), button.winfo_rooty() + button.winfo_height() + 4)
+
+    def _export_menu(self) -> None:
+        items: list[tuple[str, Callable[[], None]]] = [
+            (label, partial(self.actions.export, fmt)) for fmt, label in EXPORT_FORMATS
+        ]
+        self._popup(self.export_button, items)
+
+    def recent_items(self) -> list[tuple[str, Callable[[], None]]]:
+        """Son dosyalar menüsünün öğeleri (en yeni üstte)."""
+        return [
+            (recent_label(path), partial(self.actions.open_recent, path))
+            for path in self.actions.recent_files()
+        ]
+
+    def _recent_menu(self) -> None:
+        self._popup(self.recent_button, self.recent_items())
 
     # --- Seçimler -------------------------------------------------------------------------
 

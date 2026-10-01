@@ -8,6 +8,7 @@ Exe'de `data/` ve `prompts/` PyInstaller'ın açtığı `sys._MEIPASS` altındad
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 from pathlib import Path
 from typing import TextIO
@@ -44,6 +45,22 @@ def user_config_file() -> Path | None:
         return None
     candidate = Path(sys.executable).resolve().parent / DEFAULT_CONFIG_FILE
     return candidate if candidate.is_file() else None
+
+
+def writable_config_file() -> Path:
+    """Tercihlerin yazılacağı `codementor.toml` (Faz 24).
+
+    Exe'de paketteki dosya geçici dizindedir; exe'nin yanındaki kullanıcı dosyası kullanılır,
+    yoksa paketteki varsayılan oraya kopyalanır (varsayılan ayarlar kaybolmasın). Kaynaktan
+    çalışırken etkin yapılandırma dosyasıdır.
+    """
+    if not is_frozen():
+        return Path(os.environ.get(CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE)).absolute()
+    target = Path(sys.executable).resolve().parent / DEFAULT_CONFIG_FILE
+    bundled = resource_root() / DEFAULT_CONFIG_FILE
+    if not target.is_file() and bundled.is_file():
+        shutil.copyfile(bundled, target)
+    return target
 
 
 def prepare_environment() -> Path:
@@ -89,6 +106,11 @@ def remember_file(prefs: DesktopPrefs, path: str) -> DesktopPrefs:
     """Son açılan dosyalar listesinin başına ekler (tekrarsız, en fazla `MAX_RECENT_FILES`)."""
     recent = [path, *(p for p in prefs.recent_files if p != path)][:MAX_RECENT_FILES]
     return prefs.model_copy(update={"recent_files": recent})
+
+
+def forget_file(prefs: DesktopPrefs, path: str) -> DesktopPrefs:
+    """Son dosyalar listesinden çıkarır (dosya silinmiş ya da taşınmış)."""
+    return prefs.model_copy(update={"recent_files": [p for p in prefs.recent_files if p != path]})
 
 
 def save_source(analysis_id: str, code: str, directory: Path | None = None) -> None:
