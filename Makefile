@@ -42,6 +42,16 @@ web-test:
 web-e2e:
 	cd web && npx playwright install chromium && npm run e2e
 
+# Masaüstü uygulaması (Faz 14, ADR-0013)
+desktop:
+	uv run python -m codementor.desktop
+
+desktop-assets:
+	uv run python tools/make_desktop_assets.py
+
+exe:
+	uv run python build_exe.py --both
+
 check: lint typecheck test
 
-.PHONY: setup lint typecheck test roslyn-check test-compiler schema rules-doc check serve web-install web-types web web-test web-e2e
+.PHONY: setup lint typecheck test roslyn-check test-compiler schema rules-doc check serve web-install web-types web web-test web-e2e desktop desktop-assets exe

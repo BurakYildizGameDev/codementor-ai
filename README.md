@@ -5,10 +5,11 @@ Unity ve Unreal kodunu statik analiz (tree-sitter + deterministik kurallar + ist
 derleyici) ve bir LLM ile birlikte inceler. Çözümü vermez; öğrenciyi sorunu kendisinin
 bulmasına yönelten sorular ve kademeli ipuçları üretir.
 
-![Web arayüzü: işaretli bulgu satırları, Sokratik sorular, karmaşıklık kartı](docs/img/web-live.png)
+![Masaüstü uygulaması: işaretli bulgu satırları, analiz akışı, Sokratik mentor kartı](docs/img/desktop-live.png)
 
-<sub>Gerçek bir analiz (claude_cli, `claude-opus-5-5`): 4 ve 10. satırlar yüksek, 7. satır orta
-önemde işaretli. Mobil görünüm: [docs/img/web-mobile.png](docs/img/web-mobile.png).</sub>
+<sub>Masaüstü uygulamasında gerçek bir analiz (claude_cli, `claude-opus-5-5`, 34.5 sn): bellek
+sızıntısı ve sıfıra bölme satırları yüksek, 8. satır orta önemde işaretli; mentor cevabı değil
+soruyu veriyor. Web arayüzü: [docs/img/web-live.png](docs/img/web-live.png).</sub>
 
 ## Neden?
 
@@ -38,6 +39,35 @@ flowchart LR
 ```
 
 Ayrıntı: [docs/mimari.md](docs/mimari.md). Kararlar: [docs/adr/](docs/adr/).
+
+## Masaüstü uygulaması (Windows .exe)
+
+`CodeMentor.exe`'yi çift tıkla açman yeterli: Python, Node.js ya da tarayıcı gerekmez
+(ADR-0013). Gereken tek şey bir LLM sağlayıcısı; varsayılan, oturum açılmış
+[Claude Code](https://claude.com/claude-code) CLI'ı (`claude` PATH'te olmalı). Sol alttaki rozet
+sağlayıcının hazır olup olmadığını gösterir.
+
+- **Analiz:** kodu yaz, aç (`.c .h .cpp .hpp .cs`) ya da örnek yükle; dil/motor seç, isteğe bağlı
+  bir görev seç, **Denetle** (Ctrl+Enter). Analiz akışı 6 adımda canlı izlenir; bulgu satırları
+  editörde önem rengiyle boyanır, karta tıklayınca satıra gidilir.
+- **Sokratik mentor:** ana kavram, yönlendirici sorular ve sonraki adım. **Bir ipucu daha**
+  aynı oturumla yeniden denetler ve ipucu seviyesini (1→3) artırır; **Baştan başla** sıfırlar.
+- **Soru bankası:** 14 görev; seçilen görev editörün üstünde hedefiyle görünür.
+- **Geçmiş:** önceki analizler kodlarıyla yeniden açılır; raporlar Markdown/SARIF/JSON olarak
+  dışa aktarılır.
+- **Ayarlar:** sağlayıcı seçimi ve bağlantı denetimi, bulunan derleyiciler, veri konumları.
+
+Derlemek için (Windows, depo kökünde):
+
+```bash
+uv sync
+uv run python build_exe.py --both    # dist/CodeMentor.exe (~37 MB) + dist/CodeMentor-0.1.0-win64.zip
+uv run python -m codementor.desktop  # derlemeden çalıştırmak için
+```
+
+Exe'nin yanına bir `codementor.toml` koyarsan paketteki varsayılan yerine o kullanılır
+(ör. `[providers] default = "anthropic"`). Veritabanı, tercihler ve log `~/.codementor`
+altındadır.
 
 ## Hızlı başlangıç (Docker gerekmez)
 
@@ -155,7 +185,7 @@ Okuma notları (ayrıntı: [docs/eval-findings.md](docs/eval-findings.md)):
 ## Yol haritası
 
 - **v1.1:** kalan statik kurallar; cppcheck/clang-tidy entegrasyonu; precision iyileştirmesi
-  (düşük önemli bulguları ayrı göstermek); oturum geçmişi ekranı; LLM-as-judge ile Sokratik kalite
+  (düşük önemli bulguları ayrı göstermek); imzalı Windows kurulum paketi; LLM-as-judge ile Sokratik kalite
   puanı; yerel modellerin (Ollama) eval'i.
 - **v2.0:** yalıtılmış ortamda ampirik karmaşıklık ölçümü; test senaryosu tabanlı doğruluk;
   VS Code eklentisi (SARIF + canlı analiz); Rust ve Go.

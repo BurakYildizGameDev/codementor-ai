@@ -4,7 +4,7 @@
 |---|---|
 | Doküman sürümü | 1.0 |
 | Durum | Taslak → Uygulamaya hazır |
-| Kapsam | v1.0 (tek kullanıcı, yerel + bulut LLM, CLI + REST API + Web UI) |
+| Kapsam | v1.0 (tek kullanıcı, yerel + bulut LLM, masaüstü uygulaması + CLI + REST API + Web UI) |
 | Eşlik eden doküman | `docs/UYGULAMA_PLANI.md` (faz faz yapılış) |
 
 ---
@@ -111,6 +111,7 @@ Bu hedefler CV'de kullanılacak sayıların **tek kaynağıdır**. Ölçülmemi�
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  İSTEMCİLER:  CLI (Typer+Rich)  │  Web UI (React)  │  REST istemcisi   │
+│               Masaüstü (CustomTkinter, .exe; çekirdeği doğrudan çağırır) │
 └──────────────────────────────┬───────────────────────────────────────┘
                                │ AnalysisRequest
                                ▼
@@ -1139,6 +1140,7 @@ codementor-ai/
 │   ├── storage/       db.py  cache.py  sessions.py
 │   ├── report/        cli_render.py  markdown.py  sarif.py
 │   ├── api/           app.py  routes.py  sse.py  errors.py  state.py  examples/
+│   ├── desktop/       app.py  bridge.py  viewmodel.py  views/  widgets/  assets/  (ADR-0013)
 │   ├── cli/           main.py
 │   └── eval/          dataset.py  metrics.py  runner.py  compare.py
 ├── data/
@@ -1254,7 +1256,7 @@ Model adları koda gömülmez; sağlayıcılar model adlarını sık değiştird
 
 ## 18. Dağıtım
 
-Varsayılan dağıtım **Docker'sızdır**: `uv sync` + `codementor serve` + Web UI için `npm run dev`. Varsayılan sağlayıcı `claude_cli` (Faz 13; Ollama, Anthropic API vb. yapılandırmayla). Tier 1 için isteğe bağlı olarak gcc/clang ve `dotnet` kurulur (ADR-0009).
+Varsayılan dağıtım **Docker'sızdır**. **Faz 14 (ADR-0013):** birincil dağıtım Windows masaüstü uygulamasıdır — `uv run python build_exe.py` → `dist/CodeMentor.exe` (tek dosya) ve `dist/CodeMentor-<sürüm>-win64.zip` (klasör); pakette `data/`, `prompts/` ve varsayılan `codementor.toml` bulunur, exe'nin yanındaki `codementor.toml` önceliklidir. Geliştirme/web kurulumu: `uv sync` + `codementor serve` + Web UI için `npm run dev`. Varsayılan sağlayıcı `claude_cli` (Faz 13; Ollama, Anthropic API vb. yapılandırmayla). Tier 1 için isteğe bağlı olarak gcc/clang ve `dotnet` kurulur (ADR-0009).
 
 ### 18.1 docker-compose (opsiyonel paketleme)
 
@@ -1306,9 +1308,10 @@ volumes: { codementor-db: {}, ollama-models: {} }
 | Log | structlog | JSON log, bağlam değişkenleri | logging |
 | Test | pytest, hypothesis, respx | Standart; respx ile HTTP mock | — |
 | Kalite | ruff, mypy --strict | Hız + tip güvenliği | flake8 + black |
-| Web | Vite + React + TS + Monaco | Kod editörü, satır işaretleri | HTMX (daha basit, daha az etkileyici) |
+| Masaüstü | CustomTkinter + PyInstaller (ADR-0013) | Tek .exe, Node/tarayıcı gerekmez; çekirdek doğrudan çağrılır | pywebview + React, Electron/Tauri |
+| Web | Vite + React + TS + Monaco | Kod editörü, satır işaretleri (ikincil istemci) | HTMX (daha basit, daha az etkileyici) |
 | Derleyici yalıtımı | Süreç düzeyi (stdin, include koruması, rlimit/Job Object, zaman aşımı) | Docker'sız kurulum; ADR-0009 | Süreç düzeyi ek yalıtım, ör. bubblewrap/seccomp (v1.1+) |
-| Paketleme | Yok — yerel `uv` + `npm` (Faz 13, ADR-0009) | Kurulum eşiği düşük; Docker kullanılmıyor | Docker/Podman (sağlanmıyor) |
+| Paketleme | PyInstaller .exe (Faz 14, ADR-0013); geliştirmede yerel `uv` + `npm` | Kurulum eşiği düşük; Docker kullanılmıyor | Docker/Podman (sağlanmıyor) |
 
 ---
 
@@ -1350,7 +1353,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 
 ## 22. Yol Haritası
 
-**v1.0 (bu doküman):** C, C++, C#, Unity, Unreal; Tier 0/1; 23 madde (20 statik kural + 3 LLM kontrol maddesi); 14 soru; 4 sağlayıcı + Fake; iki geçiş; CLI, API, Web UI; eval (80 örnek); SARIF.
+**v1.0 (bu doküman):** C, C++, C#, Unity, Unreal; Tier 0/1; 23 madde (20 statik kural + 3 LLM kontrol maddesi); 14 soru; 4 sağlayıcı + Fake; iki geçiş; masaüstü (.exe), CLI, API, Web UI; eval (80 örnek); SARIF.
 
 **v1.1:**
 - cppcheck ve clang-tidy entegrasyonu

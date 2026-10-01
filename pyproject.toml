@@ -20,10 +20,15 @@ dependencies = [
     "sqlmodel>=0.0.22",
     "fastapi>=0.115",
     "uvicorn>=0.32",
+    "customtkinter>=6.0.0",
+    "pillow>=12.3.0",
 ]
 
 [project.scripts]
 codementor = "codementor.cli.main:app"
+
+[project.gui-scripts]
+codementor-desktop = "codementor.desktop.launch:main"
 
 [dependency-groups]
 dev = [
@@ -35,6 +40,7 @@ dev = [
     "respx>=0.23.1",
     "jsonschema>=4.23",
     "types-jsonschema>=4.26.0.20260518",
+    "pyinstaller>=6.22.3",
 ]
 
 [build-system]
@@ -59,6 +65,11 @@ python_version = "3.12"
 strict = true
 mypy_path = "src"
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# customtkinter / PyInstaller tip bilgisi yayımlamıyor (masaüstü istemcisi, ADR-0013)
+module = ["customtkinter.*", "PyInstaller.*"]
+ignore_missing_imports = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true

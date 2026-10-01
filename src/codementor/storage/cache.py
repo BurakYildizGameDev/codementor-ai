@@ -68,6 +68,15 @@ def get_analysis(db: Database, analysis_id: str) -> AnalysisReport | None:
     return AnalysisReport.model_validate_json(row.report_json) if row else None
 
 
+def list_analyses(db: Database, limit: int = 50) -> list[AnalysisRow]:
+    """En yeni kayıtlı analizler (masaüstü geçmiş ekranı); rapor gövdesi ayrıca çözülür."""
+    with db.session() as session:
+        rows = session.exec(
+            select(AnalysisRow).order_by(col(AnalysisRow.created_at).desc()).limit(limit)
+        ).all()
+    return list(rows)
+
+
 def save_analysis(
     db: Database,
     report: AnalysisReport,

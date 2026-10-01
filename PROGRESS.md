@@ -17,6 +17,7 @@
 | 11 | ✅ | faz/11-api | 2026-09-30 | Claude Code / — |
 | 12 | ✅ | faz/12-eval | 2026-09-30 | Claude Code / — |
 | 13 | ✅ | faz/13-sunum | 2026-09-30 | Claude Code / — |
+| 14 | ✅ | faz-14-masaustu | 2026-10-01 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -425,7 +426,22 @@
 **Doğrulama:** README adımları git'in izleyeceği dosyaların temiz kopyasında (`.venv`/`node_modules` yok) birebir uygulandı: `uv sync`, `serve`, `npm install`, `npm run dev`; `/health/ready`, soru listesi ve Vite proxy üzerinden SSE analiz (26 aşama + rapor), canlı Playwright testi geçti. Canlı ekran görüntüsünde aynı satırda yüksek + düşük bulgu varken düşük rengin görünmesi hatası bulundu ve düzeltildi (testli).
 **Açık sorular:** `YAPILANLAR.md` Faz 7'den sonra güncellenmemiş (Faz 8–12 özetleri yok); Faz 13 bölümü eklendi.
 
+## Faz 14 — Notlar (masaüstü uygulaması, ADR-0013)
+**Yapılanlar:**
+- `src/codementor/desktop/` (CustomTkinter): sol menü (Analiz, Soru bankası, Geçmiş, Ayarlar; altta sağlayıcı durumu), araç çubuğu (dil, motor, görev, Dosya aç, Örnek, Dışa aktar, altın **Denetle** / Ctrl+Enter), görev şeridi, satır numaralı ve renklendirmeli kod editörü (bulgu satırları önem rengiyle, imleç satırındaki bulgu alt şeritte), sağ panel: rapor özeti + uyarılar, 6 adımlık canlı analiz akışı, Sokratik mentor kartı (ipucu merdiveni 1-3, "Bir ipucu daha", "Baştan başla"), karmaşıklık kartı, bulgu kartları (tıkla → satır). Koyu lacivert + altın/mor tema tek dosyada (`theme.py`); Windows 11'de koyu başlık çubuğu.
+- Çekirdek doğrudan çağrılır (sunucu yok): `ApiState` + `bridge.Bridge` (görev başına thread + `asyncio.run`, kuyruk, kuşak sayacıyla eski mesajları atma). GUI'siz mantık: `viewmodel.py`, `highlight.py`, `runtime.py`, `services.py`.
+- Tercihler `models/desktop.py` (`DesktopPrefs`) → `~/.codementor/desktop.json`; analiz edilen kod `desktop-sources/` (geçmişten yeniden açmak için). `storage.cache.list_analyses` eklendi.
+- `build_exe.py`: onefile (`dist/CodeMentor.exe`, açılış görseli, Windows sürüm bilgisi, ~37 MB) + onedir + zip. Görseller `tools/make_desktop_assets.py` ile üretildi (logo, ikon, açılış). `pyproject`: `customtkinter`, `pillow`; dev `pyinstaller`; `codementor-desktop` gui-script; Makefile `desktop`, `desktop-assets`, `exe`.
+- Testler: `tests/desktop/` 45 test (görünüm modeli + hypothesis, renklendirme + hypothesis, çalışma ortamı/exe kökü, köprü FakeProvider'lı gerçek orkestratörle, gerçek Tk penceresiyle duman testleri: tam mentorluk akışı ve ipucu artışı, geçmişten açma, soru bankası, dosya açma/boyut sınırı, sağlayıcı tercihi; `build_exe` yardımcıları). Ekran yoksa GUI testleri atlanır.
+**Kararlar:** (1) CustomTkinter + PyInstaller (ADR-0013); pywebview/Electron reddedildi. (2) `web/` silinmedi, ikincil istemci. (3) `customtkinter`/`pillow` ana bağımlılık (exe ve `python -m codementor.desktop` için; ayrı grup ek karmaşa). (4) Rapor kodu içermediği için kod masaüstünde ayrı saklanıyor (yerel). (5) `pyi_splash` doğrudan import edilmeli; `importlib` ile PyInstaller modülü pakete koymuyor ve açılış görseli kapanmıyordu (exe'de bulundu, düzeltildi).
+**Doğrulama:** `make check` yeşil. Exe derlendi ve açıldı (açılış görseli kapanıyor, `claude_cli` hazır); FakeProvider ile tüm ekranların görüntüsü alındı; claude_cli ile canlı analiz (34.5 sn, 7 bulgu, Sokratik sorular) `docs/img/desktop-live.png`.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 14: exe imzası yok; Windows SmartScreen ilk açılışta uyarabilir (kod imzalama sertifikası + Inno Setup kurulum paketi).
+- Faz 14: CI'da Windows exe derleme işi (artefakt olarak zip); şu an elle `make exe`.
+- Faz 14: analiz iptali yok (düğme yok; sonuç kuşak sayacıyla atılabiliyor ama CLI süreci sürer — "CLI ajanı iptali" maddesiyle birlikte).
+- Faz 14: editörde arama (Ctrl+F), son dosyalar menüsü (`recent_files` kaydediliyor ama gösterilmiyor), sürükle-bırak ile dosya açma (tkinterdnd2).
+- Faz 14: onefile açılışı arşiv çözme nedeniyle birkaç saniye; hızlı açılış için onedir zip önerilir.
 - Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
 - Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
 - `mask_non_code` C++ ham metinlerini (`R"(...)"`) tanımıyor; içlerinde `"` geçerse maskeleme erken biter (öğrenci kodunda nadir).
@@ -476,6 +492,6 @@
 - Faz 13: Monaco'yu tembel yükleme (dinamik `import`) ile ilk yükü küçültmek.
 - Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri.
 
-## Yapılacaklar (2026-09-30 itibarıyla sıra)
-1. Faz 13 commit'i ve main'e alınması (kullanıcı); CI'da yeni `web` işinin ilk koşusu.
+## Yapılacaklar (2026-10-01 itibarıyla sıra)
+1. Faz 14 commit'i ve main'e alınması; CI'da masaüstü testlerinin ilk koşusu (Linux'ta GUI testleri atlanır, Windows'ta koşar).
 2. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması; eval precision iyileştirmesi (bkz. Sonraya). Ollama kullanılmıyor (kullanıcı tercihi).
