@@ -10,6 +10,7 @@ expected:
   space_complexity: "n"
   findings:
     - { category: resource_leak, line: 12, note: "realloc başarısız olursa eski blok kaybolur" }
+    - { category: memory_safety, line: 12, rule_id: C-MEM-003, note: "realloc sonucu NULL denetimsiz; 14. satırda yazılıyor" }
     - { category: edge_case, line: 18, note: "boş yığında size -1 olur, sınır dışı okuma" }
   must_not_contain: ["int *tmp = realloc", "if (s->size == 0)"]
 tags: [realloc, edge-case]

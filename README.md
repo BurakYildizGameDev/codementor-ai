@@ -135,11 +135,13 @@ Bulgu eşleşmesi: aynı kategori + satır farkı ≤ 2. Model: `claude-opus-5-5
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | claude_cli / claude-opus-5-5 | two_pass | — | 49 (test) | 100% / 100% | 100% / 100% | 91% / 94% | 27% / 92% / 42% | 94% | 0% | 100% | 20.3 / 57.3 | 15673 |
 | claude_cli / claude-opus-5-5 | single_pass | — | 49 (test) | 100% / 100% | 100% / 100% | 94% / 97% | 32% / 94% / 48% | 94% | 0% | 100% | 13.5 / 35.7 | 10182 |
-| Yalnızca statik (LLM yok) | static | — | 49 (test) | — / — | 100% / 100% | 91% / 91% | 84% / 44% / 58% | 100% | 0% | 0% | 0.0 / 0.1 | — |
+| Yalnızca statik (LLM yok) | static | — | 49 (test) | — / — | 100% / 100% | 91% / 91% | 89% / 46% / 61% | 100% | 0% | 0% | 0.0 / 0.1 | — |
 
 Sürümler: prompt v1+e485058f · kurallar r1+fa6fff47 · şema 1.0
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 <!-- eval-table:test:end -->
+
+> Not: `c-016` etiketine 2026-10-01'de ikinci beklenen bulgu (`memory_safety`, C-MEM-003) eklendi; LLM satırları eski etiketle puanlandı.
 
 **Dev (31 örnek) ve ablasyonlar:**
 
