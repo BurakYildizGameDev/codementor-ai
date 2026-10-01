@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from tkinter import filedialog
 from typing import TYPE_CHECKING, Any
 
 from codementor.desktop import runtime
@@ -64,6 +63,8 @@ class FileController:
         self.drop_enabled = False
 
     def open_dialog(self) -> None:
+        from tkinter import filedialog  # Tk'siz Python'da modül yine içe aktarılabilsin (CI)
+
         path = filedialog.askopenfilename(
             title="Kaynak dosyası aç",
             filetypes=[("Kaynak dosyaları", SOURCE_PATTERNS), ("Tüm dosyalar", "*.*")],
