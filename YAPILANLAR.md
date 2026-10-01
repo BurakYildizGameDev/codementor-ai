@@ -269,3 +269,53 @@ Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorula
 
 ### Testler
 - Vitest 24, Playwright 2 (+1 canlı), Python'da README tablo ve şema testleri. Toplam Python 1772.
+
+---
+
+## Faz 14 — Masaüstü Uygulaması ve Exe ✅
+
+**Dal:** `faz-14-masaustu` · **ADR:** 0013
+
+### Ne yapıldı
+- **Web yerine çift tıkla açılan uygulama:** CustomTkinter ile `src/codementor/desktop/`. Koyu lacivert + altın/mor tema, sol menü (Analiz, Soru bankası, Geçmiş, Bağlantılar).
+- **Analiz ekranı:** satır numaralı, renklendirmeli editör; bulgu satırları önem rengiyle boyanır, karta tıklayınca satıra gidilir. 6 adımlık canlı analiz akışı, Sokratik mentor kartı (ipucu merdiveni 1→3, "Bir ipucu daha", "Baştan başla"), karmaşıklık kartı, Markdown/SARIF/JSON dışa aktarma.
+- **Geçmiş:** önceki analizler kodlarıyla yeniden açılır. **Soru bankası:** görev kartları, seçilen görev editörün üstünde hedefiyle görünür.
+- **Sunucu yok:** arayüz çekirdeği doğrudan çağırır; uzun işler arka plan thread'inde, sonuçlar kuyrukla ana pencereye gelir.
+- **Exe:** `build_exe.py` → `dist/CodeMentor.exe` (~37 MB, açılış görseli, Windows sürüm bilgisi) + klasör sürümü ve zip. Logo/ikon `tools/make_desktop_assets.py` ile üretildi.
+
+### Testler
+- 45 masaüstü testi (gerçek Tk penceresiyle akış testleri; ekran yoksa atlanır). Canlı: claude_cli ile 34,5 sn'de 7 bulgu.
+
+---
+
+## Faz 15 — Bağlantı Merkezi ✅
+
+**Dal:** `faz-15-baglantilar` · **ADR:** 0014
+
+### Ne yapıldı
+- **Bağlantılar ekranı:** Claude Code, Antigravity (agy), Ollama, Anthropic, OpenAI, DeepSeek için birer kart: durum, model seçimi, Denetle, Varsayılan yap, Bağlantıyı dene.
+- **Model keşfi:** Ollama'da kurulu modeller, agy'de hesaptaki modeller listelenir. Seçimler `codementor.toml`'un üstüne yazılır (CLI/API etkilenmez).
+- **Yetkilendirme:** API anahtarları Windows Kimlik Bilgisi Yöneticisi'nde saklanır (dosyaya ya da log'a yazılmaz). Claude Code oturumu e-postayla gösterilir; "Oturum aç" CLI'nın kendi girişini yeni pencerede açar. agy için araç onayı anahtarı.
+- **Ollama "hazır değil" düzeltildi:** yapılandırma kurulu olmayan `qwen2.5-coder:7b`'yi istiyordu; `qwen2.5-coder:14b` seçildi, gerçek analiz 55 sn'de tamamlandı.
+
+### Testler
+- Sahte kimlik kasası, respx ve sahte süreçle 17 yeni test; testler gerçek kasaya, ağa ya da CLI'lara dokunmaz.
+
+---
+
+## Faz 16 — Python, HTML ve CSS ✅
+
+**Dal:** `faz-16-diller` · **ADR:** 0015
+
+### Ne yapıldı
+- **Python, tam hat:** sözdizimi denetimi (kod çalıştırılmadan, yalnızca ayrıştırılarak), döngü/özyineleme olguları ve Big-O ipucu (kavramalar, `range`, `//=` yarılama, listede `in` araması O(n)), çağrı maliyet tablosu.
+- **HTML ve CSS:** karmaşıklık kavramı olmadığından ayrı bir hat; mentor erişilebilirlik, anlamsal yapı ve bakım kolaylığına odaklanır, karmaşıklık kartı gösterilmez.
+- **13 yeni statik kural:** Python 5 (değiştirilebilir varsayılan argüman, çıplak except, with dışında open, döngüde doğrusal liste işlemi, `== None`), HTML 5 (alt yok, lang yok, etiketsiz form alanı, yinelenen id, DOCTYPE yok), CSS 3 (çok sayıda `!important`, yinelenen özellik, boş blok).
+- Dil tespiti, kontrol listeleri, soru bankasına 4 görev (toplam 18), masaüstü ve web arayüzünde 6 dil ve renklendirme.
+
+### Canlı denemeler (claude_cli)
+- Python: 28 sn, O(n²) ve döngüde liste araması bulgusu. HTML: 26 sn, 8 erişilebilirlik bulgusu.
+
+### Testler (2004 test)
+- 52 kural fixture'ı, her yeni dilde 5+5 sözdizimi fixture'ı, uçtan uca hat testleri.
+- Not: yeni dillerin bulgu doğruluğu henüz eval ile ölçülmedi.
