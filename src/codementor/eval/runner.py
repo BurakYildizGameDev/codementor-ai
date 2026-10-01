@@ -28,6 +28,7 @@ from codementor.models.provider import (
     ProviderResult,
 )
 from codementor.models.request import AnalysisOptions, AnalysisRequest
+from codementor.pipeline.cost import load_pricing
 from codementor.pipeline.events import EventBus
 from codementor.pipeline.orchestrator import Orchestrator, PipelineError, ProviderFactory
 from codementor.pipeline.passes import SCHEMA_INVALID, SCHEMA_OK
@@ -35,17 +36,12 @@ from codementor.pipeline.versions import SCHEMA_VERSION, rules_version
 from codementor.prompts.templates import prompt_version
 from codementor.providers.base import LLMProvider, ProviderUnavailableError
 from codementor.providers.factory import build_chain
-from codementor.questions._loader import DataFileError, load_model
 
 STATIC_ONLY = "static-only"
 ABLATIONS = ("facts", "line_numbers", "fewshot0", "fewshot1")
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]+")
 
 Progress = Callable[[int, int, SampleResult], None]
-
-
-class PricingError(DataFileError):
-    """`data/pricing.yaml` okunamadı ya da geçersiz."""
 
 
 @dataclass
@@ -82,12 +78,9 @@ def apply_ablations(settings: Settings, ablations: list[str]) -> Settings:
     return settings.model_copy(update={"prompts": settings.prompts.model_copy(update=update)})
 
 
-def load_pricing(settings: Settings) -> PricingFile | None:
-    """`data/pricing.yaml` (yoksa None: maliyet tahmini yapılmaz)."""
-    path = settings.data.questions_dir.parent / "pricing.yaml"
-    if not path.is_file():
-        return None
-    return load_model(path, PricingFile, PricingError)
+def pricing_for(settings: Settings) -> PricingFile | None:
+    """`data.pricing_file` (yoksa None: maliyet tahmini yapılmaz)."""
+    return load_pricing(settings.data.pricing_file)
 
 
 def _schema_flags(events: list[StageEvent]) -> tuple[bool | None, bool | None]:
@@ -204,7 +197,7 @@ async def run_eval(
         if progress is not None:
             progress(index, len(samples), result)
     pairs = [(s.label, r) for s, r in zip(samples, results, strict=True)]
-    metrics = compute_metrics(pairs, None if static_only else load_pricing(settings))
+    metrics = compute_metrics(pairs, None if static_only else pricing_for(settings))
     return RunResult(config=run_config, metrics=metrics, samples=results)
 
 

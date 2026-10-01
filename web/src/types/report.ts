@@ -64,6 +64,10 @@ export type FindingSource = "static" | "llm" | "confirmed";
 export type Findings = Finding[];
 export type Language = "c" | "cpp" | "csharp" | "python" | "html" | "css";
 export type CacheHit = boolean;
+/**
+ * Tahmini maliyet (USD, data/pricing.yaml); fiyat yoksa null
+ */
+export type CostEst = number | null;
 export type Degraded = boolean;
 export type EarlyExit = boolean;
 export type Model = string | null;
@@ -74,6 +78,10 @@ export type RulesVersion = string;
 export type SchemaVersion = string;
 export type TokensIn = number;
 export type TokensOut = number;
+/**
+ * Sağlayıcı token bildirmedi; sayılar yaklaşık
+ */
+export type UsageEstimated = boolean;
 export type Warnings = string[];
 export type QuestionId = string | null;
 export type SchemaVersion1 = "1.0";
@@ -145,6 +153,7 @@ export interface Finding {
 }
 export interface ReportMeta {
   cache_hit: CacheHit;
+  cost_est?: CostEst;
   degraded: Degraded;
   early_exit: EarlyExit;
   model: Model;
@@ -156,6 +165,7 @@ export interface ReportMeta {
   stage_latency_ms: StageLatencyMs;
   tokens_in: TokensIn;
   tokens_out: TokensOut;
+  usage_estimated?: UsageEstimated;
   warnings: Warnings;
 }
 export interface StageLatencyMs {

@@ -46,6 +46,13 @@ class ReportMeta(StrictModel):
     degraded: bool
     repair_attempts: int
     warnings: list[str]
+    # Faz 25 (mimari §13); varsayılanlı: önbellekteki eski raporlar okunmaya devam eder
+    usage_estimated: bool = Field(
+        default=False, description="Sağlayıcı token bildirmedi; sayılar yaklaşık"
+    )
+    cost_est: float | None = Field(
+        default=None, ge=0, description="Tahmini maliyet (USD, data/pricing.yaml); fiyat yoksa null"
+    )
 
 
 class AnalysisReport(StrictModel):

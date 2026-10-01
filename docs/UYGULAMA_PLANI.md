@@ -1232,6 +1232,21 @@ derleyicisini de anında kesmesi.
 
 **Commit:** `feat(faz-24): editörde arama, son dosyalar, sürükle-bırak, toml'a yazma, Tier 1 iptali`
 
+### Faz 25 — Sağlayıcılar ve CLI ajanları (çevrimdışı kısım)
+
+**Dal:** `faz/25-saglayicilar` · **Mimari:** §5.5, §6.4, §13 · **ADR:** 0012
+
+**Amaç:** CLI ajanlarının gerçek süreç başlatma yolunu uçtan uca sınamak; token muhasebesi ve
+tahmini maliyeti rapora taşımak. agy canlı denemesi kullanıcı isteğiyle yapılmadı.
+
+**Kabul kriterleri**
+- [x] Sahte `claude`/`agy` gerçek `run_process` ile: prompt yalnız stdin'de, boş cwd, yabancı anahtar yok, agy `--mode plan`, iptal süreci öldürür
+- [x] Token bildirmeyen sağlayıcıda yaklaşık sayım + `meta.usage_estimated`
+- [x] `meta.cost_est` (`data.pricing_file`); eval aynı fiyat dosyasını ve işlevi kullanır
+- [x] JSON şemaları ve web tipleri güncel; CLI alt satırında "(tahmini)" ve "~$"
+
+**Commit:** `feat(faz-25): sahte CLI uçtan uca testi, token tahmini ve maliyet`
+
 ---
 
 ## 7. PROGRESS.md Şablonu

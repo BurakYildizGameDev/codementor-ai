@@ -181,3 +181,17 @@ def test_rich_without_code_and_level_three() -> None:
     text = _rich(_report(hint_level=3), code=None)
     assert "Sınır dışı erişim" in text
     assert "for (int i" not in text
+
+
+def test_rich_footer_marks_estimated_usage_and_cost() -> None:
+    """Faz 25 (§13): tahmini token ve maliyet alt satırda işaretlenir."""
+    plain = _rich(_report())
+    assert "token 10/5" in plain
+    assert "(tahmini)" not in plain
+    assert "~$" not in plain
+    report = _report()
+    report.meta.usage_estimated = True
+    report.meta.cost_est = 0.00123
+    text = _rich(report)
+    assert "token 10/5 (tahmini)" in text
+    assert "~$0.0012" in text

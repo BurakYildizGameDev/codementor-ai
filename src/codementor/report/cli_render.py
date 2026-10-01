@@ -96,7 +96,10 @@ def render_report(report: AnalysisReport, code: str | None = None) -> list[Rende
     meta = report.meta
     footer = (
         f"{report.analysis_id} · {meta.provider or 'LLM yok'} · {meta.prompt_version} · "
-        f"token {meta.tokens_in}/{meta.tokens_out}" + (" · önbellek" if meta.cache_hit else "")
+        f"token {meta.tokens_in}/{meta.tokens_out}"
+        + (" (tahmini)" if meta.usage_estimated else "")
+        + (f" · ~${meta.cost_est:.4f}" if meta.cost_est is not None else "")
+        + (" · önbellek" if meta.cache_hit else "")
     )
     parts.append(Text(footer, style="dim"))
     return parts

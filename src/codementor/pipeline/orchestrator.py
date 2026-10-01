@@ -20,6 +20,7 @@ from codementor.models.request import AnalysisRequest, LanguageHint, NormalizedC
 from codementor.models.validation import Tier1Result, Toolchain
 from codementor.pipeline import stages
 from codementor.pipeline.assemble import ReportParts, assemble_report, from_cache
+from codementor.pipeline.cost import estimate_cost, load_pricing
 from codementor.pipeline.events import EventBus, StageTimer
 from codementor.pipeline.ids import new_ulid
 from codementor.pipeline.passes import LLMOutcome, LLMSession, run_llm_passes
@@ -259,7 +260,7 @@ class Orchestrator:
         llm: LLMSession | None,
         version: str,
     ) -> AnalysisReport:
-        return assemble_report(
+        report = assemble_report(
             analysis_id=run.analysis_id,
             code=code,
             question_id=run.request.question_id,
@@ -270,3 +271,12 @@ class Orchestrator:
             warnings=run.warnings,
             timer=run.timer,
         )
+        meta = report.meta
+        meta.cost_est = estimate_cost(
+            load_pricing(self.settings.data.pricing_file),
+            meta.provider,
+            meta.model,
+            meta.tokens_in,
+            meta.tokens_out,
+        )
+        return report

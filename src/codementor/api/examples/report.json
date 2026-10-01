@@ -59,6 +59,8 @@
     "cache_hit": false,
     "degraded": false,
     "repair_attempts": 0,
-    "warnings": []
+    "warnings": [],
+    "usage_estimated": false,
+    "cost_est": null
   }
 }

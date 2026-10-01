@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from codementor.models.bigo import BigO, BigOError, parse_bigo
 from codementor.models.eval import ExpectedFinding, Label, Metrics, PricingFile, SampleResult
 from codementor.models.findings import Finding
+from codementor.pipeline.cost import estimate_cost
 
 MATCH_LINE_DISTANCE = 2
 _WHITESPACE = re.compile(r"\s+")
@@ -182,15 +183,12 @@ def cost_estimate(results: Sequence[SampleResult], pricing: PricingFile | None) 
         meta = result.report.meta if result.report else None
         if meta is None or not (meta.tokens_in or meta.tokens_out):
             continue
-        price = next(
-            (p for p in pricing.prices if p.provider == meta.provider and p.model == meta.model),
-            None,
-        )
-        if price is None:
+        cost = estimate_cost(pricing, meta.provider, meta.model, meta.tokens_in, meta.tokens_out)
+        if cost is None:
             return None
         priced = True
-        total += meta.tokens_in * price.input_per_mtok + meta.tokens_out * price.output_per_mtok
-    return total / 1_000_000 if priced else None
+        total += cost
+    return total if priced else None
 
 
 def compute_metrics(pairs: Sequence[Pair], pricing: PricingFile | None = None) -> Metrics:

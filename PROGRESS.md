@@ -27,6 +27,7 @@
 | 21 | ✅ | faz/21-kural-dogrulugu | 2026-10-01 | Claude Code / kod-denetci |
 | 23 | ✅ | faz/23-dagitim-yollar | 2026-10-01 | Claude Code / — |
 | 24 | ✅ | faz/24-masaustu-kullanilabilirlik | 2026-10-01 | Claude Code / — |
+| 25 | ✅ | faz/25-saglayicilar | 2026-10-02 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -588,9 +589,28 @@
 **Mimariden sapmalar (ADR linki):** yok; mimari §5.2.3'e iptal notu (Faz 19 kararının uzantısı).
 **Açık sorular:**
 - Sürükle-bırak exe'de elle denenmeli (dosyayı editöre sürükle).
+- ~~Sonradan (a618d54): Linux CI'da `tkinter` yok; `desktop/files.py` modül düzeyinde `filedialog` içe aktardığı için `test_files.py` toplanamadı~~ → içe aktarma fonksiyona alındı. Tk gerektirmeyen masaüstü modülleri Tk'yi tembel içe aktarmalı.
 **Bu fazda öğrendiğim:** `tkinterdnd2` içe aktarılınca `tkinter.BaseWidget`'a `drop_target_register`/`dnd_bind` ekler; CustomTkinter kökünde `TkinterDnD._require(root)` yeterli, `TkinterDnD.Tk` kökü gerekmez. Runner sahtesi imzası eksikse `run_tier1`'in geniş `except`'i hatayı yutar — test sahteleri protokolle birlikte güncellenmeli.
 
+## Faz 25 — Notlar (sağlayıcılar, çevrimdışı kısım)
+**Kullanıcı kararları:** agy canlı denemesi yapılmadı (yalnız çevrimdışı kısım). agy artık oturumlu (14 model, `gemini-3.8-*`); deneme istenirse `allow_tool_agent = true` + tek analiz.
+**Yapılanlar:**
+- `tests/providers/fake_cli_script.py` + `test_cli_agent_e2e.py` (4): sahte CLI Windows'ta distlib başlatıcısıyla `.exe`'ye sarılır (pip konsol betiği biçimi: başlatıcı + shebang + `__main__.py` zip'i; sağlayıcı `.cmd` çalıştırmadığı ve ortam temizlendiği için giriş noktası/PYTHONPATH kullanılamaz), POSIX'te shebang'li betik. Denetlenenler: kullanıcı kodu ve sistem mesajı argv'de değil stdin'de; çalışma dizini boş ve testinkinden farklı; `OPENAI_API_KEY` ve rastgele değişken ortamda yok, sessiz mod değişkenleri var; agy `--sandbox --mode plan`; çıktı önündeki gürültü satırına rağmen JSON ayrıştırılır; iptal 60 sn uyuyan süreci < 5 sn'de öldürür. Dev bağımlılık: `distlib`.
+- `pipeline/cost.py`: `load_pricing` (mtime önbellekli), `estimate_cost`. `config.data.pricing_file` (varsayılan `data/pricing.yaml`). Eval `pricing_for(settings)` + `metrics.cost_estimate` aynı işlevi kullanır (eski `questions_dir.parent` yolu kalktı).
+- `LLMSession._usage`: giriş ve çıkış 0 ise `estimate_messages`/`estimate_tokens` ile yaklaşık sayım; sağlayıcının kendi `estimated` bayrağı da taşınır. `ReportMeta.usage_estimated` ve `cost_est` (varsayılanlı, eski önbellek raporları okunur). Orkestratör maliyeti rapor oluştururken hesaplar.
+- CLI alt satırı `token 10/5 (tahmini) · ~$0.0012`. Şemalar (`schemas/report.schema.json`) ve web tipleri (`web/src/types/report.ts`) üretildi; mimari §6.4, §6.5, §13; `tests/golden/report_example.json`, `api/examples/report.json`.
+- Testler: `test_usage.py` (8), `test_report_render.py` (+1), `test_models.py` alan listesi.
+**Mimariden sapmalar (ADR linki):** yok (mimari §13 zaten `usage_estimated` öngörüyordu; `config/pricing.yaml` yolu `data/pricing.yaml` olarak düzeltildi).
+**Kapsam dışı bırakılanlar (gerekçeli):**
+- OpenAI katı modunda kısıt anahtar sözcükleri: kaynaklar çelişiyor (`minItems`/`maxItems` reddi — mastra #23321; `minLength`/`maxLength` kabulü — pydantic-ai #7315), resmî liste alınamadı, anahtar yok. Yanlış kısıt her isteği 400'e düşürür; hepsini çıkarma davranışı korundu.
+- `ProviderResult`'a şema yeteneği: tüketicisi yok (K5 her yanıtı doğruluyor).
+**Açık sorular:** yok.
+**Bu fazda öğrendiğim:** distlib `ScriptMaker.make()` düz `.py` betiğini Windows'ta exe'ye sarmaz, yalnız kopyalar; exe yalnız `ad = modül:fonksiyon` girişlerinden üretilir.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 25: OpenAI katı mod kısıtlarını canlı anahtarla doğrulayıp `SchemaAdapter.openai_strict`'te desteklenenleri korumak.
+- Faz 25: masaüstü ve web raporunda tahmini token/maliyet gösterimi (şu an yalnız CLI alt satırı ve JSON).
+- Faz 25: agy canlı doğrulaması (oturum var; `allow_tool_agent = true` ile tek analiz).
 - Faz 24: arama büyük/küçük harf ve "tam sözcük" seçenekleri, değiştir (Ctrl+H); bırakılan klasördeki kaynak dosyalarını listeleme.
 - Faz 24: toml'a yazıldıktan sonra masaüstü tercihlerindeki aynı geçersiz kılmalar gereksizleşir (zararsız); "toml'dan yeniden yükle" düğmesi yok.
 - Faz 23: `reference_solution_path` (`private/solutions/`) hâlâ çalışma dizinine göre; soru dosyasının ya da kaynak kökünün dizinine göre çözülmeli (sızıntı testi buna göre güncellenmeli).
@@ -643,9 +663,9 @@
 - Faz 7: OpenAI katı modu bugün `maxLength`, `maxItems`, `pattern`, `minimum`, `maximum` destekliyor; `SchemaAdapter` kısıt temizliğini sağlayıcıya göre ayırabilir (şu an hepsi çıkarılıyor, K5 doğruluyor).
 - Faz 7: `ProviderResult`'a yanıt veren sağlayıcının yeteneği (şema zorlandı mı) eklenebilir; fallback sonrası K5 için.
 - Faz 7: `FakeReply` bir dataclass olarak `providers/fake.py`'de (Pydantic şeması değil, test düzeneği); gerekirse `models/`'e taşınabilir.
-- Faz 7: token tahmini (Ollama/DeepSeek sayım bildirmezse) ve `config/pricing.yaml` maliyet tahmini (mimari §13) — Faz 10/12.
+- ~~Faz 7: token tahmini ve `pricing.yaml` maliyet tahmini (mimari §13)~~ → Faz 25.
 - ~~Faz 4 `run_process` çıplak `argv[0]`~~ → çözüldü (2026-09-29): yalnızca mutlak yol, `test_bare_or_relative_executable_rejected`.
-- CLI ajanları: gerçek `run_process` ile uçtan uca test (sahte bir CLI betiğiyle: stdin, boş cwd, ortamda başka anahtar yok); agy canlı doğrulaması (oturum açılınca).
+- ~~CLI ajanları: gerçek `run_process` ile uçtan uca test~~ → Faz 25; agy canlı doğrulaması hâlâ açık (oturum var).
 - Faz 8: `call_costs.yaml`'a C# `RemoveAll`/`RemoveAt(0)`/`Insert(0, …)` maliyetleri (golden'da `Remove: O(1)` ipucu).
 - ~~Faz 8 denetim D3 (`&lt;` kanıtı)~~ → Faz 9'da çözüldü (`normalize_evidence`).
 - Faz 8 denetim D2: `prompt_version` her build'de şablon dosyalarını okuyor; Faz 10'da mtime tabanlı önbellek.
@@ -673,9 +693,9 @@
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-01):** Faz 23 `main`'de ve push'lu (CI + exe artefaktı yeşil). Faz 24
-`faz/24-masaustu-kullanilabilirlik` dalında → commit + main ff + push. Sıradaki: Faz 22 (canlı,
-kota harcar) ya da Faz 25 (sağlayıcılar).
+**Kaldığımız yer (2026-10-02):** Faz 24 `main`'de, push'lu, CI yeşil. Faz 25 `faz/25-saglayicilar`
+dalında → commit + main ff + push. Sıradaki: Faz 26 (API ve web) ya da Faz 27 (sağlamlık);
+Faz 22 (canlı eval) kota nedeniyle sonda.
 
 **Kullanıcı işleri:** (a) yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
@@ -700,7 +720,7 @@ kota harcar) ya da Faz 25 (sağlayıcılar).
    gerektirir (isteğe bağlı).
 5. ~~**Faz 24 — Masaüstü kullanılabilirlik.**~~ Yapıldı. Editörde Ctrl+F, son dosyalar menüsü, sürükle-bırak,
    tercihleri `codementor.toml`'a yazma, Tier 1 sürecine iptal olayı.
-6. **Faz 25 — Sağlayıcılar ve CLI ajanları.** agy canlı doğrulaması; sahte CLI betiğiyle
+6. ~~**Faz 25 — Sağlayıcılar ve CLI ajanları.**~~ Çevrimdışı kısım yapıldı (agy canlı ve OpenAI katı kısıtlar Sonraya). agy canlı doğrulaması; sahte CLI betiğiyle
    gerçek `run_process` uçtan uca testi; `ProviderResult`'a şema yeteneği; OpenAI katı mod
    kısıtları; token/maliyet tahmini (`pricing.yaml`). (Ollama indirme düğmesi: düşük öncelik.)
 7. **Faz 26 — API ve web.** Senkron aşamaları `asyncio.to_thread`'e taşıma, `prompt_version`

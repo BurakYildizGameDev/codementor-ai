@@ -672,6 +672,8 @@ class ReportMeta(BaseModel):
     degraded: bool
     repair_attempts: int
     warnings: list[str]
+    usage_estimated: bool = False  # Faz 25 (§13): sağlayıcı token bildirmedi, yaklaşık sayım
+    cost_est: float | None = None  # Faz 25 (§13): data/pricing.yaml'dan tahmini maliyet (USD)
 
 
 class AnalysisReport(BaseModel):
@@ -753,7 +755,9 @@ class AnalysisReport(BaseModel):
     "cache_hit": false,
     "degraded": false,
     "repair_attempts": 0,
-    "warnings": []
+    "warnings": [],
+    "usage_estimated": false,
+    "cost_est": null
   }
 }
 ```
@@ -988,7 +992,7 @@ codementor schema export --out schemas/
 - **Yapılandırılmış log:** `structlog`, JSON çıktı; her satırda `analysis_id`, `stage`.
 - **Aşama zamanlaması:** her aşama `stage_latency_ms` içine yazılır.
 - **Token muhasebesi:** sağlayıcının bildirdiği `usage` kullanılır; bildirmiyorsa `tiktoken`/yaklaşık sayım + `usage_estimated=true`.
-- **Maliyet tahmini:** `config/pricing.yaml` içindeki birim fiyatlardan (fiyatlar değişir; dosya elle güncellenir, rapora "tahmini" olarak yazılır).
+- **Maliyet tahmini:** `data/pricing.yaml` (`data.pricing_file`) içindeki birim fiyatlardan (fiyatlar değişir; dosya elle güncellenir, rapora `meta.cost_est` olarak "tahmini" yazılır; fiyatı olmayan sağlayıcı/modelde `null`). **Faz 25:** sağlayıcı token bildirmezse prompt/yanıt uzunluğundan yaklaşık sayım (`prompts.budget.estimate_*`, 4 karakter ≈ 1 token) + `meta.usage_estimated=true`.
 - **Erken çıkış tasarrufu (dürüst ölçüm):**
 
 ```

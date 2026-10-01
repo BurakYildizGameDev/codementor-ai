@@ -311,6 +311,20 @@
           "title": "Cache Hit",
           "type": "boolean"
         },
+        "cost_est": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tahmini maliyet (USD, data/pricing.yaml); fiyat yoksa null",
+          "title": "Cost Est"
+        },
         "degraded": {
           "title": "Degraded",
           "type": "boolean"
@@ -371,6 +385,12 @@
         "tokens_out": {
           "title": "Tokens Out",
           "type": "integer"
+        },
+        "usage_estimated": {
+          "default": false,
+          "description": "Sağlayıcı token bildirmedi; sayılar yaklaşık",
+          "title": "Usage Estimated",
+          "type": "boolean"
         },
         "warnings": {
           "items": {

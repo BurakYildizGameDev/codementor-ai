@@ -57,6 +57,7 @@ class DataSettings(BaseModel):
     mentor_templates_file: Path = Field(
         default_factory=lambda: resource_path("data/mentor_templates.yaml")
     )
+    pricing_file: Path = Field(default_factory=lambda: resource_path("data/pricing.yaml"))
 
 
 class PromptSettings(BaseModel):

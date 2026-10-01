@@ -189,6 +189,8 @@ def test_llm_schemas_have_no_system_fields() -> None:
                 "degraded",
                 "repair_attempts",
                 "warnings",
+                "usage_estimated",  # Faz 25 (§13)
+                "cost_est",
             },
         ),
         (

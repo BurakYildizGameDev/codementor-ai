@@ -75,6 +75,7 @@ def assemble_report(
                 degraded=parts.degraded,
                 repair_attempts=llm.repair_attempts if llm else 0,
                 warnings=list(dict.fromkeys(warnings)),
+                usage_estimated=llm.usage_estimated if llm else False,
             ),
         )
     report.meta.stage_latency_ms = stage_latencies(timer)
