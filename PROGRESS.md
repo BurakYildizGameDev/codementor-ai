@@ -524,5 +524,17 @@
 - Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri.
 
 ## Yapılacaklar (2026-10-01 itibarıyla sıra)
-1. Faz 14 commit'i ve main'e alınması; CI'da masaüstü testlerinin ilk koşusu (Linux'ta GUI testleri atlanır, Windows'ta koşar).
-2. Faz 6'da ertelenen 10 kural; agy canlı doğrulaması; eval precision iyileştirmesi (bkz. Sonraya). Ollama kullanılmıyor (kullanıcı tercihi).
+Durum: Faz 0-16 main'de ve push'lu (842279e), CI 3 işte yeşil.
+
+**Kullanıcı:** yeni 4 sorunun referans çözümlerini `private/solutions/` altına ekle
+(`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
+`css-easy-centered-layout.css`); yoksa bu görevlerde sızıntı koruması daha zayıf.
+
+**Sıradaki fazlar (önerilen sıra):**
+1. Yeni diller için eval: Python/HTML/CSS örnekleri, precision/recall ve sızıntı ölçümü.
+2. Faz 6'da ertelenen 10 C/C++/C# kuralı (Sonraya listesinde).
+3. Masaüstünde analizi durdurma düğmesi (CLI ajanı süreç iptaliyle birlikte).
+4. Bağlantılar'da "Ollama modeli indir" (`ollama pull`) düğmesi ve ilerleme göstergesi.
+5. HTML etiket dengesi uyarısı (kapanmamış/uyumsuz etiket; stdlib `html.parser`).
+6. Exe: imzalı kurulum paketi (SmartScreen) ve CI'da otomatik exe derleme artefaktı.
+7. agy canlı doğrulaması (kartta model seç + araç onayı).
