@@ -38,6 +38,12 @@ class LLMAnalysisOutput(StrictModel):
     additional_findings: list[LLMFinding] = Field(max_length=10)
 
 
+class LLMMarkupAnalysisOutput(StrictModel):
+    """HTML/CSS Geçiş A çıktısı (ADR-0015): karmaşıklık yok, yalnızca ek bulgular."""
+
+    additional_findings: list[LLMFinding] = Field(max_length=10)
+
+
 class LLMSocraticOutput(StrictModel):
     """Geçiş B çıktısı: Sokratik yönlendirme soruları."""
 

@@ -10,7 +10,9 @@
         "engine_best_practice",
         "edge_case",
         "input_handling",
-        "design"
+        "design",
+        "accessibility",
+        "maintainability"
       ],
       "title": "AuditCategory",
       "type": "string"

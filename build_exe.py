@@ -41,7 +41,15 @@ DATA = [
 ROSLYN_OUT = ROOT / "tools" / "roslyn-check" / "out"
 
 # Veri dosyaları ya da dinamik yüklenen uzantılar içeren paketler
-COLLECT_ALL = ["customtkinter", "tree_sitter_c", "tree_sitter_cpp", "tree_sitter_c_sharp"]
+COLLECT_ALL = [
+    "customtkinter",
+    "tree_sitter_c",
+    "tree_sitter_cpp",
+    "tree_sitter_c_sharp",
+    "tree_sitter_python",
+    "tree_sitter_html",
+    "tree_sitter_css",
+]
 HIDDEN_IMPORTS = [
     "sqlalchemy.dialects.sqlite",
     "codementor.providers.ollama",

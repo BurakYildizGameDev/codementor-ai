@@ -14,7 +14,7 @@ VALID = load_fixtures(valid=True)
 
 
 def test_fixture_count() -> None:
-    assert len(VALID) == 15
+    assert len(VALID) == 30
     engines = {f.engine for f in VALID}
     assert {Engine.UNITY, Engine.UNREAL, Engine.NONE} <= engines
 

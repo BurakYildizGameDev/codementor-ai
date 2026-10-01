@@ -56,7 +56,10 @@
       "enum": [
         "c",
         "cpp",
-        "csharp"
+        "csharp",
+        "python",
+        "html",
+        "css"
       ],
       "title": "Language",
       "type": "string"

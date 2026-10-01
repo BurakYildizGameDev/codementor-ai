@@ -3,6 +3,7 @@
 #   c      : serbest fonksiyon adı (`strlen`)
 #   cpp    : nitelikli ad (`std::sort`) veya `tip::metot` (`std::vector::push_back`, `TArray::Add`)
 #   csharp : `Tip.Metot` (`List.Contains`), statik (`Array.Sort`), LINQ `Enumerable.Metot`
+#   python : yerleşik (`sorted`), `tip.metot` (`list.insert`), modül (`heapq.heappush`)
 # Üye çağrılarında tip, dosyadaki bildirimden çözülür; çözülemezse maliyet bilinmez (tahmin yok).
 c:
   strlen: "n"
@@ -170,3 +171,54 @@ csharp:
   FindObjectsOfType: "n"
   FindFirstObjectByType: "n"
   FindObjectsByType: "n"
+
+# Python (ADR-0015). `list.pop` sonsuz argümanla O(1); `pop(0)` kuralı PY-PERF-001 ayrıca yakalar.
+python:
+  sorted: "n log n"
+  sum: "n"
+  min: "n"
+  max: "n"
+  any: "n"
+  all: "n"
+  reversed: "1"
+  len: "1"
+  "list.__contains__": "n"  # `x in xs`
+  "tuple.__contains__": "n"
+  "str.__contains__": "n"
+  "set.__contains__": "1"
+  "dict.__contains__": "1"
+  "list.append": "1*"
+  "list.pop": "1"
+  "list.insert": "n"
+  "list.index": "n"
+  "list.remove": "n"
+  "list.count": "n"
+  "list.sort": "n log n"
+  "list.reverse": "n"
+  "list.copy": "n"
+  "list.extend": "n"
+  "str.join": "n"
+  "str.replace": "n"
+  "str.split": "n"
+  "str.find": "n"
+  "str.count": "n"
+  "str.lower": "n"
+  "str.upper": "n"
+  "str.strip": "n"
+  "dict.get": "1"
+  "dict.items": "1"
+  "dict.keys": "1"
+  "dict.values": "1"
+  "set.add": "1"
+  "set.remove": "1"
+  "set.discard": "1"
+  "deque.append": "1"
+  "deque.appendleft": "1"
+  "deque.popleft": "1"
+  "deque.pop": "1"
+  "heapq.heappush": "log n"
+  "heapq.heappop": "log n"
+  "heapq.heapify": "n"
+  "bisect.bisect_left": "log n"
+  "bisect.bisect_right": "log n"
+  "bisect.insort": "n"

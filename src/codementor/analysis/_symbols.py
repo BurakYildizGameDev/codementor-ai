@@ -107,7 +107,7 @@ def declarator_name(node: Node | None) -> Node | None:
 
 def function_name(node: Node, language: Language) -> str:
     """Fonksiyon adı; C++'ta nitelikli ad korunur (`AFoo::Tick`)."""
-    if language is Language.CSHARP:
+    if language in (Language.CSHARP, Language.PYTHON):
         return text(node.child_by_field_name("name")) or "<anonim>"
     return strip_templates(text(declarator_name(node.child_by_field_name("declarator")))) or (
         "<anonim>"
@@ -121,6 +121,8 @@ def simple_name(name: str) -> str:
 
 def parameters(node: Node, language: Language) -> list[str]:
     """Parametre adları (sırasıyla)."""
+    if language is Language.PYTHON:
+        return _python_parameters(node)
     if language is Language.CSHARP:
         plist = node.child_by_field_name("parameters")
         if plist is None:
@@ -144,8 +146,38 @@ def parameters(node: Node, language: Language) -> list[str]:
     return names
 
 
+_PY_PARAM_TYPES = frozenset(
+    {
+        "identifier",
+        "typed_parameter",
+        "default_parameter",
+        "typed_default_parameter",
+        "list_splat_pattern",
+        "dictionary_splat_pattern",
+    }
+)
+
+
+def _python_parameters(node: Node) -> list[str]:
+    """`def f(a, b: int, c=1, *args, **kw)` → ["a", "b", "c", "args", "kw"]."""
+    plist = node.child_by_field_name("parameters")
+    names: list[str] = []
+    for param in plist.named_children if plist is not None else []:
+        if param.type not in _PY_PARAM_TYPES:
+            continue
+        if param.type == "identifier":
+            names.append(text(param))
+            continue
+        name = param.child_by_field_name("name") or next(
+            (c for c in param.named_children if c.type == "identifier"), None
+        )
+        if name is not None:
+            names.append(text(name))
+    return names
+
+
 _MAX_RECEIVER_BYTES = 120
-_CALL_TYPES = frozenset({"call_expression", "invocation_expression"})
+_CALL_TYPES = frozenset({"call_expression", "invocation_expression", "call"})
 
 
 @dataclass(frozen=True)
@@ -185,9 +217,17 @@ def call_name(node: Node, language: Language) -> CallName:
     count = _arg_count(node)
     if fn is None:
         return CallName("<?>", "<?>", None, None, count)
-    if fn.type in ("field_expression", "member_access_expression"):
-        receiver_node = fn.child_by_field_name("argument") or fn.child_by_field_name("expression")
-        method_node = fn.child_by_field_name("field") or fn.child_by_field_name("name")
+    if fn.type in ("field_expression", "member_access_expression", "attribute"):
+        receiver_node = (
+            fn.child_by_field_name("argument")
+            or fn.child_by_field_name("expression")
+            or fn.child_by_field_name("object")
+        )
+        method_node = (
+            fn.child_by_field_name("field")
+            or fn.child_by_field_name("name")
+            or fn.child_by_field_name("attribute")
+        )
         method = _bare(method_node)
         receiver, chained = _receiver(receiver_node)
         return CallName(clip(f"{receiver}.{method}"), method, receiver, None, count, chained)
@@ -248,11 +288,61 @@ def _csharp_bindings(node: Node) -> list[tuple[str, str | None]]:
     return pairs
 
 
+_PY_LITERAL_TYPES = {
+    "list": "list",
+    "list_comprehension": "list",
+    "dictionary": "dict",
+    "dictionary_comprehension": "dict",
+    "set": "set",
+    "set_comprehension": "set",
+    "string": "str",
+    "concatenated_string": "str",
+    "tuple": "tuple",
+}
+_PY_CONSTRUCTORS = frozenset(
+    {"list", "dict", "set", "str", "tuple", "deque", "Counter", "defaultdict", "OrderedDict"}
+)
+
+
+def _python_type(node: Node | None) -> str | None:
+    """Python ek açıklaması (`list[int]` → `list`) ya da değer (`[]`, `deque()`) → temel tip."""
+    if node is None:
+        return None
+    if node.type == "type":
+        base = text(node).split("[", 1)[0].strip()
+        base = base.removeprefix("typing.").removeprefix("collections.")
+        return {"List": "list", "Dict": "dict", "Set": "set"}.get(base, base) or None
+    if node.type in _PY_LITERAL_TYPES:
+        return _PY_LITERAL_TYPES[node.type]
+    if node.type == "call":
+        name = text(node.child_by_field_name("function")).split(".")[-1]
+        return name if name in _PY_CONSTRUCTORS else None
+    return None
+
+
+def _python_bindings(node: Node) -> list[tuple[str, str | None]]:
+    """`xs: list[int] = []`, `seen = {}`, `def f(items: list[str])` → (ad, temel tip)."""
+    if node.type == "assignment":
+        left = node.child_by_field_name("left")
+        if left is None or left.type != "identifier":
+            return []
+        declared = _python_type(node.child_by_field_name("type"))
+        return [(text(left), declared or _python_type(node.child_by_field_name("right")))]
+    if node.type in ("typed_parameter", "typed_default_parameter"):
+        name = node.child_by_field_name("name") or next(
+            (c for c in node.named_children if c.type == "identifier"), None
+        )
+        return [(text(name), _python_type(node.child_by_field_name("type")))] if name else []
+    return []
+
+
 def type_table(root: Node, language: Language) -> dict[str, str]:
     """Değişken/alan/özellik adı → temel tip; belirsiz (birden çok tip) adlar dışarıda kalır."""
     seen: dict[str, set[str]] = {}
     for node in iter_nodes(root):
-        if language is Language.CSHARP:
+        if language is Language.PYTHON:
+            pairs = _python_bindings(node)
+        elif language is Language.CSHARP:
             pairs = _csharp_bindings(node)
         elif node.type in ("declaration", "field_declaration", "parameter_declaration"):
             base = _base_type(node.child_by_field_name("type"))

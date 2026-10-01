@@ -108,7 +108,8 @@ def questions_show(
     console.print("[bold]Kısıtlar[/bold]")
     for constraint in q.constraints:
         console.print(f"  • {escape(constraint)}")
-    console.print("\n[bold]Beklenen karmaşıklık[/bold]")
-    for operation, complexity in q.expected.time.items():
-        console.print(f"  {escape(operation)}: {_display_bigo(complexity)}")
-    console.print(f"  bellek: {_display_bigo(q.expected.space)}")
+    if q.expected is not None:
+        console.print("\n[bold]Beklenen karmaşıklık[/bold]")
+        for operation, complexity in q.expected.time.items():
+            console.print(f"  {escape(operation)}: {_display_bigo(complexity)}")
+        console.print(f"  bellek: {_display_bigo(q.expected.space)}")

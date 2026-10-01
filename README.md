@@ -1,7 +1,7 @@
 # CodeMentor AI
 
-**Kodu düzeltmeyen, denetleyip Sokratik sorular soran kod mentorluk motoru.** C, C++, C#,
-Unity ve Unreal kodunu statik analiz (tree-sitter + deterministik kurallar + isteğe bağlı yerel
+**Kodu düzeltmeyen, denetleyip Sokratik sorular soran kod mentorluk motoru.** C, C++, C#
+(Unity, Unreal), Python, HTML ve CSS kodunu statik analiz (tree-sitter + deterministik kurallar + isteğe bağlı yerel
 derleyici) ve bir LLM ile birlikte inceler. Çözümü vermez; öğrenciyi sorunu kendisinin
 bulmasına yönelten sorular ve kademeli ipuçları üretir.
 
@@ -47,12 +47,13 @@ Ayrıntı: [docs/mimari.md](docs/mimari.md). Kararlar: [docs/adr/](docs/adr/).
 [Claude Code](https://claude.com/claude-code) CLI'ı (`claude` PATH'te olmalı). Sol alttaki rozet
 sağlayıcının hazır olup olmadığını gösterir.
 
-- **Analiz:** kodu yaz, aç (`.c .h .cpp .hpp .cs`) ya da örnek yükle; dil/motor seç, isteğe bağlı
+- **Analiz:** kodu yaz, aç (`.c .h .cpp .hpp .cs .py .html .css`) ya da örnek yükle; dil/motor seç, isteğe bağlı
   bir görev seç, **Denetle** (Ctrl+Enter). Analiz akışı 6 adımda canlı izlenir; bulgu satırları
   editörde önem rengiyle boyanır, karta tıklayınca satıra gidilir.
 - **Sokratik mentor:** ana kavram, yönlendirici sorular ve sonraki adım. **Bir ipucu daha**
   aynı oturumla yeniden denetler ve ipucu seviyesini (1→3) artırır; **Baştan başla** sıfırlar.
-- **Soru bankası:** 14 görev; seçilen görev editörün üstünde hedefiyle görünür.
+- **Soru bankası:** 18 görev (C, C++, C#, Unity, Unreal, Python, HTML, CSS); seçilen görev
+  editörün üstünde hedefiyle görünür.
 - **Geçmiş:** önceki analizler kodlarıyla yeniden açılır; raporlar Markdown/SARIF/JSON olarak
   dışa aktarılır.
 - **Bağlantılar:** Claude Code, Antigravity (agy), Ollama, Anthropic, OpenAI ve DeepSeek için
@@ -180,11 +181,14 @@ Okuma notları (ayrıntı: [docs/eval-findings.md](docs/eval-findings.md)):
   sayıda düşük önemli bulgu gidebilir.
 - **Sızıntı koruması sezgiseldir** (n-gram + işaret listesi). Eval'deki %0 sızıntı ölçülen işaretler
   içindir; başka biçimde sızmış bir çözümü kaçırabilir.
-- **Statik kural kapsamı:** v1 planındaki 20 kuralın 10'u uygulandı (katalog: `codementor rules list`,
+- **Statik kural kapsamı:** v1 planındaki 20 C ailesi kuralının 10'u + 13 Python/HTML/CSS kuralı (katalog: `codementor rules list`,
   [docs/rules-catalog.md](docs/rules-catalog.md)).
 - **API'de kimlik doğrulama ve hız sınırı yok.** Varsayılan olarak yalnızca `127.0.0.1`'e bağlanır;
   başka adrese bağlanırsa `serve` uyarır. Paylaşılan sunucuda çalıştırmayın.
 - **Docker paketi yok** (ADR-0009): kurulum `uv` + `npm` ile yereldir.
+- **Python, HTML ve CSS eval'de ölçülmedi** (ADR-0015). Kural ve hat testleri var; precision,
+  recall ve sızıntı oranları yalnızca C ailesi için ölçüldü. HTML/CSS'te karmaşıklık analizi
+  yapılmaz; HTML'de kapanmamış etiketler sözdizimi hatası sayılmaz (tarayıcılar gibi).
 
 ## Yol haritası
 

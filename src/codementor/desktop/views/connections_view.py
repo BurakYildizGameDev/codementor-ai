@@ -14,7 +14,13 @@ from codementor.desktop.widgets.common import Card, Pill, clear, muted_label
 from codementor.desktop.widgets.provider_card import CardActions, ProviderCard
 from codementor.models.api import CompilerStatus
 
-_COMPILER_TARGETS = {"c": "C", "cpp": "C++", "unreal": "Unreal (C++)", "csharp": "C# (Roslyn)"}
+_COMPILER_TARGETS = {
+    "c": "C",
+    "cpp": "C++",
+    "unreal": "Unreal (C++)",
+    "csharp": "C# (Roslyn)",
+    "python": "Python",
+}
 
 
 class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]

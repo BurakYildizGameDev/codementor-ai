@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from codementor.models.bigo import parse_bigo
-from codementor.models.enums import Difficulty, Engine, Language
+from codementor.models.enums import Difficulty, Engine, Language, has_complexity
 from codementor.questions.bank import QuestionBank
 from codementor.questions.checklists import CORE_TAG, Checklists
 
@@ -30,6 +30,11 @@ MATRIX: dict[str, tuple[Language, Engine, Difficulty]] = {
     "unity-hard-inventory": (Language.CSHARP, Engine.UNITY, Difficulty.HARD),
     "unreal-medium-actor-component": (Language.CPP, Engine.UNREAL, Difficulty.MEDIUM),
     "unreal-hard-tarray-gc": (Language.CPP, Engine.UNREAL, Difficulty.HARD),
+    # Faz 16 (ADR-0015)
+    "py-easy-word-count": (Language.PYTHON, Engine.NONE, Difficulty.EASY),
+    "py-medium-two-sum": (Language.PYTHON, Engine.NONE, Difficulty.MEDIUM),
+    "html-easy-profile-card": (Language.HTML, Engine.NONE, Difficulty.EASY),
+    "css-easy-centered-layout": (Language.CSS, Engine.NONE, Difficulty.EASY),
 }
 
 # Soru metni (başlık + prompt + kısıtlar) problemi tanımlar, yöntemi söylemez.
@@ -49,6 +54,10 @@ METHOD_LEAKS: dict[str, list[str]] = {
     "unity-hard-inventory": ["hashset", "dictionary", "instantiate(", "event"],
     "unreal-medium-actor-component": ["bcanevertick", "setcomponenttickenabled", "timer"],
     "unreal-hard-tarray-gc": ["uproperty", "reserve", "tweakobjectptr", "tobjectptr", "isvalid"],
+    "py-easy-word-count": ["counter", "defaultdict", "karma", "hash"],
+    "py-medium-two-sum": ["dict", "sözlük", "set(", "karma", "hash", "tamamlayıcı"],
+    "html-easy-profile-card": ["alt=", "<main", "<header", "aria", "lang=", "<img"],
+    "css-easy-centered-layout": ["flex", "grid", "@media", "focus-visible", "minmax"],
 }
 
 
@@ -62,8 +71,8 @@ def checklists() -> Checklists:
     return Checklists.load(DATA / "checklists")
 
 
-def test_all_14_questions_load(bank: QuestionBank) -> None:
-    assert len(bank) == 14
+def test_all_18_questions_load(bank: QuestionBank) -> None:
+    assert len(bank) == 18
 
 
 def test_ids_match_matrix_7_2(bank: QuestionBank) -> None:
@@ -80,7 +89,7 @@ def test_every_question_complete(bank: QuestionBank) -> None:
         assert len(q.checklist_extra) >= 2, q.id
         assert sorted(q.hint_ladder) == [1, 2, 3], q.id
         assert all(len(h.strip()) >= 20 for h in q.hint_ladder.values()), q.id
-        assert q.expected.time, q.id
+        assert q.expected.time if q.expected is not None else not has_complexity(q.language), q.id
 
 
 def test_hint_ladder_ends_with_concept_name(bank: QuestionBank) -> None:
@@ -90,7 +99,14 @@ def test_hint_ladder_ends_with_concept_name(bank: QuestionBank) -> None:
 
 
 def test_reference_paths_point_to_private(bank: QuestionBank) -> None:
-    extensions = {Language.C: ".c", Language.CPP: ".cpp", Language.CSHARP: ".cs"}
+    extensions = {
+        Language.C: ".c",
+        Language.CPP: ".cpp",
+        Language.CSHARP: ".cs",
+        Language.PYTHON: ".py",
+        Language.HTML: ".html",
+        Language.CSS: ".css",
+    }
     for q in bank:
         assert q.reference_solution_path == f"private/solutions/{q.id}{extensions[q.language]}"
 
@@ -110,6 +126,8 @@ def test_leak_table_covers_all_questions() -> None:
 def test_complexity_variables_are_defined(bank: QuestionBank) -> None:
     """`n` dışındaki Big-O değişkenleri (k, d ...) prompt veya kısıtlarda tanımlanmalı."""
     for q in bank:
+        if q.expected is None:  # HTML/CSS
+            continue
         text = " ".join([q.prompt, *q.constraints])
         values = [*q.expected.time.values(), q.expected.space]
         variables = set().union(*(parse_bigo(v.removesuffix("*")).variables for v in values))
@@ -129,8 +147,11 @@ def test_checklist_files_exist(checklists: Checklists) -> None:
         "csharp",
         "unity",
         "unreal",
+        "python",
+        "html",
+        "css",
     }
-    assert len(checklists) >= 5
+    assert len(checklists) >= 8
 
 
 def test_llm_detected_rules_present(checklists: Checklists) -> None:

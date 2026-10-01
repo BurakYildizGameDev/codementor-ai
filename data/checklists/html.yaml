@@ -1,0 +1,28 @@
+# HTML kontrol listesi (ADR-0015). LLM'e enjekte edilir; öğrenciye gösterilmez.
+version: 1
+applies_to: { language: html }
+items:
+  - id: HTML-CL-001
+    text: "Her anlamlı görselin alternatif metni (alt) var mı; süs görsellerinde alt boş mu?"
+    tags: [core, accessibility]
+  - id: HTML-CL-002
+    text: "Sayfa yapısı anlamsal etiketlerle (header, nav, main, section, footer) mi kurulmuş, yoksa her şey div mi?"
+    tags: [core, semantics]
+  - id: HTML-CL-003
+    text: "Her form alanının görünür ya da erişilebilir bir etiketi (label for / aria-label) var mı?"
+    tags: [forms, accessibility]
+  - id: HTML-CL-004
+    text: "Başlık düzeyleri (h1-h6) atlamadan, mantıklı bir sırayla mı kullanılıyor?"
+    tags: [semantics, accessibility]
+  - id: HTML-CL-005
+    text: "html öğesinde lang özniteliği ve belgenin başında DOCTYPE var mı?"
+    tags: [standards]
+  - id: HTML-CL-006
+    text: "Aynı id değeri birden fazla öğede kullanılıyor mu?"
+    tags: [standards]
+  - id: HTML-CL-007
+    text: "Bağlantı metinleri ('buraya tıkla' yerine) gittiği yeri anlatıyor mu?"
+    tags: [accessibility, links]
+  - id: HTML-CL-008
+    text: "Form girdileri için uygun type (email, number) ve zorunluluk (required) kullanılmış mı?"
+    tags: [forms, input-validation]

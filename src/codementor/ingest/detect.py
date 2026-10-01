@@ -23,6 +23,7 @@ LANGUAGE_THRESHOLD = 3  # dil kararı için gereken en düşük puan
 _FULL_CONFIDENCE_SCORE = 8
 
 _M = re.MULTILINE
+SUPPORTED = "C, C++, C#, Python, HTML ve CSS"
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,6 +96,47 @@ _LANGUAGE_SIGNALS: dict[Language, list[_Signal]] = {
     ],
 }
 
+_I = re.IGNORECASE
+
+# Python, HTML ve CSS (ADR-0015): C maskeleyicisi `#` yorumlarını ve etiketleri tanımadığı için
+# bu sinyaller ham kodda aranır; yalnızca C ailesinden belirgin biçimde güçlüyse seçilir.
+_OTHER_SIGNALS: dict[Language, list[_Signal]] = {
+    Language.PYTHON: [
+        _s(r"^\s*def\s+\w+\s*\([^)]*\)\s*(?:->[^:]+)?:\s*(?:#.*)?$", 5, "def fonksiyon(...):", _M),
+        _s(r"^\s*(?:from\s+[\w.]+\s+import|import\s+[\w.]+)(?!.*;\s*$)", 3, "import", _M),
+        _s(
+            r"^\s*(?:if|elif|for|while|with|try|except|else|class)[^;{}]*:\s*(?:#.*)?$",
+            3,
+            "iki noktayla biten blok başlığı",
+            _M,
+        ),
+        _s(r"if\s+__name__\s*==", 5, "if __name__ =="),
+        _s(r"self\.\w+", 2, "self."),
+        _s(r"^\s*elif", 3, "elif", _M),
+        _s(r"(?:None|True|False)", 1, "None/True/False"),
+        _s(r"print\s*\(", 1, "print("),
+    ],
+    Language.HTML: [
+        _s(r"^\s*<!DOCTYPE\s+html", 6, "<!DOCTYPE html>", _M | _I),
+        _s(r"<html", 5, "<html>", _I),
+        _s(
+            r"</(?:div|p|body|head|section|ul|ol|li|a|span|main|nav|form|table|h[1-6]|article)>",
+            4,
+            "kapanış etiketi",
+            _I,
+        ),
+        _s(r"<(?:meta|link|img|input|br|hr)[^>]*>", 2, "boş HTML öğesi", _I),
+        _s(r"(?:class|id|href|src)=\"", 1, "HTML özniteliği"),
+    ],
+    Language.CSS: [
+        _s(r"^\s*[\w.#:*\-\[\]=\"' >+~,()]+\{\s*$", 2, "seçici {", _M),
+        _s(r"^\s*-{0,2}[a-z][a-z-]*\s*:\s*[^;{}()=]*[^;{}]*;\s*$", 3, "özellik: değer;", _M),
+        _s(r"@(?:media|import|font-face|keyframes|supports)", 4, "@kural"),
+        _s(r":root|var\(--", 3, "CSS değişkeni"),
+        _s(r"\d(?:px|rem|em|vh|vw|%)", 1, "CSS birimi"),
+    ],
+}
+
 # Desteklenmeyen ama C#'a çok benzeyen dil: sessizce C# sayılmasın
 _JAVA = re.compile(
     r"\bSystem\.out\.print|^\s*import\s+java\.|\bpublic\s+static\s+void\s+main\s*\(\s*String", _M
@@ -125,12 +167,33 @@ def _parses_cleanly(code: str, language: Language) -> bool:
     return not parse_source(code, language, Engine.NONE).tree.root_node.has_error
 
 
+def _detect_other(code: str, family_best: int) -> Detection | None:
+    """Python/HTML/CSS: eşiği geçen ve C ailesinden güçlü olan en yüksek puanlı dil."""
+    scored = {lang: _score(code, signals) for lang, signals in _OTHER_SIGNALS.items()}
+    ranked = sorted(scored.items(), key=lambda item: item[1][0], reverse=True)
+    (language, (best, reasons)), (_, (runner_up, _)) = ranked[0], ranked[1]
+    if best < LANGUAGE_THRESHOLD or best <= family_best:
+        return None
+    if language is not Language.HTML and not _parses_cleanly(code, language):
+        # HTML dilbilgisi neredeyse her metni kabul eder; diğerlerinde ayrışma kanıttır
+        reasons = [*reasons, "dilbilgisiyle tam ayrışmıyor (sözdizimi hatası olabilir)"]
+    return Detection(
+        language=language,
+        engine=Engine.NONE,
+        confidence=_confidence(best, max(family_best, runner_up)),
+        reasons=reasons,
+    )
+
+
 def _detect_language(code: str, masked: str) -> Detection:
     """`masked`: yorum/metin içeriği maskelenmiş kod (sinyaller bunun üzerinde aranır)."""
     if _JAVA.search(masked):
-        raise LanguageDetectionError("Java kodu gibi görünüyor; desteklenen diller C, C++ ve C#")
+        raise LanguageDetectionError(f"Java kodu gibi görünüyor; desteklenen diller {SUPPORTED}")
     scores = {lang: _score(masked, signals) for lang, signals in _LANGUAGE_SIGNALS.items()}
     c, cpp, cs = (scores[lang][0] for lang in (Language.C, Language.CPP, Language.CSHARP))
+    other = _detect_other(code, max(c, cpp, cs))
+    if other is not None:
+        return other
 
     if c >= LANGUAGE_THRESHOLD and max(cpp, cs) < LANGUAGE_THRESHOLD:
         # Yalnızca C başlıkları kullanan "C tarzı C++" (class, new, T&) sık görülür:

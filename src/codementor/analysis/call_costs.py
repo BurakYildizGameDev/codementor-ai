@@ -9,6 +9,8 @@ maliyet bilinmez (tahmin yapılmaz):
 - C++: nitelikli ad (`std::sort`), `using namespace std` varsa niteliksiz ad da
   (`sort` → `std::sort`); üye çağrısında alıcının bildirilen tipi (`v.push_back` →
   `std::vector::push_back`, `arr.Add` → `TArray::Add`).
+- Python (ADR-0015): yerleşik fonksiyon adı (`sorted`); üye çağrısında ek açıklamadan ya da
+  değerden çözülen tip (`xs: list` / `xs = []` → `list.insert`); modül çağrısı (`heapq.heappush`).
 - C#: alıcının bildirilen tipi (`list.Contains` → `List.Contains`); tipi bilinmeyen,
   büyük harfle başlayan alıcı statik sınıf sayılır (`Array.Sort`, `Mathf.Max`);
   `using System.Linq` varsa LINQ (`Enumerable.*`) yalnızca alıcı bilinen bir koleksiyon
@@ -87,9 +89,11 @@ class CostResolver:
     user_functions: frozenset[str] = field(default_factory=frozenset)
 
     def _entries(self) -> dict[str, str]:
-        return {Language.C: self.table.c, Language.CPP: self.table.cpp}.get(
-            self.language, self.table.csharp
-        )
+        return {
+            Language.C: self.table.c,
+            Language.CPP: self.table.cpp,
+            Language.PYTHON: self.table.python,
+        }.get(self.language, self.table.csharp)
 
     def _free(self, call: CallName) -> list[str]:
         if call.method in self.user_functions:
@@ -121,6 +125,10 @@ class CostResolver:
             return self._free(call)
         if self.language is Language.C:
             return []
+        if self.language is Language.PYTHON:
+            # `xs.insert` → `list.insert` (tip biliniyorsa); `heapq.heappush` modül çağrısı
+            declared = self.types.get(receiver.removeprefix("self."))
+            return [f"{declared or receiver}.{call.method}"]
         if self.language is Language.CSHARP:
             return self._csharp_member(call, receiver)
         declared = self.types.get(receiver)

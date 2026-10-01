@@ -17,7 +17,12 @@ from pydantic import BaseModel, ValidationError
 from codementor.config import Settings, get_settings
 from codementor.log import get_logger
 from codementor.models.findings import Finding
-from codementor.models.llm_output import LLMAnalysisOutput, LLMSinglePassOutput, LLMSocraticOutput
+from codementor.models.llm_output import (
+    LLMAnalysisOutput,
+    LLMMarkupAnalysisOutput,
+    LLMSinglePassOutput,
+    LLMSocraticOutput,
+)
 from codementor.models.prompts import (
     AnalysisPromptInput,
     BuiltPrompt,
@@ -169,6 +174,13 @@ def build_analysis_messages(
 ) -> BuiltPrompt:
     """Geçiş A: karmaşıklık + ek bulgular (`LLMAnalysisOutput`)."""
     return _analysis_like(inp, "analysis", LLMAnalysisOutput, settings, provider)
+
+
+def build_markup_analysis_messages(
+    inp: AnalysisPromptInput, *, settings: Settings | None = None, provider: str | None = None
+) -> BuiltPrompt:
+    """HTML/CSS Geçiş A (ADR-0015): yalnızca ek bulgular (`LLMMarkupAnalysisOutput`)."""
+    return _analysis_like(inp, "markup_analysis", LLMMarkupAnalysisOutput, settings, provider)
 
 
 def build_single_pass_messages(

@@ -12,7 +12,12 @@ from codementor.models.bigo import parse_bigo
 from codementor.models.enums import FindingSource
 from codementor.models.facts import ComplexityHint
 from codementor.models.findings import Finding
-from codementor.models.llm_output import LLMAnalysisOutput, LLMFinding, LLMSocraticOutput
+from codementor.models.llm_output import (
+    LLMAnalysisOutput,
+    LLMFinding,
+    LLMMarkupAnalysisOutput,
+    LLMSocraticOutput,
+)
 from codementor.models.prompts import QuestionContext
 from codementor.models.questions import ExpectedComplexity
 from codementor.models.report import ComplexityResult, SocraticResult
@@ -149,6 +154,29 @@ def verify_analysis(
         evidence_ratio=ratio,
         warnings=warnings,
         repair=_repair(check),
+    )
+
+
+def verify_markup_analysis(
+    output: LLMMarkupAnalysisOutput,
+    *,
+    code: NormalizedCode,
+    static_findings: list[Finding],
+    schema_first_try: bool,
+    settings: VerifySettings | None = None,
+) -> AnalysisVerification:
+    """HTML/CSS Geçiş A (ADR-0015): bulgular satır kanıtıyla doğrulanır; karmaşıklık yok."""
+    settings = settings or get_settings().verify
+    verified, warnings = verify_findings(
+        output.additional_findings, code.lines, settings.evidence_window
+    )
+    ratio = evidence_ratio(len(verified), len(output.additional_findings))
+    return AnalysisVerification(
+        findings=merge_findings(static_findings, verified),
+        complexity=None,
+        confidence=analysis_confidence(schema_first_try, "no_hint", ratio),
+        evidence_ratio=ratio,
+        warnings=warnings,
     )
 
 

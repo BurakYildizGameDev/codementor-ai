@@ -48,3 +48,33 @@ def test_spans_are_sorted_non_overlapping_and_in_bounds(code: str, language: Lan
     for _kind, start, end in tokenize(code, language):
         assert previous_end <= start < end <= len(code)
         previous_end = end
+
+
+def test_python_tokens() -> None:
+    found = kinds(
+        '@dataclass\ndef f(x):  # yorum\n    """belge"""\n    return None\n', Language.PYTHON
+    )
+    assert found["@dataclass"] == "preproc"
+    assert found["def"] == "keyword"
+    assert found["# yorum"] == "comment"
+    assert found['"""belge"""'] == "string"
+    assert found["None"] == "type"
+
+
+def test_html_tokens() -> None:
+    found = kinds('<!DOCTYPE html>\n<img src="a.png"><!-- not -->\n</div>', Language.HTML)
+    assert found["<!DOCTYPE html>"] == "preproc"
+    assert found["img"] == "keyword"
+    assert found["src"] == "type"
+    assert found['"a.png"'] == "string"
+    assert found["<!-- not -->"] == "comment"
+    assert found["div"] == "keyword"
+
+
+def test_css_tokens() -> None:
+    found = kinds(".kart {\n  color: #333 !important;\n  padding: 16px;\n}\n", Language.CSS)
+    assert found[".kart"] == "function"
+    assert found["color"] == "type"
+    assert found["#333"] == "number"
+    assert found["!important"] == "keyword"
+    assert found["16px"] == "number"

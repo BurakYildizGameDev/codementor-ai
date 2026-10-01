@@ -10,7 +10,7 @@ export type Column = number | null;
 export type Line = number;
 export type Message = string;
 export type Severity = "error" | "warning" | "note";
-export type Tool = "tree-sitter" | "gcc" | "clang" | "roslyn";
+export type Tool = "tree-sitter" | "gcc" | "clang" | "roslyn" | "python";
 export type Diagnostics = Diagnostic[];
 export type CompilationStatus = "passed" | "warning" | "failed" | "skipped";
 export type Agreement = "agrees" | "conflicts" | "no_hint";
@@ -43,7 +43,9 @@ export type AuditCategory =
   | "engine_best_practice"
   | "edge_case"
   | "input_handling"
-  | "design";
+  | "design"
+  | "accessibility"
+  | "maintainability";
 export type Confidence1 = number;
 export type Description = string;
 export type Evidence = string;
@@ -60,7 +62,7 @@ export type RuleId = string | null;
 export type Severity1 = "high" | "medium" | "low";
 export type FindingSource = "static" | "llm" | "confirmed";
 export type Findings = Finding[];
-export type Language = "c" | "cpp" | "csharp";
+export type Language = "c" | "cpp" | "csharp" | "python" | "html" | "css";
 export type CacheHit = boolean;
 export type Degraded = boolean;
 export type EarlyExit = boolean;

@@ -23,7 +23,7 @@ def compiler_statuses(settings: Settings) -> list[CompilerStatus]:
             ("unreal", toolchain.unreal),
             ("csharp", toolchain.csharp),
         )
-    ]
+    ] + [CompilerStatus(target="python", tool="CPython ayrıştırıcısı (dahili)")]
 
 
 def render_export(report: AnalysisReport, fmt: str) -> str:

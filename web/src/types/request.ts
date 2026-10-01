@@ -4,7 +4,7 @@
 
 export type Code = string;
 export type Engine = "none" | "unity" | "unreal";
-export type Language = "c" | "cpp" | "csharp";
+export type Language = "c" | "cpp" | "csharp" | "python" | "html" | "css";
 /**
  * Pipeline çağrı modu (mimari §5.4, §17 `pipeline.mode`).
  */

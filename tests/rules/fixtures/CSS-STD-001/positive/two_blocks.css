@@ -1,0 +1,9 @@
+/* EXPECT: 4, 8 */
+a {
+  color: red;
+  color: blue;
+}
+b {
+  margin: 0;
+  margin: 0;
+}

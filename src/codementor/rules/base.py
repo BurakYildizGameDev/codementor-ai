@@ -30,6 +30,11 @@ _LOOP_TYPES = (
     "foreach_statement",
     "while_statement",
     "do_statement",
+    # Python kavramaları (ADR-0015)
+    "list_comprehension",
+    "set_comprehension",
+    "dictionary_comprehension",
+    "generator_expression",
 )
 _MAX_BYTE = 1 << 62
 

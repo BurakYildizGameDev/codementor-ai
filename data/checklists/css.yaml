@@ -1,0 +1,25 @@
+# CSS kontrol listesi (ADR-0015). LLM'e enjekte edilir; öğrenciye gösterilmez.
+version: 1
+applies_to: { language: css }
+items:
+  - id: CSS-CL-001
+    text: "Kurallar !important ya da çok özgül seçicilerle birbirini eziyor mu?"
+    tags: [core, specificity]
+  - id: CSS-CL-002
+    text: "Yerleşim dar ekranlarda (mobil) taşma ya da yatay kaydırma üretiyor mu?"
+    tags: [core, responsive]
+  - id: CSS-CL-003
+    text: "Metin ile arka plan arasındaki renk karşıtlığı okunabilir mi?"
+    tags: [accessibility, color]
+  - id: CSS-CL-004
+    text: "Odaklanılan öğelerin (focus) görünür bir göstergesi var mı, outline kaldırılmış mı?"
+    tags: [accessibility, focus]
+  - id: CSS-CL-005
+    text: "Aynı değerler (renk, boşluk) tekrar tekrar yazılıyor mu; değişken (--renk) ile tek yerden yönetilebilir mi?"
+    tags: [maintainability, variables]
+  - id: CSS-CL-006
+    text: "Sabit piksel yükseklikleri içerik uzadığında taşmaya yol açıyor mu?"
+    tags: [responsive, edge-cases]
+  - id: CSS-CL-007
+    text: "Ortalama ve hizalama için flex/grid yerine kırılgan konumlandırma (position: absolute, margin hileleri) mı kullanılmış?"
+    tags: [layout, centering]

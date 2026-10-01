@@ -14,7 +14,7 @@ from codementor.models.enums import Engine, Language
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "tier0"
 ERROR_MARKER = "expect-error"
 
-_LANGUAGES = {"c": Language.C, "cpp": Language.CPP, "csharp": Language.CSHARP}
+_LANGUAGES = {lang.value: lang for lang in Language}
 
 
 @dataclass(frozen=True)

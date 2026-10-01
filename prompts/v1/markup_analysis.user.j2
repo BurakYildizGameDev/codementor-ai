@@ -1,0 +1,13 @@
+{% import "_macros.j2" as m %}
+{{ m.fewshots_block(fewshots, false) }}
+
+{{ m.question_block(question) }}
+
+{{ m.code_block(language, engine, code_view) }}
+
+{{ m.findings_block(static_findings, findings_level) }}
+
+{{ m.checklist_block(checklist) }}
+
+## Görev
+Öğrencinin HTML/CSS kodunda statik analizin kaçırdığı en fazla 10 sorunu bul. Karmaşıklık analizi yapma. Yanıt olarak yalnızca şemaya uyan JSON nesnesini döndür.

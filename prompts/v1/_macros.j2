@@ -1,5 +1,5 @@
 {# Ortak bölümler. Kullanıcı kaynaklı her metin `guard` süzgecinden geçer (mimari §12). #}
-{% set LANGUAGES = {"c": "C", "cpp": "C++", "csharp": "C#"} %}
+{% set LANGUAGES = {"c": "C", "cpp": "C++", "csharp": "C#", "python": "Python", "html": "HTML", "css": "CSS"} %}
 {% set ENGINES = {"unity": "Unity", "unreal": "Unreal Engine"} %}
 {% set DIFFICULTIES = {"very_easy": "çok kolay", "easy": "kolay", "medium": "orta", "hard": "zor"} %}
 {% set BOUNDS = {"linear": "girdiyle doğrusal (n) kez", "log": "logaritmik (log n) kez", "constant": "sabit sayıda", "unknown": "sayısı belirsiz (statik analiz çıkaramadı)"} %}
@@ -24,7 +24,9 @@ Kısıtlar:
 {% for c in q.constraints %}
 - {{ c }}
 {% endfor %}
+{% if q.expected %}
 Hedef karmaşıklık: zaman {% for name, value in q.expected.time.items() %}{{ name }} {{ cost(value) }}{% if not loop.last %}, {% endif %}{% endfor %}; bellek {{ cost(q.expected.space) }}
+{% endif %}
 {% else %}
 ## Serbest mod
 Soru bağlamı yok. Kodu kendi başına değerlendir; optimal_time_target alanına bu kodun amacı için ulaşılabilir en iyi zamanı yaz, emin değilsen null.

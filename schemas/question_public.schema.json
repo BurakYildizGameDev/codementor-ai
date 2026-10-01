@@ -50,7 +50,10 @@
       "enum": [
         "c",
         "cpp",
-        "csharp"
+        "csharp",
+        "python",
+        "html",
+        "css"
       ],
       "title": "Language",
       "type": "string"
@@ -77,7 +80,16 @@
       "$ref": "#/$defs/Engine"
     },
     "expected": {
-      "$ref": "#/$defs/ExpectedComplexity"
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ExpectedComplexity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Hedef karmaşıklık; HTML/CSS görevlerinde yok (ADR-0015)"
     },
     "id": {
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)+$",
@@ -112,8 +124,7 @@
     "difficulty",
     "title",
     "prompt",
-    "constraints",
-    "expected"
+    "constraints"
   ],
   "title": "QuestionPublic",
   "type": "object"

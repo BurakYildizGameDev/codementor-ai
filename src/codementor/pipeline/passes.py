@@ -8,9 +8,10 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel
 
 from codementor.config import Settings
-from codementor.models.enums import PipelineMode
+from codementor.models.enums import PipelineMode, has_complexity
 from codementor.models.llm_output import (
     LLMAnalysisOutput,
+    LLMMarkupAnalysisOutput,
     LLMSinglePassOutput,
     LLMSocraticOutput,
 )
@@ -23,6 +24,7 @@ from codementor.pipeline.events import StageTimer
 from codementor.pipeline.stages import StaticAnalysis, VerifyArgs
 from codementor.prompts.builder import (
     build_analysis_messages,
+    build_markup_analysis_messages,
     build_repair_messages,
     build_single_pass_messages,
     build_socratic_messages,
@@ -64,11 +66,14 @@ class LLMSession:
         return result
 
 
+AnalysisOutput = LLMAnalysisOutput | LLMMarkupAnalysisOutput
+
+
 @dataclass
 class PassA:
     """Geçiş A sonucu; `verification is None` ise onarım da başarısız (zarif bozulma)."""
 
-    output: LLMAnalysisOutput | None
+    output: AnalysisOutput | None
     verification: AnalysisVerification | None
 
 
@@ -76,7 +81,7 @@ async def run_pass_a[M: BaseModel](
     llm: LLMSession,
     built: BuiltPrompt,
     model: type[M],
-    extract: Callable[[M], LLMAnalysisOutput],
+    extract: Callable[[M], AnalysisOutput],
     verify: VerifyArgs,
     llm_stage: Stage = "llm_a",
     verify_stage: Stage = "verify_a",
@@ -95,7 +100,7 @@ async def run_pass_a[M: BaseModel](
             llm.timer.note(verify_stage, SCHEMA_OK if check.ok else SCHEMA_INVALID)
             errors = check.errors
             verification: AnalysisVerification | None = None
-            analysis: LLMAnalysisOutput | None = None
+            analysis: AnalysisOutput | None = None
             if parsed is not None:
                 analysis = extract(parsed)
                 verification = verify.analysis(analysis, schema_first_try)
@@ -169,7 +174,7 @@ class LLMOutcome:
     warnings: list[str] = field(default_factory=list)
 
 
-def _identity(output: LLMAnalysisOutput) -> LLMAnalysisOutput:
+def _identity(output: AnalysisOutput) -> AnalysisOutput:
     return output
 
 
@@ -191,8 +196,15 @@ async def run_llm_passes(
     timer, settings = llm.timer, llm.settings
     attempt = static.facts_input.attempt
     first: LLMSocraticOutput | None = None
+    markup = not has_complexity(verify.code.language)
+    if markup:  # HTML/CSS: karmaşıklıksız şema yalnızca iki geçişte (ADR-0015)
+        mode = PipelineMode.TWO_PASS
     with timer.stage("prompt_a"):
-        if mode is PipelineMode.SINGLE_PASS:
+        if markup:
+            built = build_markup_analysis_messages(
+                static.facts_input, settings=settings, provider=provider
+            )
+        elif mode is PipelineMode.SINGLE_PASS:
             built = build_single_pass_messages(
                 static.facts_input, settings=settings, provider=provider
             )
@@ -203,6 +215,8 @@ async def run_llm_passes(
     if mode is PipelineMode.SINGLE_PASS:
         single, pass_a = await run_pass_a(llm, built, LLMSinglePassOutput, _analysis_part, verify)
         first = single.socratic if single is not None else None
+    elif markup:
+        _, pass_a = await run_pass_a(llm, built, LLMMarkupAnalysisOutput, _identity, verify)
     else:
         _, pass_a = await run_pass_a(llm, built, LLMAnalysisOutput, _identity, verify)
     if pass_a.verification is None or pass_a.output is None:
@@ -215,7 +229,11 @@ async def run_llm_passes(
                 code=verify.code,
                 question=verify.question,
                 findings=pass_a.verification.findings,
-                complexity=pass_a.output.complexity,
+                complexity=(
+                    pass_a.output.complexity
+                    if isinstance(pass_a.output, LLMAnalysisOutput)
+                    else None
+                ),
                 attempt=attempt,
             ),
             settings=settings,

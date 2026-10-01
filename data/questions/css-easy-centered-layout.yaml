@@ -1,0 +1,23 @@
+id: css-easy-centered-layout
+version: 1
+language: css
+engine: none
+difficulty: easy
+title: "Ortalanmış ve duyarlı kart düzeni"
+prompt: |
+  Bir kart listesini sayfanın ortasında, geniş ekranda üç sütun, 600 pikselden dar ekranda tek
+  sütun gösterecek CSS'i yazın. Kartlar içerik uzadığında taşmamalı ve klavyeyle gezilirken
+  odaklanılan kart belli olmalı.
+constraints:
+  - "Ortalama, sabit kenar boşluğu ya da mutlak konum hileleri olmadan yapılmalı"
+  - "!important kullanılmamalı"
+  - "Odak göstergesi kaldırılmamalı"
+concept_tags: [layout, responsive, accessibility, specificity]
+checklist_extra:
+  - "Kart yüksekliği sabit piksel mi, içerikle mi büyüyor?"
+  - "Dar ekranda yatay kaydırma çıkıyor mu?"
+reference_solution_path: private/solutions/css-easy-centered-layout.css
+hint_ladder:
+  1: "Ekran daraldığında kartlarının genişliğini hangi kural belirliyor?"
+  2: "Bir kuralın diğerini ezmesi için !important dışında hangi yolların var?"
+  3: "Bu kavram 'duyarlı tasarım ve medya sorguları' olarak bilinir; düzen ekran genişliğine göre değişir."

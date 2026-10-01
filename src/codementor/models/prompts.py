@@ -31,7 +31,7 @@ class QuestionContext(StrictModel):
     prompt: str
     constraints: list[str]
     difficulty: Difficulty
-    expected: ExpectedComplexity
+    expected: ExpectedComplexity | None
     concept_tags: list[str] = Field(default_factory=list)
     checklist_extra: list[str] = Field(default_factory=list)
     hint_ladder: dict[int, str] = Field(default_factory=dict)

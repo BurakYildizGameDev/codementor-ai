@@ -10,7 +10,7 @@ export type Difficulty = "very_easy" | "easy" | "medium" | "hard";
 export type Engine = "none" | "unity" | "unreal";
 export type Space = string;
 export type Id = string;
-export type Language = "c" | "cpp" | "csharp";
+export type Language = "c" | "cpp" | "csharp" | "python" | "html" | "css";
 export type Prompt = string;
 export type Title = string;
 export type Version = number;
@@ -26,7 +26,10 @@ export interface QuestionPublic {
   constraints: Constraints;
   difficulty: Difficulty;
   engine: Engine;
-  expected: ExpectedComplexity;
+  /**
+   * Hedef karmaşıklık; HTML/CSS görevlerinde yok (ADR-0015)
+   */
+  expected?: ExpectedComplexity | null;
   id: Id;
   language: Language;
   prompt: Prompt;

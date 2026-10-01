@@ -79,7 +79,7 @@ Bu hedefler CV'de kullanılacak sayıların **tek kaynağıdır**. Ölçülmemi�
 - Kodu otomatik düzeltmek veya düzeltilmiş kod önermek (ürünün felsefesine aykırı).
 - Çok kullanıcılı kimlik doğrulama, ödeme, ekip yönetimi.
 - IDE eklentisi (v2 adayı).
-- C, C++, C# dışındaki diller.
+- C, C++, C#, Python, HTML ve CSS dışındaki diller. (Python/HTML/CSS Faz 16'da eklendi, ADR-0015.)
 
 ### 1.5 Personalar
 
@@ -528,6 +528,9 @@ class Language(StrEnum):
     C = "c"
     CPP = "cpp"
     CSHARP = "csharp"
+    PYTHON = "python"  # Faz 16 (ADR-0015)
+    HTML = "html"  # işaretleme: karmaşıklık yok (MARKUP_LANGUAGES)
+    CSS = "css"  # işaretleme: karmaşıklık yok
 
 
 class Engine(StrEnum):
@@ -1353,7 +1356,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 
 ## 22. Yol Haritası
 
-**v1.0 (bu doküman):** C, C++, C#, Unity, Unreal; Tier 0/1; 23 madde (20 statik kural + 3 LLM kontrol maddesi); 14 soru; 4 sağlayıcı + Fake; iki geçiş; masaüstü (.exe), CLI, API, Web UI; eval (80 örnek); SARIF.
+**v1.0 (bu doküman):** C, C++, C#, Unity, Unreal; Faz 16'da Python, HTML, CSS (ADR-0015, 13 ek kural, 4 ek soru); Tier 0/1; 23 madde (20 statik kural + 3 LLM kontrol maddesi); 14 soru; 4 sağlayıcı + Fake; iki geçiş; masaüstü (.exe), CLI, API, Web UI; eval (80 örnek); SARIF.
 
 **v1.1:**
 - cppcheck ve clang-tidy entegrasyonu

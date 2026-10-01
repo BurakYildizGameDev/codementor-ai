@@ -9,7 +9,13 @@ from pydantic import AfterValidator, Field, StringConstraints, field_validator, 
 
 from codementor.models._base import StrictModel
 from codementor.models.bigo import parse_cost
-from codementor.models.enums import Difficulty, Engine, Language, check_engine_language
+from codementor.models.enums import (
+    Difficulty,
+    Engine,
+    Language,
+    check_engine_language,
+    has_complexity,
+)
 
 QUESTION_ID_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)+$"
 CHECKLIST_ITEM_ID_PATTERN = r"^[A-Z]+-[A-Z]+-\d{3}$"
@@ -63,11 +69,17 @@ class QuestionPublic(StrictModel):
     title: NonEmptyText = Field(max_length=120)
     prompt: NonEmptyText
     constraints: list[NonEmptyText] = Field(min_length=1)
-    expected: ExpectedComplexity
+    expected: ExpectedComplexity | None = Field(
+        default=None, description="Hedef karmaşıklık; HTML/CSS görevlerinde yok (ADR-0015)"
+    )
 
     @model_validator(mode="after")
     def _engine_matches_language(self) -> Self:
         check_engine_language(self.language, self.engine)
+        if has_complexity(self.language) and self.expected is None:
+            raise ValueError(f"{self.language} görevi hedef karmaşıklık (expected) içermeli")
+        if not has_complexity(self.language) and self.expected is not None:
+            raise ValueError(f"{self.language} görevinde hedef karmaşıklık olmaz")
         return self
 
 

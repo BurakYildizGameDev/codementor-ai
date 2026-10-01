@@ -63,4 +63,12 @@ categories:
     label: "Tasarım ve mantık"
     conceptual: "Kodunun yapmasını istediğin şeyi tek cümleyle anlatsan, kod gerçekten bunu mu yapıyor?"
     pointed: "{line}. satırdaki koşul ya da işlem hangi durumda beklediğin sonucu vermez?"
+  accessibility:
+    label: "Erişilebilirlik"
+    conceptual: "Sayfanı ekran okuyucuyla ya da yalnızca klavyeyle kullanan biri neyi kaçırır?"
+    pointed: "{line}. satırdaki öğe ekranı göremeyen bir kullanıcıya ne söylüyor?"
+  maintainability:
+    label: "Bakım kolaylığı"
+    conceptual: "Bu kodu altı ay sonra değiştirmen gerekse en çok nerede zorlanırsın?"
+    pointed: "{line}. satırdaki kural başka bir yerde değişiklik yapınca nasıl davranır?"
 finding_fallback: "Bu satırda {label} açısından bir sorun olabilir; ne olduğunu kendi başına bulmaya çalış."

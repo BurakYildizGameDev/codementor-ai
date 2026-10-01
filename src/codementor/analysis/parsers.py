@@ -18,6 +18,9 @@ from dataclasses import dataclass
 import tree_sitter_c
 import tree_sitter_c_sharp
 import tree_sitter_cpp
+import tree_sitter_css
+import tree_sitter_html
+import tree_sitter_python
 from tree_sitter import Language as TSLanguage
 from tree_sitter import Node, Parser, Tree
 
@@ -29,6 +32,9 @@ _LANGUAGES: dict[Language, TSLanguage] = {
     Language.C: TSLanguage(tree_sitter_c.language()),
     Language.CPP: TSLanguage(tree_sitter_cpp.language()),
     Language.CSHARP: TSLanguage(tree_sitter_c_sharp.language()),
+    Language.PYTHON: TSLanguage(tree_sitter_python.language()),
+    Language.HTML: TSLanguage(tree_sitter_html.language()),
+    Language.CSS: TSLanguage(tree_sitter_css.language()),
 }
 
 _local = threading.local()

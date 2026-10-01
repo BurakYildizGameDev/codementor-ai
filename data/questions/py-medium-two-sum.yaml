@@ -1,0 +1,25 @@
+id: py-medium-two-sum
+version: 1
+language: python
+engine: none
+difficulty: medium
+title: "Toplamı hedefe eşit iki sayı"
+prompt: |
+  `two_sum(numbers: list[int], target: int) -> tuple[int, int] | None` fonksiyonunu yazın:
+  toplamı `target` olan iki farklı elemanın indekslerini döndürsün, yoksa None. Aynı eleman
+  iki kez kullanılamaz. Bir milyon elemanlı listeyle deneyin.
+constraints:
+  - "Liste uzunluğu n için çalışma süresi O(n) olmalı"
+  - "Aynı indeks iki kez kullanılmamalı"
+expected:
+  time: { two_sum: "n" }
+  space: "n"
+concept_tags: [hashing, nested-loops, performance, edge-cases]
+checklist_extra:
+  - "Her eleman için listenin geri kalanı yeniden mi taranıyor?"
+  - "Aynı değer iki kez geçtiğinde (ör. [3, 3], hedef 6) doğru indeksler dönüyor mu?"
+reference_solution_path: private/solutions/py-medium-two-sum.py
+hint_ladder:
+  1: "Her sayı için 'eşini' bulmak üzere kaç sayıya bakıyorsun?"
+  2: "Daha önce gördüğün sayıları, eşini anında bulabileceğin bir yerde tutabilir misin?"
+  3: "Bu kavram 'tamamlayıcıyı karma tablosunda arama' olarak bilinir; iç içe döngü yerine tek geçiş yeter."

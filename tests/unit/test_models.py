@@ -55,7 +55,7 @@ def _fields(model: type[BaseModel]) -> set[str]:
 @pytest.mark.parametrize(
     ("enum", "values"),
     [
-        (Language, {"c", "cpp", "csharp"}),
+        (Language, {"c", "cpp", "csharp", "python", "html", "css"}),
         (Engine, {"none", "unity", "unreal"}),
         (Difficulty, {"very_easy", "easy", "medium", "hard"}),
         (Severity, {"high", "medium", "low"}),
@@ -73,6 +73,8 @@ def _fields(model: type[BaseModel]) -> set[str]:
                 "edge_case",
                 "input_handling",
                 "design",
+                "accessibility",
+                "maintainability",
             },
         ),
         (LoopBound, {"linear", "log", "constant", "unknown"}),

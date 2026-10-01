@@ -1,0 +1,28 @@
+# Python kontrol listesi (mimari §8.3, ADR-0015). LLM'e enjekte edilir; öğrenciye gösterilmez.
+version: 1
+applies_to: { language: python }
+items:
+  - id: PY-CL-001
+    text: "Boş liste, None ve tek elemanlı girdi gibi sınır durumları ele alınıyor mu?"
+    tags: [core]
+  - id: PY-CL-002
+    text: "Döngü içinde listede arama (in, index, count) ya da baştan ekleme/çıkarma (insert(0), pop(0)) yapılarak gizli bir O(n) iş tekrarlanıyor mu?"
+    tags: [core, performance, hashing]
+  - id: PY-CL-003
+    text: "Değiştirilebilir bir varsayılan argüman (def f(x=[])) çağrılar arasında paylaşılıyor mu?"
+    tags: [mutable-default, design]
+  - id: PY-CL-004
+    text: "Dosya ve ağ kaynakları with bloğuyla mı açılıyor; hata yolunda da kapanıyor mu?"
+    tags: [resources, files]
+  - id: PY-CL-005
+    text: "İstisnalar çıplak except ile yutularak gerçek hata gizleniyor mu?"
+    tags: [exceptions, error-handling]
+  - id: PY-CL-006
+    text: "Kullanıcı girdisi (input, sys.argv) sayıya dönüştürülürken geçersiz değer durumu düşünülmüş mü?"
+    tags: [input-validation, parsing]
+  - id: PY-CL-007
+    text: "Döngüde str birleştirme (s += ...) her adımda yeni bir metin mi oluşturuyor?"
+    tags: [strings, performance]
+  - id: PY-CL-008
+    text: "Sözlükte olmayan bir anahtara erişim (d[k]) KeyError fırlatabilir mi?"
+    tags: [hashing, edge-cases]

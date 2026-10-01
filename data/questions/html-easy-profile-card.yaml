@@ -1,0 +1,22 @@
+id: html-easy-profile-card
+version: 1
+language: html
+engine: none
+difficulty: easy
+title: "Erişilebilir profil kartı"
+prompt: |
+  Bir kişinin fotoğrafını, adını, kısa tanıtımını ve iletişim bağlantısını gösteren bir profil
+  kartı sayfası yazın. Sayfa ekran okuyucuyla ve yalnızca klavyeyle kullanılabilir olmalı.
+constraints:
+  - "Görselin anlamlı bir alternatif metni olmalı"
+  - "Sayfa anlamsal etiketlerle kurulmalı (her şey div olmamalı)"
+  - "Belge dili belirtilmeli"
+concept_tags: [accessibility, semantics, standards]
+checklist_extra:
+  - "Kartın başlığı bir başlık etiketiyle mi işaretlenmiş?"
+  - "İletişim bağlantısının metni nereye gittiğini anlatıyor mu?"
+reference_solution_path: private/solutions/html-easy-profile-card.html
+hint_ladder:
+  1: "Gözleri kapalı biri sayfanı dinleseydi, fotoğraf hakkında ne duyardı?"
+  2: "Ekran okuyucu bir öğenin ne olduğunu hangi bilgilerden anlar: etiketinden mi, görünüşünden mi?"
+  3: "Bu kavram 'anlamsal HTML ve alternatif metin' olarak bilinir; yardımcı teknolojiler yapıyı etiketlerden okur."

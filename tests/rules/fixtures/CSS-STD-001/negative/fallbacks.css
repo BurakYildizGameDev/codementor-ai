@@ -1,0 +1,6 @@
+.kutu {
+  display: -webkit-box;
+  display: flex;
+  color: #333;
+  color: var(--metin, #333);
+}

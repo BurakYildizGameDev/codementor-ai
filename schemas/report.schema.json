@@ -10,7 +10,9 @@
         "engine_best_practice",
         "edge_case",
         "input_handling",
-        "design"
+        "design",
+        "accessibility",
+        "maintainability"
       ],
       "title": "AuditCategory",
       "type": "string"
@@ -170,7 +172,8 @@
             "tree-sitter",
             "gcc",
             "clang",
-            "roslyn"
+            "roslyn",
+            "python"
           ],
           "title": "Tool",
           "type": "string"
@@ -293,7 +296,10 @@
       "enum": [
         "c",
         "cpp",
-        "csharp"
+        "csharp",
+        "python",
+        "html",
+        "css"
       ],
       "title": "Language",
       "type": "string"

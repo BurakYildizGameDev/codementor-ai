@@ -17,7 +17,7 @@ from typing import Protocol
 
 from codementor.analysis.parsers import neutralize_unreal_macros
 from codementor.config import ValidationSettings
-from codementor.models.enums import CompilationStatus, Engine, Language
+from codementor.models.enums import MARKUP_LANGUAGES, CompilationStatus, Engine, Language
 from codementor.models.findings import Diagnostic
 from codementor.models.request import NormalizedCode
 from codementor.models.validation import CompilerTool, SkipReason, Tier1Result, Toolchain
@@ -27,6 +27,7 @@ from codementor.validation.diagnostics import (
     parse_roslyn_output,
 )
 from codementor.validation.include_guard import check_includes
+from codementor.validation.python_check import check_python
 from codementor.validation.runner import ProcessLimits, ProcessResult, run_process
 from codementor.validation.toolchain import get_toolchain
 
@@ -210,8 +211,12 @@ def run_tier1(
     runner: Runner = run_process,
 ) -> Tier1Result:
     """Kodu uygun yerel derleyiciyle denetler; araç yoksa veya güvenli değilse `SKIPPED`."""
+    if code.language in MARKUP_LANGUAGES:  # derleyici kavramı yok; uyarı da yok (ADR-0015)
+        return Tier1Result(status=CompilationStatus.SKIPPED, skip_reason=SkipReason.NOT_APPLICABLE)
     if not settings.tier1_enabled:
         return _skipped(SkipReason.DISABLED, "Derleyici denetimi yapılandırmada kapalı.")
+    if code.language is Language.PYTHON:
+        return check_python(code)
     chain = toolchain if toolchain is not None else get_toolchain(settings)
     tool = chain.for_code(code.language, code.engine)
     if tool is None:

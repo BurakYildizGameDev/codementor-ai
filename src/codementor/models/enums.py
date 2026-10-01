@@ -9,6 +9,9 @@ class Language(StrEnum):
     C = "c"
     CPP = "cpp"
     CSHARP = "csharp"
+    PYTHON = "python"
+    HTML = "html"
+    CSS = "css"
 
 
 class Engine(StrEnum):
@@ -53,6 +56,8 @@ class AuditCategory(StrEnum):
     EDGE_CASE = "edge_case"
     INPUT_HANDLING = "input_handling"
     DESIGN = "design"
+    ACCESSIBILITY = "accessibility"  # HTML/CSS (ADR-0015)
+    MAINTAINABILITY = "maintainability"  # HTML/CSS (ADR-0015)
 
 
 class PipelineMode(StrEnum):
@@ -93,6 +98,15 @@ class DeallocationKind(StrEnum):
     FREE = "free"
     DELETE = "delete"
     DELETE_ARRAY = "delete_array"
+
+
+# İşaretleme/stil dilleri (ADR-0015): Big-O ve olgu çıkarımı yok, karmaşıklık kartı yok.
+MARKUP_LANGUAGES: frozenset[Language] = frozenset({Language.HTML, Language.CSS})
+
+
+def has_complexity(language: Language) -> bool:
+    """Dilde zaman/bellek karmaşıklığı (olgular, Big-O ipucu, Geçiş A karmaşıklığı) anlamlı mı."""
+    return language not in MARKUP_LANGUAGES
 
 
 _ENGINE_LANGUAGE = {Engine.UNITY: Language.CSHARP, Engine.UNREAL: Language.CPP}

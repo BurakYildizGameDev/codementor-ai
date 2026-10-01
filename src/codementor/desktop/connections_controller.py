@@ -132,7 +132,6 @@ class ConnectionsController:
             self.discovered[name] = result.models
         if name == self.app.provider_name():
             self.app.sidebar.set_provider(name, result.ready, result.status.model or "")
-            self.app.analyze_view.set_provider_badge(name, result.status.model, result.ready)
         self.render()
 
     # --- Eylemler -----------------------------------------------------------------------
@@ -141,7 +140,7 @@ class ConnectionsController:
         self.app.save_prefs(provider=None if name == self.app.base_default() else name)
         self.app.toast(f"Varsayılan sağlayıcı: {INFO[name].label if name in INFO else name}")
         self.render()
-        self.app.analyze_view.set_provider_badge(name, self.app.current_model(), None)
+        self.app.sidebar.set_provider(name, None, self.app.current_model())
         self.check(name)
 
     def _override(self, name: str, **changes: Any) -> None:

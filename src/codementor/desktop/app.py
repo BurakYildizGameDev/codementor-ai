@@ -93,6 +93,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
         self.sidebar = Sidebar(self, ASSETS / "logo.png", self.navigate)
+        self.sidebar.on_status_click(lambda: self.navigate("settings"))
         self.sidebar.grid(row=0, column=0, sticky="nsw")
         self.sidebar.set_provider(self.provider_name(), None)
         stage = ctk.CTkFrame(self, fg_color=theme.BG, corner_radius=0)
@@ -110,7 +111,6 @@ class App(ctk.CTk):  # type: ignore[misc]
                 load_sample=self.load_sample,
                 export=self.export,
                 questions=self.questions_for,
-                open_connections=lambda: self.navigate("settings"),
             ),
             self.prefs.language,
         )
@@ -122,7 +122,6 @@ class App(ctk.CTk):  # type: ignore[misc]
             stage, self.connections.actions(), self.open_folder, self._locations()
         )
         self.connections.attach(self.settings_view)
-        self.analyze_view.set_provider_badge(self.provider_name(), self.current_model(), None)
         self.views: dict[str, ctk.CTkFrame] = {
             "analyze": self.analyze_view,
             "questions": self.questions_view,
@@ -246,7 +245,7 @@ class App(ctk.CTk):  # type: ignore[misc]
     def open_file(self) -> None:
         path = filedialog.askopenfilename(
             title="Kaynak dosyası aç",
-            filetypes=[("C / C++ / C#", SOURCE_PATTERNS), ("Tüm dosyalar", "*.*")],
+            filetypes=[("Kaynak dosyaları", SOURCE_PATTERNS), ("Tüm dosyalar", "*.*")],
         )
         if path:
             self.load_file(path)

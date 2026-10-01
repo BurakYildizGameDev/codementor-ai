@@ -18,9 +18,13 @@ from codementor.desktop.app import App
 from codementor.desktop.connections import KeyStore, Probe
 from codementor.models.enums import Engine, Language
 from codementor.models.provider import ProviderStatus
+from codementor.providers.base import RetryPolicy
+from codementor.providers.fake import FakeProvider, FakeReply
 from tests.integration.conftest import LINKED_LIST
 
 TK_ATTEMPTS = 3
+HTML_PAGE = '<html>\n<img src="a.png">\n</html>\n'
+PY_LINE = "print('merhaba')\n"
 
 
 @pytest.fixture
@@ -144,6 +148,33 @@ def test_open_file_detects_language_and_size_limit(app: App, tmp_path: Path) -> 
     assert app.analyze_view.editor.get() == "public class Oyuncu {}\n"
 
 
+def test_html_report_hides_complexity_card(app: App, core: ApiState) -> None:
+    replies = [
+        FakeReply(data={"additional_findings": []}),
+        FakeReply(data={"key_flaw_concept": "Alternatif metin", "guiding_questions": ["Kim?"]}),
+    ]
+    core.provider_factory = lambda _n: FakeProvider(
+        script=list(replies), retry=RetryPolicy(max_retries=0)
+    )
+    view = app.analyze_view
+    view.select(Language.HTML, Engine.NONE, None)
+    assert view.language_picker.get() == "HTML"
+    view.editor.set(HTML_PAGE, Language.HTML)
+    analyze(app)
+    assert view.report is not None
+    assert view.report.complexity is None
+    assert not view.complexity.winfo_ismapped()
+    assert {f.rule_id for f in view.report.findings} >= {"HTML-ACC-001", "HTML-ACC-002"}
+
+
+def test_open_python_file(app: App, tmp_path: Path) -> None:
+    source = tmp_path / "ornek.py"
+    source.write_text(PY_LINE, encoding="utf-8")
+    app.load_file(str(source))
+    assert app.analyze_view.language is Language.PYTHON
+    assert app.analyze_view.engine is Engine.NONE
+
+
 def test_model_choice_overrides_config_and_persists(app: App, prefs_dir: Path) -> None:
     app.connections.check = lambda _name: None  # type: ignore[method-assign]
     app.connections.set_model("ollama", "qwen2.5-coder:14b")
@@ -162,7 +193,7 @@ def test_default_provider_switch(app: App, prefs_dir: Path) -> None:
     app.connections.make_default("claude_cli")
     assert app.provider_name() == "claude_cli"
     assert runtime.load_prefs(prefs_dir).provider == "claude_cli"
-    assert "claude_cli" in app.analyze_view.provider_badge.cget("text")
+    assert app.sidebar.status_text.cget("text") == "claude_cli"
     app.connections.make_default(app.base_default())
     assert runtime.load_prefs(prefs_dir).provider is None
 

@@ -1,0 +1,25 @@
+id: py-easy-word-count
+version: 1
+language: python
+engine: none
+difficulty: easy
+title: "Kelime sıklığı sayacı"
+prompt: |
+  `word_count(text: str) -> dict[str, int]` fonksiyonunu yazın: metindeki her kelimenin kaç
+  kez geçtiğini döndürsün. Büyük/küçük harf farkı ve kelimeye yapışık noktalama (. , ! ?)
+  yok sayılsın. Fonksiyonu boş metin ve yüz bin kelimelik bir metinle deneyin.
+constraints:
+  - "Metindeki kelime sayısı n için çalışma süresi doğrusal olmalı"
+  - "Boş metin boş sözlük döndürmeli"
+expected:
+  time: { word_count: "n" }
+  space: "n"
+concept_tags: [hashing, strings, performance, edge-cases]
+checklist_extra:
+  - "Her kelime için listede arama yapılıyor mu, yoksa sözlükle sabit sürede mi sayılıyor?"
+  - "Noktalama temizlenirken boş kalan kelimeler sayıma giriyor mu?"
+reference_solution_path: private/solutions/py-easy-word-count.py
+hint_ladder:
+  1: "Bir kelimeyi daha önce gördüğünü anlamak için her seferinde ne kadar iş yapıyorsun?"
+  2: "Kelimeleri tuttuğun yapıda arama yapmak, yapı büyüdükçe nasıl yavaşlıyor?"
+  3: "Bu kavram 'karma tablosu ile sabit sürede arama' olarak bilinir; Python'da dict bunu sağlar."

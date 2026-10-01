@@ -32,6 +32,7 @@ from codementor.analysis._symbols import (
     line,
     parameters,
     simple_name,
+    text,
     type_table,
 )
 from codementor.analysis.call_costs import CostResolver, load_call_costs
@@ -74,6 +75,7 @@ _TYPE_DECLARATIONS = frozenset(
         "interface_declaration",
         "enum_declaration",
         "record_declaration",
+        "class_definition",  # Python
     }
 )
 
@@ -114,8 +116,9 @@ class _Extractor:
         self.fn_nodes = {key(n): n for n in fn_nodes}
         loops = self._nodes("loops", "loop")
         call_nodes = self._nodes("calls", "call")
+        membership = self._nodes("calls", "membership")  # yalnız Python
         memory = [n for nodes in self.found["memory"].values() for n in nodes]
-        wanted = {key(n) for n in [*loops, *call_nodes, *memory]}
+        wanted = {key(n) for n in [*loops, *call_nodes, *membership, *memory]}
         self.ctx = contexts(self.root, wanted, set(self.by_key))
         self.loop_index = {key(n): i for i, n in enumerate(loops)}
         resolver = CostResolver(
@@ -128,11 +131,15 @@ class _Extractor:
         )
         calls: list[_Call] = self._section(
             "Çağrı",
-            lambda: [
-                (n, name, resolver.resolve(name))
-                for n in call_nodes
-                for name in [call_name(n, self.language)]
-            ],
+            lambda: sorted(
+                [
+                    (n, name, resolver.resolve(name))
+                    for n in call_nodes
+                    for name in [call_name(n, self.language)]
+                ]
+                + self._memberships(membership, resolver),
+                key=lambda c: c[0].start_byte,
+            ),
             [],
         )
         facts = CodeFacts(functions=functions)
@@ -217,6 +224,23 @@ class _Extractor:
                 )
             )
         return result
+
+    def _memberships(self, nodes: list[Node], resolver: CostResolver) -> list[_Call]:
+        """`x in xs` (Python): alıcının tipi biliniyorsa `tip.__contains__` maliyeti."""
+        found: list[_Call] = []
+        for node in nodes:
+            operators = {c.type for c in node.children if not c.is_named}
+            if not operators & {"in", "not in"} or node.named_child_count != 2:
+                continue
+            target = node.named_children[1]
+            if target.type != "identifier":
+                continue
+            receiver = text(target)
+            name = CallName(f"{receiver} içinde arama", "__contains__", receiver, None, 1)
+            resolved = resolver.resolve(name)
+            if resolved is not None:  # tipi bilinmeyen üyelik olgu üretmez (tahmin yok)
+                found.append((node, name, resolved))
+        return found
 
     def _call(self, node: Node, name: CallName, resolved: tuple[str, str] | None) -> CallFact:
         here = self.ctx.get(key(node), Ctx())

@@ -138,7 +138,14 @@ def line_marks(
 
 # --- Etiketler -------------------------------------------------------------------------------
 
-LANGUAGE_LABELS: dict[Language, str] = {Language.C: "C", Language.CPP: "C++", Language.CSHARP: "C#"}
+LANGUAGE_LABELS: dict[Language, str] = {
+    Language.C: "C",
+    Language.CPP: "C++",
+    Language.CSHARP: "C#",
+    Language.PYTHON: "Python",
+    Language.HTML: "HTML",
+    Language.CSS: "CSS",
+}
 ENGINE_LABELS: dict[Engine, str] = {
     Engine.NONE: "Motor yok",
     Engine.UNITY: "Unity",
@@ -166,6 +173,8 @@ CATEGORY_LABELS: dict[AuditCategory, str] = {
     AuditCategory.EDGE_CASE: "Uç durum",
     AuditCategory.INPUT_HANDLING: "Girdi denetimi",
     AuditCategory.DESIGN: "Tasarım ve mantık",
+    AuditCategory.ACCESSIBILITY: "Erişilebilirlik",
+    AuditCategory.MAINTAINABILITY: "Bakım kolaylığı",
 }
 HINT_LEVEL_LABELS: dict[int, str] = {
     1: "Kavramsal ipucu",
@@ -199,6 +208,11 @@ _SUFFIXES: dict[str, Language] = {
     ".hpp": Language.CPP,
     ".hh": Language.CPP,
     ".cs": Language.CSHARP,
+    ".py": Language.PYTHON,
+    ".pyw": Language.PYTHON,
+    ".html": Language.HTML,
+    ".htm": Language.HTML,
+    ".css": Language.CSS,
 }
 SOURCE_PATTERNS = " ".join(f"*{s}" for s in _SUFFIXES)
 
@@ -282,5 +296,37 @@ public static class Scores
         return result.Count;
     }
 }
+""",
+    Language.PYTHON: """def has_duplicate(items):
+    seen = []
+    for item in items:
+        if item in seen:
+            return True
+        seen.append(item)
+    return False
+""",
+    Language.HTML: """<!DOCTYPE html>
+<html>
+<body>
+  <img src="profil.png">
+  <form>
+    <input type="email" name="email">
+    <button>Gönder</button>
+  </form>
+</body>
+</html>
+""",
+    Language.CSS: """.kart {
+  width: 400px;
+  color: #333 !important;
+  padding: 16px;
+  padding: 24px;
+}
+
+.kart:focus {
+  outline: none !important;
+}
+
+.baslik {}
 """,
 }

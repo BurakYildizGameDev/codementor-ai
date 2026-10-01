@@ -1,0 +1,7 @@
+/* EXPECT: 2, 6 */
+.yapilacak {
+  /* sonra */
+}
+@media (max-width: 600px) {
+  .mobil { }
+}

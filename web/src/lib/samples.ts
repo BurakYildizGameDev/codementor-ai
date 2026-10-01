@@ -1,11 +1,14 @@
 /** Dil/motor seçenekleri ve editörün başlangıç örnekleri. Motor–dil uyumu mimari §6.2:
- * Unity yalnızca C#, Unreal yalnızca C++. */
+ * Unity yalnızca C#, Unreal yalnızca C++; Python/HTML/CSS motorsuz (ADR-0015). */
 import type { Engine, Language } from "../types/request";
 
 export const LANGUAGES: { value: Language; label: string; monaco: string }[] = [
   { value: "c", label: "C", monaco: "c" },
   { value: "cpp", label: "C++", monaco: "cpp" },
   { value: "csharp", label: "C#", monaco: "csharp" },
+  { value: "python", label: "Python", monaco: "python" },
+  { value: "html", label: "HTML", monaco: "html" },
+  { value: "css", label: "CSS", monaco: "css" },
 ];
 
 export const ENGINE_LABELS: Record<Engine, string> = {
@@ -64,5 +67,37 @@ public static class Scores
         return result.Count;
     }
 }
+`,
+  python: `def has_duplicate(items):
+    seen = []
+    for item in items:
+        if item in seen:
+            return True
+        seen.append(item)
+    return False
+`,
+  html: `<!DOCTYPE html>
+<html>
+<body>
+  <img src="profil.png">
+  <form>
+    <input type="email" name="email">
+    <button>Gönder</button>
+  </form>
+</body>
+</html>
+`,
+  css: `.kart {
+  width: 400px;
+  color: #333 !important;
+  padding: 16px;
+  padding: 24px;
+}
+
+.kart:focus {
+  outline: none !important;
+}
+
+.baslik {}
 `,
 };

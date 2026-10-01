@@ -16,7 +16,7 @@ NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("analyze", "◆", "Analiz"),
     ("questions", "❖", "Soru bankası"),
     ("history", "◷", "Geçmiş"),
-    ("settings", "⚙", "Ayarlar"),
+    ("settings", "⚙", "Bağlantılar"),
 )
 
 
@@ -78,7 +78,7 @@ class Sidebar(ctk.CTkFrame):  # type: ignore[misc]
             button.grid(row=0, column=1, sticky="ew")
             self._buttons[key] = (indicator, button)
 
-        footer = ctk.CTkFrame(
+        footer = self.status_box = ctk.CTkFrame(
             self,
             fg_color=theme.SURFACE,
             corner_radius=theme.RADIUS_SM,
@@ -106,6 +106,12 @@ class Sidebar(ctk.CTkFrame):  # type: ignore[misc]
         ctk.CTkLabel(
             footer, text=f"v{__version__}", font=theme.font(10), text_color=theme.FAINT, height=14
         ).grid(row=2, column=1, sticky="w", pady=(0, 10))
+
+    def on_status_click(self, callback: Callable[[], None]) -> None:
+        """Sağlayıcı kutusuna tıklanınca (Bağlantılar ekranına git)."""
+        self.status_box.configure(cursor="hand2")
+        for widget in (self.status_box, *self.status_box.winfo_children()):
+            widget.bind("<Button-1>", lambda _e: callback(), add="+")
 
     def select(self, key: str) -> None:
         for name, (indicator, button) in self._buttons.items():

@@ -129,8 +129,9 @@ class CallCostTable(StrictModel):
     c: dict[str, str] = Field(default_factory=dict)
     cpp: dict[str, str] = Field(default_factory=dict)
     csharp: dict[str, str] = Field(default_factory=dict)
+    python: dict[str, str] = Field(default_factory=dict)
 
-    @field_validator("c", "cpp", "csharp")
+    @field_validator("c", "cpp", "csharp", "python")
     @classmethod
     def _valid_costs(cls, table: dict[str, str]) -> dict[str, str]:
         for name, cost in table.items():

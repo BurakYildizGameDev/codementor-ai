@@ -1,6 +1,6 @@
 """Kural fixture'larını okuma yardımcıları (mimari §15).
 
-Düzen: `tests/rules/fixtures/{RULE_ID}/{positive,negative}/*.{c,cpp,cs}`.
+Düzen: `tests/rules/fixtures/{RULE_ID}/{positive,negative}/*.{c,cpp,cs,py,html,css}`.
 - Dil dosya uzantısından gelir.
 - Motor: dosyada `// ENGINE: unity|unreal|none` varsa o; yoksa kural tek bir motora
   özgüyse o motor, değilse `none`.
@@ -22,8 +22,17 @@ from codementor.rules import run_rules
 from codementor.rules.base import Rule
 
 FIXTURES = Path(__file__).parent / "fixtures"
-_EXTENSIONS = {".c": Language.C, ".cpp": Language.CPP, ".h": Language.CPP, ".cs": Language.CSHARP}
-_EXPECT = re.compile(r"//\s*EXPECT:\s*([\d,\s]+)")
+_EXTENSIONS = {
+    ".c": Language.C,
+    ".cpp": Language.CPP,
+    ".h": Language.CPP,
+    ".cs": Language.CSHARP,
+    ".py": Language.PYTHON,
+    ".html": Language.HTML,
+    ".css": Language.CSS,
+}
+# `//`, Python `#`, HTML `<!--`, CSS `/*` yorumları (ADR-0015)
+_EXPECT = re.compile(r"(?://|#|<!--|/\*)\s*EXPECT:\s*([\d,\s]+)")
 _ENGINE = re.compile(r"//\s*ENGINE:\s*(\w+)")
 
 

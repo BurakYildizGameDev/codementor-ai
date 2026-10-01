@@ -23,6 +23,9 @@ dependencies = [
     "customtkinter>=6.0.0",
     "pillow>=12.3.0",
     "keyring>=25.7.0",
+    "tree-sitter-python>=0.25.0",
+    "tree-sitter-html>=0.23.2",
+    "tree-sitter-css>=0.25.0",
 ]
 
 [project.scripts]
@@ -55,6 +58,8 @@ packages = ["src/codementor"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+# Öğrenci kodu fixture'ları (bilerek hatalı Python dahil) biçimlendirilmez/denetlenmez
+extend-exclude = ["tests/fixtures", "tests/rules/fixtures", "tests/golden"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "N", "PT"]

@@ -19,6 +19,7 @@
 | 13 | ✅ | faz/13-sunum | 2026-09-30 | Claude Code / — |
 | 14 | ✅ | faz-14-masaustu | 2026-10-01 | Claude Code / — |
 | 15 | ✅ | faz-15-baglantilar | 2026-10-01 | Claude Code / — |
+| 16 | ✅ | faz-16-diller | 2026-10-01 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -447,7 +448,24 @@
 **Kararlar:** (1) Masaüstü tercihleri yalnız masaüstüne uygulanır; toml kaynak olarak kalır. (2) Anahtar dosyaya asla yazılmaz. (3) Oturum açma CLI'ya bırakılır; uygulama kimlik bilgisi görmez.
 **Doğrulama:** Gerçek ortamda Bağlantılar ekranı: Ollama `qwen2.5-coder:14b` seçilince "hazır" (4 yerel model listelendi), Claude Code "oturum açık" + hesap. Kullanıcının tercihlerine Ollama modeli `qwen2.5-coder:14b` yazıldı (şikâyet edilen "hazır değil" düzeltmesi).
 
+## Faz 16 — Notlar (Python, HTML, CSS; ADR-0015)
+**Yapılanlar:**
+- `Language` + python/html/css, `AuditCategory` + accessibility/maintainability, `has_complexity`/`MARKUP_LANGUAGES`; tree-sitter-python/html/css; Tier 0 fixture'ları (her dilde 5+5).
+- Python: süreç içi Tier 1 (`validation/python_check.py`, `ast`; kod çalıştırılmaz), olgular (`queries/python`, `_symbols`/`_loops` Python dalları, kavramalar örtük döngü, `x in liste` → `list.__contains__` maliyeti), `call_costs.yaml` `python` bölümü. Big-O: iç içe O(n²), ikili arama/`//=` O(log n), `range(10)` sabit, `fib` O(2ⁿ), küme üyeliği O(1).
+- HTML/CSS: olgu/Big-O yok, Tier 1 uyarısız atlanır, Geçiş A `LLMMarkupAnalysisOutput` + `markup_analysis.*.j2`, `verify_markup_analysis`; rapor `complexity = null`.
+- 13 kural + 52 fixture (`rules/python.py`, `html.py`, `css.py`); fixture düzeneği `#`, `<!--`, `/*` EXPECT yorumlarını tanır; fixture dizinleri ruff dışında (biçimlendirici satırları kaydırıyordu).
+- Dil tespiti: Python/HTML/CSS sinyalleri ham kodda; 30 geçerli fixture'ın hepsi doğru tespit.
+- Veri: 3 kontrol listesi, 2 mentor kategorisi, 4 soru (`expected` HTML/CSS'te yok; model doğrulayıcısı), soru testleri ve sızıntı tablosu.
+- Arayüzler: masaüstü (6 dil, renklendirme, uzantılar, örnekler, derleyici kartında Python), web (dil listesi, Monaco python/html/css Monarch tanımları, tipler şemadan). Araç çubuğu taşmasın diye sağlayıcı rozeti kenar çubuğu kutusuna taşındı (tıkla → Bağlantılar).
+- Şemalar ve kural kataloğu yeniden üretildi; golden prompt'lar ("ve Python") güncellendi.
+**Kararlar:** (1) İşaretleme dillerinde karmaşıklık kavramı yok; ayrı şema/şablon (ADR-0015). (2) Kural kimliği `HTML-ACC-*` (desen rakamlı kategoriye izin vermiyor). (3) Tipi bilinmeyen `in` araması maliyet almaz (tahmin yok).
+**Doğrulama:** `make check` yeşil (2000+ test). claude_cli canlı: Python örneği 28 sn, O(n²) + PY-PERF-001; HTML örneği 26 sn, karmaşıklık yok, 3 statik + 5 LLM erişilebilirlik bulgusu.
+**Açık sorular:** Yeni 4 sorunun referans çözümleri `private/solutions/` altına kullanıcı tarafından eklenmeli (bu klasör erişim dışında).
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm (precision/recall, sızıntı).
+- Faz 16: HTML etiket dengesi denetimi (stdlib `html.parser` ile kapanmamış/uyumsuz etiket uyarısı) Tier 1 karşılığı olarak.
+- Faz 16: Python için few-shot örnekleri; JS (tarayıcı) desteği HTML ile birlikte istenebilir.
 - Faz 15: Bağlantılar'da Ollama modelini indirme (`ollama pull`) düğmesi ve ilerleme göstergesi.
 - Faz 15: Masaüstü tercihleri ile `codementor.toml` arasında "toml'a yaz" seçeneği (CLI/API de aynı modeli kullansın).
 - Faz 14: exe imzası yok; Windows SmartScreen ilk açılışta uyarabilir (kod imzalama sertifikası + Inno Setup kurulum paketi).

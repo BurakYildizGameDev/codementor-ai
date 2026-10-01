@@ -1,0 +1,2 @@
+.baslik {  /* expect-error */
+  font-size: 2rem;

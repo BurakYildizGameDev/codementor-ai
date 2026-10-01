@@ -15,10 +15,14 @@ from codementor.analysis.extractor import extract_facts
 from codementor.config import Settings
 from codementor.log import get_logger
 from codementor.models.bigo import parse_bigo
-from codementor.models.enums import FindingSource
+from codementor.models.enums import FindingSource, has_complexity
 from codementor.models.facts import CodeFacts, ComplexityHint
 from codementor.models.findings import Finding
-from codementor.models.llm_output import LLMAnalysisOutput, LLMSocraticOutput
+from codementor.models.llm_output import (
+    LLMAnalysisOutput,
+    LLMMarkupAnalysisOutput,
+    LLMSocraticOutput,
+)
 from codementor.models.pipeline import MentorTemplates
 from codementor.models.prompts import AnalysisPromptInput, QuestionContext
 from codementor.models.questions import ChecklistItem, Question
@@ -33,7 +37,12 @@ from codementor.pipeline.events import StageTimer
 from codementor.pipeline.templates import fallback_description
 from codementor.questions.checklists import Checklists
 from codementor.rules.engine import run_rules
-from codementor.verify.analysis import question_text, verify_analysis, verify_socratic
+from codementor.verify.analysis import (
+    question_text,
+    verify_analysis,
+    verify_markup_analysis,
+    verify_socratic,
+)
 from codementor.verify.complexity import is_optimal
 from codementor.verify.leak_guard import check_leaks
 
@@ -65,7 +74,10 @@ def run_static(
 ) -> StaticAnalysis:
     """Olgu çıkarımı + kurallar (`facts`, `rules` aşamaları)."""
     with timer.stage("facts"):
-        facts = extract_facts(code, costs=load_call_costs(settings.data.call_costs_file))
+        if has_complexity(code.language):
+            facts = extract_facts(code, costs=load_call_costs(settings.data.call_costs_file))
+        else:  # HTML/CSS: olgu ve Big-O yok (ADR-0015)
+            facts = CodeFacts()
         hint = compute_hint(facts) if facts.functions or facts.loops or facts.recursion else None
         hints = list(function_hints(facts).values())
     with timer.stage("rules"):
@@ -120,7 +132,17 @@ class VerifyArgs:
     reference: str | None
     settings: Settings
 
-    def analysis(self, output: LLMAnalysisOutput, schema_first_try: bool) -> AnalysisVerification:
+    def analysis(
+        self, output: LLMAnalysisOutput | LLMMarkupAnalysisOutput, schema_first_try: bool
+    ) -> AnalysisVerification:
+        if isinstance(output, LLMMarkupAnalysisOutput):
+            return verify_markup_analysis(
+                output,
+                code=self.code,
+                static_findings=self.static_findings,
+                schema_first_try=schema_first_try,
+                settings=self.settings.verify,
+            )
         return verify_analysis(
             output,
             code=self.code,

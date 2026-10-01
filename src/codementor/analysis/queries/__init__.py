@@ -16,14 +16,15 @@ from codementor.models.enums import Language
 
 QUERY_DIR = Path(__file__).resolve().parent
 QUERY_NAMES = ("functions", "loops", "calls", "memory", "fields")
-_DIRS = {Language.C: "c", Language.CPP: "cpp", Language.CSHARP: "csharp"}
+_DIRS = {Language.C: "c", Language.CPP: "cpp", Language.CSHARP: "csharp", Language.PYTHON: "python"}
 
 
 @cache
 def load_query(language: Language, name: str) -> Query | None:
     """`{dil}/{ad}.scm` derlenmiş sorgusu; dosya yoksa None."""
-    path = QUERY_DIR / _DIRS[language] / f"{name}.scm"
-    if not path.is_file():
+    folder = _DIRS.get(language)  # HTML/CSS: olgu sorgusu yok (ADR-0015)
+    path = QUERY_DIR / folder / f"{name}.scm" if folder else None
+    if path is None or not path.is_file():
         return None
     return Query(get_language(language), path.read_text(encoding="utf-8"))
 

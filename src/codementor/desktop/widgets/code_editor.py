@@ -222,7 +222,11 @@ class CodeEditor(ctk.CTkFrame):  # type: ignore[misc]
         line = int(self.text.index("insert").split(".")[0])
         mark = self._marks.get(line)
         if mark is None:
-            hint = "Bulgu satırına tıkla ya da sağdaki karttan seç." if self._marks else ""
+            hint = (
+                "Bulgu satırına tıkla ya da sağdaki karttan seç."
+                if self._marks
+                else "Ctrl+Enter ile denetle"
+            )
             self.footer.configure(text=f"Satır {line}   {hint}", text_color=theme.MUTED)
         else:
             self.footer.configure(

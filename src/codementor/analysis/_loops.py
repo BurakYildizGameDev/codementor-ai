@@ -24,8 +24,15 @@ from codementor.models.enums import LoopBound
 
 LoopKind = Literal["for", "while", "do", "foreach"]
 
-LOOP_TYPES = frozenset(
-    {"for_statement", "for_range_loop", "foreach_statement", "while_statement", "do_statement"}
+# Python kavramaları örtük döngüdür (ADR-0015)
+COMPREHENSION_TYPES = frozenset(
+    {"list_comprehension", "set_comprehension", "dictionary_comprehension", "generator_expression"}
+)
+LOOP_TYPES = (
+    frozenset(
+        {"for_statement", "for_range_loop", "foreach_statement", "while_statement", "do_statement"}
+    )
+    | COMPREHENSION_TYPES
 )
 FUNCTION_TYPES = frozenset(
     {
@@ -37,6 +44,7 @@ FUNCTION_TYPES = frozenset(
         "operator_declaration",
         "lambda_expression",
         "anonymous_method_expression",
+        "lambda",  # Python
     }
 )
 _LITERALS = frozenset(
@@ -49,14 +57,18 @@ _LITERALS = frozenset(
         "true",
         "false",
         "boolean_literal",
+        "integer",  # Python
+        "float",
     }
 )
-_UNARY = frozenset({"unary_expression", "prefix_unary_expression"})
+_UNARY = frozenset({"unary_expression", "prefix_unary_expression", "unary_operator"})
+_BINARY = frozenset({"binary_expression", "binary_operator"})  # C ailesi / Python
+_ASSIGNMENTS = frozenset({"assignment_expression", "assignment", "augmented_assignment"})
 _COMPARISONS = frozenset({"<", "<=", ">", ">=", "!="})
 _ADD_OPS = frozenset({"+=", "-="})
-_MUL_OPS = frozenset({"*=", "/=", "<<=", ">>="})
+_MUL_OPS = frozenset({"*=", "/=", "//=", "<<=", ">>="})
 _ADD_BINARY = frozenset({"+", "-"})
-_MUL_BINARY = frozenset({"*", "/", "<<", ">>"})
+_MUL_BINARY = frozenset({"*", "/", "//", "<<", ">>"})
 _INC_DEC = frozenset({"++", "--"})
 _UNARY_UPDATES = frozenset(
     {"update_expression", "postfix_unary_expression", "prefix_unary_expression"}
@@ -80,9 +92,24 @@ _KINDS: dict[str, LoopKind] = {
 }
 
 
+def is_python_for(loop: Node) -> bool:
+    """Python `for x in ...` (C `for_statement` ile aynı düğüm adı; `right` alanı ayırır)."""
+    return loop.type == "for_statement" and loop.child_by_field_name("right") is not None
+
+
 def kind_of(loop: Node) -> LoopKind:
-    """Olgu türü: for / while / do / foreach (C++ range-for dahil)."""
+    """Olgu türü: for / while / do / foreach (C++ range-for, Python for ve kavramalar dahil)."""
+    if loop.type in COMPREHENSION_TYPES or is_python_for(loop):
+        return "foreach"
     return _KINDS[loop.type]
+
+
+def _sides(node: Node) -> tuple[Node | None, Node | None]:
+    """İkili ifadenin iki yanı; Python `comparison_operator`'da alan adı yok."""
+    left, right = node.child_by_field_name("left"), node.child_by_field_name("right")
+    if left is None and right is None and node.named_child_count >= 2:
+        return node.named_children[0], node.named_children[1]
+    return left, right
 
 
 def _unwrap(node: Node | None) -> Node | None:
@@ -114,7 +141,7 @@ def is_constant(node: Node | None) -> bool:
             continue
         if current.type in _UNARY and current.named_child_count == 1:
             stack.append(current.named_children[0])
-        elif current.type == "binary_expression":
+        elif current.type in _BINARY:
             stack += [current.child_by_field_name("left"), current.child_by_field_name("right")]
         else:
             return False
@@ -138,20 +165,25 @@ def _comparisons(cond: Node | None) -> list[Node]:
     stack = [cond]
     while stack:
         current = _unwrap(stack.pop())
-        if current is None or current.type != "binary_expression":
+        if current is None:
             continue
         op = _operator(current)
-        if op == "&&":
+        if current.type in ("binary_expression", "boolean_operator") and op in ("&&", "and"):
             stack += [current.child_by_field_name("right"), current.child_by_field_name("left")]
-        elif op in _COMPARISONS:
+        elif (
+            current.type in ("binary_expression", "comparison_operator")
+            and op in _COMPARISONS
+            # Python zincirli karşılaştırma (`a < b < c`) sınıflandırılmaz
+            and (current.type == "binary_expression" or current.named_child_count == 2)
+        ):
             found.append(current)
     return found
 
 
 # (değişken, add|mul|other, yön: +1 artan, -1 azalan, 0 bilinmiyor)
 Update = tuple[str, str, int]
-_SIGN = {"+=": 1, "-=": -1, "*=": 1, "<<=": 1, "/=": -1, ">>=": -1}
-_BINARY_SIGN = {"+": 1, "-": -1, "*": 1, "<<": 1, "/": -1, ">>": -1}
+_SIGN = {"+=": 1, "-=": -1, "*=": 1, "<<=": 1, "/=": -1, "//=": -1, ">>=": -1}
+_BINARY_SIGN = {"+": 1, "-": -1, "*": 1, "<<": 1, "/": -1, "//": -1, ">>": -1}
 
 
 def _update(node: Node) -> Update | None:
@@ -163,7 +195,7 @@ def _update(node: Node) -> Update | None:
         if var is None or not tokens:
             return None
         return (var, "add", 1 if "++" in tokens else -1)
-    if node.type != "assignment_expression":
+    if node.type not in _ASSIGNMENTS:
         return None
     var = _ident(node.child_by_field_name("left"))
     if var is None:
@@ -175,7 +207,9 @@ def _update(node: Node) -> Update | None:
         return (var, "add", _SIGN[op] if is_constant(right) else 0)
     if op in _MUL_OPS:
         return (var, "mul", _SIGN[op]) if is_constant(right) else (var, "other", 0)
-    if op == "=" and right is not None and right.type == "binary_expression":
+    if node.type == "assignment":  # Python `x = ...` (operatör alanı yok)
+        op = "="
+    if op == "=" and right is not None and right.type in _BINARY:
         left_ident = _ident(right.child_by_field_name("left"))
         binary = _operator(right)
         if left_ident == var and is_constant(right.child_by_field_name("right")):
@@ -222,7 +256,7 @@ def _body_updates(loop: Node) -> list[Update]:
     return [
         u
         for n in _body_nodes(loop)
-        if n.type in _UNARY_UPDATES or n.type == "assignment_expression"
+        if n.type in _UNARY_UPDATES or n.type in _ASSIGNMENTS
         for u in _updates(n)
     ]
 
@@ -279,7 +313,7 @@ def _assignments(n: Node) -> list[tuple[str, Node]]:
         name = n.child_by_field_name("name")
         rest = [c for c in n.named_children if c != name]
         return [(text(name), rest[-1])] if name is not None and rest else []
-    if n.type == "assignment_expression" and _operator(n) == "=":
+    if (n.type == "assignment_expression" and _operator(n) == "=") or n.type == "assignment":
         var, value = _ident(n.child_by_field_name("left")), n.child_by_field_name("right")
         return [(var, value)] if var and value is not None else []
     return []
@@ -294,8 +328,8 @@ def _assigned_values(node: Node, var: str, *, shallow: bool = False) -> list[Nod
 def _has_halving(node: Node | None) -> bool:
     """İfadede `x / 2`, `x >> 1` gibi sabitle bölme/kaydırma var mı."""
     return node is not None and any(
-        n.type == "binary_expression"
-        and _operator(n) in ("/", ">>")
+        n.type in _BINARY
+        and _operator(n) in ("/", "//", ">>")
         and is_constant(n.child_by_field_name("right"))
         for n in iter_nodes(node)
     )
@@ -310,7 +344,8 @@ def _binary_search(loop: Node, comparisons: list[Node]) -> str | None:
     assignments = [pair for n in _body_nodes(loop) for pair in _assignments(n)]
     halved = {var for var, value in assignments if _has_halving(value)}
     for cmp in comparisons:
-        lo, hi = _ident(cmp.child_by_field_name("left")), _ident(cmp.child_by_field_name("right"))
+        left, right = _sides(cmp)
+        lo, hi = _ident(left), _ident(right)
         if not (lo and hi and lo != hi):
             continue
         for var, value in assignments:
@@ -326,7 +361,7 @@ def _from_counter(
     """Sayaç deseni: yön güncellemenin işaretinden gelir; CONSTANT için iki uç da sabit olmalı."""
     updated = {var for var, _, _ in updates}
     for cmp in comparisons:
-        sides = (cmp.child_by_field_name("left"), cmp.child_by_field_name("right"))
+        sides = _sides(cmp)
         for counter_side, other in (sides, sides[::-1]):
             var = _ident(counter_side)
             if var is None or var not in updated or _mentions(other, var):
@@ -352,9 +387,28 @@ def classify(loop: Node, index: AssignmentIndex) -> LoopShape:
         return LoopShape(LoopBound.UNKNOWN)
 
 
+def _python_iteration(loop: Node) -> LoopShape:
+    """`for i in range(10)` → CONSTANT; diğer `range(...)` ve koleksiyon gezintisi → LINEAR."""
+    iterable = _unwrap(loop.child_by_field_name("right"))
+    if (
+        iterable is not None
+        and iterable.type == "call"
+        and text(iterable.child_by_field_name("function")) == "range"
+    ):
+        args = iterable.child_by_field_name("arguments")
+        values = list(args.named_children) if args is not None else []
+        counter = _ident(loop.child_by_field_name("left"))
+        if values and all(is_constant(v) for v in values[:2]):
+            return LoopShape(LoopBound.CONSTANT, counter)
+        return LoopShape(LoopBound.LINEAR, counter)
+    return LoopShape(LoopBound.LINEAR)
+
+
 def _classify(loop: Node, index: AssignmentIndex) -> LoopShape:
-    if loop.type in ("for_range_loop", "foreach_statement"):
+    if loop.type in ("for_range_loop", "foreach_statement") or loop.type in COMPREHENSION_TYPES:
         return LoopShape(LoopBound.LINEAR)
+    if is_python_for(loop):
+        return _python_iteration(loop)
     condition = _unwrap(loop.child_by_field_name("condition"))
     if condition is None or is_constant(condition):
         return LoopShape(LoopBound.UNKNOWN)
@@ -384,8 +438,12 @@ def counter_outer(loop: Node, counter: str | None, parent_resets: set[str]) -> b
     """
     if counter is None:
         return False
-    if loop.type == "for_statement" and any(
-        _assigned_values(init, counter) for init in loop.children_by_field_name("initializer")
+    if (
+        loop.type == "for_statement"
+        and not is_python_for(loop)
+        and any(
+            _assigned_values(init, counter) for init in loop.children_by_field_name("initializer")
+        )
     ):
         return False
     return counter not in parent_resets

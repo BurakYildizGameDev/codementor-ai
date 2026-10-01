@@ -13,7 +13,7 @@ from codementor.models.enums import AuditCategory, CompilationStatus, FindingSou
 class Diagnostic(StrictModel):
     """Ayrıştırıcı/derleyici tanısı (K1)."""
 
-    tool: Literal["tree-sitter", "gcc", "clang", "roslyn"]
+    tool: Literal["tree-sitter", "gcc", "clang", "roslyn", "python"]
     severity: Literal["error", "warning", "note"]
     line: int
     column: int | None

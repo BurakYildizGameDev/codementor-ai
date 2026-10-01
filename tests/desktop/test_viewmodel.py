@@ -139,6 +139,8 @@ def test_category_labels_match_mentor_templates() -> None:
 
 def test_engine_language_compatibility() -> None:
     assert engines_for(Language.C) == [Engine.NONE]
+    for language in (Language.PYTHON, Language.HTML, Language.CSS):
+        assert engines_for(language) == [Engine.NONE]
     assert Engine.UNREAL in engines_for(Language.CPP)
     assert Engine.UNITY in engines_for(Language.CSHARP)
     assert Engine.UNITY not in engines_for(Language.CPP)
@@ -148,6 +150,9 @@ def test_language_for_path() -> None:
     assert language_for_path("a/b/Main.CS") is Language.CSHARP
     assert language_for_path("x.hpp") is Language.CPP
     assert language_for_path("x.h") is Language.C
+    assert language_for_path("app.py") is Language.PYTHON
+    assert language_for_path("index.HTM") is Language.HTML
+    assert language_for_path("style.css") is Language.CSS
     assert language_for_path("notes.txt") is None
 
 

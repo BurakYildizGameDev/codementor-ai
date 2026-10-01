@@ -34,6 +34,7 @@ class SkipReason(StrEnum):
     INCLUDE_GUARD = "include_guard"
     TIMEOUT = "timeout"
     TOOL_ERROR = "tool_error"
+    NOT_APPLICABLE = "not_applicable"  # HTML/CSS: derleyici kavramı yok (ADR-0015)
 
 
 class CompilerTool(StrictModel):
@@ -56,7 +57,9 @@ class Toolchain(StrictModel):
         """Koda uygun araç."""
         if engine is Engine.UNREAL:
             return self.unreal
-        return {Language.C: self.c, Language.CPP: self.cpp, Language.CSHARP: self.csharp}[language]
+        return {Language.C: self.c, Language.CPP: self.cpp, Language.CSHARP: self.csharp}.get(
+            language
+        )
 
     def summary(self) -> dict[str, str | None]:
         """`/health/ready` için özet: hedef → araç adı."""

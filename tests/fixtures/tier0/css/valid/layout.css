@@ -1,0 +1,10 @@
+:root {
+  --vurgu: #e8b04b;
+}
+
+.kapsayici {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}

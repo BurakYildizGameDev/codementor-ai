@@ -1,0 +1,10 @@
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  line-height: 1.6;
+  color: #1f2430;
+}
+
+h1,
+h2 {
+  margin: 0 0 0.5em;
+}
