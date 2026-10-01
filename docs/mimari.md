@@ -605,7 +605,9 @@ class LLMAnalysisOutput(BaseModel):
 
 class LLMSocraticOutput(BaseModel):
     key_flaw_concept: str = Field(max_length=80)
-    guiding_questions: list[Annotated[str, Field(max_length=1000)]] = Field(min_length=1, max_length=4)  # öğe sınırı Faz 27
+    guiding_questions: list[Annotated[str, Field(max_length=1000)]] = Field(
+        min_length=1, max_length=4
+    )  # öğe sınırı Faz 27
     next_step_hint: str | None = Field(default=None, max_length=300)
 
 
@@ -678,7 +680,9 @@ class ReportMeta(BaseModel):
 
 class AnalysisReport(BaseModel):
     schema_version: Literal["1.0"] = "1.0"
-    analysis_id: str = Field(pattern=r"^[0-9A-HJKMNP-TV-Z]{26}$")  # ULID (Faz 27: biçim doğrulanır; API'de bozuk kimlik → 404)
+    analysis_id: str = Field(
+        pattern=r"^[0-9A-HJKMNP-TV-Z]{26}$"
+    )  # ULID (Faz 27: biçim doğrulanır; API'de bozuk kimlik → 404)
     created_at: datetime
     language: Language
     engine: Engine
