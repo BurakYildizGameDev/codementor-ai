@@ -12,7 +12,9 @@ import time
 
 
 def main() -> None:
-    stdin = sys.stdin.read()
+    # Gerçek CLI'lar gibi UTF-8 bayt düzeyinde; temizlenmiş ortamda konsol kodlaması cp1252
+    # olabilir (Windows CI), Türkçe karakter metin akışında çökerdi
+    stdin = sys.stdin.buffer.read().decode("utf-8")
     sleeper = re.search(r"UYU:(\S+)", stdin)
     if sleeper:
         with open(sleeper.group(1), "w", encoding="utf-8") as marker:
@@ -37,8 +39,10 @@ def main() -> None:
             "structured_output": probe,
             "usage": usage,
         }
-    print("bilgi: sahte CLI başladı")  # önündeki gürültü satırı ayrıştırmayı bozmamalı
-    print(json.dumps(reply))
+    out = sys.stdout.buffer
+    out.write("bilgi: sahte CLI başladı\n".encode())  # gürültü satırı ayrıştırmayı bozmamalı
+    out.write((json.dumps(reply, ensure_ascii=False) + "\n").encode())
+    out.flush()
 
 
 if __name__ == "__main__":
