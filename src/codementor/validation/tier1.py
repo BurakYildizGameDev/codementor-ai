@@ -18,6 +18,7 @@ from typing import Protocol
 
 from codementor.analysis.parsers import neutralize_unreal_macros
 from codementor.config import ValidationSettings
+from codementor.log import get_logger, scrub
 from codementor.models.enums import MARKUP_LANGUAGES, CompilationStatus, Engine, Language
 from codementor.models.findings import Diagnostic
 from codementor.models.request import NormalizedCode
@@ -36,6 +37,8 @@ _COMMON_FLAGS = ("-fsyntax-only", "-Wall", "-Wextra", "-fno-diagnostics-color")
 _STD = {Language.C: ("c", "-std=c17"), Language.CPP: ("c++", "-std=c++20")}
 # `\` ile devam eden satırlar boşaltılmaz: birleştirme kopar, alt satır yönergeye dönüşürdü
 _LOCAL_INCLUDE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*"[^\n]*(?<![\\ \t\f\v])$', re.MULTILINE)
+log = get_logger("codementor.validation")
+
 _DOTNET_ENV = {
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
     "DOTNET_NOLOGO": "1",
@@ -190,6 +193,15 @@ def _interpret(
             if outcome.returncode != 0 and not any(d.severity == "error" for d in diagnostics):
                 raise ValueError("derleyici tanısız hata koduyla çıktı")
     except ValueError:
+        if tool.kind == "roslyn":
+            # Operatör için teşhis (Faz 27): Roslyn hatası .NET çalışma zamanı mesajıdır, kaynak
+            # kodu yankılamaz; gcc/clang stderr'i kod parçası içerebildiği için loglanmaz (§12)
+            log.warning(
+                "tier1_tool_error",
+                tool=tool.name,
+                returncode=outcome.returncode,
+                stderr=scrub(outcome.stderr[:300]),
+            )
         return _skipped(
             SkipReason.TOOL_ERROR,
             "Derleyici beklenmedik bir çıktı üretti; denetim atlandı.",

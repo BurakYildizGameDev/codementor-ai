@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import threading
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -357,6 +358,22 @@ def test_roslyn_bad_output_skipped(result: ProcessResult) -> None:
     )
     assert out.status is CompilationStatus.SKIPPED
     assert out.skip_reason is SkipReason.TOOL_ERROR
+
+
+def test_roslyn_tool_error_logged_for_operator(
+    captured_logs: Callable[[], list[dict[str, Any]]],
+) -> None:
+    """Faz 27: Roslyn aracı düşerse çıkış kodu ve stderr başı log'a (teşhis); gcc'de değil."""
+    host_error = "You must install or update .NET to run this application."
+    runner = FakeRunner(ProcessResult(150, "", host_error))
+    run_tier1(_code(CS_CODE, Language.CSHARP), SETTINGS, toolchain=FULL, runner=runner)
+    event = next(e for e in captured_logs() if e["event"] == "tier1_tool_error")
+    assert event["returncode"] == 150
+    assert host_error in event["stderr"]
+
+    gcc = FakeRunner(ProcessResult(1, "", "int gizli_kod_satiri;"))
+    run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=gcc)
+    assert sum(e["event"] == "tier1_tool_error" for e in captured_logs()) == 1
 
 
 def test_truncated_output_flagged() -> None:
