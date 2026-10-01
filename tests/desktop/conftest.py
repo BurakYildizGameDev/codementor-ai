@@ -22,6 +22,13 @@ from tests.integration.conftest import (  # noqa: F401
 
 StateFactory = Callable[..., ApiState]
 
+# Tk'siz Python'larda (ör. Linux CI'daki uv Python'u) pencere testleri toplanmaz; Tk gerektirmeyen
+# masaüstü testleri (görünüm modeli, köprü, bağlantılar, renklendirme) yine koşar.
+try:
+    import tkinter  # noqa: F401
+except ImportError:
+    collect_ignore = ["test_app.py"]
+
 
 def scripted() -> FakeProvider:
     """Bağlı liste kodu için iki geçişlik gerçekçi yanıt (her analizde yeni sağlayıcı)."""
