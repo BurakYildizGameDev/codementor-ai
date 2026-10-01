@@ -635,6 +635,13 @@
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
+**Kaldığımız yer (2026-10-01):** Faz 20 (475e200) ve Faz 21 (ebc506e) `main`'de, **push
+edilmedi** → ilk iş `git push origin main` + CI kontrolü (push CI'ı tetiklemezse
+`gh workflow run CI --ref main`). Açık karar: test `c-016` 12. satır etiketi `resource_leak`;
+C-MEM-002/003 `memory_safety` buluyor → kategori `memory_safety`'ye mi çevrilsin, ikinci
+beklenen bulgu mu eklensin? (karar sonrası static-only C ailesi test koşusu ve README tablosu
+yenilenir). Sıradaki faz: 22 (canlı, kota harcar) ya da 23 (çevrimdışı).
+
 **Kullanıcı işleri:** (a) yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
 `css-easy-centered-layout.css`); (b) eski eval etiketlerine Faz 17 bulguları eklensin mi
