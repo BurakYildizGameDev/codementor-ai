@@ -40,7 +40,7 @@ from codementor.analysis.lexical import mask_non_code
 from codementor.analysis.parsers import ParsedSource, iter_nodes, parse
 from codementor.analysis.queries import captures
 from codementor.config import get_settings
-from codementor.models.enums import AllocationKind
+from codementor.models.enums import AllocationKind, Engine, Language
 from codementor.models.facts import (
     AllocationFact,
     CallCostTable,
@@ -110,6 +110,11 @@ class _Extractor:
             return empty
 
     def run(self) -> CodeFacts:
+        self.inert = (
+            _engine.engine_inert_members(self.root, self.language)
+            if self.code.engine is not Engine.NONE
+            else frozenset[NodeKey]()
+        )
         fn_nodes = self._nodes("functions", "function")
         functions = [self._function(n) for n in fn_nodes]
         self.by_key = {key(n): f for n, f in zip(fn_nodes, functions, strict=True)}
@@ -180,6 +185,8 @@ class _Extractor:
     def _function(self, node: Node) -> FunctionFact:
         name = function_name(node, self.language)
         lifecycle, hot = _engine.lifecycle(name, self.code.engine)
+        if key(node) in self.inert:  # tabanı olmayan tipte: motor çağırmaz (Faz 21)
+            lifecycle, hot = None, False
         return FunctionFact(
             name=name,
             line_start=line(node),
@@ -285,7 +292,14 @@ class _Extractor:
 
     def _allocations(self, calls: list[_Call]) -> list[AllocationFact]:
         string_vars = {name for name, t in self.types.items() if t in _STRING_TYPES}
-        pairs = list(_memory.allocations(self.language, self.found["memory"], string_vars))
+        value_types = (
+            _memory.file_value_types(self.root)
+            if self.language is Language.CSHARP
+            else frozenset[str]()
+        )
+        pairs = list(
+            _memory.allocations(self.language, self.found["memory"], string_vars, value_types)
+        )
         # LINQ: `Enumerable.*` olarak çözülen çağrılar (`Mathf.Max` LINQ değil); O(1)'e
         # indirgenen argümansız `First()`/`Any()` yineleyici tahsis etmez
         pairs += [

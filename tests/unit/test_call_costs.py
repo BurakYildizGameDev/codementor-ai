@@ -9,8 +9,9 @@ import pytest
 from codementor.analysis._symbols import CallName
 from codementor.analysis.call_costs import CallCostError, CostResolver, load_call_costs
 from codementor.models.bigo import parse_cost
-from codementor.models.enums import Language
+from codementor.models.enums import Engine, Language
 from codementor.models.facts import CallCostTable
+from tests.unit.test_extractor import _facts
 
 DATA = Path(__file__).resolve().parents[2] / "data" / "call_costs.yaml"
 
@@ -104,3 +105,77 @@ def test_resolve(
 ) -> None:
     resolver = CostResolver(table=table, language=language, types=types, **flags)
     assert resolver.resolve(call) == expected
+
+
+# --- Faz 21: tablo eksikleri ve arayüz tipleri ----------------------------------------------
+
+
+def _costs(text: str, language: Language, engine: Engine = Engine.NONE) -> dict[str, str | None]:
+    return {c.name: c.known_cost for c in _facts(text, language, engine).calls}
+
+
+def test_cpp_memset_family_linear() -> None:
+    costs = _costs(
+        "#include <cstring>\nvoid f(char *a, char *b, int n) {\n"
+        "    std::memset(a, 0, n); std::memcpy(a, b, n); memmove(a, b, n);\n}\n",
+        Language.CPP,
+    )
+    assert costs["std::memset"] == "n"
+    assert costs["std::memcpy"] == "n"
+    assert costs["memmove"] == "n"
+
+
+def test_unreal_get_all_actors_linear() -> None:
+    costs = _costs(
+        "void AA::F() {\n    UGameplayStatics::GetAllActorsOfClass(GetWorld(), X, Out);\n"
+        "    UGameplayStatics::GetAllActorsWithTag(GetWorld(), T, Out);\n}\n",
+        Language.CPP,
+        Engine.UNREAL,
+    )
+    assert costs["UGameplayStatics::GetAllActorsOfClass"] == "n"
+    assert costs["UGameplayStatics::GetAllActorsWithTag"] == "n"
+
+
+def test_csharp_list_bulk_ops_linear() -> None:
+    costs = _costs(
+        "using System.Collections.Generic;\nclass A { void F(List<int> xs) {\n"
+        "    xs.RemoveAll(x => x > 0); xs.RemoveRange(0, 2); xs.InsertRange(0, xs);\n} }\n",
+        Language.CSHARP,
+    )
+    assert costs["List.RemoveAll"] == "n"
+    assert costs["List.RemoveRange"] == "n"
+    assert costs["List.InsertRange"] == "n"
+
+
+def test_ilist_receiver_resolves_to_list() -> None:
+    """`IList<T>` örnek metotları (`Contains`, `IndexOf`) List'inki gibi doğrusal."""
+    costs = _costs(
+        "using System.Collections.Generic;\nclass A { void F(IList<int> xs) {\n"
+        "    xs.Contains(1); xs.IndexOf(2);\n} }\n",
+        Language.CSHARP,
+    )
+    assert costs["List.Contains"] == "n"
+    assert costs["List.IndexOf"] == "n"
+
+
+def test_ireadonlylist_contains_stays_linq() -> None:
+    """Denetim O1: `IReadOnlyList<T>`'te `Contains` örnek metodu yok; çağrı LINQ'tir
+    (`Enumerable.Contains`) ve sıcak yolda CS-ALLOC-002 olarak raporlanmalı."""
+    text = (
+        "using System.Collections.Generic;\nusing System.Linq;\nusing UnityEngine;\n"
+        "public class P : MonoBehaviour {\n    public IReadOnlyList<int> ys;\n"
+        "    void Update() { if (ys.Contains(1)) { } }\n}\n"
+    )
+    facts = _facts(text, Language.CSHARP, Engine.UNITY)
+    assert [c.name for c in facts.calls] == ["Enumerable.Contains"]
+    assert [a.kind.value for a in facts.allocations] == ["linq"]
+
+
+def test_icollection_stays_unknown() -> None:
+    """`ICollection` bir HashSet de olabilir: maliyet tahmin edilmez."""
+    costs = _costs(
+        "using System.Collections.Generic;\nclass A { void F(ICollection<int> zs) {\n"
+        "    zs.Contains(1);\n} }\n",
+        Language.CSHARP,
+    )
+    assert costs == {"zs.Contains": None}

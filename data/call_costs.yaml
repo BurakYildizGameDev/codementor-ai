@@ -23,6 +23,13 @@ c:
 
 cpp:
   "std::sort": "n log n"
+  # bellek blokları (Faz 21): <cstring> hem `std::` ile hem çıplak çağrılır
+  "std::memset": "n"
+  "std::memcpy": "n"
+  "std::memmove": "n"
+  memset: "n"
+  memcpy: "n"
+  memmove: "n"
   "std::stable_sort": "n log n"
   "std::partial_sort": "n log n"
   "std::find": "n"
@@ -92,11 +99,19 @@ cpp:
   "TSet::Add": "1*"
   "TSet::Contains": "1*"
   "TSet::Remove": "1*"
+  # dünyadaki tüm aktörleri tarar (Faz 21)
+  "UGameplayStatics::GetAllActorsOfClass": "n"
+  "UGameplayStatics::GetAllActorsWithTag": "n"
+  "UGameplayStatics::GetAllActorsWithInterface": "n"
+  "UGameplayStatics::GetAllActorsOfClassWithTag": "n"
 
 csharp:
   "List.Contains": "n"
   "List.IndexOf": "n"
   "List.Insert": "n"
+  "List.InsertRange": "n"
+  "List.RemoveAll": "n"
+  "List.RemoveRange": "n"
   "List.Remove": "n"
   "List.RemoveAt": "n"
   "List.Find": "n"

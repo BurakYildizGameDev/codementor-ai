@@ -54,6 +54,8 @@ CSHARP_COLLECTIONS = frozenset(
     }
 )
 _INDEXABLE = frozenset({"Array", "List", "IList", "IReadOnlyList"})
+# `IReadOnlyList<T>`'te `Contains`/`IndexOf` örnek metodu yok: o çağrılar LINQ'tir (Faz 21 denetimi)
+_LIST_INTERFACES = frozenset({"IList"})
 _COUNTED = CSHARP_COLLECTIONS - {"IEnumerable"}
 _CONSTANT_WITHOUT_ARGS = {
     "Enumerable.First": None,
@@ -107,6 +109,10 @@ class CostResolver:
         found: list[str] = []
         if declared is not None:
             found.append(f"{'string' if declared in _STRING_TYPES else declared}.{call.method}")
+            # `IList` dizi ya da liste: arama/ekleme maliyeti List'inki (Faz 21);
+            # `ICollection` bir HashSet de olabilir, tahmin yok
+            if declared in _LIST_INTERFACES:
+                found.append(f"List.{call.method}")
         elif receiver[:1].isupper():
             found.append(f"{receiver}.{call.method}")  # statik: Array.Sort, GameObject.Find
         collection = declared in CSHARP_COLLECTIONS or call.chained

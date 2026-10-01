@@ -570,3 +570,69 @@ def test_cli_writes_utf8_on_legacy_console(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
     out = json.loads(result.stdout.decode("utf-8"))
     assert "→" in out["hint"]["basis"][0]
+
+
+# ------------------------------------------------------------------ Faz 21: sınıf tabanı, struct
+
+
+def test_hot_path_requires_base_class_unity() -> None:
+    """Tabanı olmayan sınıftaki `Update` Unity çağırmaz; kullanıcı tabanı varsa sıcak kalır."""
+    text = (
+        "using UnityEngine;\n"
+        "public class Mover : MonoBehaviour { void Update() { } }\n"
+        "public class Plain { void Update() { } }\n"
+        "public struct Data { void Update() { } }\n"
+        "public class Enemy : BaseEnemy { void Update() { } }\n"
+        "public class Outer : MonoBehaviour { class Inner { void LateUpdate() { } } }\n"
+    )
+    facts = _facts(text, CS, Engine.UNITY)
+    hot = [(f.line_start, f.is_hot_path) for f in facts.functions]
+    assert hot == [(2, True), (3, False), (4, False), (5, True), (6, False)]
+
+
+def test_unreal_tick_in_plain_class_not_hot() -> None:
+    text = (
+        "class FHelper { void Tick(float Dt) { } };\n"
+        "class AMine : public AActor { void Tick(float Dt) override { } };\n"
+    )
+    facts = _facts(text, CPP, Engine.UNREAL)
+    assert [f.is_hot_path for f in facts.functions] == [False, True]
+
+
+def test_out_of_class_unreal_tick_still_hot() -> None:
+    facts = _facts("void AFoo::Tick(float Dt)\n{\n}\n", CPP, Engine.UNREAL)
+    assert facts.functions[0].is_hot_path
+
+
+def test_user_struct_new_is_not_heap_allocation() -> None:
+    text = (
+        "using UnityEngine;\n"
+        "public struct Hit { public Hit(int d) { } }\n"
+        "public readonly record struct Point(int X);\n"
+        "public class P : MonoBehaviour {\n"
+        "    void Update() { var h = new Hit(3); var p = new Point(1); var l = new Ref(); }\n"
+        "}\n"
+        "public class Ref { }\n"
+    )
+    facts = _facts(text, CS, Engine.UNITY)
+    assert [(a.kind, a.line) for a in facts.allocations] == [(AllocationKind.CSHARP_NEW, 5)]
+
+
+def test_partial_class_part_without_base_stays_hot() -> None:
+    """Denetim O2: `partial` sınıfın tabanı başka bir parçada (başka dosyada da olabilir)."""
+    text = (
+        "using UnityEngine;\n"
+        "public partial class P : MonoBehaviour { }\n"
+        "public partial class P { void Update() { } }\n"
+    )
+    facts = _facts(text, CS, Engine.UNITY)
+    assert facts.functions[0].is_hot_path
+
+
+def test_unreal_uclass_macro_class_tick_hot() -> None:
+    text = (
+        "UCLASS()\nclass MYGAME_API AMine : public AActor\n{\n    GENERATED_BODY()\n"
+        "    void Tick(float Dt) override { }\n};\n"
+    )
+    facts = _facts(text, CPP, Engine.UNREAL)
+    assert facts.functions[0].is_hot_path

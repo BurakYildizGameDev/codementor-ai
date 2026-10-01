@@ -24,6 +24,7 @@
 | 18 | ✅ | faz/18-eval-diller | 2026-10-01 | Claude Code / kod-denetci |
 | 19 | ✅ | faz/19-durdur | 2026-10-01 | Claude Code / kod-denetci |
 | 20 | ✅ | faz/20-html-denge | 2026-10-01 | Claude Code / kod-denetci |
+| 21 | ✅ | faz/21-kural-dogrulugu | 2026-10-01 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -540,7 +541,28 @@
 **Açık sorular:** Eski 3.12 yama sürümlerinde HTMLParser'ın `close()` yolunda karesel süre vardı (CVE-2025-6069); yerel 3.12.13'te test 0,08 sn. CI Python sürümü güncel; `requires-python` alt sınırı yükseltilmeli mi?
 **Bu fazda öğrendiğim:** stdlib ayrıştırıcıların davranışı güvenlik yamalarıyla değişebiliyor (RCDATA listesi); kurala özgü davranış açıkça ayarlanmalı ve fixture ile kilitlenmeli.
 
+## Faz 21 — Notlar (statik kural ve maliyet tablosu doğruluğu, dar kapsam)
+**Kullanıcı kararları:** dar kapsam; eski eval etiketlerine Faz 17 bulguları eklensin.
+**Yapılanlar:**
+- `data/call_costs.yaml`: C++ `std::memset/memcpy/memmove` (+ çıplak adlar), Unreal `UGameplayStatics::GetAllActors*`, C# `List.RemoveAll/RemoveRange/InsertRange` = `n`.
+- `analysis/call_costs.py`: bildirilen tip `IList` ise `List.<metot>` adayı (CS-PERF-001 artık `IList` alıcısında). `IReadOnlyList` (örnek `Contains`/`IndexOf` yok → LINQ) ve `ICollection` (HashSet olabilir) bilinçli dışarıda.
+- `analysis/_memory.py` `file_value_types`: dosyadaki C# `struct`/`record struct` değer tipi → UNITY-GC-001 `new Hit(3)` için bulgu vermez.
+- `analysis/_engine.py` `engine_inert_members`: tabanı olmayan sınıfın ve C# struct/record'un doğrudan metotları Unity/Unreal'da sıcak yol değil (`partial` sınıf hariç: taban başka parçada). Taban varsa ve sınıf dışı `AFoo::Tick` tanımında davranış aynı.
+- `rules/engine.py` çöken kural için `log.exception("rule_failed")` (`RedactingLogger.exception` eklendi; iz `format_exc_info` → maskeleme sırasıyla maskeleniyor, testle).
+- Testler: maliyet ve olgu birim testleri (IList, IReadOnlyList LINQ gerilemesi, partial, UCLASS makrolu sınıf, iç içe tipler, struct/record struct), 4 yeni kural fixture'ı, iz maskeleme testi. Yeni ortak `captured_logs` fikstürü (`tests/conftest.py`): `structlog.testing.capture_logs` projenin logger'ını görmüyordu, Faz 19'daki "iptal ERROR log'u üretmez" testi boşuna geçiyordu → artık pozitif kontrollü.
+- Eval: `c-008` (C-MEM-003) ve `csharp-009` (CS-ALLOC-002) dev etiketlerine eklendi; static-only C ailesi koşuları (`--language c --language cpp --language csharp`) yenilendi (dev Big-O 92 → 96, P/R/F1 100/38/55 → 100/50/67; test 88 → 91, 100/42/59 → 84/44/58). README tabloları + karşılaştırılabilirlik notu, `docs/eval-findings.md` §5. `test_readme_table`: ana tablo filtresiz ya da tam C ailesi koşularını alır.
+**Mimariden sapmalar (ADR linki):** yok.
+**Denetim (kod-denetci):** Kritik yok. Orta: (O1) `IReadOnlyList` → `List` eşlemesi LINQ olgusunu kaybettiriyordu (Update'te CS-ALLOC-002 kayboluyordu) → eşlemeden çıkarıldı + gerileme testi; (O2) `partial` sınıfın tabansız parçası sıcak sayılmıyordu → düzeltildi + test; (O3) kurallar sıcak yolu adla eşliyor (aynı dosyada `class Sim { Update }` + MonoBehaviour `Update` varsa UNITY-PERF-001/UE-PERF-001 düz sınıfta da bulgu verir) → Sonraya; (O4) README notu; (O5) PROGRESS. Düşük (uygulanan): README ölçütü tam C ailesi, partial/UCLASS testleri.
+**Açık sorular:**
+- Test `c-016` 12. satır: etiket `resource_leak` (Faz 12 kararı), C-MEM-002 kural tablosunda `memory_safety`; doğru bulgular kategori uyuşmazlığından FP+FN sayılıyor (test precision %84). Etiket kategorisi `memory_safety`'ye çevrilsin mi, yoksa ikinci bir beklenen bulgu mu eklensin? (kullanıcı kararı)
+**Bu fazda öğrendiğim:** `structlog.testing.capture_logs` yalnız global yapılandırmayı yakalar; kendi işlemci zinciriyle kurulan logger'lar için çıktı akışı yakalanmalı. Pozitif kontrolü olmayan "log yok" testi hiçbir şey kanıtlamaz.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 21 denetimi O3: kurallar sıcak yolu fonksiyon **adıyla** eşliyor (`RuleContext.hot_functions`, `CallFact.function`); aynı dosyada tabansız sınıfta ve MonoBehaviour'da aynı adlı `Update` varsa UNITY-PERF-001/UE-PERF-001 düz sınıfta da bulgu verir (UNITY-GC-001 `in_hot_path` kullandığı için doğru). Olgulara fonksiyon kimliği (satır) eklenmeli.
+- Faz 21: `rules_version` yalnız `rules/*.py` hash'i; `analysis/` ve `data/call_costs.yaml` değişiklikleri önbellek anahtarına yansımıyor (bayat önbellek riski).
+- Faz 21: `log.exception` izi sınırsız ve CLI'da WARNING düzeyinde stderr'e basılır; kural istisna mesajı kullanıcı kodu parçası içerebilir (§12) — iz DEBUG'a ya da kısaltılmış mesaja alınabilir. `captured_logs` teardown'u önceki yapılandırmayı değil varsayılanı geri yükler.
+- Faz 21: `file_value_types` ad çakışması (`struct Hit` + başka ad alanında `class Hit`) nadir yanlış negatif; yalnız arayüzden türeyen `class A : IFoo` sıcak sayılır (muhafazakâr).
+- Faz 21'den kalan (yol haritası Faz 21 geniş kapsamı): C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray<AActor*>`/`TMap` alanları ve `FPlain` önerisi, C-MEM-003 akış duyarlılığı, döngüde `std::string +`/C# `string +=` karesel ipucu.
 - ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
 - ~~Faz 18: Tier 0 `</div>` kör noktası~~ → Faz 20'de HTML-STD-003 ile bulgu olarak.
 - Faz 20: HTML-STD-003 kaçırmaları: dosya sonunda bitmemiş `<div`, `<p><span>a<div>` (örtük kapanış yalnız yığın tepesine bakıyor), DOCTYPE'sız (quirks) belgede `table` `p`'yi kapatmaz; aynı satırda kapanmayan + eşsiz bulgu varsa motor ilkini tutar (eşsiz sorusu görünmez); katalogda yalnız ana açıklama var.
@@ -620,7 +642,7 @@ Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
 1. ~~**Faz 20 — HTML etiket dengesi.**~~ Yapıldı. Kapanmamış/uyumsuz/eşsiz etiket uyarısı (stdlib
    `html.parser`, Tier 1 karşılığı); Faz 18'deki `</div>` kör noktası. Küçük, çevrimdışı.
-2. **Faz 21 — Statik kural ve maliyet tablosu doğruluğu.** C-MEM-001 aynı dosyadaki kullanıcı
+2. ~~**Faz 21 — Statik kural ve maliyet tablosu doğruluğu.**~~ Dar kapsam yapıldı; kalanlar Sonraya'da. C-MEM-001 aynı dosyadaki kullanıcı
    fonksiyonu; UNITY-GC-001 kullanıcı `struct`'ı; UE-GC-001 `TArray<AActor*>`/`FPlain`;
    CS-PERF-001 `IList`; sıcak yolda sınıf tabanı (MonoBehaviour/UCLASS); C-MEM-003 akış
    duyarlılığı; maliyet tablosu (`memset`, `GetAllActorsOfClass`, `TArray::Remove`, C#

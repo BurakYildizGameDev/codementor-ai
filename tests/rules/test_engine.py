@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -73,10 +74,17 @@ int main(void) {
 
 
 @pytest.mark.usefixtures("probes")
-def test_crashing_rule_isolated_with_warning() -> None:
+def test_crashing_rule_isolated_with_warning(
+    captured_logs: Callable[[], list[dict[str, Any]]],
+) -> None:
     result = run_text(C_TEXT, Language.C, disabled=[])
     assert result.warnings == [RULE_FAILURE_WARNING.format("TEST-CRASH-001", "RuntimeError")]
     assert any(f.rule_id == "C-BUF-001" for f in result.findings)
+    # Faz 21: istisna izi geliştirici log'una düşer (kullanıcı uyarısı ayrıntı içermez)
+    (failed,) = [e for e in captured_logs() if e["event"] == "rule_failed"]
+    assert failed["rule"] == "TEST-CRASH-001"
+    assert failed["level"] == "error"
+    assert "RuntimeError: bozuk kural" in failed["exception"]
 
 
 @pytest.mark.usefixtures("probes")

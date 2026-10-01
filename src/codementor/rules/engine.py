@@ -6,6 +6,7 @@ from collections.abc import Iterable
 
 from codementor.analysis.parsers import ParsedSource, parse
 from codementor.config import get_settings
+from codementor.log import get_logger
 from codementor.models.facts import CodeFacts
 from codementor.models.findings import Finding
 from codementor.models.request import NormalizedCode
@@ -13,6 +14,7 @@ from codementor.models.rules import RuleRunResult
 from codementor.rules.base import RuleContext
 from codementor.rules.registry import all_rules, applicable_rules
 
+log = get_logger("codementor.rules")
 RULE_FAILURE_WARNING = "{} kuralı çalıştırılamadı ({}); diğer kurallar etkilenmedi."
 UNKNOWN_DISABLED_WARNING = "Yapılandırmada kapatılan kural bulunamadı (yazım hatası?): {}"
 
@@ -45,6 +47,8 @@ def run_rules(
         try:
             findings += rule().check(ctx)
         except Exception as exc:  # sözleşme: bir kural analizi düşüremez
+            # kullanıcıya kısa Türkçe uyarı; istisna izi geliştirici log'una (Faz 21)
+            log.exception("rule_failed", rule=rule.id)
             warnings.append(RULE_FAILURE_WARNING.format(rule.id, type(exc).__name__))
     return RuleRunResult(findings=_number(_dedupe(findings)), warnings=warnings)
 

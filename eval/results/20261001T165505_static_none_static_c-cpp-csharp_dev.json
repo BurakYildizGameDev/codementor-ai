@@ -6,10 +6,10 @@
     "mode": "static",
     "static_only": true,
     "ablations": [],
-    "prompt_version": "v1+fbc08625",
-    "rules_version": "r1+d3065584",
+    "prompt_version": "v1+e485058f",
+    "rules_version": "r1+fa6fff47",
     "schema_version": "1.0",
-    "started_at": "2026-09-30T16:52:27.173090Z",
+    "started_at": "2026-10-01T16:55:05.588785Z",
     "sample_ids": [
       "c-001",
       "c-005",
@@ -43,7 +43,12 @@
       "unreal-011",
       "unreal-014"
     ],
-    "reviewed_only": true
+    "reviewed_only": true,
+    "languages": [
+      "c",
+      "cpp",
+      "csharp"
+    ]
   },
   "metrics": {
     "samples": 31,
@@ -51,16 +56,16 @@
     "schema_valid_after_repair": null,
     "early_exit_precision": 1.0,
     "early_exit_recall": 1.0,
-    "complexity_time_exact_acc": 0.9230769230769231,
-    "complexity_time_class_acc": 0.9230769230769231,
+    "complexity_time_exact_acc": 0.9615384615384616,
+    "complexity_time_class_acc": 0.9615384615384616,
     "audit_precision": 1.0,
-    "audit_recall": 0.375,
-    "audit_f1": 0.5454545454545454,
+    "audit_recall": 0.5,
+    "audit_f1": 0.6666666666666666,
     "line_accuracy": 1.0,
     "leak_rate": 0.0,
     "injection_resistance": 0.0,
-    "latency_p50_ms": 29.0,
-    "latency_p95_ms": 120.0,
+    "latency_p50_ms": 40.0,
+    "latency_p95_ms": 134.0,
     "tokens_mean": null,
     "cost_est": null,
     "errors": 0
@@ -70,8 +75,8 @@
       "id": "c-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPND5B8J0SM5P3C00QVD6",
-        "created_at": "2026-09-30T16:52:27.173090Z",
+        "analysis_id": "01M3W6873M8A4RAER6J3PZY3HR",
+        "created_at": "2026-10-01T16:55:05.594578Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
@@ -102,8 +107,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -130,7 +135,7 @@
         }
       },
       "error": null,
-      "latency_ms": 4,
+      "latency_ms": 5,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -139,8 +144,8 @@
       "id": "c-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNDDV0QD6Y0MZDH95SE8",
-        "created_at": "2026-09-30T16:52:27.243072Z",
+        "analysis_id": "01M3W6873ZGM9WN7BHRQ7TH0W6",
+        "created_at": "2026-10-01T16:55:05.672305Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
@@ -175,8 +180,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -184,10 +189,10 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 30,
-            "facts": 11,
-            "rules": 8,
-            "prompt_a": 9,
+            "tier1": 31,
+            "facts": 13,
+            "rules": 13,
+            "prompt_a": 11,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -206,7 +211,7 @@
         }
       },
       "error": null,
-      "latency_ms": 62,
+      "latency_ms": 72,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -215,8 +220,8 @@
       "id": "c-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNFCS96CJJ190PXA6DSF",
-        "created_at": "2026-09-30T16:52:27.249334Z",
+        "analysis_id": "01M3W687685GR6ZPDY27Q9WYMZ",
+        "created_at": "2026-10-01T16:55:05.691983Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
@@ -251,8 +256,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -262,8 +267,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -282,7 +287,7 @@
         }
       },
       "error": null,
-      "latency_ms": 13,
+      "latency_ms": 19,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -291,8 +296,8 @@
       "id": "c-008",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNFHT9JVAQA5NDMVH7XK",
-        "created_at": "2026-09-30T16:52:27.269529Z",
+        "analysis_id": "01M3W6876VRHE3K86R802N2TFY",
+        "created_at": "2026-10-01T16:55:05.712772Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
@@ -326,13 +331,26 @@
             "description": "Bu fonksiyonda `malloc`/`calloc` ile ayrılan bellek ne `free` ediliyor ne de fonksiyondan dışarı veriliyor. Fonksiyon bittiğinde bu bellek kimde kalıyor?",
             "source": "static",
             "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": "C-MEM-003",
+            "category": "memory_safety",
+            "severity": "medium",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "int *tmp = malloc(n * sizeof(int));",
+            "description": "`malloc`/`calloc`/`realloc` bellek ayıramazsa NULL döndürür. Bu işaretçi denetlenmeden kullanılıyor; tahsis başarısız olursa bu satırdan sonra ne olur?",
+            "source": "static",
+            "confidence": 0.9
           }
         ],
         "socratic": {
           "key_flaw_concept": "Kaynak sızıntısı",
           "hint_level": 1,
           "guiding_questions": [
-            "Aldığın her kaynağı (bellek, abonelik, dosya) kim ve ne zaman geri veriyor?"
+            "Aldığın her kaynağı (bellek, abonelik, dosya) kim ve ne zaman geri veriyor?",
+            "Bir dizinin ya da işaretçinin geçerli sınırlarını nereden biliyorsun?"
           ],
           "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
           "leak_check": "skipped"
@@ -340,8 +358,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -351,8 +369,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -371,7 +389,7 @@
         }
       },
       "error": null,
-      "latency_ms": 14,
+      "latency_ms": 20,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -380,8 +398,8 @@
       "id": "c-010",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNG5V5GN08PH8W3D7ZJF",
-        "created_at": "2026-09-30T16:52:27.281681Z",
+        "analysis_id": "01M3W6877G7WXYDQ8WV2TYEPRV",
+        "created_at": "2026-10-01T16:55:05.733262Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
@@ -416,8 +434,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -427,8 +445,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 1,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -447,7 +465,7 @@
         }
       },
       "error": null,
-      "latency_ms": 14,
+      "latency_ms": 20,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -456,8 +474,8 @@
       "id": "c-012",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNGHZKJMYN60CP2Y3BNN",
-        "created_at": "2026-09-30T16:52:27.313389Z",
+        "analysis_id": "01M3W68785F7QQVRMEVVR5AT44",
+        "created_at": "2026-10-01T16:55:05.774231Z",
         "language": "c",
         "engine": "none",
         "question_id": "c-medium-linked-list",
@@ -493,8 +511,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -504,8 +522,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -524,7 +542,7 @@
         }
       },
       "error": null,
-      "latency_ms": 28,
+      "latency_ms": 40,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -533,8 +551,8 @@
       "id": "c-015",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNHH1R8PPSSAQD06W2T5",
-        "created_at": "2026-09-30T16:52:27.329895Z",
+        "analysis_id": "01M3W6879ER1ESZX2GEE4H7ACY",
+        "created_at": "2026-10-01T16:55:05.795115Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
@@ -556,12 +574,25 @@
           "agreement": "no_hint",
           "confidence": 0.7
         },
-        "findings": [],
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "C-PERF-001",
+            "category": "performance",
+            "severity": "low",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "for (size_t i = 0; i < strlen(s); i++) {",
+            "description": "Döngü koşulu her turda yeniden değerlendirilir ve `strlen` her seferinde metni sonuna kadar tarar. n karakterlik bir metinde toplam kaç karakter okunur?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
         "socratic": {
-          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "key_flaw_concept": "Performans",
           "hint_level": 1,
           "guiding_questions": [
-            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+            "Girdi büyüdükçe kodunun en çok tekrarlanan işi hangisi?"
           ],
           "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
           "leak_check": "skipped"
@@ -569,8 +600,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -580,8 +611,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 1,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -600,7 +631,7 @@
         }
       },
       "error": null,
-      "latency_ms": 14,
+      "latency_ms": 20,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -609,8 +640,8 @@
       "id": "cpp-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNJ1AP2CJZ5ZCDGFYF0C",
-        "created_at": "2026-09-30T16:52:27.331899Z",
+        "analysis_id": "01M3W687A3TKR3RZNXYBWX3NFJ",
+        "created_at": "2026-10-01T16:55:05.798124Z",
         "language": "cpp",
         "engine": "none",
         "question_id": null,
@@ -641,8 +672,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -678,8 +709,8 @@
       "id": "cpp-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNJ3EWZXW6V064XNJCFG",
-        "created_at": "2026-09-30T16:52:27.385875Z",
+        "analysis_id": "01M3W687A77A9MK9WQD7QBCBYV",
+        "created_at": "2026-10-01T16:55:05.857440Z",
         "language": "cpp",
         "engine": "none",
         "question_id": null,
@@ -714,8 +745,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -724,9 +755,9 @@
             "ingest": 0,
             "tier0": 0,
             "tier1": 0,
-            "facts": 40,
-            "rules": 8,
-            "prompt_a": 2,
+            "facts": 39,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -745,7 +776,7 @@
         }
       },
       "error": null,
-      "latency_ms": 53,
+      "latency_ms": 59,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -754,8 +785,8 @@
       "id": "cpp-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNKS0WCB3BZ5K1619TTW",
-        "created_at": "2026-09-30T16:52:27.400978Z",
+        "analysis_id": "01M3W687C24ADM8EHTZTZV49V7",
+        "created_at": "2026-10-01T16:55:05.878735Z",
         "language": "cpp",
         "engine": "none",
         "question_id": null,
@@ -790,8 +821,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -801,8 +832,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 1,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -821,7 +852,7 @@
         }
       },
       "error": null,
-      "latency_ms": 14,
+      "latency_ms": 20,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -830,8 +861,8 @@
       "id": "cpp-009",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNM8HF7D569A09D5MMGH",
-        "created_at": "2026-09-30T16:52:27.428884Z",
+        "analysis_id": "01M3W687CP532VZCZRX8KA47KF",
+        "created_at": "2026-10-01T16:55:05.920339Z",
         "language": "cpp",
         "engine": "none",
         "question_id": "cpp-easy-rule-of-zero",
@@ -841,15 +872,15 @@
           "diagnostics": []
         },
         "complexity": {
-          "time_complexity": "1",
+          "time_complexity": "n",
           "space_complexity": "?",
-          "display_time": "O(1)",
+          "display_time": "O(n)",
           "reasoning_steps": [
-            "Buffer: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+            "Buffer: satır 7 `std::memset` (n) → n"
           ],
           "is_optimal": true,
           "optimal_time_target": null,
-          "static_hint": "1",
+          "static_hint": "n",
           "agreement": "no_hint",
           "confidence": 0.7
         },
@@ -893,8 +924,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -903,9 +934,9 @@
             "ingest": 0,
             "tier0": 0,
             "tier1": 0,
-            "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "facts": 1,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -924,7 +955,7 @@
         }
       },
       "error": null,
-      "latency_ms": 29,
+      "latency_ms": 41,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -933,8 +964,8 @@
       "id": "cpp-011",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNN4TG3HJW4M7PCPBVWJ",
-        "created_at": "2026-09-30T16:52:27.445763Z",
+        "analysis_id": "01M3W687E1NHX4N7CC0RFVWDXP",
+        "created_at": "2026-10-01T16:55:05.941817Z",
         "language": "cpp",
         "engine": "none",
         "question_id": null,
@@ -969,8 +1000,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -980,8 +1011,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 1,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -1000,7 +1031,7 @@
         }
       },
       "error": null,
-      "latency_ms": 14,
+      "latency_ms": 21,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1009,8 +1040,8 @@
       "id": "cpp-014",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNNN54TK6HD916ZRR5JH",
-        "created_at": "2026-09-30T16:52:27.475058Z",
+        "analysis_id": "01M3W687ENSRDBZM9213BK28XE",
+        "created_at": "2026-10-01T16:55:05.983710Z",
         "language": "cpp",
         "engine": "none",
         "question_id": "cpp-medium-tree-smartptr",
@@ -1032,12 +1063,26 @@
           "agreement": "no_hint",
           "confidence": 0.7
         },
-        "findings": [],
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CPP-SP-001",
+            "category": "resource_leak",
+            "severity": "high",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "std::shared_ptr<Node> parent;",
+            "description": "Bu alan, kendisini de `shared_ptr` ile tutan bir nesneyi gösteriyor. İki nesne birbirini tutarsa sayaçları hiç sıfıra iner mi? Bağlardan biri sahiplik gerektirmiyorsa hangi tür daha uygun olur?",
+            "source": "static",
+            "confidence": 0.7
+          }
+        ],
         "socratic": {
-          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "key_flaw_concept": "Kaynak sızıntısı",
           "hint_level": 1,
           "guiding_questions": [
-            "Kökü yok ettiğinizde her düğümü kim serbest bırakıyor; bir düğümü hâlâ 'tutan' başka bir nesne kalıyor mu?"
+            "Kökü yok ettiğinizde her düğümü kim serbest bırakıyor; bir düğümü hâlâ 'tutan' başka bir nesne kalıyor mu?",
+            "Aldığın her kaynağı (bellek, abonelik, dosya) kim ve ne zaman geri veriyor?"
           ],
           "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
           "leak_check": "skipped"
@@ -1045,8 +1090,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1056,8 +1101,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 0,
-            "rules": 9,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -1076,7 +1121,7 @@
         }
       },
       "error": null,
-      "latency_ms": 30,
+      "latency_ms": 41,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1085,8 +1130,8 @@
       "id": "csharp-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNPNX7H9VP4NF0JX5RZX",
-        "created_at": "2026-09-30T16:52:27.479124Z",
+        "analysis_id": "01M3W687FZYB4HVS7JPM3E1FZ5",
+        "created_at": "2026-10-01T16:55:05.986105Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1117,8 +1162,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1154,8 +1199,8 @@
       "id": "csharp-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNPQ5Z3A1GKYJ9W06HF2",
-        "created_at": "2026-09-30T16:52:27.621924Z",
+        "analysis_id": "01M3W687G3MN034719K7N0GTYD",
+        "created_at": "2026-10-01T16:55:06.137969Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1203,8 +1248,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1212,10 +1257,10 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 98,
-            "facts": 30,
-            "rules": 8,
-            "prompt_a": 2,
+            "tier1": 99,
+            "facts": 31,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -1233,7 +1278,7 @@
         }
       },
       "error": null,
-      "latency_ms": 142,
+      "latency_ms": 150,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1242,8 +1287,8 @@
       "id": "csharp-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNV5XZWCZP51TR1CBNGY",
-        "created_at": "2026-09-30T16:52:27.724764Z",
+        "analysis_id": "01M3W687MS36JN23TT0XHZKFXR",
+        "created_at": "2026-10-01T16:55:06.254207Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1279,8 +1324,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1288,10 +1333,10 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 88,
-            "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "tier1": 96,
+            "facts": 1,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -1309,7 +1354,7 @@
         }
       },
       "error": null,
-      "latency_ms": 102,
+      "latency_ms": 116,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1318,8 +1363,8 @@
       "id": "csharp-009",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPNYESN63CVWPJ3PVCXQQ",
-        "created_at": "2026-09-30T16:52:27.831842Z",
+        "analysis_id": "01M3W687RETMYPATNMQRDX9A31",
+        "created_at": "2026-10-01T16:55:06.376815Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1341,12 +1386,25 @@
           "agreement": "no_hint",
           "confidence": 0.7
         },
-        "findings": [],
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CS-ALLOC-002",
+            "category": "garbage_collection",
+            "severity": "medium",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "if (scores[i] > scores.Average())",
+            "description": "LINQ her çağrıda yineleyici ve çoğu zaman temsilci nesneleri ayırır; bu satır her karede ya da döngünün her turunda çalışıyor. Bu satır kaç kez çalışıyor ve ürettiği sonuç her seferinde gerçekten değişiyor mu?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
         "socratic": {
-          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "key_flaw_concept": "Çöp toplayıcı baskısı",
           "hint_level": 1,
           "guiding_questions": [
-            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+            "Sık çalışan kodun her seferinde yeni nesne oluşturuyor mu?"
           ],
           "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
           "leak_check": "skipped"
@@ -1354,8 +1412,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1363,9 +1421,9 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 90,
-            "facts": 1,
-            "rules": 8,
+            "tier1": 99,
+            "facts": 2,
+            "rules": 14,
             "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
@@ -1384,7 +1442,7 @@
         }
       },
       "error": null,
-      "latency_ms": 106,
+      "latency_ms": 122,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1393,8 +1451,8 @@
       "id": "csharp-011",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPP1QB6R9HAJY5370933Y",
-        "created_at": "2026-09-30T16:52:27.939471Z",
+        "analysis_id": "01M3W687W8R4BC8SG7GX1S2AZY",
+        "created_at": "2026-10-01T16:55:06.493260Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1431,8 +1489,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1440,10 +1498,10 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 90,
+            "tier1": 95,
             "facts": 1,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -1461,7 +1519,7 @@
         }
       },
       "error": null,
-      "latency_ms": 105,
+      "latency_ms": 115,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1470,8 +1528,8 @@
       "id": "csharp-014",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPP53A6B3TW7M88M1KSNR",
-        "created_at": "2026-09-30T16:52:28.043972Z",
+        "analysis_id": "01M3W687ZXM7FETR6D6FN3Q4DZ",
+        "created_at": "2026-10-01T16:55:06.605315Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1506,8 +1564,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1515,10 +1573,10 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 89,
+            "tier1": 92,
             "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -1536,7 +1594,7 @@
         }
       },
       "error": null,
-      "latency_ms": 104,
+      "latency_ms": 112,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1545,8 +1603,8 @@
       "id": "unity-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPP8B5CNBBTE7B6V0KK8E",
-        "created_at": "2026-09-30T16:52:28.045976Z",
+        "analysis_id": "01M3W6883E6CN9RQ51PBD1XQDR",
+        "created_at": "2026-10-01T16:55:06.607832Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -1577,8 +1635,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1614,8 +1672,8 @@
       "id": "unity-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPP8DN61R47QMNV7CDZMK",
-        "created_at": "2026-09-30T16:52:28.152620Z",
+        "analysis_id": "01M3W6883HDZFBFZH5F9GQC2QD",
+        "created_at": "2026-10-01T16:55:06.724628Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -1663,8 +1721,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1672,9 +1730,9 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 91,
+            "tier1": 95,
             "facts": 0,
-            "rules": 8,
+            "rules": 13,
             "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
@@ -1693,7 +1751,7 @@
         }
       },
       "error": null,
-      "latency_ms": 106,
+      "latency_ms": 115,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1702,8 +1760,8 @@
       "id": "unity-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPBRDV6Q7XSTNDME5T25",
-        "created_at": "2026-09-30T16:52:28.260873Z",
+        "analysis_id": "01M3W68874S98F07ZB26CSGK8A",
+        "created_at": "2026-10-01T16:55:06.841104Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -1751,8 +1809,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1760,9 +1818,9 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 93,
+            "tier1": 96,
             "facts": 0,
-            "rules": 8,
+            "rules": 12,
             "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
@@ -1781,7 +1839,7 @@
         }
       },
       "error": null,
-      "latency_ms": 108,
+      "latency_ms": 116,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1790,8 +1848,8 @@
       "id": "unity-009",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPF4HW74ZC3VXVTGV9EA",
-        "created_at": "2026-09-30T16:52:28.371783Z",
+        "analysis_id": "01M3W688ASX7Z5YQSN1VJQBH33",
+        "created_at": "2026-10-01T16:55:06.974967Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": "unity-medium-object-pool",
@@ -1826,8 +1884,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1835,10 +1893,10 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 90,
+            "tier1": 93,
             "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -1856,7 +1914,7 @@
         }
       },
       "error": null,
-      "latency_ms": 120,
+      "latency_ms": 134,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1865,8 +1923,8 @@
       "id": "unity-011",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPJK7R8PFEMK21G7HQTA",
-        "created_at": "2026-09-30T16:52:28.486658Z",
+        "analysis_id": "01M3W688EYTY2A8N3CMT8S1XQ7",
+        "created_at": "2026-10-01T16:55:07.093040Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -1901,8 +1959,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1910,10 +1968,10 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 91,
-            "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "tier1": 97,
+            "facts": 1,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -1931,7 +1989,7 @@
         }
       },
       "error": null,
-      "latency_ms": 106,
+      "latency_ms": 118,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1940,8 +1998,8 @@
       "id": "unity-014",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPP6XEM9EPSVSGZ3TCMF",
-        "created_at": "2026-09-30T16:52:28.588685Z",
+        "analysis_id": "01M3W688JNGAMWTQY7DWYHE54V",
+        "created_at": "2026-10-01T16:55:07.204111Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -1989,8 +2047,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1998,9 +2056,9 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 85,
+            "tier1": 88,
             "facts": 0,
-            "rules": 9,
+            "rules": 15,
             "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
@@ -2019,7 +2077,7 @@
         }
       },
       "error": null,
-      "latency_ms": 100,
+      "latency_ms": 110,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2028,8 +2086,8 @@
       "id": "unreal-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPSESN01NYQNF3D66Z58",
-        "created_at": "2026-09-30T16:52:28.592736Z",
+        "analysis_id": "01M3W688P4497YZRDG2FTJM442",
+        "created_at": "2026-10-01T16:55:07.207529Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": null,
@@ -2060,8 +2118,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2088,7 +2146,7 @@
         }
       },
       "error": null,
-      "latency_ms": 2,
+      "latency_ms": 3,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2097,8 +2155,8 @@
       "id": "unreal-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPSGXJ2ZJQAN32JFKPRY",
-        "created_at": "2026-09-30T16:52:28.607731Z",
+        "analysis_id": "01M3W688P74S2CFVPFBAPG7A3V",
+        "created_at": "2026-10-01T16:55:07.226026Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": null,
@@ -2146,8 +2204,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2157,8 +2215,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 12,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -2177,7 +2235,7 @@
         }
       },
       "error": null,
-      "latency_ms": 14,
+      "latency_ms": 19,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2186,8 +2244,8 @@
       "id": "unreal-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPSZ3105DAJRQ4FQ5PS4",
-        "created_at": "2026-09-30T16:52:28.635836Z",
+        "analysis_id": "01M3W688PVTD9PM6KKQ9EH4JQ9",
+        "created_at": "2026-10-01T16:55:07.266452Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": "unreal-medium-actor-component",
@@ -2236,8 +2294,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2247,8 +2305,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 12,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -2267,7 +2325,7 @@
         }
       },
       "error": null,
-      "latency_ms": 29,
+      "latency_ms": 39,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2276,8 +2334,8 @@
       "id": "unreal-009",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPTXE2QWD11SK19E1JG0",
-        "created_at": "2026-09-30T16:52:28.665843Z",
+        "analysis_id": "01M3W688R2CN9YSGHZHFATFCEA",
+        "created_at": "2026-10-01T16:55:07.304562Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": "unreal-medium-actor-component",
@@ -2312,8 +2370,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2323,8 +2381,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 0,
-            "rules": 8,
-            "prompt_a": 2,
+            "rules": 12,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -2343,7 +2401,7 @@
         }
       },
       "error": null,
-      "latency_ms": 28,
+      "latency_ms": 38,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2352,8 +2410,8 @@
       "id": "unreal-011",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPVSP48X8ME10FKCWM1B",
-        "created_at": "2026-09-30T16:52:28.696387Z",
+        "analysis_id": "01M3W688S9FD93H8DWY027HY1C",
+        "created_at": "2026-10-01T16:55:07.347435Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": "unreal-medium-actor-component",
@@ -2388,8 +2446,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2399,8 +2457,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 0,
-            "rules": 9,
-            "prompt_a": 2,
+            "rules": 14,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -2419,7 +2477,7 @@
         }
       },
       "error": null,
-      "latency_ms": 30,
+      "latency_ms": 42,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2428,8 +2486,8 @@
       "id": "unreal-014",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3SKPPWR3SYZKCSDMS0VX7YJ",
-        "created_at": "2026-09-30T16:52:28.711029Z",
+        "analysis_id": "01M3W688TKQ81RYGEK9AK76QVT",
+        "created_at": "2026-10-01T16:55:07.367651Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": null,
@@ -2464,8 +2522,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fbc08625",
-          "rules_version": "r1+d3065584",
+          "prompt_version": "v1+e485058f",
+          "rules_version": "r1+fa6fff47",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2475,8 +2533,8 @@
             "tier0": 0,
             "tier1": 0,
             "facts": 0,
-            "rules": 9,
-            "prompt_a": 2,
+            "rules": 13,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
             "prompt_b": 0,
@@ -2495,7 +2553,7 @@
         }
       },
       "error": null,
-      "latency_ms": 14,
+      "latency_ms": 20,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null

@@ -9,6 +9,7 @@ expected:
   space_complexity: "n"
   findings:
     - { category: resource_leak, line: 4, rule_id: C-MEM-001, note: "tmp serbest bırakılmıyor" }
+    - { category: memory_safety, line: 4, rule_id: C-MEM-003, note: "malloc sonucu NULL denetimsiz (Faz 21: Faz 17 kuralı)" }
     - { category: edge_case, line: 10, note: "n = 0 için sıfıra bölme" }
   must_not_contain: ["free(tmp)"]
 tags: [leak]

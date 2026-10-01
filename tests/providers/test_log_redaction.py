@@ -162,3 +162,18 @@ def test_mapping_keys_are_scrubbed() -> None:
     register_secret("anahtar-olarak-sir-123456")
     cleaned = scrub({"anahtar-olarak-sir-123456": 1})
     assert list(cleaned) == [MASK]
+
+
+def test_exception_traceback_is_redacted(captured: io.StringIO) -> None:
+    """Faz 21: `log.exception` izi de maskelenir (istisna mesajı anahtar içerse bile)."""
+    secret = "sk-test-0123456789abcdef"
+    register_secret(secret)
+    try:
+        raise RuntimeError(f"sağlayıcı yanıtı: {secret}")
+    except RuntimeError:
+        get_logger("codementor.test").exception("rule_failed", rule="X")
+    output = captured.getvalue()
+    assert "rule_failed" in output
+    assert "RuntimeError" in output
+    assert secret not in output
+    assert MASK in output

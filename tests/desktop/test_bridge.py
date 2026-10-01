@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import threading
 import time
+from collections.abc import Callable
+from typing import Any
 
 import pytest
-from structlog.testing import capture_logs
 
 from codementor.api.state import ApiState
 from codementor.desktop.bridge import (
@@ -220,12 +221,15 @@ def test_cancel_on_synchronous_path_not_persisted(core: ApiState) -> None:
     assert sessions.next_attempt(core.database(), "desktop-esz", None) == 1
 
 
-def test_cancelled_task_not_logged_as_error() -> None:
+def test_cancelled_task_not_logged_as_error(
+    captured_logs: Callable[[], list[dict[str, Any]]],
+) -> None:
     """Denetim O4: iptal beklenen bir son; ERROR log'u ve 'beklenmeyen hata' metni üretmez."""
-    with capture_logs() as logs:
-        text = user_message(AnalysisCancelledError("Analiz durduruldu."))
-    assert text == "Analiz durduruldu."
-    assert logs == []
+    assert user_message(AnalysisCancelledError("Analiz durduruldu.")) == "Analiz durduruldu."
+    assert captured_logs() == []
+    # karşılaştırma: beklenmeyen hata gerçekten log'a düşer (fikstür log'u görüyor)
+    user_message(RuntimeError("x"))
+    assert [e["event"] for e in captured_logs()] == ["desktop_task_failed"]
 
 
 def test_resubmit_cancels_previous_cancellation() -> None:

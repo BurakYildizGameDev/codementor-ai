@@ -1181,6 +1181,25 @@ bildirmek (Faz 18'deki `</div>` kör noktası dahil). Kullanıcı kararı: sözd
 
 ---
 
+### Faz 21 — Statik kural ve maliyet tablosu doğruluğu (dar kapsam)
+
+**Dal:** `faz/21-kural-dogrulugu` · **Mimari:** §5.3, §8, §14
+
+**Amaç:** Bilinen statik kaçırma/yanlış bulguları ve maliyet tablosu eksiklerini kapatmak;
+eski eval etiketlerine Faz 17 bulgularını eklemek (kullanıcı kararı).
+
+**Kabul kriterleri**
+- [x] Maliyet tablosu: C++ `memset/memcpy/memmove`, Unreal `GetAllActors*`, C# `List` toplu işlemleri
+- [x] CS-PERF-001 `IList`/`IReadOnlyList` alıcılarında; `ICollection` tahminsiz
+- [x] UNITY-GC-001 dosyadaki `struct`/`record struct` için bulgu vermez
+- [x] Tabanı olmayan sınıftaki `Update`/`Tick` sıcak yol değil; taban varsa ve sınıf dışı tanımda eskisi gibi
+- [x] Çöken kuralın istisna izi log'a (maskeli) düşer
+- [x] Eval etiketleri güncellendi, static-only C ailesi koşuları ve README tabloları yenilendi
+
+**Commit:** `feat(faz-21): statik kural ve maliyet tablosu düzeltmeleri`
+
+---
+
 ## 7. PROGRESS.md Şablonu
 
 ````markdown

@@ -9,6 +9,7 @@ expected:
   space_complexity: "n"
   findings:
     - { category: performance, line: 11, note: "ortalama her turda baştan hesaplanıyor" }
+    - { category: garbage_collection, line: 11, rule_id: CS-ALLOC-002, note: "döngüde LINQ (Faz 21: Faz 17 kuralı)" }
   must_not_contain: ["double avg = scores.Average()", "var avg = scores.Average()"]
 tags: [complexity, performance, linq]
 split: dev

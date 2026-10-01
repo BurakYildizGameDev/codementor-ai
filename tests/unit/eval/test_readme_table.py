@@ -33,6 +33,16 @@ BLOCKS = ["test", "dev", "test-diller", "dev-diller"]
 # `-diller` blokları yalnızca Faz 18'in Python/HTML/CSS koşularını gösterir; başka bir dil
 # filtresiyle yapılan deneme koşusu iki tabloya da girmez
 NEW_LANGUAGES = {"python", "html", "css"}
+# Ana tablolar C ailesidir: filtresiz eski koşular ve `--language c --language cpp
+# --language csharp` ile yeniden koşulan statik satırlar (Faz 21)
+C_FAMILY = {"c", "cpp", "csharp"}
+
+
+def _block_of(languages: set[str]) -> str:
+    if languages == NEW_LANGUAGES:
+        return "diller"
+    # yalnız filtresiz ya da C ailesinin tamamı; `--language c` gibi deneme koşuları dışarıda
+    return "" if not languages or languages == C_FAMILY else "diğer"
 
 
 def test_readme_has_test_and_dev_tables() -> None:
@@ -45,7 +55,7 @@ def test_readme_eval_table_matches_results(block: str) -> None:
     results = [
         r
         for r in load_results(sorted(RESULTS.glob(f"*_{split}.json")))
-        if set(r.config.languages) == (NEW_LANGUAGES if kind == "diller" else set())
+        if _block_of(set(r.config.languages)) == kind
     ]
     assert results, f"{block}: sonuç dosyası yok"
     expected = compare_table(results).strip()

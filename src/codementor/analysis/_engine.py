@@ -18,8 +18,10 @@ from tree_sitter import Node
 
 from codementor.analysis._symbols import (
     CallName,
+    NodeKey,
     clip,
     declarator_name,
+    key,
     line,
     operator_of,
     simple_name,
@@ -62,6 +64,37 @@ _DELEGATE_BIND = frozenset(
 )
 _EVENT_TYPES = frozenset({"Action", "UnityEvent", "EventHandler", "Func"})
 _HANDLER_NODES = frozenset({"lambda_expression", "anonymous_method_expression"})
+
+
+_CS_TYPES = frozenset({"class_declaration", "struct_declaration", "record_declaration"})
+_CPP_TYPES = frozenset({"class_specifier", "struct_specifier"})
+_MEMBERS = frozenset({"method_declaration", "function_definition"})
+
+
+def _plain(node: Node) -> bool:
+    """Motorun çağıramayacağı tip: tabanı olmayan sınıf, C# struct'ı ya da kaydı."""
+    if node.type in ("struct_declaration", "record_declaration"):
+        return True  # MonoBehaviour'dan türeyemez
+    if any(c.type == "modifier" and text(c) == "partial" for c in node.children):
+        return False  # taban başka bir parçada (başka dosyada da olabilir)
+    bases = ("base_list", "base_class_clause")
+    return not any(child.type in bases for child in node.children)
+
+
+def engine_inert_members(root: Node, language: Language) -> frozenset[NodeKey]:
+    """Tabanı olmayan tiplerin doğrudan metotları (Faz 21): `class Plain { void Update() }`
+    Unity/Unreal tarafından çağrılmaz, sıcak yol değildir. Taban varsa (kullanıcının kendi
+    tabanı da MonoBehaviour'dan türeyebilir) ya da tanım sınıf dışındaysa (`AFoo::Tick`)
+    eskisi gibi ad belirler. Tek geçiş; iç içe tip kendi üyelerini ayrıca belirler."""
+    types = _CS_TYPES if language is Language.CSHARP else _CPP_TYPES
+    found: set[NodeKey] = set()
+    for node in iter_nodes(root):
+        if node.type not in types or not _plain(node):
+            continue
+        body = node.child_by_field_name("body")
+        if body is not None:
+            found.update(key(m) for m in body.named_children if m.type in _MEMBERS)
+    return frozenset(found)
 
 
 def lifecycle(name: str, engine: Engine) -> tuple[str | None, bool]:

@@ -156,6 +156,11 @@ class RedactingLogger:
     def error(self, event: str, **fields: Any) -> None:
         self._bound().error(event, **fields)
 
+    def exception(self, event: str, **fields: Any) -> None:
+        """`error` + etkin istisnanın izi (`except` içinde çağrılır); iz metni de maskelenir
+        (`format_exc_info` maskelemeden önce çalışır)."""
+        self._bound().exception(event, **fields)
+
 
 def get_logger(name: str) -> RedactingLogger:
     """Maskeleme işlemcisi her zaman kurulu logger."""

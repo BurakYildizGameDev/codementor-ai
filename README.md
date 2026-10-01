@@ -123,15 +123,21 @@ dev 31 / test 49. Prompt'lar dev'de **ayarlanmadı**; test bölümü en sonda **
 Bulgu eşleşmesi: aynı kategori + satır farkı ≤ 2. Model: `claude-opus-5-5` (`claude_cli`),
 önbellek kapalı.
 
+> Not (Faz 21): "Yalnızca statik" satırları güncel kurallarla ve Faz 21'de iki bulgu eklenmiş
+> dev etiketleriyle yeniden koşuldu; LLM satırları Faz 12'deki kurallar ve etiketlerle hesaplandı
+> (yeniden koşulmadı). Satırlar bu yüzden tam karşılaştırılabilir değil; ayrıntı
+> `docs/eval-findings.md` §5.
+
 **Test (49 örnek):**
 
 <!-- eval-table:test:start -->
 | Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Yalnızca statik (LLM yok) | static | — | 49 (test) | — / — | 100% / 100% | 88% / 88% | 100% / 42% / 59% | 100% | 0% | 0% | 0.0 / 0.1 | — |
 | claude_cli / claude-opus-5-5 | two_pass | — | 49 (test) | 100% / 100% | 100% / 100% | 91% / 94% | 27% / 92% / 42% | 94% | 0% | 100% | 20.3 / 57.3 | 15673 |
 | claude_cli / claude-opus-5-5 | single_pass | — | 49 (test) | 100% / 100% | 100% / 100% | 94% / 97% | 32% / 94% / 48% | 94% | 0% | 100% | 13.5 / 35.7 | 10182 |
+| Yalnızca statik (LLM yok) | static | — | 49 (test) | — / — | 100% / 100% | 91% / 91% | 84% / 44% / 58% | 100% | 0% | 0% | 0.0 / 0.1 | — |
 
+Sürümler: prompt v1+e485058f · kurallar r1+fa6fff47 · şema 1.0
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 <!-- eval-table:test:end -->
 
@@ -140,12 +146,13 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 <!-- eval-table:dev:start -->
 | Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Yalnızca statik (LLM yok) | static | — | 31 (dev) | — / — | 100% / 100% | 92% / 92% | 100% / 38% / 55% | 100% | 0% | 0% | 0.0 / 0.1 | — |
 | claude_cli / claude-opus-5-5 | two_pass | — | 31 (dev) | 100% / 100% | 100% / 100% | 96% / 96% | 27% / 92% / 42% | 100% | 0% | 100% | 23.5 / 40.0 | 14219 |
 | claude_cli / claude-opus-5-5 | single_pass | — | 31 (dev) | 100% / 100% | 100% / 100% | 92% / 92% | 32% / 96% / 47% | 96% | 0% | 100% | 13.1 / 24.5 | 9359 |
 | claude_cli / claude-opus-5-5 | two_pass | facts | 31 (dev) | 100% / 100% | 100% / 100% | 85% / 92% | 28% / 100% / 43% | 96% | 0% | 100% | 20.5 / 42.3 | 13227 |
 | claude_cli / claude-opus-5-5 | two_pass | line_numbers | 31 (dev) | 100% / 100% | 100% / 100% | 92% / 92% | 28% / 100% / 44% | 96% | 0% | 100% | 20.4 / 41.3 | 13861 |
+| Yalnızca statik (LLM yok) | static | — | 31 (dev) | — / — | 100% / 100% | 96% / 96% | 100% / 50% / 67% | 100% | 0% | 0% | 0.0 / 0.1 | — |
 
+Sürümler: prompt v1+e485058f · kurallar r1+fa6fff47 · şema 1.0
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 <!-- eval-table:dev:end -->
 

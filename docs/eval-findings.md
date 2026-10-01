@@ -158,4 +158,26 @@ LLM'e giden 42 örneğin (3 koşu; sözdizimi hatalılar LLM'e gitmez) hepsi hat
 **Faz 17 kurallarının eski veri setine etkisi** (dev, C/C++/C#/Unity/Unreal, static-only): denetim
 P / R / F1 100 / 38 / 55 → 85 / 46 / 59. İki "yanlış pozitif" aslında etiketlenmemiş doğru
 bulgular: `c-008` NULL denetimsiz `malloc` (C-MEM-003), `csharp-009` döngüde `Average()`
-(CS-ALLOC-002). Etiketler bu fazda değiştirilmedi (Sonraya).
+(CS-ALLOC-002). Etiketler bu fazda değiştirilmedi; Faz 21'de eklendi (§5).
+
+## 5. Faz 21 güncellemesi: statik taban çizgisi (C ailesi)
+
+Kullanıcı kararıyla Faz 17 kurallarının bulduğu iki doğru bulgu dev etiketlerine eklendi
+(`c-008` 4. satır `memory_safety` C-MEM-003, `csharp-009` 11. satır `garbage_collection`
+CS-ALLOC-002). Faz 17-21 kuralları ve maliyet tablosu düzeltmeleriyle static-only koşular C ailesi
+için yeniden yapıldı (`eval run --static-only --language c --language cpp --language csharp`);
+README tabloları bu dosyalardan gelir. LLM satırları Faz 12'de eski etiketlerle hesaplanan
+metriklerini korur (yeniden koşulmadı).
+
+| Bölüm | Big-O birebir | Denetim P / R / F1 | Önce (Faz 12) |
+|---|---|---|---|
+| dev (31) | 96% | 100% / 50% / 67% | 92%, 100 / 38 / 55 |
+| test (49) | 91% | 84% / 44% / 58% | 88%, 100 / 42 / 59 |
+
+- **Recall** her iki bölümde arttı (yeni kurallar: C-IO/C-UB/C-MEM-002/003, CPP-SP/PERF,
+  CS-ALLOC-002, UNITY-PERF-002, UE-MEM-001; `IList` ve `GetAllActorsOfClass` maliyetleri).
+- **Test precision %84:** tek kaynak `c-016` 12. satır (`s->data = realloc(s->data, …)`):
+  C-MEM-002 ve C-MEM-003 doğru bulgular ama etiket bu satırı `resource_leak` olarak işaretliyor
+  (Faz 12 kullanıcı kararı); kural tablosu (§8.2) C-MEM-002'yi `memory_safety` sayar. Kategori
+  uyuşmazlığı hem FP hem FN üretir; test etiketi değiştirilmedi (kullanıcı kararı bekliyor).
+

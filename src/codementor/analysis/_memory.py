@@ -12,6 +12,7 @@ from collections.abc import Iterator
 from tree_sitter import Node
 
 from codementor.analysis._symbols import NodeKey, key, operator_of, strip_templates, text
+from codementor.analysis.parsers import iter_nodes
 from codementor.models.enums import AllocationKind, DeallocationKind, Language
 
 CSHARP_VALUE_TYPES = frozenset(
@@ -87,14 +88,31 @@ def _is_string_concat(node: Node) -> bool:
     return False
 
 
-def _csharp_new(node: Node) -> bool:
+def file_value_types(root: Node) -> frozenset[str]:
+    """Dosyada bildirilen C# değer tipleri (`struct`, `record struct`); Faz 21."""
+    names: set[str] = set()
+    for node in iter_nodes(root):
+        is_struct = node.type == "struct_declaration" or (
+            node.type == "record_declaration" and any(c.type == "struct" for c in node.children)
+        )
+        name = node.child_by_field_name("name") if is_struct else None
+        if name is not None:
+            names.add(text(name))
+    return frozenset(names)
+
+
+def _csharp_new(node: Node, value_types: frozenset[str]) -> bool:
     if node.type != "object_creation_expression":
         return True  # new(), diziler
-    return strip_templates(text(node.child_by_field_name("type"))) not in CSHARP_VALUE_TYPES
+    created = strip_templates(text(node.child_by_field_name("type")))
+    return created not in CSHARP_VALUE_TYPES and created not in value_types
 
 
 def allocations(
-    language: Language, found: dict[str, list[Node]], string_vars: set[str]
+    language: Language,
+    found: dict[str, list[Node]],
+    string_vars: set[str],
+    value_types: frozenset[str] = frozenset(),
 ) -> Iterator[tuple[AllocationKind, Node]]:
     """`memory.scm` yakalamalarından (tür, düğüm) çiftleri; kaynak sırasıyla değil tür sırasıyla."""
     for node in found.get("alloc", []):
@@ -106,7 +124,7 @@ def allocations(
                 break
     for node in found.get("new", []):
         if language is Language.CSHARP:
-            if _csharp_new(node):
+            if _csharp_new(node, value_types):
                 yield AllocationKind.CSHARP_NEW, node
         else:
             array = node.child_by_field_name("declarator") is not None
