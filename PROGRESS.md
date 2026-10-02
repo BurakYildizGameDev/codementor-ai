@@ -31,6 +31,7 @@
 | 26 | ✅ | faz/26-api-web | 2026-10-02 | Claude Code / — |
 | 27 | ✅ | faz/27-saglamlik | 2026-10-02 | Claude Code / — |
 | 22 | ✅ | faz/22-eval-precision, faz/22b-precision | 2026-10-02 | Claude Code / — |
+| 28 (Codex) | ✅ | faz/28-cli-ajanlari | 2026-10-02 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -659,6 +660,16 @@
 **Açık sorular:** (1) `memory_safety` / `undefined_behavior` etiket sınırı tutarsız (`unreal-009` null Cast `memory_safety`, `unreal-014` yineleyici geçersizleşmesi `undefined_behavior`); kalan 3 FP/FN buradan. (2) Sızıntı korumasının müdahalesi C ailesinde 2 → 6 (son çıktı yine %0); sebep ölçülmedi. (3) `private/solutions/` dosyaları eksik (`reference_solution_unreadable` uyarıları; Faz 30'da yazılacak).
 **Bu fazda öğrendiğim:** Prompt'a kategori eşlemesi eklemeden önce veri setinin etiket kurallarına bakmak gerekiyordu; çelişen bir cümle 3 doğru bulguyu kaçırttı. Bulgu modelden değil sistemden gelen `confidence` (sabit 0,7) eşik olarak kullanılamaz.
 
+## Faz 28 — Notlar (Codex CLI sağlayıcısı; ADR-0017)
+**Yapılanlar:**
+- `providers/codex_cli.py` → `CodexCliProvider`: `codex --no-daemon exec --sandbox read-only --ephemeral --skip-git-repo-check --ignore-user-config --ignore-rules --json --color never --output-schema <geçici>/schema.json --cd <geçici> --model <m> -`; prompt stdin'den; şema OpenAI katı biçimi; JSONL ayrıştırma (son `agent_message`, `turn.completed` kullanımı, `turn.failed`/`error`); kullanım sınırı yeniden denenmez, oturum yoksa `codex login` önerisi. `allow_tool_agent` açık onayı (agy gibi). `cli_agent.py`'ye dokunulmadı (400 satır sınırı); yalnız `CODEX_HOME` profil değişkeni eklendi.
+- `config.CodexConfig`, `codementor.toml [providers.codex]`, fabrika/sağlık/CLI listeleri; masaüstü Bağlantılar kartı (`codex login status` + `codex debug models` ile model listesi, araç onayı anahtarı, `codex login` ile oturum açma). `TOOL_AGENTS` sabiti (agy, codex).
+- Canlı: `c-012` uçtan uca analiz `gpt-6-luna` ile 14,6 sn (use-after-free + gereksinim bulgusu, Sokratik sorular, sızıntı denetimi geçti); `tests/live` Codex testi geçti. Katalogdaki her model hesaba açık değil: `gpt-5.5` 404 (hata metni bunu söylüyor).
+- Testler: `test_codex_cli.py` (14), `test_connections.py` (+5), e2e sahte `codex` (gerçek `run_process`), canlı test parametresi.
+**Mimariden sapmalar (ADR linki):** ADR-0017 (yeni CLI ajanı; ADR-0012 kuralları korunur).
+**Açık sorular:** (1) **agy (Gemini):** bizim argv'de hata bulundu (`agy` 1.2.14'te `-p` değer alıyor; `-p --output-format` → anında hata). Düzeltme `--input-format stream-json` ile; ama `agy` en basit prompt'ta bile 2 dk yanıtsız (izin ya da oturum için konsol bekliyor olabilir). Kullanıcının `agy -p="merhaba"` denemesi bekleniyor. (2) API anahtarı yok: Gemini API sağlayıcısı ve OpenAI/DeepSeek canlı teşhisi ertelendi.
+**Bu fazda öğrendiğim:** CLI'ların bayrak sözdizimi sürümle değişiyor (agy `-p`); her CLI için sürümü ve `--help`'i canlı kontrol etmek, sahte betikli testlerin göremediği hatayı gösteriyor. Model kataloğu ≠ erişim.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 26: API hız sınırı (istemci başına, süreçler arası doğru); web arayüzünün API anahtarı göndermesi.
 - Faz 26: SQLite çağrılarını da iş parçacığına almak (bağlantı başına iş parçacığı ya da havuz).
@@ -750,9 +761,7 @@ Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 **Kaldığımız yer (2026-10-02):** Faz 0-27 ve Faz 22 Aşama A `main`'de, push'lu, CI yeşil (93a9cc1).
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
-2. **Faz 28 — Sağlayıcılar:** Gemini sağlayıcısı yok (yalnız `agy`); Codex CLI bağlantısı yok;
-   OpenAI ve DeepSeek kullanıcıda çalışmıyor (hiç canlı doğrulanmadı) → canlı teşhis + düzeltme
-   + Gemini + Codex.
+2. **Faz 28 — Sağlayıcılar:** Codex yapıldı (ADR-0017). Kalan: agy argv düzeltmesi (kullanıcının `agy` denemesi bekleniyor), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
 3. **Faz 29 — Derleyicisiz kullanıcı:** Tier 1 PATH'teki gcc/clang/dotnet'e bağlı; öneri: C/C++/
    Unreal için `zig cc`, C# için self-contained Roslyn; "Derleyiciyi indir" (sha256) ya da gömme. ADR.
 4. **Faz 30 — Soru bankası:** 18 soru → dil/motor başına ≥ 8 (~64), zorluk dağılımı, filtreler.

@@ -16,7 +16,7 @@ from codementor.api.state import ApiState
 from codementor.desktop import connections_controller as controller_module
 from codementor.desktop import runtime
 from codementor.desktop.app import App
-from codementor.desktop.connections import KeyStore, Probe
+from codementor.desktop.connections import PROVIDERS, KeyStore, Probe
 from codementor.desktop.views import analyze_view as analyze_view_module
 from codementor.models.enums import Engine, Language
 from codementor.models.provider import ProviderStatus
@@ -231,7 +231,7 @@ def test_probe_results_update_cards_and_sidebar(app: App, monkeypatch: pytest.Mo
     monkeypatch.setattr(controller_module, "probe", fake_probe)
     app.connections.make_default("ollama")
     app.check_environment()
-    pump(app, lambda: len(app.connections.probes) == 6)
+    pump(app, lambda: len(app.connections.probes) == len(PROVIDERS))
     card = app.settings_view.cards["ollama"]
     assert card.status_pill.cget("text").strip() == "hazır"
     assert "qwen2.5-coder:14b" in card.model.cget("values")

@@ -57,6 +57,12 @@ model = ""
 timeout_s = 300
 allow_tool_agent = false       # true: öğrenci kodunu araç çalıştırabilen ajana vermeyi kabul et
 
+[providers.codex]              # OpenAI Codex CLI; ChatGPT oturumu (`codex login`), salt okunur sandbox (ADR-0017)
+command = "codex"
+model = ""                     # `codex debug models` listesinden, ör. "gpt-5.5"
+timeout_s = 300
+allow_tool_agent = false       # true: öğrenci kodunu dosya okuyabilen ajana vermeyi kabul et
+
 [providers.anthropic]
 model = ""                   # ör. güncel Claude model kimliği
 api_key_env = "ANTHROPIC_API_KEY"

@@ -175,6 +175,14 @@ class AgyConfig(CliConfig):
     allow_tool_agent: bool = False
 
 
+class CodexConfig(CliConfig):
+    """OpenAI Codex CLI (`codex exec`); ChatGPT oturumuyla. Salt okunur sandbox'ta bile dosya
+    okuyabilen bir ajan olduğu için açık onay gerekir (ADR-0017)."""
+
+    command: str | None = "codex"
+    allow_tool_agent: bool = False
+
+
 class ProvidersSettings(BaseModel):
     default: str = "ollama"
     fallback: list[str] = Field(default_factory=list)
@@ -185,6 +193,7 @@ class ProvidersSettings(BaseModel):
     anthropic: AnthropicConfig = Field(default_factory=AnthropicConfig)
     claude_cli: ClaudeCliConfig = Field(default_factory=ClaudeCliConfig)
     agy: AgyConfig = Field(default_factory=AgyConfig)
+    codex: CodexConfig = Field(default_factory=CodexConfig)
 
 
 class Settings(BaseSettings):

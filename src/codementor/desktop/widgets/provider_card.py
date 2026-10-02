@@ -9,7 +9,7 @@ from typing import Any
 import customtkinter as ctk
 
 from codementor.desktop import theme
-from codementor.desktop.connections import KeySource, Probe, ProviderInfo
+from codementor.desktop.connections import TOOL_AGENTS, KeySource, Probe, ProviderInfo
 from codementor.desktop.widgets.common import Pill, wrap_label
 
 Action = Callable[[str], None]
@@ -174,10 +174,10 @@ class ProviderCard(ctk.CTkFrame):  # type: ignore[misc]
                 "Adresi kaydet",
                 lambda: actions.set_base_url(name, self.url_entry.get().strip()),
             ).grid(row=0, column=1, padx=(6, 0))
-        elif name == "agy":
+        elif name in TOOL_AGENTS:
             self.tool_switch = ctk.CTkSwitch(
                 self.auth,
-                text="Kodu araç kullanabilen ajana vermeyi kabul ediyorum (ADR-0012)",
+                text="Kodu araç kullanabilen ajana vermeyi kabul ediyorum (ADR-0012/0017)",
                 font=theme.font(12),
                 text_color=theme.TEXT_SOFT,
                 progress_color=theme.GOLD,

@@ -15,11 +15,12 @@ from pathlib import Path
 
 import pytest
 
-from codementor.config import AgyConfig, ClaudeCliConfig
+from codementor.config import AgyConfig, ClaudeCliConfig, CodexConfig
 from codementor.models.llm_output import LLMSocraticOutput
 from codementor.models.provider import ChatMessage, GenerationOptions
 from codementor.providers import RetryPolicy
 from codementor.providers.cli_agent import CliAgentProvider
+from codementor.providers.codex_cli import CodexCliProvider
 
 pytestmark = pytest.mark.anyio
 
@@ -139,3 +140,25 @@ async def test_cancel_kills_fake_cli(tmp_path: Path) -> None:
     with pytest.raises(asyncio.CancelledError):
         await task
     assert time.perf_counter() - start < 5  # 60 sn uyku ve 120 sn zaman aşımı beklenmedi
+
+
+async def test_codex_fake_stdin_only_schema_file_and_clean_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-baska-saglayici")
+    fake = make_fake_cli(tmp_path, "codex")
+    config = CodexConfig(command=str(fake), model="gpt-5.5", allow_tool_agent=True, timeout_s=30)
+    provider = CodexCliProvider(config, retry=RetryPolicy(max_retries=0))
+    result = await provider.generate_structured(_messages(), LLMSocraticOutput, GenerationOptions())
+    probe = result.parsed
+    assert probe is not None
+    argv = probe["argv"]
+    assert argv[:2] == ["--no-daemon", "exec"]
+    assert probe["schema_exists"] is True
+    assert SECRET_CODE in probe["stdin"]
+    assert "<system>\nSISTEM_TALIMATI_42\n</system>" in probe["stdin"]
+    assert all(SECRET_CODE not in arg and "SISTEM_TALIMATI_42" not in arg for arg in argv)
+    assert "OPENAI_API_KEY" not in set(probe["env_keys"])
+    assert not Path(argv[argv.index("--cd") + 1]).exists()  # geçici kök silindi
+    assert result.provider == "codex"
+    assert result.usage.output_tokens == 7

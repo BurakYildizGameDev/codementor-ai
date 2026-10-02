@@ -17,7 +17,9 @@ class ProviderOverride(StrictModel):
 
     model: str | None = Field(default=None, max_length=200)
     base_url: str | None = Field(default=None, max_length=500)
-    allow_tool_agent: bool | None = Field(default=None, description="Yalnız agy (ADR-0012)")
+    allow_tool_agent: bool | None = Field(
+        default=None, description="Yalnız agy ve codex (ADR-0012, ADR-0017)"
+    )
 
     def as_settings(self) -> dict[str, Any]:
         """`load_settings(providers={ad: ...})` için yalnız dolu alanlar."""

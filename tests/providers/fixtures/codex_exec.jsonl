@@ -1,0 +1,5 @@
+{"type": "thread.started", "thread_id": "01a0fa6b-ee73-76a0-88da-0c8d871fcbce"}
+{"type": "item.completed", "item": {"id": "item_0", "type": "error", "message": "Codex is ignoring 1 unrecognized configuration setting. Check for typos or deprecated settings."}}
+{"type": "turn.started"}
+{"type": "item.completed", "item": {"id": "item_1", "type": "agent_message", "text": "{\"key_flaw_concept\": \"k\", \"guiding_questions\": [\"?\"], \"next_step_hint\": null}"}}
+{"type": "turn.completed", "usage": {"input_tokens": 15644, "cached_input_tokens": 12000, "cache_write_input_tokens": 0, "output_tokens": 15, "reasoning_output_tokens": 4}}

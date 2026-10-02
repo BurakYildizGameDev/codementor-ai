@@ -56,8 +56,9 @@ sağlayıcının hazır olup olmadığını gösterir.
   editörün üstünde hedefiyle görünür.
 - **Geçmiş:** önceki analizler kodlarıyla yeniden açılır; raporlar Markdown/SARIF/JSON olarak
   dışa aktarılır.
-- **Bağlantılar:** Claude Code, Antigravity (agy), Ollama, Anthropic, OpenAI ve DeepSeek için
-  birer kart. Model seçimi (Ollama'da kurulu modeller, agy'de hesabındaki modeller listelenir),
+- **Bağlantılar:** Claude Code, Antigravity (agy), Codex, Ollama, Anthropic, OpenAI ve DeepSeek
+  için birer kart. Model seçimi (Ollama'da kurulu modeller, agy ve Codex'te hesabındaki modeller
+  listelenir),
   **Oturum aç** (CLI'nın kendi girişini yeni pencerede açar), API anahtarı (Windows Kimlik
   Bilgisi Yöneticisi'nde saklanır, dosyaya yazılmaz), **Bağlantıyı dene** ve **Varsayılan yap**.
   Analiz ekranındaki rozet hangi model ile çalıştığını gösterir (ADR-0014). **Seçimleri
@@ -134,6 +135,7 @@ tutulur (ADR-0008).
 | Sağlayıcı | Kurulum | Not |
 |---|---|---|
 | `claude_cli` (varsayılan) | `claude` CLI'ında oturum aç | API anahtarı gerekmez; araçları kapalı, prompt stdin'den (ADR-0012). Eval bununla ölçüldü. |
+| `codex` | `codex login` (ChatGPT), `[providers.codex] model` (ör. `gpt-6-luna`), `allow_tool_agent = true` | API anahtarı gerekmez; salt okunur sandbox, kullanıcı ayarları yok sayılır, prompt stdin'den (ADR-0017). Eval'de ölçülmedi |
 | `anthropic` | `ANTHROPIC_API_KEY`, `[providers.anthropic] model` | Yapılandırılmış çıktı (ADR-0011) |
 | `ollama` (yerel) | [Ollama](https://ollama.com) kur, `ollama pull qwen2.5-coder:7b`, `default = "ollama"` | Tamamen çevrimdışı; kalite modele bağlı, **eval'de ölçülmedi** |
 | `openai`, `deepseek` | `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` ve model adı | Eval'de ölçülmedi |

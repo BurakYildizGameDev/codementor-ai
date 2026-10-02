@@ -2,6 +2,7 @@
 
 - `claude_cli`: `claude` PATH'te ve model tanımlıysa.
 - `agy`: model tanımlı değilse ya da oturum açılmamışsa (boş yanıt) atlanır.
+- `codex` (ADR-0017): model tanımlı ve `allow_tool_agent = true` ise.
 """
 
 from __future__ import annotations
@@ -26,11 +27,13 @@ MESSAGES = [
 ]
 
 
-@pytest.mark.parametrize("name", ["claude_cli", "agy"])
+@pytest.mark.parametrize("name", ["claude_cli", "agy", "codex"])
 async def test_cli_agent_live(name: str) -> None:
     cfg = getattr(load_settings().providers, name)
     if not cfg.model:
         pytest.skip(f"{name}: model tanımlı değil")
+    if name == "codex" and not cfg.allow_tool_agent:
+        pytest.skip("codex: allow_tool_agent kapalı (ADR-0017)")
     try:
         resolve_executable(name, cfg.command)
     except ProviderConfigError as exc:

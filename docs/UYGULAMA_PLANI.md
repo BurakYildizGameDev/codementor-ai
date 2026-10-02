@@ -1309,7 +1309,7 @@ dokunulmaz ("yalnız dev" kuralı). İki aşama; arada kullanıcı onayı.
 Kullanıcı kararıyla (2026-10-02) önce Faz 22 Aşama B; ardından kullanıcıdan gelen üç sorun
 (sağlayıcılar, derleyici bağımlılığı, soru bankası) ve teknik borç. Her faz kendi dalında, dar kapsamlı; plan onayı → uygula.
 
-### Faz 28 — Sağlayıcılar: Gemini, Codex, OpenAI, DeepSeek (YAPILACAK)
+### Faz 28 — Sağlayıcılar: Gemini, Codex, OpenAI, DeepSeek (Codex yapıldı; kalanlar bekliyor)
 
 **Dal:** `faz/28-api-saglayicilar` · **Mimari:** §7, §13 · **ADR:** 0012, 0014 (+ yeni ADR: Gemini)
 
@@ -1318,29 +1318,36 @@ CLI'ı üzerinden var ve o da deneysel; kullanıcının girdiği Gemini bağlant
 OpenAI ve DeepSeek adaptörleri yalnızca sahte HTTP (respx) ile test edildi, hiç canlı
 doğrulanmadı ve kullanıcıda çalışmıyor.
 
-- [ ] Teşhis (canlı, kullanıcının anahtarıyla): Bağlantılar → "Bağlantıyı sına" ve
+- [ ] (API anahtarı yok, ertelendi) Teşhis (canlı, kullanıcının anahtarıyla): Bağlantılar → "Bağlantıyı sına" ve
       `codementor analyze --provider openai|deepseek`. Hata metni ve HTTP durum kodu kaydedilir.
       Olası nedenler: model adı (`config` varsayılanları güncel mi), `response_format` /
       `json_schema` katı mod kısıtları (Sonraya: OpenAI katı mod), keyring anahtarı süreç
       ortamına aktarılmıyor (`desktop/connections.py`), zaman aşımı, 4xx gövdesi
       kullanıcıya gösterilmiyor
-- [ ] Bulunan kusurların düzeltilmesi; her biri için respx sözleşme testi (gerçek hata gövdesi
+- [ ] (ertelendi) Bulunan kusurların düzeltilmesi; her biri için respx sözleşme testi (gerçek hata gövdesi
       örnekleriyle: 400 şema reddi, 401, 404 model, 429)
-- [ ] `gemini` sağlayıcısı: Google'ın OpenAI uyumlu uç noktası
+- [ ] (API anahtarı yok, ertelendi) `gemini` sağlayıcısı: Google'ın OpenAI uyumlu uç noktası
       (`openai_compat`, base_url config'den) ya da yerel `generateContent` + `responseSchema`.
       Karar ADR'de verilir. `GEMINI_API_KEY`, keyring, Bağlantılar kartı, model listesi
       config'den
-- [ ] `codex` CLI ajanı (OpenAI Codex CLI, ChatGPT oturumuyla): `cli_agent.py`'ye üçüncü tür
+- [x] `codex` CLI ajanı (ayrı modül `providers/codex_cli.py`, ADR-0017) (OpenAI Codex CLI, ChatGPT oturumuyla): `cli_agent.py`'ye üçüncü tür
       (`codex exec`, yapılandırılmış çıktı/şema bayrağı, salt okunur sandbox, araçlar kapalı ya da
       `allow_tool_agent` gibi açık onay; bayraklar kurulu sürümden doğrulanır). Bağlantılar'da kart
       (kurulu mu / oturum açık mı), sahte CLI betiğiyle sözleşme testleri, `@pytest.mark.live`
       duman testi. Güvenlik değerlendirmesi ADR'ye (ADR-0012'nin uzantısı)
-- [ ] Sağlayıcı hata mesajları Türkçe ve eyleme dönük ("anahtar geçersiz", "model bulunamadı:
+- [x] (Codex için) Sağlayıcı hata mesajları Türkçe ve eyleme dönük ("anahtar geçersiz", "model bulunamadı:
       …", "kota doldu")
-- [ ] Canlı duman testleri `@pytest.mark.live` (anahtar yoksa atlanır); sağlayıcı başına tek
+- [x] (Codex) Canlı duman testleri `@pytest.mark.live` (anahtar yoksa atlanır); sağlayıcı başına tek
       analiz, golden örnek
 - [ ] Testler: `tests/providers/test_gemini.py`, sözleşme testlerine Gemini;
       `test_connections.py` (anahtar → ortam aktarımı)
+
+- [ ] **agy (Gemini) düzeltmesi — kullanıcı denemesi bekliyor.** Bulgu: `agy` 1.2.14'te `-p`
+      değer alıyor; bizim argv `-p --output-format ...` olduğu için `agy` hemen hata veriyor
+      (Gemini'nin hiç çalışmama sebebi). Düzeltme yönü: `--input-format stream-json
+      --output-format stream-json` ile prompt stdin'den (NDJSON). `agy` en basit prompt'ta bile
+      2 dk yanıtsız kalıyor (izin/oturum için konsol bekliyor olabilir); NDJSON mesaj biçimi
+      `agy` çalışınca canlı doğrulanacak.
 
 **Commit:** `feat(faz-28): Gemini sağlayıcısı, OpenAI/DeepSeek canlı düzeltmeleri`
 

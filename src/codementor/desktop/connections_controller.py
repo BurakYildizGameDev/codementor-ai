@@ -13,6 +13,7 @@ from codementor.desktop.bridge import Message
 from codementor.desktop.connections import (
     INFO,
     PROVIDERS,
+    TOOL_AGENTS,
     KeyStore,
     KeyStoreError,
     Probe,
@@ -83,7 +84,7 @@ class ConnectionsController:
                 )
             elif info.kind == "local":
                 card.set_base_url(cfg.base_url)
-            elif info.name == "agy":
+            elif info.name in TOOL_AGENTS:
                 card.set_tool_agent(bool(cfg.allow_tool_agent))
             if info.name in self.probes:
                 card.set_probe(self.probes[info.name])

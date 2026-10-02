@@ -461,6 +461,7 @@ class ProviderResult(BaseModel):
 | Anthropic | Yerel JSON çıktısı: `output_config.format = {type: json_schema, schema}` (araç / `tool_choice` yok) | Güncel modeller zorunlu `tool_choice`'u ve `temperature`'ı reddeder; `temperature` yalnızca yapılandırmada verilirse gönderilir (ADR-0011) |
 | Claude Code CLI (`claude_cli`) | `claude -p --output-format json --json-schema`; araçlar kapalı (`--tools ""`), prompt stdin'den | API anahtarı yerine CLI oturumu; Faz 4 süreç çalıştırıcısı ile yalıtılır (ADR-0012) |
 | Antigravity CLI (`agy`) | `agy -p --output-format json --json-schema --sandbox` | Deneysel: araç kapatma bayrağı yok; paylaşılan sunucuda kapalı tutulmalı (ADR-0012) |
+| Codex CLI (`codex`) | `codex --no-daemon exec --json --output-schema --sandbox read-only --ignore-user-config`, prompt stdin'den | ChatGPT oturumu; dosya okuyabilen ajan, açık onay gerekir (ADR-0017) |
 | Fake | Fixture dosyasından yanıt döner | Testler ve CI için; ağ yok |
 
 `SchemaAdapter` tek bir Pydantic modelinden sağlayıcıya özel şema varyantlarını üretir (opsiyonel alanları `anyOf [T, null]` ile zorunluya çevirme, `$ref` açma, desteklenmeyen anahtarları temizleme); zorlanamayan kısıtlar alan açıklamasına not olarak eklenir, Ollama varyantı kısıtları korur).
@@ -1266,6 +1267,12 @@ model = ""
 timeout_s = 300
 allow_tool_agent = false       # araçları kapatılamayan ajan: açık onay gerekir
 
+[providers.codex]              # ADR-0017; ChatGPT oturumu (`codex login`)
+command = "codex"
+model = ""                     # `codex debug models` listesinden
+timeout_s = 300
+allow_tool_agent = false       # dosya okuyabilen ajan: açık onay gerekir
+
 [providers.anthropic]
 model = "..."
 api_key_env = "ANTHROPIC_API_KEY"
@@ -1355,6 +1362,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0011 | Anthropic yapılandırılmış çıktısı `output_config.format` ile | Güncel Claude modelleri zorunlu `tool_choice` ve `temperature`'ı reddediyor ([docs/adr/0011](adr/0011-anthropic-yapilandirilmis-cikti.md)) |
 | ADR-0012 | CLI ajanları (Claude Code, Antigravity) sağlayıcı olarak | Abonelikle API anahtarsız kullanım; araçlar kapalı, prompt stdin'den, süreç yalıtımı ([docs/adr/0012](adr/0012-cli-ajanlari-saglayici.md)) |
 | ADR-0016 | Yapılandırma yollarının çözümü ve paket verisi | Çalışma dizininden bağımsız çalışma; wheel `data/` ve `prompts/`'u içerir ([docs/adr/0016](adr/0016-yol-cozumu.md)) |
+| ADR-0017 | OpenAI Codex CLI sağlayıcı olarak | ChatGPT aboneliğiyle API anahtarsız; salt okunur sandbox, kullanıcı ayarları yok sayılır, açık onay ([docs/adr/0017](adr/0017-codex-cli-saglayici.md)) |
 
 ---
 

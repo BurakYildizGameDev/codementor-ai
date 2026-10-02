@@ -1,4 +1,4 @@
-"""Sahte `claude`/`agy` (Faz 25): gerçek `run_process` ile başlatılır, gördüklerini yanıtlar.
+"""Sahte `claude`/`agy`/`codex` (Faz 25, 28): gerçek `run_process` ile başlatılır, yanıtlar.
 
 Yanıtın yapılandırılmış çıktısı; argv, çalışma dizini, ortam adları ve stdin'i taşır. stdin'de
 `UYU:<yol>` varsa yola işaret dosyası yazar ve uzun süre uyur (iptal testi).
@@ -28,6 +28,21 @@ def main() -> None:
         "stdin": stdin,
     }
     usage = {"input_tokens": 11, "output_tokens": 7}
+    out = sys.stdout.buffer
+    if "exec" in sys.argv:  # codex: JSONL olay akışı, şema dosyası çağrı sırasında var olmalı
+        schema = sys.argv[sys.argv.index("--output-schema") + 1]
+        probe["schema_exists"] = os.path.isfile(schema)
+        events = [
+            {"type": "thread.started", "thread_id": "t"},
+            {
+                "type": "item.completed",
+                "item": {"type": "agent_message", "text": json.dumps(probe)},
+            },
+            {"type": "turn.completed", "usage": usage},
+        ]
+        out.write("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events).encode())
+        out.flush()
+        return
     if "--sandbox" in sys.argv:  # agy
         reply = {"status": "SUCCESS", "response": json.dumps(probe), "usage": usage}
     else:
@@ -39,7 +54,6 @@ def main() -> None:
             "structured_output": probe,
             "usage": usage,
         }
-    out = sys.stdout.buffer
     out.write("bilgi: sahte CLI başladı\n".encode())  # gürültü satırı ayrıştırmayı bozmamalı
     out.write((json.dumps(reply, ensure_ascii=False) + "\n").encode())
     out.flush()

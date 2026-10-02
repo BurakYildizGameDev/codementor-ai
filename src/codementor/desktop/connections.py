@@ -57,6 +57,7 @@ class ProviderInfo:
 PROVIDERS: tuple[ProviderInfo, ...] = (
     ProviderInfo("claude_cli", "Claude Code", "cli", "Claude aboneliğinle, `claude` CLI üzerinden"),
     ProviderInfo("agy", "Antigravity", "cli", "Gemini/Claude modelleri, `agy` CLI (deneysel)"),
+    ProviderInfo("codex", "Codex", "cli", "ChatGPT aboneliğinle, `codex` CLI üzerinden"),
     ProviderInfo("ollama", "Ollama", "local", "Yerel model; kod bilgisayardan çıkmaz"),
     ProviderInfo("anthropic", "Anthropic API", "api", "Claude, API anahtarıyla"),
     ProviderInfo("openai", "OpenAI API", "api", "GPT modelleri, API anahtarıyla"),
@@ -64,6 +65,9 @@ PROVIDERS: tuple[ProviderInfo, ...] = (
 )
 INFO: dict[str, ProviderInfo] = {p.name: p for p in PROVIDERS}
 API_PROVIDERS = tuple(p.name for p in PROVIDERS if p.kind == "api")
+CLI_PROVIDERS = tuple(p.name for p in PROVIDERS if p.kind == "cli")
+# araçları kapatılamayan ajanlar: açık onay anahtarı gösterilir (ADR-0012, ADR-0017)
+TOOL_AGENTS = ("agy", "codex")
 
 Runner = Callable[..., ProcessResult]
 
@@ -235,7 +239,7 @@ async def probe(name: str, settings: Settings, runner: Runner = run_process) -> 
     if name == "ollama":
         with contextlib.suppress(ProviderError):  # sunucu yoksa durum zaten söylüyor
             result.models = await ollama_models(providers)
-    elif name in ("claude_cli", "agy") and (status.ready or no_model):
+    elif name in CLI_PROVIDERS and (status.ready or no_model):
         # model seçilmemiş olsa da oturum ve model listesi yoklanır (seçilecek liste gelsin)
         result = _probe_cli(name, providers, status, runner)
         if no_model:
@@ -245,16 +249,45 @@ async def probe(name: str, settings: Settings, runner: Runner = run_process) -> 
     return result
 
 
+def parse_codex_models(stdout: str) -> list[str]:
+    """`codex debug models` → listede görünen model kimlikleri (gizli olanlar hariç)."""
+    try:
+        data = json.loads(stdout)
+    except json.JSONDecodeError:
+        return []
+    items = data.get("models") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        return []
+    return [
+        str(m["slug"])
+        for m in items
+        if isinstance(m, dict) and m.get("slug") and m.get("visibility", "list") == "list"
+    ]
+
+
+def codex_logged_in(out: ProcessResult) -> bool:
+    """`codex login status` metni stderr'e yazar ("Logged in using ChatGPT")."""
+    text = f"{out.stdout} {out.stderr}".lower()
+    return out.returncode == 0 and "logged in" in text and "not logged in" not in text
+
+
+def _unreachable(out: ProcessResult) -> str | None:
+    if out.timed_out:
+        return "yanıt vermedi (zaman aşımı)"
+    return "çalıştırılamadı" if out.error else None
+
+
 def _probe_cli(
     name: str, providers: ProvidersSettings, status: ProviderStatus, runner: Runner
 ) -> Probe:
-    args = ["auth", "status", "--json"] if name == "claude_cli" else ["models"]
+    args = {"claude_cli": ["auth", "status", "--json"], "codex": ["login", "status"]}
     try:
-        out = _run_cli(name, providers, args, runner)
+        out = _run_cli(name, providers, args.get(name, ["models"]), runner)
+        if name == "codex" and codex_logged_in(out):
+            listing = _run_cli(name, providers, ["debug", "models"], runner)
     except ProviderError as exc:
         return Probe(status.model_copy(update={"ready": False, "detail": str(exc)}))
-    if out.error or out.timed_out:
-        detail = "yanıt vermedi (zaman aşımı)" if out.timed_out else "çalıştırılamadı"
+    if (detail := _unreachable(out)) is not None:
         return Probe(status.model_copy(update={"ready": False, "detail": detail}))
     if name == "claude_cli":
         logged_in, account = parse_claude_status(out.stdout)
@@ -262,11 +295,21 @@ def _probe_cli(
         if not logged_in:
             detail = "oturum açılmamış — Oturum aç'a bas"
         return Probe(status.model_copy(update={"ready": logged_in, "detail": detail}), [], account)
-    models = parse_agy_models(out.stdout)
-    if out.returncode != 0 or not models:
-        return Probe(status.model_copy(update={"ready": False, "detail": "oturum açılmamış"}))
-    allowed = providers.agy.allow_tool_agent
-    detail = f"oturum açık, {len(models)} model" + ("" if allowed else " · araç onayı gerekli")
+    if name == "codex":
+        if not codex_logged_in(out):
+            return Probe(
+                status.model_copy(
+                    update={"ready": False, "detail": "oturum açılmamış — Oturum aç'a bas"}
+                )
+            )
+        models = [] if _unreachable(listing) else parse_codex_models(listing.stdout)
+    else:
+        models = parse_agy_models(out.stdout)
+        if out.returncode != 0 or not models:
+            return Probe(status.model_copy(update={"ready": False, "detail": "oturum açılmamış"}))
+    allowed = bool(getattr(providers, name).allow_tool_agent)
+    detail = "oturum açık" + (f", {len(models)} model" if models else "")
+    detail += "" if allowed else " · araç onayı gerekli"
     return Probe(status.model_copy(update={"ready": allowed, "detail": detail}), models)
 
 
@@ -289,7 +332,9 @@ async def try_connection(name: str, settings: Settings) -> str:
 def login_command(name: str, providers: ProvidersSettings) -> list[str]:
     """Oturum açma için sabit argv (mutlak yol)."""
     executable = resolve_executable(name, getattr(providers, name).command)
-    return [executable, "auth", "login"] if name == "claude_cli" else [executable]
+    if name == "claude_cli":
+        return [executable, "auth", "login"]
+    return [executable, "login"] if name == "codex" else [executable]
 
 
 def open_login_console(name: str, providers: ProvidersSettings) -> None:

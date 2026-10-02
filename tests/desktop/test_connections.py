@@ -23,6 +23,7 @@ from codementor.desktop.connections import (
     model_suggestions,
     parse_agy_models,
     parse_claude_status,
+    parse_codex_models,
     probe,
     try_connection,
 )
@@ -49,6 +50,9 @@ def cli_settings(settings: Settings, **agy: Any) -> Settings:
             ),
             "agy": settings.providers.agy.model_copy(
                 update={"command": EXE, "model": "gemini", **agy}
+            ),
+            "codex": settings.providers.codex.model_copy(
+                update={"command": EXE, "model": "gpt-5.5", **agy}
             ),
         }
     )
@@ -242,3 +246,75 @@ def test_login_command_uses_absolute_path(settings: Settings) -> None:
     assert login_command("claude_cli", cfg)[1:] == ["auth", "login"]
     assert len(login_command("agy", cfg)) == 1
     assert Path(login_command("agy", cfg)[0]).is_absolute()
+
+
+# --- Codex (Faz 28, ADR-0017) -----------------------------------------------------------------
+
+CODEX_MODELS = (
+    '{"models": [{"slug": "gpt-5.5", "visibility": "list"},'
+    ' {"slug": "gizli-model", "visibility": "hide"}, {"slug": "gpt-5.6-terra"}]}'
+)
+
+
+class SequenceRunner:
+    """Her çağrıda sıradaki sonucu döndürür (`login status`, ardından `debug models`)."""
+
+    def __init__(self, *results: ProcessResult) -> None:
+        self.results = list(results)
+        self.calls: list[list[str]] = []
+
+    def __call__(self, argv: list[str], stdin: str, limits: object, **_: object) -> ProcessResult:
+        self.calls.append(list(argv))
+        return self.results.pop(0)
+
+
+def _logged_in(stderr: str = "Logged in using ChatGPT") -> ProcessResult:
+    return ProcessResult(0, "", stderr)
+
+
+def test_parse_codex_models_skips_hidden_and_bad_json() -> None:
+    assert parse_codex_models(CODEX_MODELS) == ["gpt-5.5", "gpt-5.6-terra"]
+    assert parse_codex_models("değil json") == []
+    assert parse_codex_models('{"models": "x"}') == []
+
+
+@pytest.mark.anyio
+async def test_codex_probe_login_models_and_tool_consent(settings: Settings) -> None:
+    run = SequenceRunner(_logged_in(), ProcessResult(0, CODEX_MODELS, ""))
+    blocked = await probe("codex", cli_settings(settings), runner=run)
+    assert [c[1:] for c in run.calls] == [["login", "status"], ["debug", "models"]]
+    assert Path(run.calls[0][0]).is_absolute()
+    assert blocked.models == ["gpt-5.5", "gpt-5.6-terra"]
+    assert not blocked.ready
+    assert "araç onayı" in blocked.status.detail
+
+    allowed = await probe(
+        "codex",
+        cli_settings(settings, allow_tool_agent=True),
+        runner=SequenceRunner(_logged_in(), ProcessResult(0, CODEX_MODELS, "")),
+    )
+    assert allowed.ready
+    assert "2 model" in allowed.status.detail
+
+
+@pytest.mark.anyio
+async def test_codex_probe_logged_out_does_not_list_models(settings: Settings) -> None:
+    run = SequenceRunner(ProcessResult(1, "", "Not logged in"))
+    result = await probe("codex", cli_settings(settings, allow_tool_agent=True), runner=run)
+    assert not result.ready
+    assert "Oturum aç" in result.status.detail
+    assert len(run.calls) == 1
+
+
+@pytest.mark.anyio
+async def test_codex_probe_model_list_timeout_keeps_login(settings: Settings) -> None:
+    run = SequenceRunner(_logged_in(), ProcessResult(None, "", "", timed_out=True))
+    result = await probe("codex", cli_settings(settings, allow_tool_agent=True), runner=run)
+    assert result.ready
+    assert result.models == []
+
+
+def test_codex_login_command(settings: Settings) -> None:
+    command = login_command("codex", cli_settings(settings).providers)
+    assert command[1:] == ["login"]
+    assert Path(command[0]).is_absolute()

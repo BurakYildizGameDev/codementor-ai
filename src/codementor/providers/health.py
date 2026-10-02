@@ -18,7 +18,7 @@ from codementor.providers.base import ProviderError, RetryPolicy
 from codementor.providers.cli_agent import resolve_executable
 from codementor.providers.ollama import DEFAULT_NUM_CTX, OllamaProvider
 
-CLI_AGENTS = ("claude_cli", "agy")
+CLI_AGENTS = ("claude_cli", "agy", "codex")
 HEALTH_TIMEOUT_S = 5  # erişilemeyen adres 2 dakika askıda tutmasın
 
 
@@ -92,7 +92,7 @@ def _check_cli_agent(name: str, providers: ProvidersSettings) -> ProviderStatus:
         return ProviderStatus(
             name=name, model=model, ready=False, detail=str(exc).removeprefix(f"{name}: ")
         )
-    note = " (deneysel, ADR-0012)" if name == "agy" else ""
+    note = {"agy": " (deneysel, ADR-0012)", "codex": " (araç ajanı, ADR-0017)"}.get(name, "")
     return ProviderStatus(
         name=name,
         model=model,
