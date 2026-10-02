@@ -117,7 +117,8 @@ async def test_agy_fake_plan_mode_and_system_in_stdin(tmp_path: Path) -> None:
     argv = probe["argv"]
     assert argv[argv.index("--mode") + 1] == "plan"
     assert "--sandbox" in argv
-    assert "SISTEM_TALIMATI_42" in probe["stdin"]
+    assert argv[argv.index("--input-format") + 1] == "stream-json"
+    assert "SISTEM_TALIMATI_42" in probe["content"]  # NDJSON olayı çözüldü
     assert all(SECRET_CODE not in arg for arg in argv)
     assert result.provider == "agy"
     assert result.usage.output_tokens == 7

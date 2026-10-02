@@ -1,4 +1,5 @@
-"""CLI ajanlarını sağlayıcı olarak kullanma: Claude Code (`claude -p`) ve Antigravity (`agy -p`).
+"""CLI ajanlarını sağlayıcı olarak kullanma: Claude Code (`claude -p`) ve Antigravity
+(`agy --input-format stream-json`; taşıma `agy_stream.py`'de).
 
 Bulut API anahtarı yerine CLI'nin kendi oturumu kullanılır (ADR-0012). Bu ajanlar araç
 çalıştırabildiği ve öğrenci kodu güvenilmez veri olduğu için (mimari §12):
@@ -42,6 +43,7 @@ from codementor.models.provider import (
 )
 from codementor.providers._common import as_int, as_text, elapsed_ms, require_model
 from codementor.providers._http import parse_json_object
+from codementor.providers.agy_stream import encode_stdin, print_timeout_s, result_event
 from codementor.providers.base import (
     ProviderConfigError,
     ProviderError,
@@ -228,8 +230,8 @@ class CliAgentProvider:
     def build_argv(self, executable: str, schema: dict[str, Any], model: str) -> list[str]:
         """Komut satırı: sabit bayraklar, şema ve model; mesaj içeriği asla argv'de değil."""
         schema_text = json.dumps(schema, ensure_ascii=False, separators=(",", ":"))
-        common = [executable, "-p", "--output-format", "json", "--json-schema", schema_text]
         if self.kind == "claude_cli":
+            common = [executable, "-p", "--output-format", "json", "--json-schema", schema_text]
             flags = [
                 "--tools",
                 "",
@@ -246,13 +248,16 @@ class CliAgentProvider:
                 FIXED_SYSTEM,
             ]
         else:
+            # agy'de `-p` değer alır; prompt stdin'den stream-json olayıyla gelir (Faz 28)
+            common = [executable, "--input-format", "stream-json", "--output-format", "stream-json"]
+            common += ["--json-schema", schema_text]
             flags = [
                 "--sandbox",
                 "--mode",
                 "plan",
                 "--disable-slash-commands",
                 "--print-timeout",
-                f"{self.config.timeout_s}s",
+                f"{print_timeout_s(self.config.timeout_s)}s",
             ]
         return [*common, *flags, "--model", model]
 
@@ -271,6 +276,8 @@ class CliAgentProvider:
             raise ProviderConfigError(self.name, "en az bir kullanıcı mesajı gerekli")
         argv = self.build_argv(executable, SchemaAdapter(output_model).anthropic(), model)
         stdin = render_prompt(messages)
+        if self.kind == "agy":
+            stdin = encode_stdin(stdin)
         limits = ProcessLimits(
             timeout_s=self.config.timeout_s,
             memory_mb=MEMORY_MB,
@@ -303,8 +310,10 @@ class CliAgentProvider:
             raise ProviderConfigError(self.name, f"çalıştırılamadı ({_short(result.error)})")
         if result.timed_out:
             raise CliTimeoutError(self.name, "zaman aşımı")
-        marker = "type" if self.kind == "claude_cli" else "status"
-        data = _json_document(result.stdout, marker)
+        if self.kind == "claude_cli":
+            data = _json_document(result.stdout, "type")
+        else:
+            data = result_event(result.stdout)
         if data is None:
             if result.truncated:
                 raise ProviderResponseError(self.name, "çıktı boyutu sınırı aşıldı")
@@ -312,7 +321,7 @@ class CliAgentProvider:
             raise ProviderRequestError(self.name, f"JSON çıktı alınamadı ({detail})")
         if self.kind == "claude_cli":
             return self._claude(data, model, start)
-        return self._agy(data, model, start)
+        return self._agy(data, model, start, result.stderr)
 
     def _claude(self, data: Mapping[str, Any], model: str, start: float) -> ProviderResult:
         if data.get("is_error") or data.get("subtype") not in (None, "success"):
@@ -338,11 +347,17 @@ class CliAgentProvider:
             provider=self.name,
         )
 
-    def _agy(self, data: Mapping[str, Any], model: str, start: float) -> ProviderResult:
+    def _agy(
+        self, data: Mapping[str, Any], model: str, start: float, stderr: str
+    ) -> ProviderResult:
         status = as_text(data.get("status"))
         text = as_text(data.get("response"))
         if status and status != "SUCCESS":
-            raise ProviderRequestError(self.name, f"agy durumu {_short(status)}")
+            detail = _short(as_text(data.get("error")) or status)
+            raise ProviderRequestError(self.name, f"agy hatası: {detail}")
+        if not text.strip() and "print timeout" in stderr:
+            # agy --print-timeout doldu: tur başladı ama model süre içinde yanıt vermedi
+            raise CliTimeoutError(self.name, "agy süre içinde yanıt vermedi")
         if not text.strip():
             raise ProviderUnavailableError(
                 self.name, "yanıt boş; `agy` oturumu açık mı? (etkileşimli `agy` ile giriş yapın)"

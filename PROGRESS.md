@@ -666,8 +666,9 @@
 - `config.CodexConfig`, `codementor.toml [providers.codex]`, fabrika/sağlık/CLI listeleri; masaüstü Bağlantılar kartı (`codex login status` + `codex debug models` ile model listesi, araç onayı anahtarı, `codex login` ile oturum açma). `TOOL_AGENTS` sabiti (agy, codex).
 - Canlı: `c-012` uçtan uca analiz `gpt-6-luna` ile 14,6 sn (use-after-free + gereksinim bulgusu, Sokratik sorular, sızıntı denetimi geçti); `tests/live` Codex testi geçti. Katalogdaki her model hesaba açık değil: `gpt-5.5` 404 (hata metni bunu söylüyor).
 - Testler: `test_codex_cli.py` (14), `test_connections.py` (+5), e2e sahte `codex` (gerçek `run_process`), canlı test parametresi.
-**Mimariden sapmalar (ADR linki):** ADR-0017 (yeni CLI ajanı; ADR-0012 kuralları korunur).
-**Açık sorular:** (1) **agy (Gemini):** bizim argv'de hata bulundu (`agy` 1.2.14'te `-p` değer alıyor; `-p --output-format` → anında hata). Düzeltme `--input-format stream-json` ile; ama `agy` en basit prompt'ta bile 2 dk yanıtsız (izin ya da oturum için konsol bekliyor olabilir). Kullanıcının `agy -p="merhaba"` denemesi bekleniyor. (2) API anahtarı yok: Gemini API sağlayıcısı ve OpenAI/DeepSeek canlı teşhisi ertelendi.
+- **agy argv düzeltmesi (2026-10-03):** `agy` 1.2.14'te `-p` değer alıyor; bizim `-p --output-format …` argv'miz bayrağı prompt sanıyordu. Yeni `providers/agy_stream.py`: `agy --input-format stream-json --output-format stream-json …` (`-p` yok); stdin tek NDJSON satırı `{"event":"user","message":{"role":"user","content":<render_prompt>}}` (biçim canlı yoklamayla bulundu: agy yanlış biçimde anında `status:"ERROR"` + `error` döner); çıktıdan son `{"event":"result","result":{…}}` satır düzeyinde okunur. `--print-timeout` = zaman aşımı − min(10 sn, %10): agy kısmi sonucunu bizden önce yazar; boş yanıt + stderr `print timeout` → `CliTimeoutError`; `ERROR` → agy'nin hata metniyle `ProviderRequestError`. `cli_agent.py` 392 satır (taşıma ayrı modülde). Testler: `test_agy_stream.py` (6), `test_cli_agent.py` (+5, güncellenen 3), e2e sahte agy NDJSON çözer.
+**Mimariden sapmalar (ADR linki):** ADR-0017 (yeni CLI ajanı; ADR-0012 kuralları korunur). agy taşıma değişikliği ADR gerektirmedi (ADR-0012 aynen).
+**Açık sorular:** (1) **agy hesabı:** oturum açık (`agy models` 14 model listeliyor) ama her modelde (Gemini 3.8 Flash, Claude Sonnet 4.6) tur başlıyor, `streamGenerateContent` isteği gidiyor ve 60 sn'de hiç adım gelmiyor (`num_turns: 0`). Bizim argv'den bağımsız (düz `agy -p "merhaba"` de aynı). Kullanıcının etkileşimli `agy` ile yanıt alıp alamadığı bekleniyor; alırsa tek analizle canlı doğrulama. (2) API anahtarı yok: Gemini API sağlayıcısı ve OpenAI/DeepSeek canlı teşhisi ertelendi.
 **Bu fazda öğrendiğim:** CLI'ların bayrak sözdizimi sürümle değişiyor (agy `-p`); her CLI için sürümü ve `--help`'i canlı kontrol etmek, sahte betikli testlerin göremediği hatayı gösteriyor. Model kataloğu ≠ erişim.
 
 ## Sonraya (kapsam dışı fikirler)
@@ -761,7 +762,7 @@ Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 **Kaldığımız yer (2026-10-02):** Faz 0-27 ve Faz 22 Aşama A `main`'de, push'lu, CI yeşil (93a9cc1).
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
-2. **Faz 28 — Sağlayıcılar:** Codex yapıldı (ADR-0017). Kalan: agy argv düzeltmesi (kullanıcının `agy` denemesi bekleniyor), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
+2. **Faz 28 — Sağlayıcılar:** Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
 3. **Faz 29 — Derleyicisiz kullanıcı:** Tier 1 PATH'teki gcc/clang/dotnet'e bağlı; öneri: C/C++/
    Unreal için `zig cc`, C# için self-contained Roslyn; "Derleyiciyi indir" (sha256) ya da gömme. ADR.
 4. **Faz 30 — Soru bankası:** 18 soru → dil/motor başına ≥ 8 (~64), zorluk dağılımı, filtreler.

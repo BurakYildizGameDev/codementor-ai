@@ -30,6 +30,7 @@ from codementor.providers.cli_agent import (
     FIXED_SYSTEM,
     CliAgentProvider,
     CliKind,
+    CliTimeoutError,
     render_prompt,
     resolve_executable,
 )
@@ -75,7 +76,10 @@ def claude_json(**overrides: Any) -> str:
 
 
 def agy_json(**fields: Any) -> str:
-    return json.dumps({"status": "SUCCESS", "response": json.dumps(ANSWER)} | fields)
+    """agy 1.2.14 `--output-format stream-json` çıktısı: `init` olayı ve son `result` olayı."""
+    result = {"status": "SUCCESS", "response": json.dumps(ANSWER)} | fields
+    init = {"event": "init", "conversation_id": "c", "init": {"tools": ["ask_permission"]}}
+    return json.dumps(init) + "\n" + json.dumps({"event": "result", "result": result}) + "\n"
 
 
 def ok(stdout: str, **kwargs: Any) -> ProcessResult:
@@ -130,8 +134,11 @@ async def test_messages_only_on_stdin(kind: CliKind) -> None:
     runner = FakeRunner([ok(output)])
     await _run(_provider(kind, runner))
     call = runner.calls[0]
-    assert STUDENT_CODE in call["stdin"]
-    assert SYSTEM_MARKER in call["stdin"]
+    stdin = call["stdin"]
+    if kind == "agy":  # NDJSON olayı: içerik JSON dizesi olarak kaçışlı
+        stdin = json.loads(stdin)["message"]["content"]
+    assert STUDENT_CODE in stdin
+    assert SYSTEM_MARKER in stdin
     joined = "\n".join(call["argv"])
     assert STUDENT_CODE not in joined
     assert "rm -rf" not in joined
@@ -143,7 +150,16 @@ async def test_argv_values_follow_known_flags() -> None:
     runner = FakeRunner([ok(agy_json())])
     await _run(_provider("agy", runner))
     argv = runner.calls[0]["argv"][1:]
-    valued = {"--output-format", "--json-schema", "--mode", "--print-timeout", "--model"}
+    # `-p` de değer alır (agy 1.2.14): değersiz `-p` sonraki bayrağı prompt sanıyordu
+    assert "-p" not in argv
+    valued = {
+        "--input-format",
+        "--output-format",
+        "--json-schema",
+        "--mode",
+        "--print-timeout",
+        "--model",
+    }
     for index, arg in enumerate(argv):
         if not arg.startswith("-"):
             assert argv[index - 1] in valued, arg
@@ -194,13 +210,50 @@ async def test_agy_argv_and_response_parsed() -> None:
     argv = runner.calls[0]["argv"]
     assert "--sandbox" in argv
     assert argv[argv.index("--mode") + 1] == "plan"
-    assert argv[argv.index("--print-timeout") + 1] == "300s"
+    assert argv[argv.index("--input-format") + 1] == "stream-json"
+    assert argv[argv.index("--output-format") + 1] == "stream-json"
+    # agy kendi kısmi sonucunu bizim süreç zaman aşımımızdan (300 sn) önce döndürsün
+    assert argv[argv.index("--print-timeout") + 1] == "290s"
+
+
+async def test_agy_stdin_is_single_ndjson_user_event() -> None:
+    runner = FakeRunner([ok(agy_json())])
+    await _run(_provider("agy", runner))
+    stdin = runner.calls[0]["stdin"]
+    lines = stdin.strip("\n").split("\n")
+    assert len(lines) == 1  # stream-json: satır başına bir mesaj, yani tek tur
+    event = json.loads(lines[0])
+    assert event == {
+        "event": "user",
+        "message": {"role": "user", "content": render_prompt(MESSAGES)},
+    }
+
+
+async def test_agy_error_status_reports_message() -> None:
+    stdout = agy_json(status="ERROR", response="", error="stream input message has no content")
+    with pytest.raises(ProviderRequestError, match="no content"):
+        await _run(_provider("agy", FakeRunner([ok(stdout)])))
+
+
+async def test_agy_print_timeout_is_cli_timeout() -> None:
+    # agy --print-timeout dolunca stderr'e yazar ve SUCCESS + boş yanıt döner (bu oturumda gözlendi)
+    stdout = agy_json(response="", num_turns=0)
+    stderr = "[agy] print timeout after 4m50s with turn in progress; returning partial output"
+    result = ProcessResult(returncode=0, stdout=stdout, stderr=stderr)
+    with pytest.raises(CliTimeoutError, match="süre"):
+        await _run(_provider("agy", FakeRunner([result])))
 
 
 async def test_agy_empty_response_is_unavailable() -> None:
-    # oturum açılmamış agy gerçekte böyle döner (bu oturumda gözlendi)
-    stdout = json.dumps({"status": "SUCCESS", "response": "", "num_turns": 0})
+    # oturum açılmamış agy gerçekte böyle döner (Faz 25'te gözlendi)
+    stdout = agy_json(response="", num_turns=0)
     with pytest.raises(ProviderUnavailableError, match="oturumu"):
+        await _run(_provider("agy", FakeRunner([ok(stdout)])))
+
+
+async def test_agy_non_result_last_event_rejected() -> None:
+    stdout = json.dumps({"event": "init", "conversation_id": "c", "status": "SUCCESS"})
+    with pytest.raises(ProviderRequestError, match="JSON çıktı alınamadı"):
         await _run(_provider("agy", FakeRunner([ok(stdout)])))
 
 

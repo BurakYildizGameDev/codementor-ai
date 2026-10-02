@@ -43,17 +43,25 @@ def main() -> None:
         out.write("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events).encode())
         out.flush()
         return
-    if "--sandbox" in sys.argv:  # agy
-        reply = {"status": "SUCCESS", "response": json.dumps(probe), "usage": usage}
-    else:
-        reply = {
-            "type": "result",
-            "subtype": "success",
-            "is_error": False,
-            "result": "",
-            "structured_output": probe,
-            "usage": usage,
-        }
+    if "--sandbox" in sys.argv:  # agy: NDJSON `user` olayı girer, `init` + `result` olayları çıkar
+        try:
+            probe["content"] = json.loads(stdin)["message"]["content"]
+            result = {"status": "SUCCESS", "response": json.dumps(probe), "usage": usage}
+        except (ValueError, KeyError, TypeError) as exc:
+            result = {"status": "ERROR", "response": "", "error": f"stream input: {exc}"}
+        events = [{"event": "init", "init": {}}, {"event": "result", "result": result}]
+        out.write("bilgi: sahte agy başladı\n".encode())  # gürültü satırı ayrıştırmayı bozmamalı
+        out.write("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events).encode())
+        out.flush()
+        return
+    reply = {
+        "type": "result",
+        "subtype": "success",
+        "is_error": False,
+        "result": "",
+        "structured_output": probe,
+        "usage": usage,
+    }
     out.write("bilgi: sahte CLI başladı\n".encode())  # gürültü satırı ayrıştırmayı bozmamalı
     out.write((json.dumps(reply, ensure_ascii=False) + "\n").encode())
     out.flush()
