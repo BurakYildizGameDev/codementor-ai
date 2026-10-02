@@ -30,7 +30,7 @@
 | 25 | ✅ | faz/25-saglayicilar | 2026-10-02 | Claude Code / — |
 | 26 | ✅ | faz/26-api-web | 2026-10-02 | Claude Code / — |
 | 27 | ✅ | faz/27-saglamlik | 2026-10-02 | Claude Code / — |
-| 22 (Aşama A) | ✅ | faz/22-eval-precision | 2026-10-02 | Claude Code / — |
+| 22 | ✅ | faz/22-eval-precision, faz/22b-precision | 2026-10-02 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -649,6 +649,16 @@
 **Mimariden sapmalar (ADR linki):** yok (§14.2 metriklerine ek analiz; eşleşme kuralı değişmedi).
 **Açık sorular:** (1) Aşama B (canlı, claude_cli kotası) onayı. (2) Soru gereksinimi karşılanmadığı için bildirilen `design` bulguları dev etiketlerine eklensin mi (precision artar, Faz 12 kıyası bozulur)?
 
+## Faz 22 Aşama B — Notlar (precision için prompt ayarı, canlı, yalnız dev)
+**Yapılanlar:**
+- Prompt (`prompts/v1/`): `_core_rules.j2`'ye "sorun" ölçütü, kod dilleri için kategori tanımları (`input_handling`, `edge_case`, `design`; soru şartı varsa kendi kategorisi), gereksinim bulgusunun konum kuralı, önem tanımları ve `low` ≤ 2; `_markup_rules.j2`'ye sorun/öneri ayrımı; görevde en fazla 6 bulgu (önceden 10); ilk Python few-shot (`python_none_window_sum.yaml`).
+- Dev etiketleri (kullanıcı kararı (a)): 7 C ailesi örneğine soru gereksinimi bulguları; `unreal-011` artık temiz değil. Statik dev satırı yeniden koşuldu.
+- Sonuç (güncel etiketlerle): C ailesi P/R/F1 34/80/48 → 67/86/75, Python/HTML/CSS 54/95/69 → 68/85/76; sızıntı %0, injection %100, Big-O %96, p50 23,5 → 17,5 sn. Ayrıntı ve iki ayar turu: `docs/eval-findings.md` §7. İlk tur sonuçları `eval/results/iterations/`.
+- Testler: `test_prompt_precision.py` (6), `test_fewshot.py` Python kombinasyonu, prompt golden'ları güncellendi (fark yalnız kural satırları).
+**Mimariden sapmalar (ADR linki):** yok (§14 kuralına uygun: yalnız dev'de ayar).
+**Açık sorular:** (1) `memory_safety` / `undefined_behavior` etiket sınırı tutarsız (`unreal-009` null Cast `memory_safety`, `unreal-014` yineleyici geçersizleşmesi `undefined_behavior`); kalan 3 FP/FN buradan. (2) Sızıntı korumasının müdahalesi C ailesinde 2 → 6 (son çıktı yine %0); sebep ölçülmedi. (3) `private/solutions/` dosyaları eksik (`reference_solution_unreadable` uyarıları; Faz 30'da yazılacak).
+**Bu fazda öğrendiğim:** Prompt'a kategori eşlemesi eklemeden önce veri setinin etiket kurallarına bakmak gerekiyordu; çelişen bir cümle 3 doğru bulguyu kaçırttı. Bulgu modelden değil sistemden gelen `confidence` (sabit 0,7) eşik olarak kullanılamaz.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 26: API hız sınırı (istemci başına, süreçler arası doğru); web arayüzünün API anahtarı göndermesi.
 - Faz 26: SQLite çağrılarını da iş parçacığına almak (bağlantı başına iş parçacığı ya da havuz).
@@ -727,7 +737,7 @@
 - ~~Faz 12: eval'e `guard_interventions` metriği~~ → Faz 22 Aşama A.
 - Faz 12: `eval analyze` aracı (kategorisiz eşleşme, önem filtreli precision, örnek bazında FP/FN); `compare` statik satırında injection direncini "—" göstermeli.
 - Faz 12: precision iyileştirme — `design` bulgularını yalnızca soru gereksinimi varken üretmek, `low` bulguları raporda ayrı göstermek; kategori belirsizliği (sıfıra bölme `edge_case`/`undefined_behavior`, null `edge_case`/`memory_safety`) için prompt'ta kategori tanımları. Değişiklik sonrası dev'de yeniden ölçülmeli (test artık kullanıldı).
-- Faz 12: few-shot 0/1 ablasyonu (§14.4) koşulmadı.
+- Faz 12: few-shot 0/1 ablasyonu (§14.4) koşulmadı. → Faz 34.
 - CI Windows işi (2026-09-30): `windows-latest`'te g++ (MinGW) ilk derlemede 10 sn sınırını aşıyor (`test_cpp_type_error_failed` → `timeout`); clang++ varsayılan MSVC hedefli olduğundan Unreal stub denetimi `tool_error` ile atlanıyor (2 test). Ürün zarif atlıyor ama Windows'ta clang için `--target=x86_64-w64-mingw32` / başlık yolu ve soğuk başlangıç süresi ele alınmalı; o zamana kadar Windows CI `-m "not live and not compiler"`.
 - ~~Faz 13: README için GIF demo~~ → Faz 26 (Pillow).
 - ~~Faz 13: Web UI'da indirme, sağlayıcı ve mod seçimi~~ → Faz 26.
@@ -737,16 +747,35 @@
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-02):** Faz 0-27 (22 hariç) `main`'de, push'lu, CI yeşil. Kalan tek
-faz Faz 22: planı `docs/UYGULAMA_PLANI.md`'de yapılacaklar listesi olarak kayıtlı. Önce Aşama A
-(çevrimdışı: `eval analyze`, `guard_interventions`, `breakdown` sütunları, mevcut dev analizi),
-sonra kullanıcı onayıyla Aşama B (canlı, claude_cli kotası). **Aşama A yapıldı** (faz/22-eval-precision);
-analiz ve öneri `docs/eval-findings.md` §6'da, Aşama B onay bekliyor.
+**Kaldığımız yer (2026-10-02):** Faz 0-27 ve Faz 22 Aşama A `main`'de, push'lu, CI yeşil (93a9cc1).
+Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
+1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
+2. **Faz 28 — Sağlayıcılar:** Gemini sağlayıcısı yok (yalnız `agy`); Codex CLI bağlantısı yok;
+   OpenAI ve DeepSeek kullanıcıda çalışmıyor (hiç canlı doğrulanmadı) → canlı teşhis + düzeltme
+   + Gemini + Codex.
+3. **Faz 29 — Derleyicisiz kullanıcı:** Tier 1 PATH'teki gcc/clang/dotnet'e bağlı; öneri: C/C++/
+   Unreal için `zig cc`, C# için self-contained Roslyn; "Derleyiciyi indir" (sha256) ya da gömme. ADR.
+4. **Faz 30 — Soru bankası:** 18 soru → dil/motor başına ≥ 8 (~64), zorluk dağılımı, filtreler.
+   Kullanıcı soru havuzu verecek; soruları ve referans çözümleri Claude yazar.
+5. **Faz 35 — Bulgu doğrulama geçişi (önemli):** her LLM bulgusu için ayrı bir "kanıtla"
+   adımı; kanıtlanamayan düşer. Modelin kendi güveni şemaya (bugünkü `confidence` sistemden
+   sabit 0,7 geliyor, ayırt etmiyor). ADR; dev'de doğrulamalı/doğrulamasız ölçüm.
+6. **Faz 36 — Hatalar ve öneriler ayrımı (önemli):** bulguya `issue`/`suggestion`; raporda
+   katlanmış "Öneriler"; Sokratik sorular yalnızca hatalardan; "temiz kod" few-shot örnekleri.
+7. **Faz 31 — Güvenlik ve önbellek borcu:** bulgu üst sınırı, `rules_version` hash'i, log
+   gizliliği, `reference_solution_path`, belge temizliği.
+8. **Faz 32 — Statik kural doğruluğu II:** sıcak yol kimliği (O3), C-MEM-001, UNITY-GC-001 struct,
+   UE-GC-001 `TArray`, CS-PERF-001 `IList`, maliyet tablosu.
+9. **Faz 33 — Kullanıcı deneyimi:** token/maliyet gösterimi, arama/değiştir, CLI ilerleme.
+10. **Faz 34 — Ölçümün genişletilmesi (canlı, isteğe bağlı):** ikinci model, few-shot ablasyonu,
+   dev setini büyütme.
 
-**Kullanıcı işleri:** (a) yeni 4 sorunun referans çözümleri `private/solutions/`
+**Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
 `css-easy-centered-layout.css`); (b) eski eval etiketlerine Faz 17 bulguları eklensin mi
-(`c-008` C-MEM-003, `csharp-009` CS-ALLOC-002)?
+(`c-008` C-MEM-003, `csharp-009` CS-ALLOC-002)? — Faz 21'de eklendi. (c) Gereksinim karşılanmadığı
+için bildirilen `design` bulguları dev etiketlerine eklensin mi (Faz 22 §6)? (d) Faz 28 teşhisi için
+OpenAI/DeepSeek/Gemini hata metni ve anahtarlar.
 
 1. ~~**Faz 20 — HTML etiket dengesi.**~~ Yapıldı. Kapanmamış/uyumsuz/eşsiz etiket uyarısı (stdlib
    `html.parser`, Tier 1 karşılığı); Faz 18'deki `</div>` kör noktası. Küçük, çevrimdışı.

@@ -239,3 +239,59 @@ sayısını verir ve ADR-0003'teki elle sayılmış değerlerle birebir tutar.
 **Kullanıcı kararı gereken nokta:** soru gereksinimi karşılanmadığı için bildirilen `design`
 bulgularının (~8) dev etiketlerine eklenip eklenmeyeceği. Etiketlemek precision'ı doğrudan
 yükseltir ama Faz 12 sayılarıyla doğrudan kıyası bozar.
+
+## 7. Faz 22 Aşama B: precision için prompt ayarı (dev, canlı)
+
+Yalnızca dev bölümünde ayarlandı; test bölümüne dokunulmadı. Model `claude-opus-5-5`
+(`claude_cli`), two_pass, prompt `v1+fdc16030`.
+
+**Etiket değişikliği (kullanıcı kararı).** C ailesinde soruya bağlı 7 dev örneği tek bir hatayı
+içeren kısa parçalar; model bu örneklerde sorunun karşılanmamış gereksinimlerini (eksik işlev,
+yanlış değer) doğru biçimde buluyordu. Bu bulgular etiketlere eklendi: `c-012`, `cpp-009`,
+`cpp-014`, `unity-009` (×2), `unreal-007`, `unreal-009`, `unreal-011` (+ tick kapanmıyor,
+`performance`). Konum kuralı prompt'la aynı: somut bir değer yanlışsa o satır, istenen işlev hiç
+yoksa dosyadaki ilk sınıf ya da fonksiyon bildirimi. `unreal-011` artık "temiz" örnek değil.
+Python/HTML/CSS örnekleri kendi sorularını karşılıyor; değişmedi. Statik dev satırı güncel
+etiketlerle yeniden koşuldu (recall %50 → %37: eklenen gereksinim bulgularını statik kurallar
+bulamaz).
+
+**Prompt değişiklikleri.**
+- "Sorun" ölçütü: yalnızca yanlış sonuç, çökme, tanımsız davranış, sızıntı, ölçülebilir
+  performans kaybı ya da karşılanmamış gereksinim. Stil ve savunmacı öneriler bulgu değil.
+- Kod dilleri için kategori tanımları (önceden yalnızca HTML/CSS'te vardı): `input_handling`
+  yalnızca dış girdi; `edge_case` gerçekçi girdi alanı (kuramsal uç değer yok); `design`
+  yalnızca eksik/yanlış istenen işlev ya da hataya yol açan yapı; soru bir süre veya girdi
+  şartı koyuyorsa o sorunun kendi kategorisi.
+- Önem tanımları, `low` en fazla 2, toplam en fazla 6 bulgu (önceden 10).
+- HTML/CSS için "sorun mu öneri mi" ölçütü.
+- İlk Python few-shot örneği (`python_none_window_sum`; dev/test ile çakışmaz).
+
+**Ayar turları** (güncel etiketlerle, `eval analyze`):
+
+| Koşu (dev) | C ailesi P / R / F1 | Tahmin | Python/HTML/CSS P / R / F1 | Tahmin |
+|---|---|---|---|---|
+| Önce (Faz 12/18 prompt'u) | 34 / 80 / 48 | 82 | 54 / 95 / 69 | 35 |
+| 1. tur | 58 / 80 / 67 | 48 | 62 / 80 / 70 | 26 |
+| 2. tur (son) | **67 / 86 / 75** | 45 | **68 / 85 / 76** | 25 |
+
+İlk tur sonuçları `eval/results/iterations/` altındadır (README tablosunda yok). İlk turda
+prompt'a eklenen bir kategori eşlemesi ("sıfıra bölme → `undefined_behavior`, sarkan işaretçi →
+`memory_safety`") veri setinin etiketleriyle çelişti ve 3 doğru bulguyu kaçırttı; ikinci turda
+kaldırıldı. `design` tanımı da soru performans/girdi şartı koyduğunda yanlış kategoriye
+çekiyordu; düzeltildi.
+
+**Son durum (2. tur).**
+- Big-O birebir %96, satır doğruluğu %100, sızıntı %0, injection direnci %100, şema %100.
+- p50 17,5 sn (önce 23,5), token ortalaması 13,4 bin (önce 14,2 bin).
+- Sızıntı korumasının müdahalesi C ailesinde 6 örnek (önce 2). Son çıktıdaki sızıntı yine %0.
+  Artışın sebebi ölçülmedi (gereksinim bulguları soru metnine yakın olabilir); Faz 35'te izlenir.
+- Dil başına: C 89/100/94, C++ 80/100/89, C# 67/80/73, Unity 50/83/62, Unreal 50/62/56;
+  CSS 82/100/90, HTML 56/71/63, Python 60/75/67.
+- Kalan 15 FP'nin (C ailesi) ~5'i Unity/Unreal'da null denetimi (`GetComponent`,
+  `FindObjectOfType`, Inspector alanı), 3'ü kategori karışıklığı (`memory_safety` ↔
+  `undefined_behavior`: etiketler de bu sınırda tutarsız, ör. `unreal-009` vs `unreal-014`),
+  ~4'ü gerçek ama etiketsiz (ör. `cpp-009` beşler kuralı).
+- Few-shot 0/1 ablasyonu koşulmadı (Faz 34).
+
+**Sonraki adımlar:** bulgu doğrulama geçişi (Faz 35), hatalar/öneriler ayrımı (Faz 36);
+`memory_safety` / `undefined_behavior` etiket sınırının netleştirilmesi (dev etiket kararı).

@@ -10,6 +10,7 @@ expected:
   space_complexity: "1"
   findings:
     - { category: memory_safety, line: 8, note: "sahip karakter değilse Cast nullptr döner" }
+    - { category: design, line: 4, note: "soru gereksinimi: can yenileme yerine yürüme hızı değiştiriliyor (Faz 22B)" }
   must_not_contain: ["if (OwnerCharacter)", "if (!OwnerCharacter)"]
 tags: [null-check, memory-safety]
 split: dev

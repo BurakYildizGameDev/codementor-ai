@@ -1,0 +1,2625 @@
+{
+  "config": {
+    "split": "dev",
+    "provider": null,
+    "model": null,
+    "mode": "static",
+    "static_only": true,
+    "ablations": [],
+    "prompt_version": "v1+fdc16030",
+    "rules_version": "r1+fa6fff47",
+    "schema_version": "1.0",
+    "started_at": "2026-10-02T02:16:49.536573Z",
+    "sample_ids": [
+      "c-001",
+      "c-005",
+      "c-007",
+      "c-008",
+      "c-010",
+      "c-012",
+      "c-015",
+      "cpp-001",
+      "cpp-005",
+      "cpp-007",
+      "cpp-009",
+      "cpp-011",
+      "cpp-014",
+      "csharp-001",
+      "csharp-005",
+      "csharp-007",
+      "csharp-009",
+      "csharp-011",
+      "csharp-014",
+      "unity-001",
+      "unity-005",
+      "unity-007",
+      "unity-009",
+      "unity-011",
+      "unity-014",
+      "unreal-001",
+      "unreal-005",
+      "unreal-007",
+      "unreal-009",
+      "unreal-011",
+      "unreal-014"
+    ],
+    "reviewed_only": true,
+    "languages": [
+      "c",
+      "cpp",
+      "csharp"
+    ]
+  },
+  "metrics": {
+    "samples": 31,
+    "schema_valid_first_try": null,
+    "schema_valid_after_repair": null,
+    "early_exit_precision": 1.0,
+    "early_exit_recall": 1.0,
+    "complexity_time_exact_acc": 0.9615384615384616,
+    "complexity_time_class_acc": 0.9615384615384616,
+    "audit_precision": 1.0,
+    "audit_recall": 0.37142857142857144,
+    "audit_f1": 0.5416666666666666,
+    "line_accuracy": 1.0,
+    "leak_rate": 0.0,
+    "injection_resistance": 0.0,
+    "latency_p50_ms": 38.0,
+    "latency_p95_ms": 135.0,
+    "tokens_mean": null,
+    "cost_est": null,
+    "errors": 0,
+    "guard_interventions": null
+  },
+  "samples": [
+    {
+      "id": "c-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CS40RK2RBC4RJA3KX37J",
+        "created_at": "2026-10-02T02:16:49.543737Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 4,
+              "column": 18,
+              "message": "Burada noktalı virgül (;) eksik görünüyor."
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "4. satırda bir ifade `;` ile bitmiyor gibi görünüyor. Derleyici bu satırdan sonra neyi bekliyor olabilir?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 1,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 6,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "c-005",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CS4BXHD8JVT4NQPNBRGK",
+        "created_at": "2026-10-02T02:16:49.619876Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "sum: satır 8 for (linear) → n"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 31,
+            "facts": 13,
+            "rules": 13,
+            "prompt_a": 11,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 71,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "c-007",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CS6KVDT6KACG0FS4XB6F",
+        "created_at": "2026-10-02T02:16:49.636223Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "copy_array: satır 2 for (linear) → n"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 17,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "c-008",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CS7452NKX1EMDA6HV5XR",
+        "created_at": "2026-10-02T02:16:49.654930Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "average: satır 6 for (linear) → n"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "C-MEM-001",
+            "category": "resource_leak",
+            "severity": "high",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "int *tmp = malloc(n * sizeof(int));",
+            "description": "Bu fonksiyonda `malloc`/`calloc` ile ayrılan bellek ne `free` ediliyor ne de fonksiyondan dışarı veriliyor. Fonksiyon bittiğinde bu bellek kimde kalıyor?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": "C-MEM-003",
+            "category": "memory_safety",
+            "severity": "medium",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "int *tmp = malloc(n * sizeof(int));",
+            "description": "`malloc`/`calloc`/`realloc` bellek ayıramazsa NULL döndürür. Bu işaretçi denetlenmeden kullanılıyor; tahsis başarısız olursa bu satırdan sonra ne olur?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Kaynak sızıntısı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Aldığın her kaynağı (bellek, abonelik, dosya) kim ve ne zaman geri veriyor?",
+            "Bir dizinin ya da işaretçinin geçerli sınırlarını nereden biliyorsun?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 19,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "c-010",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CS7PBW66BWE7DB7H7EAZ",
+        "created_at": "2026-10-02T02:16:49.676073Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "?",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "bubble_sort: satır 2 for (linear) × satır 3 for (linear) → n^2"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n^2",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 19,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "c-012",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CS8C1M5SKS6E0EYR3DBW",
+        "created_at": "2026-10-02T02:16:49.712411Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": "c-medium-linked-list",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "list_free: satır 9 while (unknown) → n",
+            "satır 9: sınırı belirlenemeyen döngü n varsayıldı"
+          ],
+          "is_optimal": true,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.3
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bir düğümü serbest bıraktıktan hemen sonra o düğüme ait hangi bilgiye hâlâ ihtiyacınız var?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 37,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "c-015",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CS9NN52RWXAY3BMEX33K",
+        "created_at": "2026-10-02T02:16:49.735253Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "?",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "to_upper: satır 5 `strlen` (n) × satır 5 for (linear) → n^2"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n^2",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "C-PERF-001",
+            "category": "performance",
+            "severity": "low",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "for (size_t i = 0; i < strlen(s); i++) {",
+            "description": "Döngü koşulu her turda yeniden değerlendirilir ve `strlen` her seferinde metni sonuna kadar tarar. n karakterlik bir metinde toplam kaç karakter okunur?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Performans",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Girdi büyüdükçe kodunun en çok tekrarlanan işi hangisi?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 18,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "cpp-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSA7CT9KW74FRE99KC6F",
+        "created_at": "2026-10-02T02:16:49.737908Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 9,
+              "column": 1,
+              "message": "Beklenmeyen sözdizimi: 'int'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "9. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'int'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 1,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "cpp-005",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSAA8PSMTZN51SWBCA6Q",
+        "created_at": "2026-10-02T02:16:49.795223Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "longest: satır 8 foreach (linear) → n"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 39,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 57,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "cpp-007",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSC3VQ28N1GX7PAT6X1M",
+        "created_at": "2026-10-02T02:16:49.814247Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "?",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "remove_negatives: satır 6 `std::vector::erase` (n) × satır 4 for (linear) → n^2"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n^2",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 19,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "cpp-009",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSCPRHRC9KEMSHVSKP7E",
+        "created_at": "2026-10-02T02:16:49.855913Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": "cpp-easy-rule-of-zero",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "Buffer: satır 7 `std::memset` (n) → n"
+          ],
+          "is_optimal": true,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CPP-OWN-001",
+            "category": "memory_safety",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "explicit Buffer(std::size_t size) : size_(size), data_(new char[size]) {",
+            "description": "Nesnenin ömrü elle yönetiliyor. Arada bir istisna ya da erken `return` olursa `delete` çalışır mı? Sahipliği kim taşıyor?",
+            "source": "static",
+            "confidence": 0.9
+          },
+          {
+            "id": "F-002",
+            "rule_id": "CPP-OWN-001",
+            "category": "memory_safety",
+            "severity": "medium",
+            "line_start": 10,
+            "line_end": null,
+            "evidence": "delete[] data_;",
+            "description": "Nesnenin ömrü elle yönetiliyor. Arada bir istisna ya da erken `return` olursa `delete` çalışır mı? Sahipliği kim taşıyor?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Bellek güvenliği",
+          "hint_level": 2,
+          "guiding_questions": [
+            "Kopyalardan biri yok edildiğinde diğerinin gösterdiği bellek ne durumda kalıyor?",
+            "6. satırda erişilen bellek her durumda geçerli mi?",
+            "10. satırda erişilen bellek her durumda geçerli mi?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 14,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 40,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "cpp-011",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSDZYQTBX559J196R0H5",
+        "created_at": "2026-10-02T02:16:49.877137Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n log n",
+          "space_complexity": "?",
+          "display_time": "O(n log n)",
+          "reasoning_steps": [
+            "unique_sorted: satır 5 `std::sort` (n log n) → n log n"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n log n",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 1,
+            "rules": 13,
+            "prompt_a": 3,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 20,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "cpp-014",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSENBMBT4K4H2YMCHX20",
+        "created_at": "2026-10-02T02:16:49.915689Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": "cpp-medium-tree-smartptr",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "add_child: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": true,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CPP-SP-001",
+            "category": "resource_leak",
+            "severity": "high",
+            "line_start": 7,
+            "line_end": null,
+            "evidence": "std::shared_ptr<Node> parent;",
+            "description": "Bu alan, kendisini de `shared_ptr` ile tutan bir nesneyi gösteriyor. İki nesne birbirini tutarsa sayaçları hiç sıfıra iner mi? Bağlardan biri sahiplik gerektirmiyorsa hangi tür daha uygun olur?",
+            "source": "static",
+            "confidence": 0.7
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Kaynak sızıntısı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kökü yok ettiğinizde her düğümü kim serbest bırakıyor; bir düğümü hâlâ 'tutan' başka bir nesne kalıyor mu?",
+            "Aldığın her kaynağı (bellek, abonelik, dosya) kim ve ne zaman geri veriyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 38,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "csharp-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSFV1Z2XFTAZMKF9ERYM",
+        "created_at": "2026-10-02T02:16:49.918758Z",
+        "language": "csharp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 8,
+              "column": 9,
+              "message": "Beklenmeyen sözdizimi: 'Console'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "8. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'Console'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "csharp-005",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSFY7A9QX8GC73KBCWCA",
+        "created_at": "2026-10-02T02:16:50.068435Z",
+        "language": "csharp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "?",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "Distinct: satır 11 `List.Contains` (n) × satır 9 foreach (linear) → n^2"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n^2",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CS-PERF-001",
+            "category": "performance",
+            "severity": "medium",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "if (!result.Contains(v))",
+            "description": "`List.Contains`/`IndexOf`/`Remove` elemanı bulmak için listeyi baştan sona tarar ve bu bir döngünün içinde. Toplam maliyet ne olur? Hangi veri yapısı bu aramayı daha hızlı yapar?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Performans",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Girdi büyüdükçe kodunun en çok tekrarlanan işi hangisi?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 99,
+            "facts": 32,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 150,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "csharp-007",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSMMRJPMGQ95MX4XB7WK",
+        "created_at": "2026-10-02T02:16:50.182404Z",
+        "language": "csharp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "Count: satır 9 while (unknown) → n",
+            "satır 9: sınırı belirlenemeyen döngü n varsayıldı"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.3
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 94,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 113,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "csharp-009",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSR65SSEMMEYCEEETWWW",
+        "created_at": "2026-10-02T02:16:50.301193Z",
+        "language": "csharp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "?",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "AboveAverage: satır 11 `Enumerable.Average` (n) × satır 9 for (linear) → n^2"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n^2",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "CS-ALLOC-002",
+            "category": "garbage_collection",
+            "severity": "medium",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "if (scores[i] > scores.Average())",
+            "description": "LINQ her çağrıda yineleyici ve çoğu zaman temsilci nesneleri ayırır; bu satır her karede ya da döngünün her turunda çalışıyor. Bu satır kaç kez çalışıyor ve ürettiği sonuç her seferinde gerçekten değişiyor mu?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Çöp toplayıcı baskısı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Sık çalışan kodun her seferinde yeni nesne oluşturuyor mu?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 97,
+            "facts": 1,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 117,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "csharp-011",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSVXRDJAG1AF8PFC2SMB",
+        "created_at": "2026-10-02T02:16:50.411918Z",
+        "language": "csharp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "Count: satır 9 foreach (linear) → n",
+            "Count: satır 9 `string.Split` (n) → n",
+            "Count: satır 11 `Dictionary.TryGetValue` (1*) × satır 9 foreach (linear) → n"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.5
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 94,
+            "facts": 1,
+            "rules": 14,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 114,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "csharp-014",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CSZB8G5HK874AYN5JXS8",
+        "created_at": "2026-10-02T02:16:50.522931Z",
+        "language": "csharp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Tick: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 92,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 110,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unity-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CT2T38033Y3JFTBAGY8B",
+        "created_at": "2026-10-02T02:16:50.529634Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 9,
+              "column": 9,
+              "message": "Beklenmeyen sözdizimi: 'transform.Translate(Vector3.forward * s…'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "9. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'transform.Translate(Vector3.forward * s…'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 1,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unity-005",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CT31V1QTMBHFARK3HTY3",
+        "created_at": "2026-10-02T02:16:50.654847Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Update: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "UNITY-PERF-001",
+            "category": "performance",
+            "severity": "high",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "var health = GetComponent<Health>();",
+            "description": "Bu arama her karede yeniden yapılıyor ama sonucu kareden kareye değişiyor mu? Sonucu bir kez bulup saklamak mümkün mü?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Performans",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Girdi büyüdükçe kodunun en çok tekrarlanan işi hangisi?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 110,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 129,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unity-007",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CT6YSQSMBKKJ4WRZGHN8",
+        "created_at": "2026-10-02T02:16:50.765600Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "LateUpdate: satır 9 `FindObjectOfType` (n) → n"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "UNITY-PERF-001",
+            "category": "performance",
+            "severity": "high",
+            "line_start": 9,
+            "line_end": null,
+            "evidence": "var player = FindObjectOfType<PlayerController>();",
+            "description": "Bu arama her karede yeniden yapılıyor ama sonucu kareden kareye değişiyor mu? Sonucu bir kez bulup saklamak mümkün mü?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Performans",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Girdi büyüdükçe kodunun en çok tekrarlanan işi hangisi?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 91,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 111,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unity-009",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CTAD06CDPWNW774C8XWB",
+        "created_at": "2026-10-02T02:16:50.904865Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": "unity-medium-object-pool",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Update: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": true,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bir dakikalık ateş boyunca kaç mermi nesnesi oluşturulup yok ediliyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 95,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 135,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unity-011",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CTETP7QFW1N7T9E4J80N",
+        "created_at": "2026-10-02T02:16:51.022885Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Awake: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 96,
+            "facts": 1,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 115,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unity-014",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CTJEQEGRNHAPWW4Y7C0Q",
+        "created_at": "2026-10-02T02:16:51.133747Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Update: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "UNITY-GC-001",
+            "category": "garbage_collection",
+            "severity": "high",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "label.text = \"Skor: \" + score;",
+            "description": "Bu satır her karede yeni bir nesne ayırıyor; çöp toplayıcı bunları bir noktada toplarken oyun takılabilir. Bu nesne bir kez oluşturulup yeniden kullanılabilir mi?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Çöp toplayıcı baskısı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Sık çalışan kodun her seferinde yeni nesne oluşturuyor mu?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 94,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 113,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unreal-001",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CTNXGPJ1HRX14QJANYEB",
+        "created_at": "2026-10-02T02:16:51.133747Z",
+        "language": "cpp",
+        "engine": "unreal",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 7,
+              "column": 5,
+              "message": "Beklenmeyen sözdizimi: 'Location'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "7. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'Location'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 1,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unreal-005",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CTNX8X69FPS9WYED4R51",
+        "created_at": "2026-10-02T02:16:51.154997Z",
+        "language": "cpp",
+        "engine": "unreal",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "SetTemplate: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "UE-GC-001",
+            "category": "garbage_collection",
+            "severity": "high",
+            "line_start": 18,
+            "line_end": null,
+            "evidence": "UStaticMesh* CachedMesh;",
+            "description": "Çöp toplayıcı yalnızca `UPROPERTY` ile işaretli alanları görür. Bu alanın gösterdiği nesne başka hiçbir yerden tutulmuyorsa GC onu toplar; alan ne gösterir?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Çöp toplayıcı baskısı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Sık çalışan kodun her seferinde yeni nesne oluşturuyor mu?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 12,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 18,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unreal-007",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CTPJXSQEJ1E7BW2E9XYR",
+        "created_at": "2026-10-02T02:16:51.189727Z",
+        "language": "cpp",
+        "engine": "unreal",
+        "question_id": "unreal-medium-actor-component",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "SetHealTarget: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": true,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "UE-GC-001",
+            "category": "garbage_collection",
+            "severity": "high",
+            "line_start": 19,
+            "line_end": null,
+            "evidence": "AActor* HealTarget = nullptr;",
+            "description": "Çöp toplayıcı yalnızca `UPROPERTY` ile işaretli alanları görür. Bu alanın gösterdiği nesne başka hiçbir yerden tutulmuyorsa GC onu toplar; alan ne gösterir?",
+            "source": "static",
+            "confidence": 0.9
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Çöp toplayıcı baskısı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Canı dolu 300 aktörün bileşeni her karede ne yapıyor?",
+            "Sık çalışan kodun her seferinde yeni nesne oluşturuyor mu?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 37,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unreal-009",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CTQWHQTHBC063Q06T3AT",
+        "created_at": "2026-10-02T02:16:51.230956Z",
+        "language": "cpp",
+        "engine": "unreal",
+        "question_id": "unreal-medium-actor-component",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "URegenComponent::BeginPlay: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": true,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Canı dolu 300 aktörün bileşeni her karede ne yapıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 38,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unreal-011",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CTRYA1WHF8ZZCHFD7AMZ",
+        "created_at": "2026-10-02T02:16:51.272622Z",
+        "language": "cpp",
+        "engine": "unreal",
+        "question_id": "unreal-medium-actor-component",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "?",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "UHealthRegenComponent::UHealthRegenComponent: döngü, bilinen maliyetli çağrı veya özyineleme yok → 1"
+          ],
+          "is_optimal": true,
+          "optimal_time_target": null,
+          "static_hint": "1",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Canı dolu 300 aktörün bileşeni her karede ne yapıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 38,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    },
+    {
+      "id": "unreal-014",
+      "report": {
+        "schema_version": "1.0",
+        "analysis_id": "01M3X6CTT8SYGZX1G4Y6KCS7W2",
+        "created_at": "2026-10-02T02:16:51.290053Z",
+        "language": "cpp",
+        "engine": "unreal",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "?",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "ASquad::RemoveDead: satır 5 foreach (linear) → n"
+          ],
+          "is_optimal": null,
+          "optimal_time_target": null,
+          "static_hint": "n",
+          "agreement": "no_hint",
+          "confidence": 0.7
+        },
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Kodun gözden geçirilmesi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Kodunun en sık çalışan bölümü hangisi ve orada her seferinde ne yapılıyor?"
+          ],
+          "next_step_hint": "Statik analizin işaret ettiği satırlardan başlayarak kodu adım adım elle izle.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+fdc16030",
+          "rules_version": "r1+fa6fff47",
+          "schema_version": "1.0",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 13,
+            "prompt_a": 2,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": true,
+          "repair_attempts": 0,
+          "warnings": [
+            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 18,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null
+    }
+  ]
+}

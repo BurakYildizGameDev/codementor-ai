@@ -1281,7 +1281,7 @@ Windows konsolunda CLI çökmesi, şemada eksik biçim sınırları.
 
 **Commit:** `feat(faz-27): CI'da Roslyn, konsol UTF-8, şema biçim sınırları`
 
-### Faz 22 — Eval araçları ve precision (Aşama A yapıldı; Aşama B onay bekliyor)
+### Faz 22 — Eval araçları ve precision (yapıldı)
 
 **Dal:** `faz/22-eval-precision` · **Mimari:** §14 · **ADR:** 0003
 
@@ -1298,11 +1298,210 @@ dokunulmaz ("yalnız dev" kuralı). İki aşama; arada kullanıcı onayı.
 - [x] **Kontrol noktası:** analiz + somut prompt önerisi kullanıcıya; canlı koşu onayla
 
 **Aşama B — canlı (claude_cli kotası, yalnız dev)**
-- [ ] Analizin gösterdiği prompt değişiklikleri (adaylar: `design`/`edge_case` kategori tanımları, `design` yalnız soru gereksinimiyle, işaretleme dillerinde "sorun" ile "öneri" ayrımı, Python few-shot)
-- [ ] Dev koşuları: değişiklik sonrası two_pass dev (46 örnek, ~25-35 dk), few-shot 0/1 ablasyonları (kotaya göre yalnız C ailesi); koşu süresince uyku geçici betikle engellenir (kalıcı ayar yok)
-- [ ] README tablosu ve `docs/eval-findings.md` güncel; precision değişimi raporlanır
+- [x] Analizin gösterdiği prompt değişiklikleri (adaylar: `design`/`edge_case` kategori tanımları, `design` yalnız soru gereksinimiyle, işaretleme dillerinde "sorun" ile "öneri" ayrımı, Python few-shot)
+- [x] Dev koşuları (few-shot ablasyonu Faz 34'e kaldı): değişiklik sonrası two_pass dev (46 örnek, ~25-35 dk), few-shot 0/1 ablasyonları (kotaya göre yalnız C ailesi); koşu süresince uyku geçici betikle engellenir (kalıcı ayar yok)
+- [x] README tablosu ve `docs/eval-findings.md` güncel; precision değişimi raporlanır
 
 **Commit:** `feat(faz-22): eval analyze, guard metriği ve precision iyileştirmeleri`
+
+### Yol haritası — 2026-10-02 eklenen fazlar (sıra önerilir)
+
+Kullanıcı kararıyla (2026-10-02) önce Faz 22 Aşama B; ardından kullanıcıdan gelen üç sorun
+(sağlayıcılar, derleyici bağımlılığı, soru bankası) ve teknik borç. Her faz kendi dalında, dar kapsamlı; plan onayı → uygula.
+
+### Faz 28 — Sağlayıcılar: Gemini, Codex, OpenAI, DeepSeek (YAPILACAK)
+
+**Dal:** `faz/28-api-saglayicilar` · **Mimari:** §7, §13 · **ADR:** 0012, 0014 (+ yeni ADR: Gemini)
+
+**Sorun:** Bağlantılar ekranında Gemini için bir API sağlayıcısı yok. Gemini yalnızca `agy`
+CLI'ı üzerinden var ve o da deneysel; kullanıcının girdiği Gemini bağlantısı kabul edilmiyor.
+OpenAI ve DeepSeek adaptörleri yalnızca sahte HTTP (respx) ile test edildi, hiç canlı
+doğrulanmadı ve kullanıcıda çalışmıyor.
+
+- [ ] Teşhis (canlı, kullanıcının anahtarıyla): Bağlantılar → "Bağlantıyı sına" ve
+      `codementor analyze --provider openai|deepseek`. Hata metni ve HTTP durum kodu kaydedilir.
+      Olası nedenler: model adı (`config` varsayılanları güncel mi), `response_format` /
+      `json_schema` katı mod kısıtları (Sonraya: OpenAI katı mod), keyring anahtarı süreç
+      ortamına aktarılmıyor (`desktop/connections.py`), zaman aşımı, 4xx gövdesi
+      kullanıcıya gösterilmiyor
+- [ ] Bulunan kusurların düzeltilmesi; her biri için respx sözleşme testi (gerçek hata gövdesi
+      örnekleriyle: 400 şema reddi, 401, 404 model, 429)
+- [ ] `gemini` sağlayıcısı: Google'ın OpenAI uyumlu uç noktası
+      (`openai_compat`, base_url config'den) ya da yerel `generateContent` + `responseSchema`.
+      Karar ADR'de verilir. `GEMINI_API_KEY`, keyring, Bağlantılar kartı, model listesi
+      config'den
+- [ ] `codex` CLI ajanı (OpenAI Codex CLI, ChatGPT oturumuyla): `cli_agent.py`'ye üçüncü tür
+      (`codex exec`, yapılandırılmış çıktı/şema bayrağı, salt okunur sandbox, araçlar kapalı ya da
+      `allow_tool_agent` gibi açık onay; bayraklar kurulu sürümden doğrulanır). Bağlantılar'da kart
+      (kurulu mu / oturum açık mı), sahte CLI betiğiyle sözleşme testleri, `@pytest.mark.live`
+      duman testi. Güvenlik değerlendirmesi ADR'ye (ADR-0012'nin uzantısı)
+- [ ] Sağlayıcı hata mesajları Türkçe ve eyleme dönük ("anahtar geçersiz", "model bulunamadı:
+      …", "kota doldu")
+- [ ] Canlı duman testleri `@pytest.mark.live` (anahtar yoksa atlanır); sağlayıcı başına tek
+      analiz, golden örnek
+- [ ] Testler: `tests/providers/test_gemini.py`, sözleşme testlerine Gemini;
+      `test_connections.py` (anahtar → ortam aktarımı)
+
+**Commit:** `feat(faz-28): Gemini sağlayıcısı, OpenAI/DeepSeek canlı düzeltmeleri`
+
+### Faz 29 — Derleyicisiz kullanıcı: gömülü araç zinciri (YAPILACAK)
+
+**Dal:** `faz/29-gomulu-derleyici` · **Mimari:** §5.2.2 · **ADR:** 0009 (+ yeni ADR)
+
+**Sorun:** Tier 1 kullanıcının PATH'indeki gcc/clang/dotnet'e bağlı. Çoğu öğrencide bunlar yok, ve
+o durumda Tier 1 `skipped` kalıyor: derleme hataları ve uyarılar kaçıyor. Docker yasak (ADR-0009).
+
+**Yaklaşım (öneri; ADR'de kesinleşir):**
+- **C / C++ / Unreal:** Zig derleyicisi (`zig cc` / `zig c++`), clang tabanlı ve tek klasörlük
+  taşınabilir bir dağıtım. PyPI'de `ziglang` wheel'i olarak da geliyor, Windows/Linux/macOS'ta
+  kurulum gerektirmiyor. `-fsyntax-only` ve `-fdiagnostics-format` clang ile aynı olduğu için
+  `diagnostics.py`'deki clang ayrıştırıcısı yeniden kullanılır.
+- **C# / Unity:** `tools/roslyn-check` şu an `dotnet` çalışma zamanı gerektiriyor.
+  `dotnet publish --self-contained -p:PublishSingleFile=true` ile tek dosyalık bir exe
+  yapılırsa .NET gerekmez (boyut ölçülecek).
+- **Dağıtım seçenekleri:** (a) exe'ye gömmek (+~50–90 MB) ya da (b) "Derleyiciyi indir"
+  düğmesiyle isteğe bağlı indirmek. (b)'de indirme kullanıcı veri dizinine yapılır, sha256 ve
+  URL config'den gelir, indirme bir kez. Öneri: (b), exe küçük kalır.
+
+- [ ] Ölçüm: zig cc ile mevcut derleyici testleri (`-m compiler`) ve Unreal stub denetimi;
+      tanı biçimi ve süre (soğuk başlangıç)
+- [ ] `toolchain.discover`: PATH'ten sonra gömülü/indirilmiş araç (öncelik config'den);
+      `/health/ready` ve masaüstü Bağlantılar'da araç durumu
+- [ ] Self-contained Roslyn yayını (CI exe işi); yoksa mevcut `dotnet` yolu
+- [ ] Masaüstü: "Derleyiciyi indir" (ilerleme, iptal, sha256 doğrulama, hata Türkçe)
+- [ ] Güvenlik: indirilen arşiv yalnızca sabit dizine açılır (yol geçişi denetimi), çalıştırma
+      mevcut `run_process` sınırlarıyla (§12)
+- [ ] Testler: keşif önceliği, sha256 uyuşmazlığı, yarım indirme, arşiv yol geçişi, zig
+      tanılarının ayrıştırılması (fixture)
+
+**Commit:** `feat(faz-29): derleyicisiz kullanıcı için gömülü/indirilebilir araç zinciri`
+
+### Faz 30 — Soru bankası genişletme (YAPILACAK)
+
+**Dal:** `faz/30-soru-bankasi` · **Mimari:** §9 (soru bankası), §12 · **ADR:** —
+
+**Sorun:** 18 soru var (C 4, C++ 3, C# 2, Unity 3, Unreal 2, Python 2, HTML 1, CSS 1). Bu, dil
+başına bir öğrencinin birkaç saatlik çalışmasına bile yetmiyor; zorluk dağılımı da dengesiz.
+
+- [ ] Hedef: dil/motor başına en az 8 soru (toplam ~64), her dilde veryeasy/easy/medium/hard
+      dağılımı; konu haritası (diziler, dizgiler, bağlı yapılar, özyineleme, sıralama/arama,
+      bellek, nesne yaşam döngüsü; motorlarda Update/Tick, GC, bileşen)
+- [ ] Her soruda: gereksinimler, beklenen Big-O, kontrol listesi, yasak çözüm işaretleri
+      (sızıntı), ipucu seviyeleri; `codementor questions validate` geçer
+- [ ] **Kaynak:** kullanıcı bir soru havuzu hazırlayıp verecek; Claude havuzu soru bankası
+      biçimine dönüştürür ve soruları **ve referans çözümleri** kendisi yazar (kullanıcı kararı,
+      2026-10-02). `private/solutions/` şu an erişim dışı (deny kuralı): faz başında kural bu faz
+      için kullanıcı onayıyla açılır ya da çözümler başka bir özel dizine yazılır (planda karar)
+- [ ] Masaüstü/web soru seçiciye dil ve zorluk filtresi (soru sayısı artınca gerekli)
+- [ ] Testler: tüm soruların şema doğrulaması (mevcut), kimlik benzersizliği, dil başına
+      asgari sayı, her zorlukta en az bir soru, sızıntı işaretlerinin referans çözümde geçmesi
+      (çözüm varsa)
+
+**Commit:** `feat(faz-30): soru bankası genişletme ve filtreler`
+
+### Faz 35 — Bulgu doğrulama geçişi (YAPILACAK, canlı ölçüm)
+
+**Dal:** `faz/35-bulgu-dogrulama` · **Mimari:** §5.4, §5.5 · **ADR:** yeni (ek LLM geçişi)
+
+**Amaç:** LLM bulgularının precision'ını, bulgu üretildikten sonra ayrı bir doğrulama adımıyla
+artırmak. Prompt kuralları (Faz 22B) tek başına sınırlı kalıyor. Ölçülen ek bilgi: bulgu
+`confidence` değeri modelden gelmiyor, sistem kanıt eşleşmesine göre veriyor (tam eşleşmede
+0,7), yani doğru ve yanlış bulguları ayırmıyor (Faz 22B ölçümü).
+
+- [ ] Geçiş A ile Sokratik geçişin arasına "doğrula" geçişi. Her LLM bulgusu için model, hatanın
+      somut bir girdide nasıl ortaya çıktığını (girdi, beklenen, gerçekleşen) ya da hangi
+      gereksinimi ihlal ettiğini göstermek zorunda; gösteremediği bulgu düşer. Şema
+      `models/llm_output.py`'de, karar ve gerekçe `AnalysisVerification`'da
+- [ ] Statik bulgular doğrulamaya girmez (deterministik). Kanıt metni koddan birebir kalır
+      (mevcut doğrulayıcı)
+- [ ] Modelin kendi güveni (`high`/`medium`/`low`) şemaya eklenir ve rapordaki `confidence`
+      buna göre hesaplanır; eval'de güven eşiği eğrisi ölçülür
+- [ ] Config: `pipeline.verify_findings = true|false` (varsayılan ölçümle kararlaştırılır),
+      single_pass'te de uygulanabilir
+- [ ] Sızıntı: doğrulama çıktısı öğrenciye gitmez; yine de sızıntı korumasından geçer (§12)
+- [ ] Eval (yalnız dev): doğrulamalı / doğrulamasız two_pass, precision, recall, gecikme ve
+      token farkı; ADR'de karar
+- [ ] Testler: FakeProvider ile düşen/kalan bulgu, şema hatasında güvenli geri dönüş
+      (doğrulama başarısızsa bulgular olduğu gibi kalır ve uyarı yazılır), sızıntı korumasının
+      uygulanması
+
+**Commit:** `feat(faz-35): LLM bulguları için doğrulama geçişi`
+
+### Faz 36 — Hatalar ve öneriler ayrımı + kısıtlama örnekleri (YAPILACAK)
+
+**Dal:** `faz/36-hata-oneri` · **Mimari:** §6 (rapor), §5.4.4 (few-shot), §15 · **ADR:** —
+
+**Amaç:** Bilgi kaybetmeden öğrencinin önce gerçek hataları görmesi. Önemsiz bulguları silmek
+yerine ayrı bir sınıfta göstermek; kaçırma oranı düşmez.
+
+- [ ] Rapor modeli: bulguya `kind: "issue" | "suggestion"` (varsayılanlı; eski raporlar okunur).
+      LLM'den gelir, `low` önemli ve gereksinim ihlali olmayanlar `suggestion` olabilir
+- [ ] Sokratik geçiş ve özet yalnızca `issue` bulgularına dayanır
+- [ ] Masaüstü, web, Markdown/SARIF: "Hatalar" ve katlanmış "Öneriler" bölümü (SARIF'te
+      `note` düzeyi)
+- [ ] Eval: denetim metrikleri `issue` üzerinden; `suggestion` ayrı sayılır (§14.2'ye not)
+- [ ] Few-shot: her dil ailesine en az bir "temiz kod, bulgu yok" örneği (dev/test ile
+      çakışmayan) ve öneri örneği
+- [ ] Testler: model geriye uyumluluğu, rapor biçimleyicileri, Sokratik girdinin süzülmesi,
+      eval metriklerinin `issue` ile hesaplanması
+
+**Commit:** `feat(faz-36): hatalar ve öneriler ayrımı, kısıtlama örnekleri`
+
+### Faz 31 — Güvenlik ve önbellek borcu (YAPILACAK, çevrimdışı)
+
+**Dal:** `faz/31-guvenlik-borcu` · **Mimari:** §12, §11 · **ADR:** —
+
+- [ ] Kural motoru bulgu üst sınırı (kötü niyetli girdi binlerce bulgu → prompt şişmesi);
+      aşılırsa uyarı ve önem sıralı kesme
+- [ ] `rules_version` hash'ine `analysis/` ve `data/call_costs.yaml` dahil (bayat önbellek)
+- [ ] Çöken kural izi DEBUG düzeyinde, WARNING'de kısaltılmış mesaj (kullanıcı kodu §12);
+      `captured_logs` teardown önceki yapılandırmayı geri yükler
+- [ ] `reference_solution_path` soru dosyasının/kaynak kökünün dizinine göre çözülür
+- [ ] Belge temizliği: mimari §20 ADR tablosu (0013–0016+), PROGRESS "Sonraya"dan yapılmış
+      maddeler, `compare` statik satırında injection "—"
+- [ ] Testler her madde için
+
+**Commit:** `fix(faz-31): bulgu sınırı, kural sürümü hash'i, log gizliliği, yol çözümü`
+
+### Faz 32 — Statik kural doğruluğu II (YAPILACAK, çevrimdışı)
+
+**Dal:** `faz/32-kural-dogrulugu-2` · **Mimari:** §8 · **ADR:** —
+
+- [ ] Sıcak yol eşlemesi fonksiyon adı yerine kimlik (satır) ile (Faz 21 denetimi O3); sınıf
+      tabanı (MonoBehaviour/UCLASS) denetimi
+- [ ] C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi
+- [ ] UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı değer tipi sayılır
+- [ ] UE-GC-001: `TArray<AActor*>` / `TMap` alanları; UCLASS olmayan sınıfta doğru öneri
+- [ ] CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection`
+- [ ] Maliyet tablosu: `memset`/`memcpy`, `GetAllActorsOfClass`, `TArray::Remove`, C#
+      `RemoveAt(0)`/`Insert(0)`, döngüde `string +=` / `std::string +` karesel
+- [ ] Static-only dev/test eval'i yeniden; README tablosu
+
+**Commit:** `feat(faz-32): statik kural doğruluğu II`
+
+### Faz 33 — Kullanıcı deneyimi (YAPILACAK)
+
+**Dal:** `faz/33-ux` · **Mimari:** §15 · **ADR:** —
+
+- [ ] Masaüstü ve web raporunda tahmini token/maliyet
+- [ ] Arama: büyük/küçük harf, tam sözcük, değiştir (Ctrl+H); bırakılan klasördeki dosyaları
+      listeleme
+- [ ] CLI ilerleme göstergesinde canlı süre/token
+- [ ] "toml'dan yeniden yükle" düğmesi
+
+**Commit:** `feat(faz-33): kullanıcı deneyimi iyileştirmeleri`
+
+### Faz 34 — Ölçümün genişletilmesi (YAPILACAK, canlı, isteğe bağlı)
+
+**Dal:** `faz/34-eval-genisletme` · **Mimari:** §14 · **ADR:** 0003
+
+- [ ] İkinci model ölçümü (Faz 28 sonrası Gemini/DeepSeek/OpenAI'den biri): two_pass vs
+      single_pass. ADR-0003'ün "zayıf modelde doğrulanmamış bulgu" kaygısı burada ölçülür
+- [ ] Few-shot 0/1/2 ablasyonu (§14.4)
+- [ ] Dev setini büyütme (yeni sorulardan, Faz 30), etiket incelemesi kullanıcıyla
+- [ ] README ve `docs/eval-findings.md` güncel
+
+**Commit:** `feat(faz-34): ikinci model ve ablasyon ölçümleri`
 
 ---
 

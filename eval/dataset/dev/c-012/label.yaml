@@ -10,6 +10,7 @@ expected:
   space_complexity: "1"
   findings:
     - { category: memory_safety, line: 11, note: "free(node) sonrası node->next okunuyor" }
+    - { category: design, line: 3, note: "soru gereksinimi: başa/sona ekleme, değere göre silme ve yazdırma yok (Faz 22B)" }
   must_not_contain: ["Node *next = node->next", "next = node->next;"]
 tags: [use-after-free]
 split: dev

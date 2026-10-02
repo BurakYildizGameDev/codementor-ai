@@ -1,0 +1,50 @@
+id: python-none-window-sum
+language: python
+engine: none
+title: "Python: k uzunluklu en büyük pencere toplamı"
+code: |
+  def max_window_sum(values, k):
+      best = 0
+      for i in range(len(values) - k):
+          window = sum(values[i:i + k])
+          if window > best:
+              best = window
+      return best
+static_hint: "O(n^2)"
+static_findings: []
+analysis:
+  complexity:
+    reasoning_steps:
+      - "3. satırdaki for döngüsü yaklaşık n - k kez döner."
+      - "4. satırda her turda k elemanlık dilim kopyalanıp toplanıyor: tur başına O(k)."
+      - "Toplam O(n*k); statik ipucu sum çağrısını n saydığı için O(n^2) diyor, dilim uzunluğu k olduğundan sınır O(n*k)."
+      - "Dilim her turda k elemanlık geçici bir liste oluşturur: ek bellek O(k)."
+    time_complexity: "O(n*k)"
+    space_complexity: "O(k)"
+    optimal_time_target: "O(n)"
+    agreement: conflicts
+  additional_findings:
+    - category: edge_case
+      severity: medium
+      line_start: 3
+      line_end: null
+      evidence: "range(len(values) - k)"
+      description: "Son pencere hiç denenmiyor; liste tam k elemanlıysa döngü bir kez bile dönmez ve sonuç 0 olur."
+    - category: edge_case
+      severity: medium
+      line_start: 2
+      line_end: null
+      evidence: "best = 0"
+      description: "Tüm değerler negatifse hiçbir pencere 0'ı geçemez; fonksiyon gerçek en büyük toplam yerine 0 döndürür."
+    - category: performance
+      severity: medium
+      line_start: 4
+      line_end: null
+      evidence: "sum(values[i:i + k])"
+      description: "Komşu iki pencere k - 1 elemanı paylaşıyor ama her turda bu elemanlar baştan kopyalanıp toplanıyor."
+socratic:
+  key_flaw_concept: "Döngü sınırında son pencerenin atlanması"
+  guiding_questions:
+    - "values = [1, 2, 3] ve k = 3 için döngü kaç kez döner ve fonksiyon ne döndürür?"
+    - "Pencere bir adım kaydığında toplamdan hangi eleman çıkar, hangisi girer?"
+  next_step_hint: "Küçük bir liste için her turdaki i değerini ve incelenen pencereyi tablo hâlinde yazın."

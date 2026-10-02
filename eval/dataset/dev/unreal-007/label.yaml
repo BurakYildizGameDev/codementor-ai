@@ -10,6 +10,7 @@ expected:
   space_complexity: "1"
   findings:
     - { category: garbage_collection, line: 19, rule_id: UE-GC-001, note: "yok edilen hedef sarkan işaretçi bırakır" }
+    - { category: design, line: 8, note: "soru gereksinimi: sahibin canını yenileyen mantık yok (Faz 22B)" }
   must_not_contain: ["TWeakObjectPtr<AActor> HealTarget", "TObjectPtr<AActor> HealTarget"]
 tags: [gc]
 split: dev

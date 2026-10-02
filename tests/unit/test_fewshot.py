@@ -29,6 +29,7 @@ COMBOS = [
     (Language.CSHARP, Engine.NONE),
     (Language.CSHARP, Engine.UNITY),
     (Language.CPP, Engine.UNREAL),
+    (Language.PYTHON, Engine.NONE),
 ]
 
 VALID = """\

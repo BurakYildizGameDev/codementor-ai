@@ -174,11 +174,14 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 | claude_cli / claude-opus-5-5 | single_pass | — | 31 (dev) | 100% / 100% | 100% / 100% | 92% / 92% | 32% / 96% / 47% | 96% | 0% | 100% | 13.1 / 24.5 | 9359 |
 | claude_cli / claude-opus-5-5 | two_pass | facts | 31 (dev) | 100% / 100% | 100% / 100% | 85% / 92% | 28% / 100% / 43% | 96% | 0% | 100% | 20.5 / 42.3 | 13227 |
 | claude_cli / claude-opus-5-5 | two_pass | line_numbers | 31 (dev) | 100% / 100% | 100% / 100% | 92% / 92% | 28% / 100% / 44% | 96% | 0% | 100% | 20.4 / 41.3 | 13861 |
-| Yalnızca statik (LLM yok) | static | — | 31 (dev) | — / — | 100% / 100% | 96% / 96% | 100% / 50% / 67% | 100% | 0% | 0% | 0.0 / 0.1 | — |
+| claude_cli / claude-opus-5-5 | two_pass | — | 31 (dev) | 100% / 100% | 100% / 100% | 96% / 96% | 67% / 86% / 75% | 100% | 0% | 100% | 17.5 / 31.3 | 13389 |
+| Yalnızca statik (LLM yok) | static | — | 31 (dev) | — / — | 100% / 100% | 96% / 96% | 100% / 37% / 54% | 100% | 0% | 0% | 0.0 / 0.1 | — |
 
-Sürümler: prompt v1+e485058f · kurallar r1+fa6fff47 · şema 1.0
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
+Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 <!-- eval-table:dev:end -->
+
+> Faz 22B (2026-10-02): son two_pass satırı yeni prompt'tur (`v1+fdc16030`: "sorun" ölçütü, kategori tanımları, en fazla 6 bulgu, Python few-shot). Dev etiketlerine 7 örnekte soru gereksinimi bulguları eklendi; statik satır güncel etiketlerle yeniden koşuldu, eski LLM satırları kayıtlı (eski etiketli) metriklerini korur. Güncel etiketlerle eski two_pass: P / R / F1 34 / 80 / 48. Ayrıntı: `docs/eval-findings.md` §7.
 
 **Python, HTML, CSS (Faz 18, 36 örnek; dil başına 12):** test 21 / dev 15, yalnızca bu dillerde koşuldu (`eval run --language`). Dil başına döküm ve yorum: `docs/eval-findings.md` §4.
 
@@ -197,9 +200,13 @@ Sürümler: prompt v1+e485058f · kurallar r1+286dfb2f · şema 1.0
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Yalnızca statik (LLM yok) | static | — | 15 (dev) | — / — | 100% / 100% | 100% / 100% | 100% / 55% / 71% | 100% | 0% | 0% | 0.0 / 0.0 | — |
 | claude_cli / claude-opus-5-5 | two_pass | — | 15 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 54% / 95% / 69% | 89% | 0% | 100% | 16.2 / 34.2 | 9530 |
+| claude_cli / claude-opus-5-5 | two_pass | — | 15 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 68% / 85% / 76% | 94% | 0% | 100% | 15.6 / 25.8 | 10127 |
 
 Sürümler: prompt v1+e485058f · kurallar r1+286dfb2f · şema 1.0
+Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 <!-- eval-table:dev-diller:end -->
+
+> Son two_pass satırı Faz 22B prompt'udur (`v1+fdc16030`).
 
 Tablolar `uv run codementor eval compare eval/results/*_test.json` (ve `*_dev.json`) çıktısıdır;
 `tests/unit/eval/test_readme_table.py` sonuç dosyalarıyla birebir olduklarını denetler.

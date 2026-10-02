@@ -1,4 +1,4 @@
-# Temiz: DeltaTime ile sınırlandırılmış can yenileme — yanlış pozitif ölçümü
+# DeltaTime ile sınırlandırılmış can yenileme; soru gereksinimleri eksik (Faz 22B: artık temiz değil)
 id: unreal-011
 language: cpp
 engine: unreal
@@ -8,8 +8,10 @@ expected:
   compilation_status: passed
   time_complexity: "1"
   space_complexity: "1"
-  findings: []
+  findings:
+    - { category: design, line: 3, note: "soru gereksinimi: son hasardan sonra 3 sn bekleme yok (Faz 22B)" }
+    - { category: performance, line: 5, note: "soru: çoğu aktörün canı dolu; tick hiç kapatılmıyor (Faz 22B)" }
   must_not_contain: []
-tags: [clean]
+tags: [requirement]
 split: dev
 reviewed: true

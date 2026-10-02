@@ -10,6 +10,8 @@ expected:
   space_complexity: "1"
   findings:
     - { category: garbage_collection, line: 15, note: "saniyede 12 nesne yaratılıp yok ediliyor" }
+    - { category: design, line: 7, note: "soru gereksinimi: saniyede 20 mermi, varsayılan 12 (Faz 22B)" }
+    - { category: design, line: 16, note: "soru gereksinimi: mermi ömrü 3 sn, kodda 2 sn (Faz 22B)" }
   must_not_contain: ["Queue<Bullet>", "ObjectPool<Bullet>"]
 tags: [allocation, pooling]
 split: dev
