@@ -87,6 +87,20 @@ def test_breakdown_table_has_group_rows() -> None:
     assert "| c | 2 |" in table
 
 
+def test_breakdown_table_has_latency_token_guard_columns() -> None:
+    groups = {
+        "c": compute_metrics(
+            [(label(), result(report(tokens=(1500, 500)), latency=2500, llm=True))]
+        )
+    }
+    table = breakdown_table(groups)
+    header = table.splitlines()[0]
+    assert "p50 (sn)" in header
+    assert "Token ort." in header
+    assert "Koruma" in header
+    assert "| 2.5 | 2000 | 0 |" in table
+
+
 def test_eval_breakdown_cli(tmp_path: Path) -> None:
     dataset = tmp_path / "dataset"
     sample = dataset / "dev" / "c-001"

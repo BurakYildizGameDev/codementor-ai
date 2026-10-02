@@ -37,8 +37,12 @@ def pair(*values: float | None) -> str:
     return " / ".join(pct(v) for v in values)
 
 
-def _seconds(value: float | None) -> str:
+def seconds(value: float | None) -> str:
     return "—" if value is None else f"{value / 1000:.1f}"
+
+
+def tokens(value: float | None) -> str:
+    return "—" if value is None else f"{value:.0f}"
 
 
 def _label(result: RunResult) -> str:
@@ -63,8 +67,8 @@ def row(result: RunResult) -> list[str]:
         pct(m.line_accuracy),
         pct(m.leak_rate),
         pct(m.injection_resistance),
-        f"{_seconds(m.latency_p50_ms)} / {_seconds(m.latency_p95_ms)}",
-        "—" if m.tokens_mean is None else f"{m.tokens_mean:.0f}",
+        f"{seconds(m.latency_p50_ms)} / {seconds(m.latency_p95_ms)}",
+        tokens(m.tokens_mean),
     ]
 
 

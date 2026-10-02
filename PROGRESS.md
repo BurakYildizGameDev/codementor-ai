@@ -30,6 +30,7 @@
 | 25 | ✅ | faz/25-saglayicilar | 2026-10-02 | Claude Code / — |
 | 26 | ✅ | faz/26-api-web | 2026-10-02 | Claude Code / — |
 | 27 | ✅ | faz/27-saglamlik | 2026-10-02 | Claude Code / — |
+| 22 (Aşama A) | ✅ | faz/22-eval-precision | 2026-10-02 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -637,6 +638,17 @@
 **Push sonrası bulunan (8d080c4 → faz/27-roslyn-linux):** koruma testi işe yaradı: Linux'ta C# derleyici testleri ilk kez koştu ve hepsi `tool_error` ile düştü (daha önce sessizce atlanıyordu, yani Linux sunucuda C# Tier 1 hiç çalışmıyordu). Teşhis için Roslyn araç hatasında çıkış kodu + maskeli stderr başı log'a yazılıyor (gcc/clang stderr'i kod içerebileceği için loglanmaz). Log: CoreCLR açılışta "Out Of Memory" (0x8007000E, çıkış 137). Sebep: .NET'in Linux'ta varsayılan W^X çift eşlemesi memfd'yi büyütüyor, POSIX `RLIMIT_FSIZE` (1 MB) buna izin vermiyor. Çözüm: Roslyn ortamına `DOTNET_EnableWriteXorExecute=0` (Roslyn kod çalıştırmaz; dosya boyutu sınırı korunur). Dalda elle tetiklenen CI: Linux'ta 15 derleyici testi geçti, exe Roslyn'le derlendi. Ayrıca mimari Markdown kod bloğu ruff biçimine uymuyordu (ruff `.md` içindeki Python'u da biçimler).
 **Bu fazda öğrendiğim:** Atlanabilir (skipif) testler CI'da araç kurulumu bozulduğunda sessizce yeşil kalır; zorunluluk bayrağıyla bir koruma testi bunu yakalar. Araç süreçlerine konan kaynak sınırları (ör. dosya boyutu) çalışma zamanlarının iç mekanizmalarını (W^X memfd) beklenmedik biçimde kırabilir; hata metni loglanmadan teşhis edilemezdi.
 
+## Faz 22 — Notlar (Aşama A: eval analiz araçları, çevrimdışı)
+**Yapılanlar:**
+- `eval/analysis.py` + `codementor eval analyze <sonuç.json> [--dataset] [--out]`: katı P/R/F1, kategorisiz (yalnız satır) eşleşme, `low` hariç ölçüm, kategori karışıklık tablosu, örnek bazında FP/FN listesi (Markdown). `match_findings` / `audit_metrics` `ignore_category` aldı (varsayılan davranış ve §14.2 metrikleri değişmedi).
+- `Metrics.guard_interventions` (varsayılan `None`, eski sonuç dosyaları okunur): sızıntı korumasının devreye girdiği örnek sayısı (`leak_check` regenerated/dropped_questions ya da temizleme uyarısı). Uyarı metinleri `pipeline/stages.py`'de `SCRUB_WARNING_*` sabitleri oldu. Mevcut dev koşularında ADR-0003'ün elle sayılmış değerleriyle birebir aynı (two_pass 2, single_pass 6).
+- `eval breakdown` tablosu: p50 (sn), token ortalaması, koruma sütunları. `compare.seconds/tokens` ortak biçimleyiciler; README tablosu değişmedi.
+- `docs/eval-findings.md` §6: mevcut dev koşularının analizi ve Aşama B prompt önerisi.
+- Testler: `test_analyze.py` (12), `test_metrics.py` (+4), `test_breakdown.py` (+1).
+**Bulgu (özet):** FP'lerin ana kaynağı fazla bulgu sayısı (C ailesi two_pass: 26 beklenen bulguya 82 tahmin). Kategori karışıklığı küçük (60 FP'nin 4'ü). `low` önemli tahminler FP'lerin %45'i; bunları atmak C ailesinde P'yi %27'den %40'a çıkarıyor, işaretleme dillerinde ise R'yi %95'ten %60'a düşürüyor. Elle sınıflandırma: savunmacı girdi denetimi ~15, gereksinim karşılanmamış ~8 (büyük olasılıkla doğru, etiketsiz), kuramsal uç değer ~4.
+**Mimariden sapmalar (ADR linki):** yok (§14.2 metriklerine ek analiz; eşleşme kuralı değişmedi).
+**Açık sorular:** (1) Aşama B (canlı, claude_cli kotası) onayı. (2) Soru gereksinimi karşılanmadığı için bildirilen `design` bulguları dev etiketlerine eklensin mi (precision artar, Faz 12 kıyası bozulur)?
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 26: API hız sınırı (istemci başına, süreçler arası doğru); web arayüzünün API anahtarı göndermesi.
 - Faz 26: SQLite çağrılarını da iş parçacığına almak (bağlantı başına iş parçacığı ya da havuz).
@@ -712,7 +724,7 @@
 - ~~CLI ajanı iptali~~ → Faz 19'da yapıldı.
 - ~~Faz 5 hatası (csharp-011): `foreach` koleksiyon ifadesindeki çağrı döngü içinde sayılıyordu → `high` O(n²)~~ → çözüldü (2026-09-30, kullanıcı isteğiyle Faz 12 içinde): `_context.contexts` döngü başlığında bir kez değerlendirilen alanlara (`initializer`, `right`: C `for` başlatıcısı, C++ range-for, C# `foreach`) dış bağlamı verir; `tests/fixtures/complexity/on_{foreach_header_call,range_for_header_call,for_initializer_strlen}` + koşuldaki `strlen` için `on2_strlen_condition`. Dev static-only Big-O %88 → %92.
 - Çağrı maliyeti tablosu eksikleri (eval notları): `std::memset`/`memcpy` (n), `UGameplayStatics::GetAllActorsOfClass` (n), `TArray::Remove` (n); `std::string operator+` / C# `string +=` döngüde karesel (şu an n).
-- Faz 12: eval'e `guard_interventions` metriği (sızıntı korumasının müdahale sayısı; şu an yalnızca rapor uyarılarından sayılabiliyor, ADR-0003'ün ana argümanı).
+- ~~Faz 12: eval'e `guard_interventions` metriği~~ → Faz 22 Aşama A.
 - Faz 12: `eval analyze` aracı (kategorisiz eşleşme, önem filtreli precision, örnek bazında FP/FN); `compare` statik satırında injection direncini "—" göstermeli.
 - Faz 12: precision iyileştirme — `design` bulgularını yalnızca soru gereksinimi varken üretmek, `low` bulguları raporda ayrı göstermek; kategori belirsizliği (sıfıra bölme `edge_case`/`undefined_behavior`, null `edge_case`/`memory_safety`) için prompt'ta kategori tanımları. Değişiklik sonrası dev'de yeniden ölçülmeli (test artık kullanıldı).
 - Faz 12: few-shot 0/1 ablasyonu (§14.4) koşulmadı.
@@ -725,9 +737,11 @@
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-02):** Faz 26 `main`'de, push'lu, CI yeşil. Faz 27 `faz/27-saglamlik`
-dalında → commit + main ff + push (CI'da ilk kez dotnet/Roslyn adımları koşacak). Yol haritasında
-kalan tek faz: Faz 22 (canlı eval, claude_cli kotası harcar).
+**Kaldığımız yer (2026-10-02):** Faz 0-27 (22 hariç) `main`'de, push'lu, CI yeşil. Kalan tek
+faz Faz 22: planı `docs/UYGULAMA_PLANI.md`'de yapılacaklar listesi olarak kayıtlı. Önce Aşama A
+(çevrimdışı: `eval analyze`, `guard_interventions`, `breakdown` sütunları, mevcut dev analizi),
+sonra kullanıcı onayıyla Aşama B (canlı, claude_cli kotası). **Aşama A yapıldı** (faz/22-eval-precision);
+analiz ve öneri `docs/eval-findings.md` §6'da, Aşama B onay bekliyor.
 
 **Kullanıcı işleri:** (a) yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
@@ -742,7 +756,9 @@ kalan tek faz: Faz 22 (canlı eval, claude_cli kotası harcar).
    duyarlılığı; maliyet tablosu (`memset`, `GetAllActorsOfClass`, `TArray::Remove`, C#
    `RemoveAt(0)`/`Insert(0)`, döngüde `string +=` karesel); çöken kural için `log.exception`;
    eski eval etiket kararı (b) uygulanır. Çevrimdışı.
-3. **Faz 22 — Eval araçları ve precision (canlı, yalnız dev).** `eval analyze` (kategorisiz
+3. **Faz 22 — Eval araçları ve precision (canlı, yalnız dev). — SIRADAKİ, planı hazır**
+   (ayrıntılı iş listesi: `docs/UYGULAMA_PLANI.md` "Faz 22"; Aşama A çevrimdışı araçlar +
+   mevcut dev koşularının analizi → kontrol noktası → Aşama B canlı prompt ayarı ve dev koşuları). `eval analyze` (kategorisiz
    eşleşme, önem filtresi, örnek bazında FP/FN), `guard_interventions` metriği, `breakdown`'a
    süre/token; prompt: işaretleme dillerinde "sorun" ölçütü, kategori tanımları (`design` /
    `edge_case`), `design` yalnız soru gereksinimiyle; Python few-shot; few-shot 0/1 ablasyonu.

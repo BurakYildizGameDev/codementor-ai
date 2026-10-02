@@ -1281,6 +1281,29 @@ Windows konsolunda CLI çökmesi, şemada eksik biçim sınırları.
 
 **Commit:** `feat(faz-27): CI'da Roslyn, konsol UTF-8, şema biçim sınırları`
 
+### Faz 22 — Eval araçları ve precision (Aşama A yapıldı; Aşama B onay bekliyor)
+
+**Dal:** `faz/22-eval-precision` · **Mimari:** §14 · **ADR:** 0003
+
+**Amaç:** Denetim precision'ının nereden düştüğünü ölçmek (yanlış pozitiflerin kaynağı), ölçümle
+gerekçelenen prompt değişikliklerini yapmak ve dev bölümünde yeniden ölçmek. Test bölümüne
+dokunulmaz ("yalnız dev" kuralı). İki aşama; arada kullanıcı onayı.
+
+**Aşama A — çevrimdışı (kota harcamaz; mevcut dev koşuları üzerinde)**
+- [x] `codementor eval analyze <sonuç.json>`: katı P/R/F1 + kategorisiz eşleşme (yalnız satır), önem filtreli precision (`low` hariç), kategori karışıklık tablosu (satır doğru, kategori yanlış), örnek bazında FP/FN listesi (kimlik, satır, kategori, önem, kaynak, açıklama başı); Markdown çıktı; LLM çağırmaz, etiketler veri setinden
+- [x] `guard_interventions` metriği (sızıntı korumasının müdahale sayısı; ADR-0003'ün ana argümanı); `Metrics`'e varsayılanlı alan, eski sonuç dosyaları okunur
+- [x] `eval breakdown` tablosuna süre (p50) ve token ortalaması sütunları
+- [x] Mevcut dev koşularının analizi `docs/eval-findings.md`'ye: FP kaynağı `design` mı, `low` önem mi, kategori karışıklığı mı, işaretleme dillerinde "iyi uygulama" önerileri mi
+- [x] Testler: `tests/unit/eval/test_analyze.py` (kategorisiz eşleşme, önem filtresi, karışıklık tablosu, FP/FN listesi), `test_metrics.py` (`guard_interventions`, eski sonuç), breakdown sütunları
+- [x] **Kontrol noktası:** analiz + somut prompt önerisi kullanıcıya; canlı koşu onayla
+
+**Aşama B — canlı (claude_cli kotası, yalnız dev)**
+- [ ] Analizin gösterdiği prompt değişiklikleri (adaylar: `design`/`edge_case` kategori tanımları, `design` yalnız soru gereksinimiyle, işaretleme dillerinde "sorun" ile "öneri" ayrımı, Python few-shot)
+- [ ] Dev koşuları: değişiklik sonrası two_pass dev (46 örnek, ~25-35 dk), few-shot 0/1 ablasyonları (kotaya göre yalnız C ailesi); koşu süresince uyku geçici betikle engellenir (kalıcı ayar yok)
+- [ ] README tablosu ve `docs/eval-findings.md` güncel; precision değişimi raporlanır
+
+**Commit:** `feat(faz-22): eval analyze, guard metriği ve precision iyileştirmeleri`
+
 ---
 
 ## 7. PROGRESS.md Şablonu

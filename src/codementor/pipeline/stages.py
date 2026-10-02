@@ -50,6 +50,9 @@ log = get_logger("codementor.pipeline")
 MAX_REFERENCE_BYTES = 256 * 1024
 _HINT_CONFIDENCE = {"low": 0.3, "medium": 0.5, "high": 0.7}
 UNKNOWN_SPACE = "?"
+# Sızıntı korumasının temizleme uyarıları; eval `guard_interventions` bunları sayar.
+SCRUB_WARNING_COMPLEXITY = "Karmaşıklık gerekçesinden çözümü ele veren adımlar çıkarıldı."
+SCRUB_WARNING_FINDINGS = "Bazı bulgu açıklamaları çözümü ele verdiği için sadeleştirildi."
 
 
 @dataclass
@@ -195,7 +198,7 @@ def scrub_analysis(
         if bad:
             steps = [s for i, s in enumerate(complexity.reasoning_steps) if i not in bad]
             complexity = complexity.model_copy(update={"reasoning_steps": steps})
-            warnings.append("Karmaşıklık gerekçesinden çözümü ele veren adımlar çıkarıldı.")
+            warnings.append(SCRUB_WARNING_COMPLEXITY)
     llm_findings = [f for f in verification.findings if f.source is FindingSource.LLM]
     check = verify.leaks([f.description for f in llm_findings])
     leaky = {llm_findings[v.index].id for v in check.violations if v.index is not None}
@@ -206,7 +209,7 @@ def scrub_analysis(
         for f in verification.findings
     ]
     if leaky:
-        warnings.append("Bazı bulgu açıklamaları çözümü ele verdiği için sadeleştirildi.")
+        warnings.append(SCRUB_WARNING_FINDINGS)
     scrubbed = verification.model_copy(update={"complexity": complexity, "findings": findings})
     return scrubbed, warnings
 

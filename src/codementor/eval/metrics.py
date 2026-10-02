@@ -14,12 +14,16 @@ from dataclasses import dataclass
 from codementor.models.bigo import BigO, BigOError, parse_bigo
 from codementor.models.eval import ExpectedFinding, Label, Metrics, PricingFile, SampleResult
 from codementor.models.findings import Finding
+from codementor.models.report import AnalysisReport
 from codementor.pipeline.cost import estimate_cost
+from codementor.pipeline.stages import SCRUB_WARNING_COMPLEXITY, SCRUB_WARNING_FINDINGS
 
 MATCH_LINE_DISTANCE = 2
 _WHITESPACE = re.compile(r"\s+")
 _VARIABLE = re.compile(r"[a-z]\w*")
 _LOG = "log"
+_GUARD_ACTIONS = frozenset({"regenerated", "dropped_questions"})
+_SCRUB_WARNINGS = frozenset({SCRUB_WARNING_COMPLEXITY, SCRUB_WARNING_FINDINGS})
 
 Pair = tuple[Label, SampleResult]
 
@@ -42,14 +46,19 @@ def percentile(values: Sequence[float], q: float) -> float | None:
 
 
 def match_findings(
-    expected: Sequence[ExpectedFinding], predicted: Sequence[Finding]
+    expected: Sequence[ExpectedFinding],
+    predicted: Sequence[Finding],
+    *,
+    ignore_category: bool = False,
 ) -> list[tuple[ExpectedFinding, Finding]]:
-    """Aynı kategori + satır farkı ≤ 2, bire bir; en küçük satır farkları önce eşleşir."""
+    """Aynı kategori + satır farkı ≤ 2, bire bir; en küçük satır farkları önce eşleşir.
+    `ignore_category`: yalnız satıra bakılır (Faz 22 analizi; §14.2 metriği değil)."""
     candidates = sorted(
         (abs(e.line - p.line_start), i, j)
         for i, e in enumerate(expected)
         for j, p in enumerate(predicted)
-        if e.category == p.category and abs(e.line - p.line_start) <= MATCH_LINE_DISTANCE
+        if (ignore_category or e.category == p.category)
+        and abs(e.line - p.line_start) <= MATCH_LINE_DISTANCE
     )
     used_e: set[int] = set()
     used_p: set[int] = set()
@@ -134,14 +143,16 @@ class AuditScores:
     line_accuracy: float | None
 
 
-def audit_metrics(pairs: Sequence[Pair]) -> AuditScores:
+def audit_metrics(pairs: Sequence[Pair], *, ignore_category: bool = False) -> AuditScores:
     """Mikro ortalamalı precision/recall/F1 + eşleşenlerde satırın birebir doğru oranı."""
     tp = predicted_total = expected_total = exact_lines = 0
     for label, result in pairs:
         if result.report is None:
             expected_total += len(label.expected.findings)
             continue
-        matches = match_findings(label.expected.findings, result.report.findings)
+        matches = match_findings(
+            label.expected.findings, result.report.findings, ignore_category=ignore_category
+        )
         tp += len(matches)
         exact_lines += sum(1 for e, p in matches if e.line == p.line_start)
         predicted_total += len(result.report.findings)
@@ -171,6 +182,22 @@ def injection_resistance(pairs: Sequence[Pair]) -> float | None:
         if report.meta.early_exit or not report.meta.degraded:
             resisted += 1
     return ratio(resisted, len(injected))
+
+
+def guard_intervened(report: AnalysisReport) -> bool:
+    """Sızıntı koruması bu raporda devreye girdi mi: Sokratik çıktı yeniden üretildi/sorular
+    düşürüldü ya da gerekçe/bulgu açıklaması temizlendi."""
+    socratic = report.socratic
+    if socratic is not None and socratic.leak_check in _GUARD_ACTIONS:
+        return True
+    return any(w in _SCRUB_WARNINGS for w in report.meta.warnings)
+
+
+def guard_interventions(pairs: Sequence[Pair]) -> int | None:
+    """Korumanın devreye girdiği örnek sayısı (ADR-0003); LLM çağrılmayan koşuda None."""
+    if not any(r.llm_called for _, r in pairs):
+        return None
+    return sum(1 for _, r in pairs if r.report is not None and guard_intervened(r.report))
 
 
 def cost_estimate(results: Sequence[SampleResult], pricing: PricingFile | None) -> float | None:
@@ -222,4 +249,5 @@ def compute_metrics(pairs: Sequence[Pair], pricing: PricingFile | None = None) -
         tokens_mean=sum(tokens) / len(tokens) if tokens else None,
         cost_est=cost_estimate([r for _, r in pairs], pricing),
         errors=sum(1 for _, r in pairs if r.error is not None),
+        guard_interventions=guard_interventions(pairs),
     )

@@ -181,3 +181,61 @@ metriklerini korur (yeniden koşulmadı).
   (Faz 12 kullanıcı kararı); kural tablosu (§8.2) C-MEM-002'yi `memory_safety` sayar. Kategori
   uyuşmazlığı hem FP hem FN üretir; test etiketi değiştirilmedi (kullanıcı kararı bekliyor).
 
+
+## 6. Faz 22 Aşama A: precision analizi (dev, çevrimdışı)
+
+`codementor eval analyze <sonuç.json>` ile mevcut dev koşuları yeniden incelendi (LLM çağrısı
+yok). Etiketler güncel veri setinden geldiği için katı metrikler kayıtlı Faz 12 değerlerinden
+biraz farklıdır: Faz 21'de eklenen iki etiket (`c-008` C-MEM-003, `csharp-009` CS-ALLOC-002)
+LLM koşularında FN olarak görünüyor (two_pass dev recall %92 → %85).
+
+| Koşu (dev) | Katı P / R / F1 | Kategorisiz P / R | `low` hariç P / R | Tahmin / beklenen | Koruma |
+|---|---|---|---|---|---|
+| C ailesi two_pass | 27 / 85 / 41 | 32 / 100 | 40 / 85 | 82 / 26 | 2 |
+| C ailesi single_pass | 32 / 88 / 46 | 36 / 100 | 43 / 88 | 73 / 26 | 6 |
+| C ailesi two_pass, olgusuz | 28 / 92 / 42 | 30 / 100 | 40 / 92 | 87 / 26 | 6 |
+| C ailesi two_pass, satır no.suz | 28 / 92 / 43 | 31 / 100 | 40 / 88 | 85 / 26 | 4 |
+| Python/HTML/CSS two_pass | 54 / 95 / 69 | 57 / 100 | 63 / 60 | 35 / 20 | 1 |
+
+"Koruma" yeni `guard_interventions` metriğidir. Sızıntı korumasının devreye girdiği örnek
+sayısını verir ve ADR-0003'teki elle sayılmış değerlerle birebir tutar.
+
+**Bulgular.**
+- **Kategori karışıklığı küçük bir pay:** kategorisiz eşleşme precision'ı yalnızca 3–5 puan
+  artırıyor (C ailesi two_pass: 60 FP'nin 4'ü). FP'lerin hepsi LLM kaynaklı, statik kurallar
+  FP üretmiyor.
+- **FP'lerin ana kaynağı fazla bulgu sayısı:** 26 beklenen bulguya karşı 82 tahmin var. FP
+  kategorileri: `design` 17, `edge_case` 14, `input_handling` 10, `performance` 9.
+- **`low` önemli bulgular FP'lerin %45'i (27/60).** Bunları atmak C ailesinde precision'ı
+  %27'den %40'a çıkarıyor ve recall'u düşürmüyor. Python/HTML/CSS'te ise recall %95'ten %60'a
+  iniyor, çünkü işaretleme dillerinde etiketli sorunların çoğunu model `low` olarak bildiriyor.
+  Önem filtresi bu yüzden tek başına çözüm değil.
+- **C ailesi two_pass'teki 60 FP elle sınıflandırıldı (yaklaşık):**
+  - savunmacı girdi denetimi, 15: public metotta null parametre, negatif `n`, Inspector'da
+    atanmamış alan gibi durumlar;
+  - soru gereksinimi karşılanmamış (`design`, çoğu `high`), 8: kod istenen işlevi yapmıyor. Bu
+    bulgular büyük olasılıkla doğru; etiketler yalnızca yerleştirilmiş hataları kapsıyor;
+  - kuramsal uç değerler, 4: `INT_MIN`, 2³¹ satır, işaretli taşma;
+  - kategori karışıklığı, 4;
+  - kalan 29: mikro performans, stil ve en iyi uygulama önerileri. Bunların ~5'i gerçek ama
+    etiketsiz hata: `c-012` baş işaretçinin değerle geçirilmesi, `cpp-009` beşler kuralı,
+    `unity-011` yerçekimi, `unreal-011` açık kalan Tick, `c-007` çakışan bellek.
+- **Python/HTML/CSS** (16 FP): 8'i `edge_case`; bunların 4'ü eksik `viewport`/`charset`
+  meta etiketi, kalanlar sınır durumu ayrıntıları.
+
+**Aşama B için somut prompt önerisi** (yalnız dev'de ölçülecek):
+1. Kategori tanımları: `input_handling` yalnızca dışarıdan gelen girdi için (stdin, dosya,
+   ağ, kullanıcı) ya da soru o girdiyi tanımlıyorsa kullanılır; iç/public metot
+   parametresinin null denetimi bulgu değildir. `edge_case`, sorunun girdi alanında
+   bulunan durumlar içindir (boş dizi, `n = 0`); `INT_MIN` veya 2³¹ gibi kuramsal uç değerler
+   bu kapsama girmez, soru aralık vermediği sürece raporlanmaz.
+2. `design` yalnızca (a) soru gereksinimi karşılanmadığında ya da (b) yapısal bir sorun hataya
+   yol açtığında kullanılır. Stil ve "daha iyi olabilir" önerileri bulgu değildir.
+3. Önem disiplini: `low` önemde en fazla 2 bulgu, ve bunlar da yalnızca gerçek sorunlar için.
+   İşaretleme dillerinde "sorun" ölçütü: görüntülemeyi, erişilebilirliği ya da standardı
+   bozuyorsa sorundur, bozmuyorsa öneridir.
+4. Python için tek bir few-shot örneği.
+
+**Kullanıcı kararı gereken nokta:** soru gereksinimi karşılanmadığı için bildirilen `design`
+bulgularının (~8) dev etiketlerine eklenip eklenmeyeceği. Etiketlemek precision'ı doğrudan
+yükseltir ama Faz 12 sayılarıyla doğrudan kıyası bozar.

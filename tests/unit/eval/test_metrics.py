@@ -10,6 +10,7 @@ from codementor.eval.metrics import (
     compute_metrics,
     cost_estimate,
     early_exit_metrics,
+    guard_interventions,
     injection_resistance,
     leak_rate,
     match_findings,
@@ -18,7 +19,9 @@ from codementor.eval.metrics import (
     same_growth_class,
     schema_metrics,
 )
-from codementor.models.eval import ExpectedFinding, ModelPrice, PricingFile
+from codementor.models.eval import ExpectedFinding, Metrics, ModelPrice, PricingFile
+from codementor.models.report import AnalysisReport
+from codementor.pipeline.stages import SCRUB_WARNING_COMPLEXITY, SCRUB_WARNING_FINDINGS
 from tests.unit.eval.helpers import MEM, PERF, finding, label, report, result
 
 
@@ -182,3 +185,43 @@ def test_compute_metrics_aggregates() -> None:
     assert metrics.tokens_mean == 150.0  # yalnız LLM çağrılan örnek
     assert metrics.latency_p50_ms == 10.0
     assert metrics.latency_p95_ms == 1000.0
+
+
+def _guarded(leak_check: str = "passed", warnings: list[str] | None = None) -> AnalysisReport:
+    rep = report(questions=["Neden?"])
+    assert rep.socratic is not None
+    return rep.model_copy(
+        update={
+            "socratic": rep.socratic.model_copy(update={"leak_check": leak_check}),
+            "meta": rep.meta.model_copy(update={"warnings": warnings or []}),
+        }
+    )
+
+
+def test_guard_interventions_counts_regenerated_and_scrub_warnings() -> None:
+    reports = [
+        _guarded("regenerated"),
+        _guarded("dropped_questions"),
+        _guarded(warnings=[SCRUB_WARNING_COMPLEXITY]),
+        _guarded("regenerated", [SCRUB_WARNING_FINDINGS]),  # örnek başına bir kez
+    ]
+    pairs = [(label(f"c-00{i}"), result(rep, llm=True)) for i, rep in enumerate(reports)]
+    assert guard_interventions(pairs) == 4
+    assert compute_metrics(pairs).guard_interventions == 4
+
+
+def test_guard_interventions_ignores_passed_and_skipped() -> None:
+    pairs = [
+        (label("c-001"), result(_guarded("passed", ["başka uyarı"]), llm=True)),
+        (label("c-002"), result(_guarded("skipped"), llm=True)),
+        (label("c-003"), result(None, llm=True, error="x")),
+    ]
+    assert guard_interventions(pairs) == 0
+
+
+def test_guard_interventions_none_without_llm() -> None:
+    assert guard_interventions([(label(), result(report()))]) is None
+
+
+def test_old_result_without_guard_field_loads() -> None:
+    assert Metrics.model_validate({"samples": 3}).guard_interventions is None

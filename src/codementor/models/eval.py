@@ -128,6 +128,10 @@ class Metrics(StrictModel):
         default=None, description="data/pricing.yaml'dan; fiyat yoksa None"
     )
     errors: int = 0
+    guard_interventions: int | None = Field(
+        default=None,
+        description="Sızıntı korumasının devreye girdiği örnek sayısı (Faz 22); LLM yoksa None",
+    )
 
 
 class RunResult(StrictModel):
