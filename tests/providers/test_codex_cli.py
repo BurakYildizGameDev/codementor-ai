@@ -108,7 +108,7 @@ async def test_argv_is_read_only_ephemeral_and_ignores_user_config() -> None:
     runner = FakeRunner([ok(FIXTURE.read_text(encoding="utf-8"))])
     await _run(_provider(runner))
     argv = runner.calls[0]["argv"]
-    assert argv[0] == EXE
+    assert argv[0] == str(Path(EXE).resolve())  # sembolik bağlantı çözülür (Linux venv)
     assert argv[1:3] == ["--no-daemon", "exec"]
     assert argv[argv.index("--sandbox") + 1] == "read-only"
     for flag in ("--ephemeral", "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules"):
