@@ -95,3 +95,20 @@ def test_prompt_version_detects_new_file(tmp_path: Path) -> None:
     first = prompt_version(directory)
     (directory / "yeni.j2").write_text("{{ x }}", encoding="utf-8")
     assert prompt_version(directory) != first
+
+
+def test_rules_version_covers_analysis_and_call_costs(tmp_path: Path) -> None:
+    """Faz 31: maliyet tablosu ya da analiz modülü değişince önbellek bayatlamamalı."""
+    from codementor.pipeline.versions import hashed_sources, rules_version
+
+    names = {p.parent.name + "/" + p.name for p in hashed_sources()}
+    assert any(n.startswith("rules/") for n in names)
+    assert any(n.startswith("analysis/") for n in names)
+    costs = tmp_path / "call_costs.yaml"
+    costs.write_text("a: 1\n", encoding="utf-8")
+    first = rules_version(costs)
+    costs.write_text("a: 2\n", encoding="utf-8")
+    assert rules_version(costs) != first
+    crlf = tmp_path / "crlf.yaml"
+    crlf.write_bytes(b"a: 2\r\n")
+    assert rules_version(crlf) == rules_version(costs)  # satır sonu farkı sürümü değiştirmez

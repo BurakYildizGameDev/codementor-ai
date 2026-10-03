@@ -66,7 +66,7 @@ def row(result: RunResult) -> list[str]:
         pair(m.audit_precision, m.audit_recall, m.audit_f1),
         pct(m.line_accuracy),
         pct(m.leak_rate),
-        pct(m.injection_resistance),
+        "—" if c.static_only else pct(m.injection_resistance),  # LLM yok (Faz 31)
         f"{seconds(m.latency_p50_ms)} / {seconds(m.latency_p95_ms)}",
         tokens(m.tokens_mean),
     ]

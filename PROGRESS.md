@@ -660,6 +660,19 @@
 **Açık sorular:** (1) `memory_safety` / `undefined_behavior` etiket sınırı tutarsız (`unreal-009` null Cast `memory_safety`, `unreal-014` yineleyici geçersizleşmesi `undefined_behavior`); kalan 3 FP/FN buradan. (2) Sızıntı korumasının müdahalesi C ailesinde 2 → 6 (son çıktı yine %0); sebep ölçülmedi. (3) `private/solutions/` dosyaları eksik (`reference_solution_unreadable` uyarıları; Faz 30'da yazılacak).
 **Bu fazda öğrendiğim:** Prompt'a kategori eşlemesi eklemeden önce veri setinin etiket kurallarına bakmak gerekiyordu; çelişen bir cümle 3 doğru bulguyu kaçırttı. Bulgu modelden değil sistemden gelen `confidence` (sabit 0,7) eşik olarak kullanılamaz.
 
+## Faz 31 — Notlar (güvenlik ve önbellek borcu)
+- Kural motoru bulgu sınırı `rules.max_findings` (varsayılan 50): aşılırsa önem (high → low),
+  eşitlikte satır sırasıyla kesilir, kullanıcıya Türkçe uyarı.
+- Çöken kural: WARNING kaydında yalnız kural kimliği ve istisna türü (mesaj kullanıcı kodu
+  içerebilir, §12); tam iz `rule_failed_trace` olarak DEBUG'da. `captured_logs` fikstürü artık
+  varsayılanı değil önceki yapılandırmayı geri yüklüyor (`log.logging_snapshot/restore_logging`).
+- `rules_version` = kural kimlikleri + `rules/` + `analysis/` kaynakları + maliyet tablosu
+  (`settings.data.call_costs_file`); rapor meta'sı ve önbellek anahtarı aynı değeri kullanır.
+- Referans çözüm: `questions/reference.py` ortak çözücü (kaynak köküne göre, `private/` dışına
+  çıkamaz, 256 KB); `questions validate` nedeni söyler; dosyanın hiç olmaması (dağıtım) DEBUG.
+- `eval compare`: statik satırda injection "—" (README tabloları yeniden üretildi).
+- Mimari §20: ADR-0013/0014/0015/0018 satırları eklendi; PROGRESS "Sonraya"da yapılanlar çizildi.
+
 ## Faz 28 — Notlar (Codex CLI sağlayıcısı; ADR-0017)
 **Yapılanlar:**
 - `providers/codex_cli.py` → `CodexCliProvider`: `codex --no-daemon exec --sandbox read-only --ephemeral --skip-git-repo-check --ignore-user-config --ignore-rules --json --color never --output-schema <geçici>/schema.json --cd <geçici> --model <m> -`; prompt stdin'den; şema OpenAI katı biçimi; JSONL ayrıştırma (son `agent_message`, `turn.completed` kullanımı, `turn.failed`/`error`); kullanım sınırı yeniden denenmez, oturum yoksa `codex login` önerisi. `allow_tool_agent` açık onayı (agy gibi). `cli_agent.py`'ye dokunulmadı (400 satır sınırı); yalnız `CODEX_HOME` profil değişkeni eklendi.
@@ -810,7 +823,7 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 ## Sonraya (kapsam dışı fikirler)
 - Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde); doğrulama kararlarını (`finding_checks`) eval sonucuna yazıp düşürülen bulguların TP/FP dağılımını ölçmek.
 - Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).
-- Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.
+- ~~Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.~~ → Faz 31.
 - Faz 30: yöntem işaretlerini (`METHOD_LEAKS`) soru verisine taşıyıp `validate`'e eklemek; eski soruların kontrol listesi seçimini kilitleyen bir anlık görüntü testi.
 - Faz 30: Unreal stub'ına sık türler (`Super` için sınıf içi typedef deseni, `FMath`, `EEndPlayReason`, `FHitResult`, `UPrimitiveComponent`, `USphereComponent`, dinamik delege makroları, `GetWorldTimerManager`); şu an referans çözümler bile yalnız tavsiye uyarılarıyla geçiyor.
 - Faz 30: soru bankası için öğretmen/kullanıcı içerik incelemesi ve sorulara örnek giriş/çıkış alanı.
@@ -824,18 +837,18 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 - Faz 25: agy canlı doğrulaması (oturum var; `allow_tool_agent = true` ile tek analiz).
 - Faz 24: arama büyük/küçük harf ve "tam sözcük" seçenekleri, değiştir (Ctrl+H); bırakılan klasördeki kaynak dosyalarını listeleme.
 - Faz 24: toml'a yazıldıktan sonra masaüstü tercihlerindeki aynı geçersiz kılmalar gereksizleşir (zararsız); "toml'dan yeniden yükle" düğmesi yok.
-- Faz 23: `reference_solution_path` (`private/solutions/`) hâlâ çalışma dizinine göre; soru dosyasının ya da kaynak kökünün dizinine göre çözülmeli (sızıntı testi buna göre güncellenmeli).
-- Faz 23: mimari §20 ADR tablosunda ADR-0013/0014/0015 satırları eksik.
+- ~~Faz 23: `reference_solution_path` (`private/solutions/`) hâlâ çalışma dizinine göre; soru dosyasının ya da kaynak kökünün dizinine göre çözülmeli (sızıntı testi buna göre güncellenmeli).~~ → Faz 31.
+- ~~Faz 23: mimari §20 ADR tablosunda ADR-0013/0014/0015 satırları eksik.~~ → Faz 31.
 - ~~Faz 23: CI exe işi Roslyn denetleyicisini derlemiyor~~ → Faz 27.
 - Faz 21 denetimi O3: kurallar sıcak yolu fonksiyon **adıyla** eşliyor (`RuleContext.hot_functions`, `CallFact.function`); aynı dosyada tabansız sınıfta ve MonoBehaviour'da aynı adlı `Update` varsa UNITY-PERF-001/UE-PERF-001 düz sınıfta da bulgu verir (UNITY-GC-001 `in_hot_path` kullandığı için doğru). Olgulara fonksiyon kimliği (satır) eklenmeli.
-- Faz 21: `rules_version` yalnız `rules/*.py` hash'i; `analysis/` ve `data/call_costs.yaml` değişiklikleri önbellek anahtarına yansımıyor (bayat önbellek riski).
-- Faz 21: `log.exception` izi sınırsız ve CLI'da WARNING düzeyinde stderr'e basılır; kural istisna mesajı kullanıcı kodu parçası içerebilir (§12) — iz DEBUG'a ya da kısaltılmış mesaja alınabilir. `captured_logs` teardown'u önceki yapılandırmayı değil varsayılanı geri yükler.
+- ~~Faz 21: `rules_version` yalnız `rules/*.py` hash'i; `analysis/` ve `data/call_costs.yaml` değişiklikleri önbellek anahtarına yansımıyor (bayat önbellek riski).~~ → Faz 31.
+- ~~Faz 21: `log.exception` izi sınırsız ve CLI'da WARNING düzeyinde stderr'e basılır; kural istisna mesajı kullanıcı kodu parçası içerebilir (§12) — iz DEBUG'a ya da kısaltılmış mesaja alınabilir. `captured_logs` teardown'u önceki yapılandırmayı değil varsayılanı geri yükler.~~ → Faz 31.
 - Faz 21: `file_value_types` ad çakışması (`struct Hit` + başka ad alanında `class Hit`) nadir yanlış negatif; yalnız arayüzden türeyen `class A : IFoo` sıcak sayılır (muhafazakâr).
 - Faz 21'den kalan (yol haritası Faz 21 geniş kapsamı): C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray<AActor*>`/`TMap` alanları ve `FPlain` önerisi, C-MEM-003 akış duyarlılığı, döngüde `std::string +`/C# `string +=` karesel ipucu.
 - ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
 - ~~Faz 18: Tier 0 `</div>` kör noktası~~ → Faz 20'de HTML-STD-003 ile bulgu olarak.
 - Faz 20: HTML-STD-003 kaçırmaları: dosya sonunda bitmemiş `<div`, `<p><span>a<div>` (örtük kapanış yalnız yığın tepesine bakıyor), DOCTYPE'sız (quirks) belgede `table` `p`'yi kapatmaz; aynı satırda kapanmayan + eşsiz bulgu varsa motor ilkini tutar (eşsiz sorusu görünmez); katalogda yalnız ana açıklama var.
-- Kural motoru: bulgu sayısına üst sınır yok (600 satırlık kötü niyetli girdi 600 bulgu üretip prompt'a gidebilir).
+- ~~Kural motoru: bulgu sayısına üst sınır yok (600 satırlık kötü niyetli girdi 600 bulgu üretip prompt'a gidebilir).~~ → Faz 31.
 - ~~Faz 18: `codementor eval check-drafts` Windows konsolunda (cp1254) çöküyor~~ → Faz 27 (konsol UTF-8).
 - Faz 18: eski veri seti etiketlerine Faz 17 bulguları (`c-008` 4. satır `memory_safety` C-MEM-003, `csharp-009` 11. satır `garbage_collection` CS-ALLOC-002) eklenmeli mi? (test etiketleri de etkilenebilir; kullanıcı kararı)
 - Faz 18: HTML precision (%22) için işaretleme prompt'unda bulgu ölçütü ("iyi uygulama önerisi" ile "sorun" ayrımı); kategori tanımları (`design` vs `edge_case`). Ayar yalnız dev'de yapılmalı.
@@ -869,7 +882,7 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 - UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı için `new Hit(3)` yanlış bulgu (değer tipi); Faz 5 `CSHARP_VALUE_TYPES` dosyadaki struct adlarıyla genişletilebilir.
 - UE-GC-001: `TArray<AActor*>`/`TMap<..., UObject*>` kapsayıcı alanları kaçırılıyor; UCLASS olmayan sınıfta (`FPlain`) öneri `UPROPERTY` değil `TStrongObjectPtr`/`FGCObject` olmalı.
 - CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection` tipli değişkenler maliyet tablosunda çözülmüyor (kaçırma).
-- Kural motoru: çöken kuralın istisna izi loglanmıyor; structlog (Faz 10) ile `log.exception` eklenmeli.
+- ~~Kural motoru: çöken kuralın istisna izi loglanmıyor; structlog (Faz 10) ile `log.exception` eklenmeli.~~ → Faz 21/31.
 - Sıcak yol tespiti sınıf tabanını (MonoBehaviour / UCLASS) da denetlemeli (Faz 5 olgusu).
 - Faz 7: OpenAI katı modu bugün `maxLength`, `maxItems`, `pattern`, `minimum`, `maximum` destekliyor; `SchemaAdapter` kısıt temizliğini sağlayıcıya göre ayırabilir (şu an hepsi çıkarılıyor, K5 doğruluyor).
 - Faz 7: `ProviderResult`'a yanıt veren sağlayıcının yeteneği (şema zorlandı mı) eklenebilir; fallback sonrası K5 için.
@@ -892,7 +905,7 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 - ~~Faz 5 hatası (csharp-011): `foreach` koleksiyon ifadesindeki çağrı döngü içinde sayılıyordu → `high` O(n²)~~ → çözüldü (2026-09-30, kullanıcı isteğiyle Faz 12 içinde): `_context.contexts` döngü başlığında bir kez değerlendirilen alanlara (`initializer`, `right`: C `for` başlatıcısı, C++ range-for, C# `foreach`) dış bağlamı verir; `tests/fixtures/complexity/on_{foreach_header_call,range_for_header_call,for_initializer_strlen}` + koşuldaki `strlen` için `on2_strlen_condition`. Dev static-only Big-O %88 → %92.
 - Çağrı maliyeti tablosu eksikleri (eval notları): `std::memset`/`memcpy` (n), `UGameplayStatics::GetAllActorsOfClass` (n), `TArray::Remove` (n); `std::string operator+` / C# `string +=` döngüde karesel (şu an n).
 - ~~Faz 12: eval'e `guard_interventions` metriği~~ → Faz 22 Aşama A.
-- Faz 12: `eval analyze` aracı (kategorisiz eşleşme, önem filtreli precision, örnek bazında FP/FN); `compare` statik satırında injection direncini "—" göstermeli.
+- ~~Faz 12: `eval analyze` aracı (kategorisiz eşleşme, önem filtreli precision, örnek bazında FP/FN); `compare` statik satırında injection direncini "—" göstermeli.~~ → Faz 22A / Faz 31.
 - Faz 12: precision iyileştirme — `design` bulgularını yalnızca soru gereksinimi varken üretmek, `low` bulguları raporda ayrı göstermek; kategori belirsizliği (sıfıra bölme `edge_case`/`undefined_behavior`, null `edge_case`/`memory_safety`) için prompt'ta kategori tanımları. Değişiklik sonrası dev'de yeniden ölçülmeli (test artık kullanıldı).
 - Faz 12: few-shot 0/1 ablasyonu (§14.4) koşulmadı. → Faz 34.
 - CI Windows işi (2026-09-30): `windows-latest`'te g++ (MinGW) ilk derlemede 10 sn sınırını aşıyor (`test_cpp_type_error_failed` → `timeout`); clang++ varsayılan MSVC hedefli olduğundan Unreal stub denetimi `tool_error` ile atlanıyor (2 test). Ürün zarif atlıyor ama Windows'ta clang için `--target=x86_64-w64-mingw32` / başlık yolu ve soğuk başlangıç süresi ele alınmalı; o zamana kadar Windows CI `-m "not live and not compiler"`.
@@ -921,7 +934,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    sabit 0,7 geliyor, ayırt etmiyor). ADR; dev'de doğrulamalı/doğrulamasız ölçüm.
 6. **Faz 36 — Hatalar ve öneriler ayrımı (önemli):** bulguya `issue`/`suggestion`; raporda
    katlanmış "Öneriler"; Sokratik sorular yalnızca hatalardan; "temiz kod" few-shot örnekleri.
-7. **Faz 31 — Güvenlik ve önbellek borcu:** bulgu üst sınırı, `rules_version` hash'i, log
+7. ~~**Faz 31 — Güvenlik ve önbellek borcu:**~~ Yapıldı (Faz 31 notları). bulgu üst sınırı, `rules_version` hash'i, log
    gizliliği, `reference_solution_path`, belge temizliği.
 8. **Faz 32 — Statik kural doğruluğu II:** sıcak yol kimliği (O3), C-MEM-001, UNITY-GC-001 struct,
    UE-GC-001 `TArray`, CS-PERF-001 `IList`, maliyet tablosu.

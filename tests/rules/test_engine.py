@@ -80,11 +80,17 @@ def test_crashing_rule_isolated_with_warning(
     result = run_text(C_TEXT, Language.C, disabled=[])
     assert result.warnings == [RULE_FAILURE_WARNING.format("TEST-CRASH-001", "RuntimeError")]
     assert any(f.rule_id == "C-BUF-001" for f in result.findings)
-    # Faz 21: istisna izi geliştirici log'una düşer (kullanıcı uyarısı ayrıntı içermez)
-    (failed,) = [e for e in captured_logs() if e["event"] == "rule_failed"]
+    # Faz 31: WARNING'de yalnız kural ve istisna türü (mesaj kullanıcı kodu içerebilir, §12);
+    # istisna izi yalnız DEBUG düzeyinde
+    logs = captured_logs()
+    (failed,) = [e for e in logs if e["event"] == "rule_failed"]
     assert failed["rule"] == "TEST-CRASH-001"
-    assert failed["level"] == "error"
-    assert "RuntimeError: bozuk kural" in failed["exception"]
+    assert failed["level"] == "warning"
+    assert failed["error"] == "RuntimeError"
+    assert "bozuk kural" not in str(failed)
+    (trace,) = [e for e in logs if e["event"] == "rule_failed_trace"]
+    assert trace["level"] == "debug"
+    assert "RuntimeError: bozuk kural" in trace["exception"]
 
 
 @pytest.mark.usefixtures("probes")
@@ -381,3 +387,58 @@ def test_linq_in_update_reported_once() -> None:
     )
     findings = run_text(code, Language.CSHARP, Engine.UNITY).findings
     assert [(f.rule_id, f.line_start) for f in findings] == [("CS-ALLOC-002", 4)]
+
+
+# --- Faz 31: bulgu üst sınırı ----------------------------------------------------------------
+
+
+@pytest.fixture
+def flood() -> Iterator[None]:
+    """Satır başına bir bulgu üreten kural; 3. satırınki yüksek önemli."""
+
+    @register_rule
+    class Flood(_Probe):
+        id = "TEST-FLOOD-001"
+
+        def check(self, ctx: RuleContext) -> list[Finding]:
+            found = [self.finding(ctx, line) for line in range(1, len(ctx.lines) + 1)]
+            return [
+                f.model_copy(update={"severity": Severity.HIGH}) if f.line_start == 3 else f
+                for f in found
+            ]
+
+    yield
+    unregister_rule("TEST-FLOOD-001")
+
+
+FLOOD_TEXT = "".join(f"int v{i} = {i};\n" for i in range(40))
+
+
+@pytest.mark.usefixtures("flood")
+def test_findings_capped_keeping_most_severe() -> None:
+    result = run_rules(
+        normalize(FLOOD_TEXT, LanguageHint(language=Language.C, engine=Engine.NONE)),
+        extract_facts(normalize(FLOOD_TEXT, LanguageHint(language=Language.C))),
+        disabled=[],
+        max_findings=5,
+    )
+    assert len(result.findings) == 5
+    assert any(f.line_start == 3 and f.severity is Severity.HIGH for f in result.findings)
+    assert [f.id for f in result.findings] == [f"F-{i:03d}" for i in range(1, 6)]
+    assert [f.line_start for f in result.findings] == sorted(f.line_start for f in result.findings)
+    assert any("40" in w and "5" in w for w in result.warnings)
+
+
+@pytest.mark.usefixtures("flood")
+def test_under_cap_untouched() -> None:
+    result = run_text(FLOOD_TEXT, Language.C, disabled=[])
+    assert len([f for f in result.findings if f.rule_id == "TEST-FLOOD-001"]) == 40
+    assert not any("gösteriliyor" in w for w in result.warnings)
+
+
+def test_cap_default_from_settings() -> None:
+    from codementor.config import RulesSettings
+
+    assert RulesSettings().max_findings == 50
+    with pytest.raises(ValueError, match="greater than or equal"):
+        RulesSettings(max_findings=0)

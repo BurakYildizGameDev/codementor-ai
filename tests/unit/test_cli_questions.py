@@ -154,7 +154,7 @@ def test_validate_warns_missing_solution(tmp_path: Path) -> None:
     )
     assert code == 0, out
     assert "uyarı" in out
-    assert "c-hard-stack: referans çözüm dosyası yok" in out
+    assert "c-hard-stack: referans çözüm okunamıyor: dosya yok" in out
 
 
 def test_validate_empty_dir_fails(tmp_path: Path) -> None:

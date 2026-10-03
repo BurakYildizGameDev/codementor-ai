@@ -56,6 +56,7 @@ call_costs_file = "data/call_costs.yaml"
 
 [rules]
 disabled = []               # ör. ["CPP-OWN-001"]; kural kataloğu: docs/rules-catalog.md
+max_findings = 50           # Faz 31: aşılırsa önem sıralı kesme + uyarı
 
 [providers]
 default = "claude_cli"        # Claude Code oturumu; eval bu sağlayıcıyla ölçüldü (docs/eval-findings.md)

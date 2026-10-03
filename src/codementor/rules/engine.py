@@ -17,6 +17,10 @@ from codementor.rules.registry import all_rules, applicable_rules
 log = get_logger("codementor.rules")
 RULE_FAILURE_WARNING = "{} kuralı çalıştırılamadı ({}); diğer kurallar etkilenmedi."
 UNKNOWN_DISABLED_WARNING = "Yapılandırmada kapatılan kural bulunamadı (yazım hatası?): {}"
+FINDING_CAP_WARNING = (
+    "Statik analiz {} bulgu üretti; en önemli {} tanesi gösteriliyor (rules.max_findings)."
+)
+_SEVERITY_RANK = {"high": 0, "medium": 1, "low": 2}
 
 
 def run_rules(
@@ -25,13 +29,17 @@ def run_rules(
     parsed: ParsedSource | None = None,
     *,
     disabled: Iterable[str] | None = None,
+    max_findings: int | None = None,
 ) -> RuleRunResult:
     """Koda uygun statik kuralları çalıştırır; istisna fırlatmaz (çöken kural → uyarı).
 
-    `disabled` verilmezse yapılandırmadaki `rules.disabled` kullanılır.
+    `disabled` / `max_findings` verilmezse yapılandırmadaki `rules` ayarları kullanılır.
+    Bulgu sayısı sınırı aşarsa önem sırasıyla kesilir ve uyarı yazılır (Faz 31, §12).
     """
     if disabled is None:
         disabled = get_settings().rules.disabled
+    if max_findings is None:
+        max_findings = get_settings().rules.max_findings
     disabled = list(disabled)
     known = {r.id for r in all_rules()}
     ctx = RuleContext(
@@ -47,10 +55,22 @@ def run_rules(
         try:
             findings += rule().check(ctx)
         except Exception as exc:  # sözleşme: bir kural analizi düşüremez
-            # kullanıcıya kısa Türkçe uyarı; istisna izi geliştirici log'una (Faz 21)
-            log.exception("rule_failed", rule=rule.id)
+            # İstisna mesajı kullanıcı kodu parçası içerebilir (§12): WARNING'de yalnız tür,
+            # tam iz yalnız DEBUG'da (Faz 31)
+            log.warning("rule_failed", rule=rule.id, error=type(exc).__name__)
+            log.debug("rule_failed_trace", rule=rule.id, exc_info=True)
             warnings.append(RULE_FAILURE_WARNING.format(rule.id, type(exc).__name__))
-    return RuleRunResult(findings=_number(_dedupe(findings)), warnings=warnings)
+    unique = _dedupe(findings)
+    if len(unique) > max_findings:
+        warnings.append(FINDING_CAP_WARNING.format(len(unique), max_findings))
+        unique = _most_severe(unique, max_findings)
+    return RuleRunResult(findings=_number(unique), warnings=warnings)
+
+
+def _most_severe(findings: list[Finding], limit: int) -> list[Finding]:
+    """Önem (yüksek → düşük), eşitlikte satır sırasıyla ilk `limit` bulgu."""
+    ranked = sorted(findings, key=lambda f: (_SEVERITY_RANK.get(f.severity, 3), f.line_start))
+    return ranked[:limit]
 
 
 def _dedupe(findings: list[Finding]) -> list[Finding]:

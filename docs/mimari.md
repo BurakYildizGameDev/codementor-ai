@@ -1065,7 +1065,7 @@ codementor schema export --out schemas/
 | `eval_results` | `run_id`, `sample_id`, `passed_checks_json`, `report_json` |
 
 - **Önbellek anahtarı:**
-  `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version | pipeline)`; `pipeline` mod ve doğrulama geçişi imzasıdır, ör. `two_pass+verify` (Faz 35)
+  `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version | pipeline)`; `rules_version` kural kimlikleri, `rules/` ve `analysis/` kaynakları ile `data/call_costs.yaml`'ın hash'idir (Faz 31); `pipeline` mod ve doğrulama geçişi imzasıdır, ör. `two_pass+verify` (Faz 35)
 - Önbellek isabeti `meta.cache_hit = true` ile işaretlenir; eval çalıştırmalarında önbellek **kapalıdır**.
 
 ---
@@ -1308,6 +1308,7 @@ verify_findings = false      # Faz 35 (ADR-0019): LLM bulguları için ayrı do�
 
 [rules]
 disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]
+max_findings = 50            # Faz 31 (§12): aşılırsa önem sıralı kesme + uyarı
 
 [api]                        # Faz 11 (§9, §12)
 host = "127.0.0.1"           # 0.0.0.0 ile açılırsa `serve` uyarı basar
@@ -1464,8 +1465,12 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0010 | Tier 1 süreç sınırları: `RLIMIT_NPROC` yerine süreç grubu; Windows'ta Job Object | `RLIMIT_NPROC` kullanıcı başına sayılır, derleyiciyi bozar; `RLIMIT_AS` .NET ile uyumsuz ([docs/adr/0010](adr/0010-tier1-surec-sinirlari.md)) |
 | ADR-0011 | Anthropic yapılandırılmış çıktısı `output_config.format` ile | Güncel Claude modelleri zorunlu `tool_choice` ve `temperature`'ı reddediyor ([docs/adr/0011](adr/0011-anthropic-yapilandirilmis-cikti.md)) |
 | ADR-0012 | CLI ajanları (Claude Code, Antigravity) sağlayıcı olarak | Abonelikle API anahtarsız kullanım; araçlar kapalı, prompt stdin'den, süreç yalıtımı ([docs/adr/0012](adr/0012-cli-ajanlari-saglayici.md)) |
+| ADR-0013 | Birincil istemci masaüstü (CustomTkinter + PyInstaller .exe) | Çekirdeği sunucusuz, doğrudan çağırır; API ile aynı orkestratör ([docs/adr/0013](adr/0013-masaustu-istemci.md)) |
+| ADR-0014 | Masaüstü bağlantılar, model seçimi, anahtar kasası | Anahtar yalnız işletim sistemi kimlik kasasında; seçimler toml'un üstüne ([docs/adr/0014](adr/0014-masaustu-baglantilar.md)) |
+| ADR-0015 | Python, HTML ve CSS; işaretleme dilleri için karmaşıklıksız hat | HTML/CSS'te Big-O anlamsız; kod hiç çalıştırılmaz ([docs/adr/0015](adr/0015-python-html-css.md)) |
 | ADR-0016 | Yapılandırma yollarının çözümü ve paket verisi | Çalışma dizininden bağımsız çalışma; wheel `data/` ve `prompts/`'u içerir ([docs/adr/0016](adr/0016-yol-cozumu.md)) |
 | ADR-0017 | OpenAI Codex CLI sağlayıcı olarak | ChatGPT aboneliğiyle API anahtarsız; salt okunur sandbox, kullanıcı ayarları yok sayılır, açık onay ([docs/adr/0017](adr/0017-codex-cli-saglayici.md)) |
+| ADR-0018 | Derleyicisiz kullanıcı: indirilebilir zig, gömülü Roslyn | Tier 1 kurulu derleyiciye bağlı kalmasın; sha256 doğrulamalı indirme, Docker yok ([docs/adr/0018](adr/0018-gomulu-arac-zinciri.md)) |
 | ADR-0019 | LLM bulguları için doğrulama geçişi (varsayılan kapalı) | Kanıtlanamayan bulgu düşer; precision prompt'tan bağımsız artar, bedeli ek çağrı ([docs/adr/0019](adr/0019-bulgu-dogrulama-gecisi.md)) |
 | ADR-0020 | Gemini, OpenAI uyumlu uç nokta üzerinden | Belgelenmiş katı şema biçimi bizimkiyle aynı; ayrı adaptör yok ([docs/adr/0020](adr/0020-gemini-openai-uyumlu-uc.md)) |
 

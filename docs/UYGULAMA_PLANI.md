@@ -1475,19 +1475,23 @@ yerine ayrı bir sınıfta göstermek; kaçırma oranı düşmez.
 
 **Commit:** `feat(faz-36): hatalar ve öneriler ayrımı, kısıtlama örnekleri`
 
-### Faz 31 — Güvenlik ve önbellek borcu (YAPILACAK, çevrimdışı)
+### Faz 31 — Güvenlik ve önbellek borcu (YAPILDI)
 
 **Dal:** `faz/31-guvenlik-borcu` · **Mimari:** §12, §11 · **ADR:** —
 
-- [ ] Kural motoru bulgu üst sınırı (kötü niyetli girdi binlerce bulgu → prompt şişmesi);
+- [x] Kural motoru bulgu üst sınırı (kötü niyetli girdi binlerce bulgu → prompt şişmesi);
       aşılırsa uyarı ve önem sıralı kesme
-- [ ] `rules_version` hash'ine `analysis/` ve `data/call_costs.yaml` dahil (bayat önbellek)
-- [ ] Çöken kural izi DEBUG düzeyinde, WARNING'de kısaltılmış mesaj (kullanıcı kodu §12);
+- [x] `rules_version` hash'ine `analysis/` ve `data/call_costs.yaml` dahil (bayat önbellek)
+- [x] Çöken kural izi DEBUG düzeyinde, WARNING'de kısaltılmış mesaj (kullanıcı kodu §12);
       `captured_logs` teardown önceki yapılandırmayı geri yükler
-- [ ] `reference_solution_path` soru dosyasının/kaynak kökünün dizinine göre çözülür
-- [ ] Belge temizliği: mimari §20 ADR tablosu (0013–0016+), PROGRESS "Sonraya"dan yapılmış
+- [x] `reference_solution_path` soru dosyasının/kaynak kökünün dizinine göre çözülür
+- [x] Belge temizliği: mimari §20 ADR tablosu (0013–0016+), PROGRESS "Sonraya"dan yapılmış
       maddeler, `compare` statik satırında injection "—"
-- [ ] Testler her madde için
+- [x] Testler her madde için
+
+Notlar: `rules.max_findings = 50`; çöken kural WARNING'de yalnız tür, iz DEBUG'da;
+`questions/reference.py` ortak çözücü (yok → DEBUG); `rules_version(call_costs)`; mimari §20'ye
+ADR-0013/14/15/18 satırları.
 
 **Commit:** `fix(faz-31): bulgu sınırı, kural sürümü hash'i, log gizliliği, yol çözümü`
 

@@ -4,8 +4,8 @@
 
 - her dil/motor grubunda en az `min_per_group` soru ve her zorluktan en az bir soru;
 - her sorunun kavram etiketleri kontrol listesinde en az bir (çekirdek dışı) maddeyle kesişir;
-- `solutions_root` verilirse referans çözüm dosyası var mı (yoksa uyarı: `private/` depoda
-  değildir, CI'da bulunmaz).
+- `solutions_root` verilirse referans çözüm analizdeki kuralla okunabilir mi (yok,
+  `private/` dışı, çok büyük → uyarı; `private/` depoda değildir, CI'da bulunmaz; Faz 31).
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.questions import BankReport
 from codementor.questions.bank import QuestionBank
 from codementor.questions.checklists import CORE_TAG, Checklists
+from codementor.questions.reference import ReferenceError, resolve_reference
 
 DEFAULT_MIN_PER_GROUP = 8
 
@@ -39,12 +40,13 @@ def validate_bank(
         items = checklists.select_items(q.language, q.engine, q.concept_tags)
         if not any(CORE_TAG not in item.tags for item in items):
             errors.append(f"{q.id}: kavram etiketleri hiçbir kontrol maddesiyle kesişmiyor")
-        if (
-            solutions_root is not None
-            and q.reference_solution_path is not None
-            and not (solutions_root / q.reference_solution_path).is_file()
-        ):
-            warnings.append(f"{q.id}: referans çözüm dosyası yok ({q.reference_solution_path})")
+        if solutions_root is not None and q.reference_solution_path is not None:
+            try:
+                resolve_reference(q.reference_solution_path, solutions_root)
+            except ReferenceError as exc:
+                warnings.append(
+                    f"{q.id}: referans çözüm okunamıyor: {exc} ({q.reference_solution_path})"
+                )
     if len(bank) == 0:
         errors.append("Soru bankası boş: dizinde hiç soru dosyası yok")
     for (language, engine), difficulties in sorted(groups.items()):

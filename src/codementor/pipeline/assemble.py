@@ -44,6 +44,7 @@ def assemble_report(
     prompt_version: str,
     warnings: list[str],
     timer: StageTimer,
+    rules_version_value: str | None = None,
 ) -> AnalysisReport:
     """Raporu kurar; `report` aşaması da süreye dahildir."""
     with timer.stage("report"):
@@ -65,7 +66,7 @@ def assemble_report(
                 provider=llm.provider_name if llm else None,
                 model=llm.model if llm else None,
                 prompt_version=prompt_version,
-                rules_version=rules_version(),
+                rules_version=rules_version_value or rules_version(),
                 schema_version=SCHEMA_VERSION,
                 tokens_in=llm.tokens_in if llm else 0,
                 tokens_out=llm.tokens_out if llm else 0,

@@ -97,3 +97,22 @@ def test_empty_bank_is_an_error() -> None:
     report = validate_bank(QuestionBank([]), Checklists.load(DATA / "checklists"))
     assert report.question_count == 0
     assert any("boş" in e for e in report.errors)
+
+
+def test_unreadable_solution_reason_reported(tmp_path: Path) -> None:
+    """Faz 31: validate yalnız `is_file()` değil, analizdeki çözücüyle (boyut, private/ sınırı)
+    denetler; nedeni uyarıda söyler."""
+    from codementor.questions.reference import MAX_REFERENCE_BYTES
+
+    big = tmp_path / "private" / "solutions" / "big.py"
+    big.parent.mkdir(parents=True)
+    big.write_text("x" * (MAX_REFERENCE_BYTES + 1), encoding="utf-8")
+    questions = _full_python_group(tmp_path)
+    questions[1] = _question("py-q1", Difficulty.EASY, solution="private/solutions/big.py")
+    report = validate_bank(
+        QuestionBank(questions),
+        Checklists.load(DATA / "checklists"),
+        min_per_group=8,
+        solutions_root=tmp_path,
+    )
+    assert any("py-q1" in w and "büyük" in w for w in report.warnings)

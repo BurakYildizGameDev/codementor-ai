@@ -4,6 +4,7 @@ karşılaştırma tablosu, taslak kontrolü, CLI."""
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -308,3 +309,29 @@ def test_verify_ablation_enables_flag(settings: Settings) -> None:
     assert enabled.pipeline.verify_findings
     assert enabled.prompts == settings.prompts
     assert not apply_ablations(settings, ["fewshot0"]).pipeline.verify_findings
+
+
+def test_compare_static_row_has_no_injection_score() -> None:
+    """Faz 31: LLM'siz koşuda injection direnci anlamsız; tabloda '—'."""
+    from codementor.eval.compare import HEADERS, row
+    from codementor.models.eval import Metrics, RunConfig, RunResult
+
+    result = RunResult(
+        config=RunConfig(
+            split="dev",
+            provider=None,
+            model=None,
+            mode="static",
+            static_only=True,
+            prompt_version="v1",
+            rules_version="r1",
+            schema_version="1.0",
+            started_at=datetime(2026, 10, 3, tzinfo=UTC),
+            sample_ids=[],
+        ),
+        metrics=Metrics(samples=1, injection_resistance=1.0),
+        samples=[],
+    )
+    cells = dict(zip(HEADERS, row(result), strict=True))
+    injection = next(k for k in cells if "njection" in k)
+    assert cells[injection] == "—"

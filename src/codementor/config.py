@@ -154,6 +154,8 @@ class RulesSettings(BaseModel):
     """Statik kural motoru (mimari §5.3.3); kurallar kimlikle tek tek kapatılabilir."""
 
     disabled: list[str] = Field(default_factory=list)
+    # Faz 31 (§12): kötü niyetli girdi binlerce bulguyla prompt'u şişirmesin; önem sıralı kesilir
+    max_findings: int = Field(default=50, ge=1)
 
 
 class ProviderConfig(BaseModel):

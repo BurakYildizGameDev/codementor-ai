@@ -12,7 +12,8 @@ import pytest
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.questions import Question
 from codementor.pipeline import stages
-from codementor.pipeline.stages import MAX_REFERENCE_BYTES, load_reference
+from codementor.pipeline.stages import load_reference
+from codementor.questions.reference import MAX_REFERENCE_BYTES
 
 
 def _question(path: str | None) -> Question:
@@ -116,3 +117,23 @@ def test_default_root_is_resource_root(tmp_path: Path, monkeypatch: pytest.Monke
     assert load_reference(_question("private/solutions/a.py"))[0] == "z = 3\n"
     monkeypatch.setattr(stages, "resource_root", lambda: tmp_path / "meipass")
     assert load_reference(_question("private/solutions/a.py")) == (None, [])
+
+
+def test_missing_file_logged_at_debug_only(
+    tmp_path: Path, captured_logs: Callable[[], list[dict[str, Any]]]
+) -> None:
+    """Faz 31: dağıtımda `private/` yok; her analizde WARNING basmak gürültü. Yok → DEBUG,
+    okunamayan/şüpheli dosya → WARNING."""
+    assert load_reference(_question("private/solutions/yok.py"), root=tmp_path) == (None, [])
+    events = [e for e in captured_logs() if e.get("event") == "reference_solution_unreadable"]
+    assert [e["level"] for e in events] == ["debug"]
+
+
+def test_validate_and_load_share_resolver(tmp_path: Path) -> None:
+    """`questions validate` ile analiz aynı kuralla çözer: büyük dosya ikisinde de reddedilir."""
+    from codementor.questions.reference import ReferenceError, resolve_reference
+
+    _write(tmp_path, "private/solutions/b.py", "x" * (MAX_REFERENCE_BYTES + 1))
+    with pytest.raises(ReferenceError, match="büyük"):
+        resolve_reference("private/solutions/b.py", tmp_path)
+    assert load_reference(_question("private/solutions/b.py"), root=tmp_path) == (None, [])

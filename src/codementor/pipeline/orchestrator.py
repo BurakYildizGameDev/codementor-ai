@@ -168,7 +168,7 @@ class Orchestrator:
             provider=run.provider_name,
             model=model if isinstance(model, str) else None,
             prompt_version=version,
-            rules_version=rules_version(),
+            rules_version=rules_version(self.settings.data.call_costs_file),
             schema_version=SCHEMA_VERSION,
             pipeline=self._pipeline_signature(run.request),
         )
@@ -283,6 +283,7 @@ class Orchestrator:
             prompt_version=version,
             warnings=run.warnings,
             timer=run.timer,
+            rules_version_value=rules_version(self.settings.data.call_costs_file),
         )
         meta = report.meta
         meta.cost_est = estimate_cost(

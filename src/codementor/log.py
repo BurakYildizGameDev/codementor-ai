@@ -128,6 +128,25 @@ def configure_logging(
     )
 
 
+@dataclass(frozen=True)
+class LoggingSnapshot:
+    """`configure_logging` ayarlarının anlık görüntüsü (testler önceki hâle döner, Faz 31)."""
+
+    stream: TextIO | None
+    json: bool
+    level: int
+
+
+def logging_snapshot() -> LoggingSnapshot:
+    """Geçerli log yapılandırması."""
+    return LoggingSnapshot(_settings.stream, _settings.json, _settings.level)
+
+
+def restore_logging(snapshot: LoggingSnapshot) -> None:
+    """Anlık görüntüdeki yapılandırmayı geri yükler."""
+    configure_logging(snapshot.stream, json=snapshot.json, level=snapshot.level)
+
+
 class RedactingLogger:
     """Her çağrıda güncel ayarlarla ve maskeleme zinciriyle kurulan logger."""
 
