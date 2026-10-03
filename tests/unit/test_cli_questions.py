@@ -130,7 +130,7 @@ def test_show_reflows_prompt_lines() -> None:
 def test_validate_real_bank() -> None:
     code, out = _run("validate", "--dir", str(QUESTIONS))
     assert code == 0, out
-    assert "64 soru geçerli" in out
+    assert f"{len(QuestionBank.load(QUESTIONS))} soru geçerli" in out
 
 
 def test_validate_reports_missing_distribution(tmp_path: Path) -> None:

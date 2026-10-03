@@ -37,7 +37,7 @@ def _groups(bank: QuestionBank) -> dict[tuple[Language, Engine], list[Difficulty
 
 
 def test_bank_size(bank: QuestionBank) -> None:
-    assert len(bank) == len(MATRIX) == 64
+    assert len(bank) == len(MATRIX)  # yeni soru: question_tables.py'ye satır ekle
 
 
 def test_every_language_engine_has_enough_questions_at_every_difficulty(
