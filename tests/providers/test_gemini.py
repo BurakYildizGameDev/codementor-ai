@@ -100,18 +100,8 @@ async def test_missing_key_is_config_error(
     assert route.call_count == 0
 
 
-def test_other_providers_unchanged() -> None:
-    """OpenAI `max_completion_tokens` + seed; DeepSeek `max_tokens`, seed yok."""
-    providers = ProvidersSettings()
-    providers.openai.model = providers.deepseek.model = "m"
-    providers.openai.max_tokens = providers.deepseek.max_tokens = 100
-    providers.openai.seed = providers.deepseek.seed = 3
-    openai = build_provider("openai", providers)
-    deepseek = build_provider("deepseek", providers)
-    assert isinstance(openai, OpenAICompatProvider)
-    assert isinstance(deepseek, OpenAICompatProvider)
-    op = openai.build_payload(MESSAGES, LLMSocraticOutput, GenerationOptions())
-    ds = deepseek.build_payload(MESSAGES, LLMSocraticOutput, GenerationOptions())
-    assert (op["max_completion_tokens"], op["seed"]) == (100, 3)
-    assert ds["max_tokens"] == 100
-    assert "seed" not in ds
+@pytest.mark.parametrize("name", ["openai", "deepseek"])
+def test_removed_providers_give_clear_error(name: str) -> None:
+    """ADR-0021: OpenAI ve DeepSeek kaldırıldı; eski yapılandırmada kalan ad anlaşılır hata."""
+    with pytest.raises(ProviderConfigError, match=r"kaldırıldı \(ADR-0021\)"):
+        build_provider(name, ProvidersSettings())

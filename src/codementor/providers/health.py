@@ -87,6 +87,10 @@ def _load_retired(path: Path) -> dict[str, dict[str, str]]:
     }
 
 
+# Canlı doğrulanmamış sağlayıcılar (ADR-0021): durum metninde işaretlenir
+EXPERIMENTAL_NOTES = {"agy": " (deneysel, ADR-0012)", "gemini": " (deneysel, ADR-0020)"}
+
+
 def _check_cloud(name: str, providers: ProvidersSettings) -> ProviderStatus:
     cfg = getattr(providers, name)
     model = cfg.model.strip()
@@ -102,8 +106,9 @@ def _check_cloud(name: str, providers: ProvidersSettings) -> ProviderStatus:
         return ProviderStatus(
             name=name, model=model, ready=False, detail=f"{env} ortam değişkeni tanımlı değil"
         )
+    note = EXPERIMENTAL_NOTES.get(name, "")
     return ProviderStatus(
-        name=name, model=model, ready=True, detail=f"{env} tanımlı (ağ denetimi yapılmadı)"
+        name=name, model=model, ready=True, detail=f"{env} tanımlı (ağ denetimi yapılmadı){note}"
     )
 
 
@@ -121,7 +126,7 @@ def _check_cli_agent(name: str, providers: ProvidersSettings) -> ProviderStatus:
         return ProviderStatus(
             name=name, model=model, ready=False, detail=str(exc).removeprefix(f"{name}: ")
         )
-    note = {"agy": " (deneysel, ADR-0012)", "codex": " (araç ajanı, ADR-0017)"}.get(name, "")
+    note = {**EXPERIMENTAL_NOTES, "codex": " (araç ajanı, ADR-0017)"}.get(name, "")
     return ProviderStatus(
         name=name,
         model=model,

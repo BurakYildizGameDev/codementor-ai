@@ -21,7 +21,7 @@ const PROVIDERS = [
     ready: true,
     detail: "hazır",
   },
-  { name: "openai", model: "gpt", ready: false, detail: "anahtar yok" },
+  { name: "gemini", model: "gemini-x", ready: false, detail: "anahtar yok" },
 ];
 let exportRequests: string[];
 
@@ -160,7 +160,7 @@ it("sağlayıcı ve mod seçimi isteğe yansır; hazır olmayan sağlayıcı se�
   render(<App />);
   const providerSelect = screen.getByLabelText("Sağlayıcı");
   const unready = await within(providerSelect).findByRole("option", {
-    name: /openai \(hazır değil\)/,
+    name: /gemini \(hazır değil\)/,
   });
   expect(unready).toBeDisabled();
 

@@ -222,14 +222,14 @@ def test_default_provider_switch(app: App, prefs_dir: Path) -> None:
 
 def test_api_key_saved_to_vault_and_process_env(app: App, store: KeyStore) -> None:
     app.connections.check = lambda _name: None  # type: ignore[method-assign]
-    app.connections.save_key("openai", "sk-test-1234567890")
-    assert store.get("openai") == "sk-test-1234567890"
-    assert os.environ["OPENAI_API_KEY"] == "sk-test-1234567890"
-    assert "kasasında" in app.settings_view.cards["openai"].key_label.cget("text")
+    app.connections.save_key("gemini", "sk-test-1234567890")
+    assert store.get("gemini") == "sk-test-1234567890"
+    assert os.environ["GEMINI_API_KEY"] == "sk-test-1234567890"
+    assert "kasasında" in app.settings_view.cards["gemini"].key_label.cget("text")
 
-    app.connections.delete_key("openai")
-    assert store.get("openai") is None
-    assert "OPENAI_API_KEY" not in os.environ
+    app.connections.delete_key("gemini")
+    assert store.get("gemini") is None
+    assert "GEMINI_API_KEY" not in os.environ
 
 
 def test_probe_results_update_cards_and_sidebar(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -245,7 +245,7 @@ def test_probe_results_update_cards_and_sidebar(app: App, monkeypatch: pytest.Mo
     card = app.settings_view.cards["ollama"]
     assert card.status_pill.cget("text").strip() == "hazır"
     assert "qwen2.5-coder:14b" in card.model.cget("values")
-    assert app.settings_view.cards["openai"].status_pill.cget("text").strip() == "hazır değil"
+    assert app.settings_view.cards["gemini"].status_pill.cget("text").strip() == "hazır değil"
     assert app.sidebar.status_text.cget("text") == "ollama"
 
 

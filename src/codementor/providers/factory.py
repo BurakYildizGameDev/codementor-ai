@@ -30,14 +30,14 @@ from codementor.providers.openai_compat import OpenAICompatProvider
 
 PROVIDER_NAMES = (
     "ollama",
-    "openai",
-    "deepseek",
     "gemini",
     "anthropic",
     "claude_cli",
     "agy",
     "codex",
 )
+# ADR-0021: canlı doğrulanamadığı için kaldırıldı; eski yapılandırmada kalan ad anlaşılır hata verir
+REMOVED_PROVIDERS = ("openai", "deepseek")
 FALLBACK_WARNING = "{failed} sağlayıcısı kullanılamadı ({reason}); {next} ile devam edildi."
 
 
@@ -62,22 +62,11 @@ def build_provider(
     if name == "ollama":
         ollama = providers.ollama
         return OllamaProvider(ollama, transport=transport(name, ollama.timeout_s))
-    if name == "openai":
-        openai = providers.openai
-        return OpenAICompatProvider(
-            name, openai, mode="strict_schema", transport=transport(name, openai.timeout_s)
-        )
-    if name == "deepseek":
-        deepseek = providers.deepseek
-        return OpenAICompatProvider(
-            name, deepseek, mode="json_object", transport=transport(name, deepseek.timeout_s)
-        )
     if name == "gemini":  # ADR-0020: OpenAI uyumlu uç, katı şema
         gemini = providers.gemini
         return OpenAICompatProvider(
             name,
             gemini,
-            mode="strict_schema",
             token_field="max_tokens",
             seed=False,
             transport=transport(name, gemini.timeout_s),
@@ -91,9 +80,15 @@ def build_provider(
         return CliAgentProvider("agy", providers.agy, retry=policy)
     if name == "codex":
         return CodexCliProvider(providers.codex, retry=policy)
-    raise ProviderConfigError(
-        name, f"bilinmeyen sağlayıcı (seçenekler: {', '.join(PROVIDER_NAMES)})"
-    )
+    raise ProviderConfigError(name, unknown_provider_reason(name))
+
+
+def unknown_provider_reason(name: str) -> str:
+    """Bilinmeyen ya da kaldırılmış sağlayıcı adı için Türkçe açıklama (ADR-0021)."""
+    options = ", ".join(PROVIDER_NAMES)
+    if name in REMOVED_PROVIDERS:
+        return f"bu sağlayıcı kaldırıldı (ADR-0021); seçenekler: {options}"
+    return f"bilinmeyen sağlayıcı (seçenekler: {options})"
 
 
 def chain_names(providers: ProvidersSettings, primary: str | None = None) -> list[str]:

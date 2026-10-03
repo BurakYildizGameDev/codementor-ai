@@ -1534,6 +1534,21 @@ Notlar: ortak `report/usage.py` (CLI alt satırı, masaüstü başlığı, web `
 
 **Commit:** `feat(faz-33): kullanıcı deneyimi iyileştirmeleri`
 
+### Faz 37 — Sağlayıcı sadeleştirme (YAPILDI)
+
+**Dal:** `faz/37-saglayici-sadelestirme` · **Mimari:** §5.5, §17 · **ADR:** 0021
+
+Kullanıcı kararı: canlı doğrulanamayan OpenAI ve DeepSeek kaldırılır; Gemini ve agy deneysel.
+
+- [x] `openai`, `deepseek` kayıttan, config'ten, `codementor.toml`'dan, model dosyalarından çıkar;
+      eski ad → "kaldırıldı (ADR-0021)" hatası
+- [x] Uyumlu uç yalnız katı şema modu (DeepSeek JSON modu ve `prompt_text` silindi)
+- [x] Masaüstü Bağlantılar, `/v1/providers` (web) listesinden çıkar; Gemini/agy "deneysel"
+- [x] Testler Gemini'ye çevrildi; kaldırılmış ad, deneysel notu testleri
+- [x] ADR-0021, ADR-0020 notu, README, mimari
+
+**Commit:** `refactor(faz-37): OpenAI ve DeepSeek sağlayıcılarını kaldır, Gemini/agy deneysel`
+
 ### Faz 34 — Ölçümün genişletilmesi (YAPILDI; dev seti büyütme Sonraya)
 
 **Dal:** `faz/34-eval-genisletme` · **Mimari:** §14 · **ADR:** 0003

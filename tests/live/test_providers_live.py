@@ -52,7 +52,7 @@ async def test_ollama_live() -> None:
     await _assert_structured("ollama")
 
 
-@pytest.mark.parametrize("name", ["openai", "deepseek", "gemini", "anthropic"])
+@pytest.mark.parametrize("name", ["gemini", "anthropic"])
 async def test_cloud_live(name: str) -> None:
     cfg = getattr(load_settings().providers, name)
     if not cfg.model or not os.environ.get(cfg.api_key_env or "", ""):

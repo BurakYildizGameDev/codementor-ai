@@ -1,7 +1,7 @@
 """Faz 28: bulut API hata gövdeleri → Türkçe, eyleme dönük hata ve doğru yeniden deneme kararı.
 
-Gövdeler sağlayıcıların belgelediği biçimlerdedir (OpenAI `error.code/type`, DeepSeek 402,
-Gemini OpenAI uyumlu uçta liste sarmalı ve `status`). Ağa çıkılmaz (respx).
+Gövdeler sağlayıcıların belgelediği biçimlerdedir (OpenAI uyumlu `error.code/type`,
+Gemini uçta liste sarmalı ve `status`). Ağa çıkılmaz (respx).
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import httpx
 import pytest
 import respx
 
-from codementor.config import OpenAIConfig
+from codementor.config import GeminiConfig
 from codementor.models.llm_output import LLMSocraticOutput
 from codementor.models.provider import ChatMessage, GenerationOptions
 from codementor.providers import (
@@ -27,17 +27,18 @@ from codementor.providers.openai_compat import OpenAICompatProvider
 from tests.providers.contract import SleepRecorder
 
 pytestmark = pytest.mark.anyio
-URL = "https://oa.test/v1/chat/completions"
+URL = "https://gm.test/v1beta/openai/chat/completions"
 MESSAGES = [ChatMessage(role="user", content="x")]
 
 
 def _provider(sleep: SleepRecorder) -> OpenAICompatProvider:
     retry = RetryPolicy(max_retries=2, base_delay_s=0.01, sleep=sleep)
     return OpenAICompatProvider(
-        "openai",
-        OpenAIConfig(base_url="https://oa.test/v1", model="m"),
-        mode="strict_schema",
-        transport=HttpTransport("openai", 30, retry),
+        "gemini",
+        GeminiConfig(base_url="https://gm.test/v1beta/openai", model="m"),
+        token_field="max_tokens",
+        seed=False,
+        transport=HttpTransport("gemini", 30, retry),
     )
 
 
@@ -114,7 +115,7 @@ async def test_actionable_turkish_messages(
 
 
 async def test_auth_error_detail_is_masked(router: respx.MockRouter, sleep: SleepRecorder) -> None:
-    key = "sk-test-openai-SECRET-0123456789"  # conftest ile ortamdaki anahtar
+    key = "gm-test-gemini-SECRET-0123456789"  # conftest ile ortamdaki anahtar
     body = _openai_error(f"Incorrect API key provided: {key}", "invalid_api_key")
     exc, _ = await _fail(router, sleep, 401, body)
     assert "SECRET" not in str(exc)

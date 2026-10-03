@@ -115,14 +115,14 @@ class HttpTransport:
         log.debug(event, provider=self.provider, latency_ms=elapsed, **fields)
 
 
-# Kalıcı kota/bakiye bitişi: 429 olsa da yeniden denemek düzeltmez (OpenAI `insufficient_quota`,
-# Gemini `quota_exceeded`); hemen bildirilir, fallback zinciri sıradakine geçer.
+# Kalıcı kota/bakiye bitişi: 429 olsa da yeniden denemek düzeltmez (OpenAI uyumlu biçimin
+# `insufficient_quota`'sı, Gemini `quota_exceeded`); hemen bildirilir, fallback sıradakine geçer.
 _QUOTA_CODES = frozenset({"insufficient_quota", "quota_exceeded", "billing_hard_limit_reached"})
 
 
 def _error_object(body: bytes) -> tuple[str, set[str]]:
-    """Hata gövdesinden (açıklama, kodlar). OpenAI/DeepSeek `{"error": {...}}`, Gemini OpenAI
-    uyumlu uç bazen `[{"error": {...}}]` döndürür; JSON değilse ham metin."""
+    """Hata gövdesinden (açıklama, kodlar). OpenAI uyumlu biçim `{"error": {...}}`; Gemini
+    uç bazen `[{"error": {...}}]` döndürür; JSON değilse ham metin."""
     try:
         data = json.loads(body)
     except (ValueError, UnicodeDecodeError, RecursionError):

@@ -138,7 +138,7 @@ Bu hedefler CV'de kullanılacak sayıların **tek kaynağıdır**. Ölçülmemi�
      - iki geçiş: (A) Analiz  (B) Sokratik mentorluk
                                ▼
  K4  Sağlayıcı Adaptörü (provider-agnostic)
-     Ollama │ OpenAI │ DeepSeek │ Anthropic │ Fake (test)
+     Ollama │ Gemini* │ Anthropic │ Claude/agy*/Codex CLI │ Fake (test)   (* deneysel)
      - yapılandırılmış çıktı stratejisi, retry, timeout, fallback zinciri
                                ▼
  K5  Doğrulama & Uzlaştırma (Verifier)
@@ -469,9 +469,7 @@ class ProviderResult(BaseModel):
 | Sağlayıcı | Strateji | Not |
 |---|---|---|
 | Ollama | `format` parametresine JSON Schema | **`num_ctx` mutlaka ayarlanmalı**; varsayılan bağlam küçüktür ve uzun prompt sessizce kırpılır |
-| OpenAI | `response_format: json_schema` + `strict: true` | Katı mod şema kısıtları getirir (tüm alanlar zorunlu, `additionalProperties: false`); `SchemaAdapter` bu varyantı üretir |
-| DeepSeek | OpenAI uyumlu uç nokta, JSON modu + şema prompt içinde | Doğrulama tamamen Pydantic'e düşer. `deepseek-chat`/`deepseek-reasoner` adları 24.07.2026'da kaldırıldı; güncel ad `deepseek-flash` (düşünme modu varsayılan). Kaldırılan adlar `data/retired_models.yaml` ile ağa çıkmadan bildirilir (Faz 28) |
-| Gemini | OpenAI uyumlu uç (`/v1beta/openai`), `openai_strict` şeması; çıktı sınırı `max_tokens`, `seed` yok | ADR-0020; canlı doğrulanmadı |
+| Gemini (deneysel) | OpenAI uyumlu uç (`/v1beta/openai`), katı `json_schema` (`openai_strict`: tüm alanlar zorunlu, `additionalProperties: false`); çıktı sınırı `max_tokens`, `seed` yok | ADR-0020; canlı doğrulanmadı. OpenAI ve DeepSeek sağlayıcıları ADR-0021 ile kaldırıldı |
 | Anthropic | Yerel JSON çıktısı: `output_config.format = {type: json_schema, schema}` (araç / `tool_choice` yok) | Güncel modeller zorunlu `tool_choice`'u ve `temperature`'ı reddeder; `temperature` yalnızca yapılandırmada verilirse gönderilir (ADR-0011) |
 | Claude Code CLI (`claude_cli`) | `claude -p --output-format json --json-schema`; araçlar kapalı (`--tools ""`), prompt stdin'den | API anahtarı yerine CLI oturumu; Faz 4 süreç çalıştırıcısı ile yalıtılır (ADR-0012) |
 | Antigravity CLI (`agy`) | `agy -p --output-format json --json-schema --sandbox` | Deneysel: araç kapatma bayrağı yok; paylaşılan sunucuda kapalı tutulmalı (ADR-0012) |
@@ -484,7 +482,7 @@ class ProviderResult(BaseModel):
 
 - Zaman aşımı: yerel 120 sn, bulut 60 sn (yapılandırılabilir).
 - Yeniden deneme: yalnızca ağ/5xx/429 hatalarında, üstel geri çekilme + jitter, en fazla 2.
-- Geri dönüş zinciri: `providers.fallback = ["ollama", "deepseek"]` gibi; her geçiş rapora `warnings` olarak yazılır.
+- Geri dönüş zinciri: `providers.fallback = ["claude_cli", "ollama"]` gibi; her geçiş rapora `warnings` olarak yazılır.
 - Deterministiklik: `temperature` 0–0.2, destekleniyorsa `seed` sabit (Anthropic'te ikisi de gönderilmez; ADR-0011).
 - Yeniden deneme sayısı `providers.max_retries` (varsayılan 2); 4xx hemen hata. Yanıt gövdesi 4 MB ile sınırlı.
 - Gizli anahtarlar yalnızca ortam değişkenlerinden okunur; loglara asla yazılmaz (structlog `redact_secrets` işlemcisi: gizli adlı alanlar, kayıtlı anahtar değerleri ve `Bearer`/`sk-` desenleri maskelenir).
@@ -1168,7 +1166,6 @@ tags: [hot-path, injection-none]
 |---|---|---|---|---|---|---|
 | qwen2.5-coder:7b (yerel) | two_pass | … | … | … | … | … |
 | qwen2.5-coder:7b (yerel) | single_pass | … | … | … | … | … |
-| deepseek-coder (bulut) | two_pass | … | … | … | … | … |
 | Yalnızca statik (LLM yok) | — | 100% | … | … | 0% | … |
 
 "Yalnızca statik" satırı **taban çizgisidir**: LLM'in katma değeri bu satırla farktır. Mülakatta en güçlü argüman budur.
@@ -1334,7 +1331,7 @@ max_checklist_items = 12
 
 [providers]
 default = "ollama"
-fallback = ["deepseek"]
+fallback = ["claude_cli"]
 max_retries = 2              # yalnızca ağ/429/5xx (§5.5.3)
 
 [providers.ollama]
@@ -1344,15 +1341,6 @@ num_ctx = 16384
 temperature = 0.1
 seed = 42
 timeout_s = 120
-
-[providers.openai]
-model = "..."                # güncel model adı yapılandırmadan gelir
-api_key_env = "OPENAI_API_KEY"
-
-[providers.deepseek]
-base_url = "https://api.deepseek.com"
-model = "..."
-api_key_env = "DEEPSEEK_API_KEY"
 
 [providers.gemini]             # ADR-0020
 base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
@@ -1473,6 +1461,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0018 | Derleyicisiz kullanıcı: indirilebilir zig, gömülü Roslyn | Tier 1 kurulu derleyiciye bağlı kalmasın; sha256 doğrulamalı indirme, Docker yok ([docs/adr/0018](adr/0018-gomulu-arac-zinciri.md)) |
 | ADR-0019 | LLM bulguları için doğrulama geçişi (varsayılan kapalı) | Kanıtlanamayan bulgu düşer; precision prompt'tan bağımsız artar, bedeli ek çağrı ([docs/adr/0019](adr/0019-bulgu-dogrulama-gecisi.md)) |
 | ADR-0020 | Gemini, OpenAI uyumlu uç nokta üzerinden | Belgelenmiş katı şema biçimi bizimkiyle aynı; ayrı adaptör yok ([docs/adr/0020](adr/0020-gemini-openai-uyumlu-uc.md)) |
+| ADR-0021 | OpenAI ve DeepSeek sağlayıcıları kaldırıldı | Canlı doğrulanamıyordu, bakım yükü; Gemini ve agy deneysel olarak kalır ([docs/adr/0021](adr/0021-openai-deepseek-kaldirildi.md)) |
 
 ---
 
@@ -1517,7 +1506,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 *Python, FastAPI, Pydantic, tree-sitter, Claude, React/TypeScript*
 
 - Statik analiz (tree-sitter + deterministik kural motoru) ile LLM'i birleştiren hibrit bir mimari tasarladım; LLM iddialarını satır kanıtı ve statik karmaşıklık ipucuyla doğrulayan bir katman kurdum. 49 örneklik ayrı test setinde denetim recall'u yalnızca statik kurallarla %42'den hibrit sistemde %92–94'e çıktı; statik olgular prompt'tan çıkarıldığında Big-O doğruluğu (dev, 31 örnek) %96'dan %85'e düştü.
-- Ollama, OpenAI, DeepSeek, Anthropic ve Claude Code CLI'ı tek arayüzde toplayan sağlayıcı bağımsız bir adaptör katmanı geliştirdim; yapılandırılmış çıktı ve onarım döngüsüyle ölçülen sağlayıcıda (Claude Code CLI) şema geçerliliği onarım sonrası %100.
+- Ollama, Gemini, Anthropic, Claude Code, Codex ve Antigravity CLI'ı tek arayüzde toplayan sağlayıcı bağımsız bir adaptör katmanı geliştirdim; yapılandırılmış çıktı ve onarım döngüsüyle ölçülen sağlayıcıda (Claude Code CLI) şema geçerliliği onarım sonrası %100.
 - Sözdizimi hatalı kodu LLM'e göndermeden yakalayan, tree-sitter ve yalıtılmış yerel derleyicilerle çalışan kademeli bir ön doğrulama katmanı kurdum; test setindeki gönderimlerin %31'i (15/49) hiç LLM çağrısı yapılmadan yanıtlandı, erken çıkış kararları %100 doğru.
 - Model × mod × prompt sürümü kombinasyonlarını karşılaştıran, 80 elle etiketlenmiş örnekli ve dev/test ayrımlı bir değerlendirme altyapısı kurdum; ablasyon deneyleriyle bileşen katkılarını, iki geçişli ve tek geçişli prompt tasarımlarının kalite/maliyet dengesini ölçtüm (ADR-0003).
 

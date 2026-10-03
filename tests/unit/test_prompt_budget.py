@@ -114,8 +114,8 @@ def _providers(**extra: object) -> dict[str, object]:
         "fallback": [],
         "claude_cli": {"context_tokens": 100_000},
         "ollama": {"num_ctx": 8192},
-        "openai": {"context_tokens": 20_000, "max_tokens": 2000},
-        "deepseek": {"context_tokens": None},
+        "gemini": {"context_tokens": 20_000, "max_tokens": 2000},
+        "anthropic": {"context_tokens": None, "max_tokens": None},
     }
     return base | extra
 
@@ -137,8 +137,8 @@ def test_budget_from_provider_config() -> None:
 
     assert budget("claude_cli") == 100_000 - 1000 - schema
     assert budget("ollama") == 8192 - 1000 - schema  # num_ctx
-    assert budget("openai") == 20_000 - 2000 - schema  # max_tokens çıktı payı
-    assert budget("deepseek") == 16_384 - 1000 - schema  # context_tokens yok → varsayılan
+    assert budget("gemini") == 20_000 - 2000 - schema  # max_tokens çıktı payı
+    assert budget("anthropic") == 16_384 - 1000 - schema  # context_tokens yok → varsayılan
     assert budget("fake") == 16_384 - 1000 - schema  # test sağlayıcısı
 
 
@@ -156,8 +156,10 @@ def test_budget_is_smallest_in_fallback_chain() -> None:
 
 
 def test_unknown_provider_rejected() -> None:
-    with pytest.raises(PromptConfigError, match="Bilinmeyen sağlayıcı: 'olama'"):
+    with pytest.raises(PromptConfigError, match="'olama': bilinmeyen sağlayıcı"):
         context_budget(_settings(), "olama", LLMAnalysisOutput)
+    with pytest.raises(PromptConfigError, match="kaldırıldı"):
+        context_budget(_settings(), "openai", LLMAnalysisOutput)
 
 
 def test_misconfigured_context_is_config_error_not_code_error() -> None:

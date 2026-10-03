@@ -185,16 +185,6 @@ class OllamaConfig(ProviderConfig):
     )
 
 
-class OpenAIConfig(ProviderConfig):
-    base_url: str | None = "https://api.openai.com/v1"
-    api_key_env: str | None = "OPENAI_API_KEY"
-
-
-class DeepSeekConfig(ProviderConfig):
-    base_url: str | None = "https://api.deepseek.com"
-    api_key_env: str | None = "DEEPSEEK_API_KEY"
-
-
 class GeminiConfig(ProviderConfig):
     """Google Gemini, OpenAI uyumlu uç noktası üzerinden (ADR-0020)."""
 
@@ -246,8 +236,6 @@ class ProvidersSettings(BaseModel):
     fallback: list[str] = Field(default_factory=list)
     max_retries: int = Field(default=2, ge=0, le=5)  # yalnızca ağ/429/5xx (mimari §5.5.3)
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
-    openai: OpenAIConfig = Field(default_factory=OpenAIConfig)
-    deepseek: DeepSeekConfig = Field(default_factory=DeepSeekConfig)
     gemini: GeminiConfig = Field(default_factory=GeminiConfig)
     anthropic: AnthropicConfig = Field(default_factory=AnthropicConfig)
     claude_cli: ClaudeCliConfig = Field(default_factory=ClaudeCliConfig)

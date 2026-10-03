@@ -143,7 +143,10 @@ tutulur (ADR-0008).
 | `codex` | `codex login` (ChatGPT), `[providers.codex] model` (ör. `gpt-6-luna`), `allow_tool_agent = true` | API anahtarı gerekmez; salt okunur sandbox, kullanıcı ayarları yok sayılır, prompt stdin'den (ADR-0017). Eval'de ölçülmedi |
 | `anthropic` | `ANTHROPIC_API_KEY`, `[providers.anthropic] model` | Yapılandırılmış çıktı (ADR-0011) |
 | `ollama` (yerel) | [Ollama](https://ollama.com) kur, `ollama pull qwen2.5-coder:7b`, `default = "ollama"` | Tamamen çevrimdışı; kalite modele bağlı, **eval'de ölçülmedi** |
-| `openai`, `deepseek` | `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` ve model adı | Eval'de ölçülmedi |
+| `gemini` (deneysel) | `GEMINI_API_KEY`, `[providers.gemini] model` (ör. `gemini-3.8-flash`) | OpenAI uyumlu uç, katı şema (ADR-0020). Canlı doğrulanmadı, eval'de ölçülmedi |
+| `agy` (deneysel) | Antigravity CLI'ında oturum aç, `allow_tool_agent = true` | Araçları kapatılamıyor (ADR-0012); eval'de ölçülmedi |
+
+> OpenAI ve DeepSeek sağlayıcıları 2026-10-03'te kaldırıldı (ADR-0021): canlı doğrulanamıyordu.
 
 ## Eval sonuçları
 
@@ -251,8 +254,8 @@ Okuma notları (ayrıntı: [docs/eval-findings.md](docs/eval-findings.md)):
 - **Kod çalıştırılmaz** (ADR-0005): Big-O statik ipucu + LLM gerekçesidir, ölçülmüş çalışma süresi
   değildir.
 - **Eval iki modelle ve küçük veriyle yapıldı.** Ana sonuçlar `claude-opus-5-5` içindir; dev
-  bölümünde ayrıca Claude Haiku 4.5 ölçüldü (F1 ~58, Opus 84). Yerel modeller (Ollama) ve API
-  sağlayıcıları ölçülmedi. Test bölümü küçük olduğundan bir örnek yaklaşık 2–3 puan eder.
+  bölümünde ayrıca Claude Haiku 4.5 ölçüldü (F1 ~58, Opus 84). Yerel modeller (Ollama), Gemini ve
+  Anthropic API ölçülmedi. Test bölümü küçük olduğundan bir örnek yaklaşık 2–3 puan eder.
 - **Precision düşük:** LLM gerçek ama etiketlenmemiş küçük sorunları da raporluyor; öğrenciye çok
   sayıda düşük önemli bulgu gidebilir.
 - **Sızıntı koruması sezgiseldir** (n-gram + işaret listesi). Eval'deki %0 sızıntı ölçülen işaretler

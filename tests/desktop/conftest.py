@@ -84,7 +84,7 @@ def prefs_dir(tmp_path: Path) -> Path:
     return folder
 
 
-API_KEY_ENVS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "DEEPSEEK_API_KEY")
+API_KEY_ENVS = ("ANTHROPIC_API_KEY", "GEMINI_API_KEY")
 
 
 class FakeVault:

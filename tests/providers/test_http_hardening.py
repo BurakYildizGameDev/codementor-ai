@@ -10,7 +10,7 @@ import httpx
 import pytest
 import respx
 
-from codementor.config import AnthropicConfig, OpenAIConfig
+from codementor.config import AnthropicConfig, GeminiConfig
 from codementor.log import register_secret
 from codementor.models.llm_output import LLMSocraticOutput
 from codementor.models.provider import ChatMessage, GenerationOptions
@@ -144,13 +144,14 @@ async def test_plain_http_allowed_for_localhost(router: respx.MockRouter) -> Non
         )
     )
     provider = OpenAICompatProvider(
-        "openai",
-        OpenAIConfig(base_url="http://localhost:8080", model="m"),
-        mode="strict_schema",
-        transport=HttpTransport("openai", 30),
+        "gemini",
+        GeminiConfig(base_url="http://localhost:8080", model="m"),
+        token_field="max_tokens",
+        seed=False,
+        transport=HttpTransport("gemini", 30),
     )
     await provider.generate_structured(MESSAGES, LLMSocraticOutput, GenerationOptions())
     assert route.call_count == 1
     sent = json.loads(route.calls.last.request.content)
     assert sent["model"] == "m"
-    assert route.calls.last.request.headers["authorization"].endswith(API_KEYS["OPENAI_API_KEY"])
+    assert route.calls.last.request.headers["authorization"].endswith(API_KEYS["GEMINI_API_KEY"])

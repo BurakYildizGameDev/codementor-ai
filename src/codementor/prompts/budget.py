@@ -10,7 +10,11 @@ from pydantic import BaseModel
 
 from codementor.config import ProviderConfig, Settings
 from codementor.models.provider import ChatMessage
-from codementor.providers.factory import PROVIDER_NAMES, chain_names
+from codementor.providers.factory import (
+    PROVIDER_NAMES,
+    chain_names,
+    unknown_provider_reason,
+)
 
 # Kod tokenlaştırıcıları İngilizce metinde ~4, kod ve Türkçede ~3 karakter/token verir;
 # temkinli olmak için 3 (fazla tahmin, taşmadan iyidir).
@@ -80,9 +84,7 @@ def _single_budget(settings: Settings, name: str, schema: int) -> int:
     reserve = settings.prompts.reserve_output_tokens
     if name not in TEST_PROVIDERS:
         if name not in PROVIDER_NAMES:
-            raise PromptConfigError(
-                f"Bilinmeyen sağlayıcı: {name!r} (seçenekler: {', '.join(PROVIDER_NAMES)})"
-            )
+            raise PromptConfigError(f"Sağlayıcı {name!r}: {unknown_provider_reason(name)}")
         config = getattr(settings.providers, name, None)
         if not isinstance(config, ProviderConfig):  # PROVIDER_NAMES ile ProvidersSettings ayrışırsa
             raise PromptConfigError(f"Sağlayıcı yapılandırması bulunamadı: {name}")

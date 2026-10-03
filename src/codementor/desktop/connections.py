@@ -38,8 +38,8 @@ from codementor.validation.runner import ProcessLimits, ProcessResult, run_proce
 KEYRING_SERVICE = "CodeMentor AI"
 MODELS_FILE = resource_path("data/desktop_models.yaml")
 PROBE_TIMEOUT_S = 20
-# "Bağlantıyı sına" çıktı bütçesi: akıl yürüten modeller (OpenAI gpt-5+/o serisi, DeepSeek
-# düşünme modu) düşünme token'larını da buradan harcar; 64 gibi küçük bir sınır boş yanıt verir
+# "Bağlantıyı sına" çıktı bütçesi: akıl yürüten modeller (Gemini düşünme
+# modu, Codex) düşünme token'larını da buradan harcar; 64 gibi küçük bir sınır boş yanıt verir
 TRY_MAX_TOKENS = 2048
 NO_MODEL_DETAIL = "Önce bir model seç (listeden ya da yazarak)"
 _PROBE_LIMITS = ProcessLimits(
@@ -63,9 +63,9 @@ PROVIDERS: tuple[ProviderInfo, ...] = (
     ProviderInfo("codex", "Codex", "cli", "ChatGPT aboneliğinle, `codex` CLI üzerinden"),
     ProviderInfo("ollama", "Ollama", "local", "Yerel model; kod bilgisayardan çıkmaz"),
     ProviderInfo("anthropic", "Anthropic API", "api", "Claude, API anahtarıyla"),
-    ProviderInfo("openai", "OpenAI API", "api", "GPT modelleri, API anahtarıyla"),
-    ProviderInfo("deepseek", "DeepSeek API", "api", "DeepSeek modelleri, API anahtarıyla"),
-    ProviderInfo("gemini", "Gemini API", "api", "Google Gemini, API anahtarıyla (ADR-0020)"),
+    ProviderInfo(
+        "gemini", "Gemini API", "api", "Google Gemini, API anahtarıyla (deneysel, doğrulanmadı)"
+    ),
 )
 INFO: dict[str, ProviderInfo] = {p.name: p for p in PROVIDERS}
 API_PROVIDERS = tuple(p.name for p in PROVIDERS if p.kind == "api")
@@ -320,7 +320,7 @@ def _probe_cli(
 async def try_connection(name: str, settings: Settings) -> str:
     """Küçük gerçek bir istek gönderir; başarı ya da Türkçe hata metni döner.
 
-    `temperature` gönderilmez: akıl yürüten modeller (OpenAI gpt-5+/o serisi) 0'ı 400 ile
+    `temperature` gönderilmez: akıl yürüten bazı modeller 0'ı 400 ile
     reddeder. Yanıt geldi ama beklenen JSON değilse bağlantı "çalışıyor" sayılmaz.
     """
     provider = build_provider(name, settings.providers, retry=RetryPolicy(max_retries=0))

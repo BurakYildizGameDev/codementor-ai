@@ -1,6 +1,8 @@
 # ADR-0020: Gemini sağlayıcısı OpenAI uyumlu uç nokta üzerinden
 
-**Tarih:** 2026-10-03 · **Durum:** Kabul edildi (canlı doğrulanmadı: API anahtarı yok) ·
+**Tarih:** 2026-10-03 · **Durum:** Kabul edildi, deneysel (canlı doğrulanmadı: API anahtarı
+yok). OpenAI ve DeepSeek sağlayıcıları ADR-0021 ile kaldırıldı; uyumlu uç katmanını artık
+yalnız Gemini kullanıyor ·
 **Etkilenen bölümler:** mimari §5.5.2, §17; ADR-0008, ADR-0014
 
 ## Bağlam

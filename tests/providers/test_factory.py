@@ -18,7 +18,7 @@ from codementor.providers import (
     build_provider,
 )
 from codementor.providers.anthropic import AnthropicProvider
-from codementor.providers.factory import chain_names
+from codementor.providers.factory import PROVIDER_NAMES, chain_names
 from codementor.providers.ollama import OllamaProvider
 from codementor.providers.openai_compat import OpenAICompatProvider
 from tests.providers.contract import SleepRecorder
@@ -38,12 +38,7 @@ def _fake(name: str, *replies: FakeReply) -> FakeProvider:
 def test_build_each_provider_from_settings() -> None:
     providers = ProvidersSettings()
     assert isinstance(build_provider("ollama", providers), OllamaProvider)
-    openai = build_provider("openai", providers)
-    deepseek = build_provider("deepseek", providers)
-    assert isinstance(openai, OpenAICompatProvider)
-    assert openai.mode == "strict_schema"
-    assert isinstance(deepseek, OpenAICompatProvider)
-    assert deepseek.mode == "json_object"
+    assert isinstance(build_provider("gemini", providers), OpenAICompatProvider)
     assert isinstance(build_provider("anthropic", providers), AnthropicProvider)
 
 
@@ -58,18 +53,26 @@ def test_unknown_provider() -> None:
         build_provider("mistral", ProvidersSettings())
 
 
+@pytest.mark.parametrize("name", ["openai", "deepseek"])
+def test_removed_provider_names_not_registered(name: str) -> None:
+    """ADR-0021: kaldırılan adlar kayıtta yok, hata nedeni söylüyor."""
+    assert name not in PROVIDER_NAMES
+    with pytest.raises(ProviderConfigError, match="kaldırıldı"):
+        build_chain(Settings(providers=ProvidersSettings(default=name)))
+
+
 def test_chain_names_dedup_and_primary() -> None:
-    providers = ProvidersSettings(default="ollama", fallback=["deepseek", "ollama", "openai"])
-    assert chain_names(providers) == ["ollama", "deepseek", "openai"]
-    assert chain_names(providers, "openai") == ["openai", "deepseek", "ollama"]
+    providers = ProvidersSettings(default="ollama", fallback=["gemini", "ollama", "anthropic"])
+    assert chain_names(providers) == ["ollama", "gemini", "anthropic"]
+    assert chain_names(providers, "anthropic") == ["anthropic", "gemini", "ollama"]
 
 
 def test_build_chain_single_and_multiple() -> None:
     single = build_chain(Settings(providers=ProvidersSettings(fallback=[])))
     assert isinstance(single, OllamaProvider)
-    chain = build_chain(Settings(providers=ProvidersSettings(fallback=["deepseek"])))
+    chain = build_chain(Settings(providers=ProvidersSettings(fallback=["gemini"])))
     assert isinstance(chain, FallbackProvider)
-    assert chain.name == "ollama→deepseek"
+    assert chain.name == "ollama→gemini"
 
 
 async def test_no_fallback_on_success() -> None:
@@ -86,7 +89,7 @@ async def test_fallback_on_error_writes_warning() -> None:
     chain = FallbackProvider(
         [
             _fake("ollama", FakeReply(error="network")),
-            _fake("deepseek", FakeReply(error="401")),
+            _fake("gemini", FakeReply(error="401")),
             _fake("anthropic", FakeReply(data=ANSWER)),
         ]
     )
@@ -94,21 +97,21 @@ async def test_fallback_on_error_writes_warning() -> None:
     assert result.provider == "anthropic"
     assert result.parsed == ANSWER
     assert result.warnings == [
-        "ollama sağlayıcısı kullanılamadı (bağlantı kurulamadı); deepseek ile devam edildi.",
-        "deepseek sağlayıcısı kullanılamadı (istek reddedildi (401)); anthropic ile devam edildi.",
+        "ollama sağlayıcısı kullanılamadı (bağlantı kurulamadı); gemini ile devam edildi.",
+        "gemini sağlayıcısı kullanılamadı (istek reddedildi (401)); anthropic ile devam edildi.",
     ]
 
 
 async def test_missing_key_triggers_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("DEEPSEEK_API_KEY")
-    providers = ProvidersSettings(default="deepseek")
-    providers.deepseek.model = "m"
+    monkeypatch.delenv("GEMINI_API_KEY")
+    providers = ProvidersSettings(default="gemini")
+    providers.gemini.model = "m"
     chain = FallbackProvider(
-        [build_provider("deepseek", providers), _fake("f", FakeReply(data=ANSWER))]
+        [build_provider("gemini", providers), _fake("f", FakeReply(data=ANSWER))]
     )
     result = await chain.generate_structured(MESSAGES, LLMSocraticOutput, GenerationOptions())
     assert result.provider == "f"
-    assert "DEEPSEEK_API_KEY" in result.warnings[0]
+    assert "GEMINI_API_KEY" in result.warnings[0]
 
 
 async def test_all_fail_raises() -> None:

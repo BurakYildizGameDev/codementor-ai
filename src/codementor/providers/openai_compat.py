@@ -1,10 +1,9 @@
-"""OpenAI uyumlu Chat Completions adaptörü: OpenAI ve Gemini (katı şema), DeepSeek (JSON modu).
+"""OpenAI uyumlu Chat Completions adaptörü, katı şema modu. Bugün yalnız Gemini kullanır
+(OpenAI ve DeepSeek sağlayıcıları ADR-0021 ile kaldırıldı).
 
-- OpenAI: `response_format: {type: "json_schema", json_schema: {name, schema, strict: true}}`.
+- Biçim: `response_format: {type: "json_schema", json_schema: {name, schema, strict: true}}`.
   Katı modda tüm alanlar zorunlu, `additionalProperties: false`, opsiyonel = `anyOf[T, null]`.
   Kaynak: https://developers.openai.com/api/docs/guides/structured-outputs
-- DeepSeek: yalnızca `response_format: {type: "json_object"}`; şema ve "json" sözcüğü prompt'ta
-  olmalı, doğrulama tamamen Pydantic'e düşer. Kaynak: https://api-docs.deepseek.com/guides/json_mode
 - Gemini (ADR-0020): `.../v1beta/openai` ucu OpenAI SDK'nın `parse()` biçimini (katı
   `json_schema`) kabul eder; çıktı sınırı `max_tokens` ile verilir, `seed` gönderilmez.
   Kaynak: https://ai.google.dev/gemini-api/docs/openai
@@ -39,15 +38,14 @@ from codementor.providers._http import HttpTransport, parse_json_object
 from codementor.providers.base import RetryPolicy
 from codementor.providers.schema_adapter import SchemaAdapter
 
-Mode = Literal["strict_schema", "json_object"]
 TokenField = Literal["max_completion_tokens", "max_tokens"]
 
 
 class OpenAICompatProvider:
-    """OpenAI / Gemini (`strict_schema`) ya da DeepSeek (`json_object`) modu.
+    """OpenAI uyumlu uç, katı `json_schema` modu (Gemini, ADR-0020).
 
-    `token_field`: çıktı sınırının alan adı (OpenAI `max_completion_tokens`, diğerleri
-    `max_tokens`); `seed`: sağlayıcı belgeliyorsa ve yapılandırmada verildiyse gönderilir.
+    `token_field`: çıktı sınırının alan adı (Gemini `max_tokens`); `seed`: sağlayıcı
+    belgeliyorsa ve yapılandırmada verildiyse gönderilir.
     """
 
     def __init__(
@@ -55,7 +53,6 @@ class OpenAICompatProvider:
         name: str,
         config: ProviderConfig,
         *,
-        mode: Mode,
         token_field: TokenField | None = None,
         seed: bool | None = None,
         retry: RetryPolicy | None = None,
@@ -63,15 +60,11 @@ class OpenAICompatProvider:
     ) -> None:
         self.name = name
         self.config = config
-        self.mode = mode
-        strict = mode == "strict_schema"
-        self.token_field: TokenField = token_field or (
-            "max_completion_tokens" if strict else "max_tokens"
-        )
+        self.token_field: TokenField = token_field or "max_completion_tokens"
         self.capabilities = ProviderCapabilities(
-            native_schema=strict,
-            strict_schema=strict,
-            seed=strict if seed is None else seed,
+            native_schema=True,
+            strict_schema=True,
+            seed=True if seed is None else seed,
             local=False,
         )
         self.transport = transport or HttpTransport(name, config.timeout_s, retry or RetryPolicy())
@@ -84,21 +77,14 @@ class OpenAICompatProvider:
         adapter = SchemaAdapter(output_model)
         wire = [m.model_dump() for m in messages]
         payload: dict[str, Any] = {"model": require_model(self.name, self.config)}
-        if self.mode == "strict_schema":
-            payload["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": output_model.__name__[:64],
-                    "schema": adapter.openai_strict(),
-                    "strict": True,
-                },
-            }
-        else:
-            # "json" sözcüğü + şema + örnek biçim prompt'ta olmalı (DeepSeek JSON modu)
-            wire.append(
-                {"role": "system", "content": f"Output json only.\n{adapter.prompt_text()}"}
-            )
-            payload["response_format"] = {"type": "json_object"}
+        payload["response_format"] = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": output_model.__name__[:64],
+                "schema": adapter.openai_strict(),
+                "strict": True,
+            },
+        }
         if opts.max_tokens is not None:
             payload[self.token_field] = opts.max_tokens
         payload["messages"] = wire

@@ -1,7 +1,6 @@
 # Sağlayıcıların kapattığı model adları (Faz 28). Bu adlarla istek sağlayıcıda 400 döner;
 # Bağlantılar ekranı ve `codementor providers check` bunu ağa çıkmadan söyler.
 # Biçim: sağlayıcı → {model adı: Türkçe açıklama ve önerilen yeni ad}.
-# Kaynak: https://api-docs.deepseek.com/quick_start/pricing (2026-10-03'te denetlendi)
-deepseek:
-  deepseek-chat: "deepseek-chat adı 24 Temmuz 2026'da kaldırıldı; deepseek-flash kullan"
-  deepseek-reasoner: "deepseek-reasoner adı 24 Temmuz 2026'da kaldırıldı; deepseek-flash (düşünme modu varsayılan) kullan"
+# Örnek: gemini: {"<eski-ad>": "<eski-ad> kaldırıldı; <yeni-ad> kullan"}
+# (DeepSeek girdileri sağlayıcıyla birlikte kaldırıldı, ADR-0021.)
+{}

@@ -33,6 +33,7 @@
 | 22 | ✅ | faz/22-eval-precision, faz/22b-precision | 2026-10-02 | Claude Code / — |
 | 28 (Codex) | ✅ | faz/28-cli-ajanlari | 2026-10-02 | Claude Code / — |
 | 34 + 35B | ✅ | faz/34-eval-genisletme | 2026-10-03 | Claude Code / — |
+| 37 | ✅ | faz/37-saglayici-sadelestirme | 2026-10-03 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -873,7 +874,27 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 37 — Notlar (sağlayıcı sadeleştirme; ADR-0021)
+**Yapılanlar:**
+- `openai` ve `deepseek` kaldırıldı: `PROVIDER_NAMES`, `OpenAIConfig`/`DeepSeekConfig`,
+  `codementor.toml`, `data/desktop_models.yaml`, `data/retired_models.yaml` (mekanizma kaldı,
+  dosya boş eşleme), masaüstü Bağlantılar listesi; `/v1/providers` ve web listesi bunlardan
+  türediği için oradan da kalktı.
+- Eski ad (`default`/`fallback`) → `unknown_provider_reason()`: "bu sağlayıcı kaldırıldı
+  (ADR-0021)"; factory, prompt bütçesi ve `providers check` aynı metni kullanır.
+- `OpenAICompatProvider` yalnız katı şema (Gemini); DeepSeek JSON modu ve
+  `SchemaAdapter.prompt_text()` silindi.
+- Gemini ve agy deneysel: masaüstü açıklaması, `EXPERIMENTAL_NOTES` durum metni.
+- Testler: OpenAI'ye özgü yük/başlık testleri silindi (Gemini testleri aynı şeyi kapsıyor);
+  hata gövdesi, maskeleme, ret, fallback, bütçe, masaüstü ve API testleri Gemini/Anthropic'e
+  çevrildi; retired_models testi geçici dosyayla.
+**Alınan kararlar:** Codex ve Anthropic dokunulmadı. CLI ajanı testlerindeki `OPENAI_API_KEY`
+"başka sağlayıcının anahtarı alt sürece geçmez" örneği olarak kaldı (ortamda bulunabilir).
+**Bu fazda öğrendiğim:** Doğrulanamayan entegrasyon, kodu çalışıyor görünse de bakım borcudur;
+kaldırmak için ortak katmanın (uyumlu uç) ayrı tutulmuş olması işi küçülttü.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.
 - Faz 34: dev setini büyütmek: yazım rehberi `docs/EVAL_ORNEK_REHBERI.md` (50 taslak; kullanıcı Antigravity'ye yazdıracak, etiket incelemesi kullanıcıyla); Codex (`gpt-6-luna`) ile üçüncü model ölçümü; few-shot'ların zayıf modelde etkisi.
 - Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde); doğrulama kararlarını (`finding_checks`) eval sonucuna yazıp düşürülen bulguların TP/FP dağılımını ölçmek.
 - Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).

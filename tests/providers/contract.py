@@ -1,7 +1,7 @@
 """Tüm sağlayıcı adaptörlerinin geçtiği ortak sözleşme düzeneği (mimari §15).
 
 Her adaptör için bir `Harness`, sağlayıcıya özgü yanıt gövdesini ve HTTP taklidini (respx)
-gizler; `test_contract.py` aynı testleri beşine de uygular. Ağa çıkılmaz.
+gizler; `test_contract.py` aynı testleri hepsine uygular. Ağa çıkılmaz.
 """
 
 from __future__ import annotations
@@ -14,13 +14,7 @@ from typing import Any, Protocol
 import httpx
 import respx
 
-from codementor.config import (
-    AnthropicConfig,
-    DeepSeekConfig,
-    GeminiConfig,
-    OllamaConfig,
-    OpenAIConfig,
-)
+from codementor.config import AnthropicConfig, GeminiConfig, OllamaConfig
 from codementor.providers import FakeProvider, FakeReply, RetryPolicy
 from codementor.providers._http import HttpTransport
 from codementor.providers.anthropic import AnthropicProvider
@@ -29,8 +23,6 @@ from codementor.providers.ollama import OllamaProvider
 from codementor.providers.openai_compat import OpenAICompatProvider
 
 API_KEYS = {
-    "OPENAI_API_KEY": "sk-test-openai-SECRET-0123456789",
-    "DEEPSEEK_API_KEY": "sk-test-deepseek-SECRET-0123456789",
     "ANTHROPIC_API_KEY": "sk-ant-test-SECRET-0123456789",
     "GEMINI_API_KEY": "gm-test-gemini-SECRET-0123456789",
 }
@@ -180,34 +172,6 @@ def http_harness(name: str, router: respx.MockRouter, sleep: SleepRecorder) -> H
             router,
             sleep,
         )
-    if name == "openai":
-        return HttpHarness(
-            name,
-            "https://openai.test/v1/chat/completions",
-            openai_body,
-            lambda model, retry: OpenAICompatProvider(
-                name,
-                OpenAIConfig(base_url="https://openai.test/v1", model=model),
-                mode="strict_schema",
-                transport=transport(name, 60, retry),
-            ),
-            router,
-            sleep,
-        )
-    if name == "deepseek":
-        return HttpHarness(
-            name,
-            "https://deepseek.test/chat/completions",
-            openai_body,
-            lambda model, retry: OpenAICompatProvider(
-                name,
-                DeepSeekConfig(base_url="https://deepseek.test", model=model),
-                mode="json_object",
-                transport=transport(name, 60, retry),
-            ),
-            router,
-            sleep,
-        )
     if name == "gemini":
         return HttpHarness(
             name,
@@ -216,7 +180,6 @@ def http_harness(name: str, router: respx.MockRouter, sleep: SleepRecorder) -> H
             lambda model, retry: OpenAICompatProvider(
                 name,
                 GeminiConfig(base_url="https://gemini.test/v1beta/openai", model=model),
-                mode="strict_schema",
                 token_field="max_tokens",
                 seed=False,
                 transport=transport(name, 60, retry),
@@ -283,7 +246,7 @@ class FakeHarness:
         return self.provider.model
 
 
-HARNESS_NAMES = ["fake", "ollama", "openai", "deepseek", "gemini", "anthropic", "claude_cli"]
+HARNESS_NAMES = ["fake", "ollama", "gemini", "anthropic", "claude_cli"]
 
 
 def _seconds(value: str | None) -> float | None:

@@ -11,7 +11,6 @@ korur: Ollama şemayı llama.cpp dilbilgisine çevirip çözümlemede zorlar.
 from __future__ import annotations
 
 import copy
-import json
 from typing import Any
 
 from pydantic import BaseModel
@@ -85,21 +84,10 @@ class SchemaAdapter:
         return self.base()
 
     def openai_strict(self) -> Schema:
-        """OpenAI katı mod (Gemini uyumlu uç da): her nesnede tüm alanlar `required`; opsiyonel
+        """OpenAI uyumlu katı mod (Gemini, ADR-0020): her nesnede tüm alanlar `required`; opsiyonel
         alan `anyOf[T, null]`; `minItems` dahil zorlanmayan kısıtlar açıklamaya not olur."""
         schema: Schema = _strict(copy.deepcopy(self._strict_base))
         return schema
-
-    def prompt_text(self) -> str:
-        """Şemayı API'de zorlayamayan sağlayıcı (DeepSeek) için prompt'a gömülecek metin."""
-        # API şemayı zorlamadığı için kısıtlar (maxLength, maxItems, minimum) korunur:
-        # model sınırları görsün, K5 yine de aynı Pydantic modeliyle doğrular.
-        schema = json.dumps(_strict(copy.deepcopy(self._annotated)), ensure_ascii=False, indent=2)
-        return (
-            "Yanıtını yalnızca aşağıdaki JSON şemasına uyan tek bir JSON nesnesi olarak ver; "
-            "JSON dışında metin yazma. Tüm alanlar zorunludur; değer yoksa null kullan.\n"
-            f"JSON şeması:\n{schema}"
-        )
 
 
 def _inline(node: Any, definitions: dict[str, Any], stack: tuple[str, ...]) -> Any:

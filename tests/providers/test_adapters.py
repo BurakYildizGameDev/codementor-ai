@@ -1,4 +1,6 @@
-"""Sağlayıcıya özgü istek biçimleri: Ollama, OpenAI, DeepSeek, Anthropic (mimari §5.5.2)."""
+"""Sağlayıcıya özgü istek biçimleri: Ollama, OpenAI uyumlu uç (Gemini), Anthropic (mimari §5.5.2).
+
+Gemini'nin yük biçimi ayrıca `test_gemini.py`'de."""
 
 from __future__ import annotations
 
@@ -8,7 +10,7 @@ import httpx
 import pytest
 import respx
 
-from codementor.config import AnthropicConfig, DeepSeekConfig, OllamaConfig, OpenAIConfig
+from codementor.config import AnthropicConfig, GeminiConfig, OllamaConfig
 from codementor.models.llm_output import LLMSocraticOutput
 from codementor.models.provider import ChatMessage, GenerationOptions
 from codementor.providers import ProviderConfigError
@@ -88,76 +90,26 @@ async def test_ollama_list_models(router: respx.MockRouter) -> None:
     assert await provider.list_models() == ["qwen2.5-coder:7b"]
 
 
-# ---------------------------------------------------------------------- OpenAI / DeepSeek
+# ---------------------------------------------------------------- OpenAI uyumlu uç (Gemini)
 
 
-def _openai(mode: str = "strict_schema") -> OpenAICompatProvider:
-    if mode == "strict_schema":
-        cfg = OpenAIConfig(base_url="https://oa.test/v1", model="m", seed=7, max_tokens=900)
-        return OpenAICompatProvider(
-            "openai", cfg, mode="strict_schema", transport=_transport("openai")
-        )
-    cfg2 = DeepSeekConfig(base_url="https://ds.test", model="m", seed=7, max_tokens=900)
-    return OpenAICompatProvider("deepseek", cfg2, mode="json_object", transport=_transport("ds"))
-
-
-def test_openai_response_format_strict() -> None:
-    payload = _openai().build_payload(MESSAGES, LLMSocraticOutput, OPTIONS)
-    fmt = payload["response_format"]
-    assert fmt == {
-        "type": "json_schema",
-        "json_schema": {
-            "name": "LLMSocraticOutput",
-            "schema": SchemaAdapter(LLMSocraticOutput).openai_strict(),
-            "strict": True,
-        },
-    }
-    assert payload["seed"] == 7
-    assert payload["max_completion_tokens"] == 900
-    assert payload["messages"] == [m.model_dump() for m in MESSAGES]
-
-
-async def test_openai_bearer_header(router: respx.MockRouter) -> None:
-    route = router.post("https://oa.test/v1/chat/completions").mock(
-        return_value=httpx.Response(200, json=openai_body(ANSWER, "m"))
-    )
-    await _openai().generate_structured(MESSAGES, LLMSocraticOutput, OPTIONS)
-    headers = route.calls.last.request.headers
-    assert headers["authorization"] == f"Bearer {API_KEYS['OPENAI_API_KEY']}"
-
-
-async def test_openai_refusal_gives_no_parsed(router: respx.MockRouter) -> None:
+async def test_compat_refusal_gives_no_parsed(router: respx.MockRouter) -> None:
     body = openai_body("", "m")
     body["choices"][0]["message"] = {"role": "assistant", "content": None, "refusal": "Hayır."}
-    router.post("https://oa.test/v1/chat/completions").mock(
+    router.post("https://gm.test/v1beta/openai/chat/completions").mock(
         return_value=httpx.Response(200, json=body)
     )
-    result = await _openai().generate_structured(MESSAGES, LLMSocraticOutput, OPTIONS)
+    provider = OpenAICompatProvider(
+        "gemini",
+        GeminiConfig(base_url="https://gm.test/v1beta/openai", model="m"),
+        token_field="max_tokens",
+        seed=False,
+        transport=_transport("gemini"),
+    )
+    result = await provider.generate_structured(MESSAGES, LLMSocraticOutput, OPTIONS)
     assert result.parsed is None
     assert result.finish_reason == "refusal"
     assert result.raw_text == "Hayır."
-
-
-def test_deepseek_json_object_and_schema_in_prompt() -> None:
-    payload = _openai("json_object").build_payload(MESSAGES, LLMSocraticOutput, OPTIONS)
-    assert payload["response_format"] == {"type": "json_object"}
-    messages = payload["messages"]
-    assert isinstance(messages, list)
-    last = messages[-1]
-    assert last["role"] == "system"
-    assert "json" in last["content"]  # DeepSeek JSON modu "json" sözcüğünü şart koşar
-    assert '"guiding_questions"' in last["content"]
-    assert payload["max_tokens"] == 900
-    assert "seed" not in payload
-    assert "max_completion_tokens" not in payload
-
-
-async def test_missing_api_key(monkeypatch: pytest.MonkeyPatch, router: respx.MockRouter) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY")
-    route = router.post("https://oa.test/v1/chat/completions")
-    with pytest.raises(ProviderConfigError, match="OPENAI_API_KEY"):
-        await _openai().generate_structured(MESSAGES, LLMSocraticOutput, OPTIONS)
-    assert route.call_count == 0
 
 
 # ------------------------------------------------------------------------------- Anthropic

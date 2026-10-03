@@ -140,21 +140,21 @@ async def test_rules_catalog_filtered(client_for: ClientFactory) -> None:
 async def test_providers_without_secrets(
     client_for: ClientFactory, settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-gizli-deger-123")
+    monkeypatch.setenv("GEMINI_API_KEY", "sk-gizli-deger-123")
     cfg = settings.model_copy(
         update={
             "providers": settings.providers.model_copy(
                 update={
-                    "default": "openai",
-                    "fallback": ["deepseek"],
-                    "openai": settings.providers.openai.model_copy(update={"model": "gpt-x"}),
+                    "default": "gemini",
+                    "fallback": ["anthropic"],
+                    "gemini": settings.providers.gemini.model_copy(update={"model": "gemini-x"}),
                 }
             )
         }
     )
     response = await client_for(cfg=cfg).get("/v1/providers")
     statuses = response.json()
-    assert [s["name"] for s in statuses] == ["openai", "deepseek"]
+    assert [s["name"] for s in statuses] == ["gemini", "anthropic"]
     assert statuses[0]["ready"] is True
     assert statuses[1]["ready"] is False
     assert "sk-gizli" not in response.text
@@ -167,12 +167,12 @@ async def test_health_and_ready(client_for: ClientFactory, settings: Settings) -
     cfg = settings.model_copy(
         update={
             "providers": settings.providers.model_copy(
-                update={"default": "deepseek", "fallback": []}
+                update={"default": "anthropic", "fallback": []}
             )
         }
     )
     ready = (await client_for(cfg=cfg).get("/health/ready")).json()
-    assert ready["ready"] is False  # deepseek model/anahtar yok
+    assert ready["ready"] is False  # anthropic model/anahtar yok
     assert {c["target"] for c in ready["compilers"]} == {"c", "cpp", "unreal", "csharp"}
 
 
@@ -190,7 +190,7 @@ async def test_ready_reports_compiler_origin(
     cfg = settings.model_copy(
         update={
             "providers": settings.providers.model_copy(
-                update={"default": "deepseek", "fallback": []}
+                update={"default": "anthropic", "fallback": []}
             )
         }
     )

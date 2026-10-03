@@ -12,7 +12,7 @@ import pytest
 import respx
 import structlog
 
-from codementor.config import AnthropicConfig, OpenAIConfig
+from codementor.config import AnthropicConfig, GeminiConfig
 from codementor.log import MASK, configure_logging, get_logger, register_secret, scrub
 from codementor.models.llm_output import LLMSocraticOutput
 from codementor.models.provider import ChatMessage, GenerationOptions
@@ -67,15 +67,16 @@ async def test_api_key_never_in_logs(captured: io.StringIO, router: respx.MockRo
 
 
 async def test_error_message_body_is_scrubbed(router: respx.MockRouter) -> None:
-    key = API_KEYS["OPENAI_API_KEY"]
-    router.post("https://oa.test/v1/chat/completions").mock(
+    key = API_KEYS["GEMINI_API_KEY"]
+    router.post("https://gm.test/v1beta/openai/chat/completions").mock(
         return_value=httpx.Response(503, json={"error": {"message": f"anahtar: {key}"}})
     )
     provider = OpenAICompatProvider(
-        "openai",
-        OpenAIConfig(base_url="https://oa.test/v1", model="m"),
-        mode="strict_schema",
-        transport=HttpTransport("openai", 30, RetryPolicy(max_retries=0)),
+        "gemini",
+        GeminiConfig(base_url="https://gm.test/v1beta/openai", model="m"),
+        token_field="max_tokens",
+        seed=False,
+        transport=HttpTransport("gemini", 30, RetryPolicy(max_retries=0)),
     )
     with pytest.raises(ProviderServerError) as info:
         await provider.generate_structured(MESSAGES, LLMSocraticOutput, GenerationOptions())

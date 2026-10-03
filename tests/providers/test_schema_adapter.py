@@ -158,25 +158,11 @@ def test_pydantic_still_validates_constraints() -> None:
         )
 
 
-def test_prompt_text_contains_schema_and_json_word() -> None:
-    text = SchemaAdapter(LLMSocraticOutput).prompt_text()
-    assert "JSON" in text
-    assert '"guiding_questions"' in text
-
-
 def test_base_returns_copies() -> None:
     adapter = SchemaAdapter(Nested)
     first = adapter.base()
     first["properties"].clear()
     assert adapter.base()["properties"]
-
-
-def test_prompt_text_keeps_constraints() -> None:
-    # denetim O8: DeepSeek şemayı zorlamaz; kısıtlar prompt'ta kalmalı ki model sınırları görsün
-    text = SchemaAdapter(LLMSocraticOutput).prompt_text()
-    assert '"maxLength": 80' in text
-    assert '"maxItems": 4' in text
-    assert '"title"' not in text
 
 
 def test_ollama_keeps_constraints() -> None:

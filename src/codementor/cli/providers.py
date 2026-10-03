@@ -21,7 +21,11 @@ from rich.markup import escape
 from rich.table import Table
 
 from codementor.config import load_settings
-from codementor.providers.factory import PROVIDER_NAMES, chain_names
+from codementor.providers.factory import (
+    PROVIDER_NAMES,
+    chain_names,
+    unknown_provider_reason,
+)
 from codementor.providers.health import check_providers
 
 EXIT_NOT_READY = 1
@@ -46,11 +50,8 @@ def providers_check(
     names = [provider] if provider else chain_names(providers)
     unknown = [n for n in names if n not in PROVIDER_NAMES]
     if unknown:
-        typer.echo(
-            f"Hata: bilinmeyen sağlayıcı: {', '.join(unknown)} "
-            f"(seçenekler: {', '.join(PROVIDER_NAMES)})",
-            err=True,
-        )
+        for name in unknown:
+            typer.echo(f"Hata: {name}: {unknown_provider_reason(name)}", err=True)
         raise typer.Exit(EXIT_USAGE)
     statuses = asyncio.run(check_providers(names, providers))
     table = Table(title="Sağlayıcılar")

@@ -74,35 +74,36 @@ class FakeRunner:
 
 
 def test_key_store_round_trip_and_idempotent_delete(store: KeyStore) -> None:
-    assert store.get("openai") is None
-    store.set("openai", "sk-abc")
-    assert store.get("openai") == "sk-abc"
-    store.delete("openai")
-    store.delete("openai")  # yoksa sessiz
-    assert store.get("openai") is None
+    assert store.get("gemini") is None
+    store.set("gemini", "sk-abc")
+    assert store.get("gemini") == "sk-abc"
+    store.delete("gemini")
+    store.delete("gemini")  # yoksa sessiz
+    assert store.get("gemini") is None
 
 
 def test_key_store_errors_are_turkish(vault: FakeVault, store: KeyStore) -> None:
     vault.broken = True
     with pytest.raises(KeyStoreError, match="okunamadı"):
-        store.get("openai")
+        store.get("gemini")
     with pytest.raises(KeyStoreError, match="kaydedilemedi"):
-        store.set("openai", "x")
+        store.set("gemini", "x")
 
 
 def test_vault_keys_fill_env_but_never_override_existing(
     settings: Settings, store: KeyStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    store.set("openai", "sk-vault-openai-123")
+    store.set("gemini", "sk-vault-gemini-123")
     store.set("anthropic", "sk-vault-anthropic-123")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "dis-ortam-anahtari")
     loaded = load_vault_keys(settings.providers, store)
-    assert loaded == {"openai"}
-    assert os.environ["OPENAI_API_KEY"] == "sk-vault-openai-123"
+    assert loaded == {"gemini"}
+    assert os.environ["GEMINI_API_KEY"] == "sk-vault-gemini-123"
     assert os.environ["ANTHROPIC_API_KEY"] == "dis-ortam-anahtari"
-    assert key_source(settings.providers, "openai", loaded) == "vault"
+    assert key_source(settings.providers, "gemini", loaded) == "vault"
     assert key_source(settings.providers, "anthropic", loaded) == "environment"
-    assert key_source(settings.providers, "deepseek", loaded) == "missing"
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    assert key_source(settings.providers, "anthropic", set()) == "missing"
 
 
 def test_locked_vault_does_not_crash_startup(settings: Settings, vault: FakeVault) -> None:
@@ -212,12 +213,12 @@ async def test_ollama_probe_discovers_models(settings: Settings) -> None:
 @pytest.mark.anyio
 async def test_api_probe_needs_key(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
     providers = settings.providers.model_copy(
-        update={"openai": settings.providers.openai.model_copy(update={"model": "gpt-x"})}
+        update={"gemini": settings.providers.gemini.model_copy(update={"model": "gemini-x"})}
     )
     cfg = settings.model_copy(update={"providers": providers})
-    assert not (await probe("openai", cfg)).ready
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-    assert (await probe("openai", cfg)).ready
+    assert not (await probe("gemini", cfg)).ready
+    monkeypatch.setenv("GEMINI_API_KEY", "sk-test")
+    assert (await probe("gemini", cfg)).ready
 
 
 @pytest.mark.anyio
@@ -226,11 +227,11 @@ async def test_try_connection_reports_success_and_failure(
 ) -> None:
     ok = FakeProvider(script=[FakeReply(data={"ok": True})], retry=RetryPolicy(max_retries=0))
     monkeypatch.setattr(connections, "build_provider", lambda *_a, **_k: ok)
-    assert (await try_connection("openai", settings)).startswith("Bağlantı çalışıyor")
+    assert (await try_connection("gemini", settings)).startswith("Bağlantı çalışıyor")
 
     broken = FakeProvider(script=[FakeReply(error="401")], retry=RetryPolicy(max_retries=0))
     monkeypatch.setattr(connections, "build_provider", lambda *_a, **_k: broken)
-    assert (await try_connection("openai", settings)).startswith("Başarısız")
+    assert (await try_connection("gemini", settings)).startswith("Başarısız")
 
 
 @pytest.mark.anyio
@@ -325,7 +326,7 @@ def test_codex_login_command(settings: Settings) -> None:
 async def test_try_connection_sends_no_temperature_and_room_for_reasoning(
     settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Faz 28: akıl yürüten modeller (OpenAI gpt-5+/o, DeepSeek düşünme modu) `temperature=0`'ı
+    """Faz 28: akıl yürüten modeller (Gemini düşünme modu vb.) `temperature=0`'ı
     reddeder ve küçük çıktı bütçesini düşünmeye harcar; deneme isteği ikisini de yapmamalı."""
     seen: list[GenerationOptions] = []
 
@@ -338,7 +339,7 @@ async def test_try_connection_sends_no_temperature_and_room_for_reasoning(
 
     spy = Spy(script=[FakeReply(data={"ok": True})], retry=RetryPolicy(max_retries=0))
     monkeypatch.setattr(connections, "build_provider", lambda *_a, **_k: spy)
-    await try_connection("openai", settings)
+    await try_connection("gemini", settings)
     (options,) = seen
     assert options.temperature is None
     assert options.max_tokens is not None
@@ -354,6 +355,6 @@ async def test_try_connection_unparsed_reply_is_failure(
         script=[FakeReply(raw="", finish_reason="length")], retry=RetryPolicy(max_retries=0)
     )
     monkeypatch.setattr(connections, "build_provider", lambda *_a, **_k: empty)
-    message = await try_connection("deepseek", settings)
+    message = await try_connection("anthropic", settings)
     assert message.startswith("Başarısız")
     assert "length" in message

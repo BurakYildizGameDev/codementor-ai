@@ -8,7 +8,7 @@ from codementor.config import CONFIG_FILE_ENV, load_settings
 @pytest.fixture
 def toml_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "codementor.toml"
-    path.write_text('[limits]\nmax_lines = 300\n\n[providers]\ndefault = "deepseek"\n')
+    path.write_text('[limits]\nmax_lines = 300\n\n[providers]\ndefault = "gemini"\n')
     monkeypatch.setenv(CONFIG_FILE_ENV, str(path))
     monkeypatch.delenv("CODEMENTOR_LIMITS__MAX_LINES", raising=False)
     return path
@@ -26,7 +26,7 @@ def test_defaults_without_toml(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 def test_toml_overrides_default() -> None:
     settings = load_settings()
     assert settings.limits.max_lines == 300
-    assert settings.providers.default == "deepseek"
+    assert settings.providers.default == "gemini"
 
 
 @pytest.mark.usefixtures("toml_file")
@@ -35,7 +35,7 @@ def test_env_overrides_toml(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = load_settings()
     assert settings.limits.max_lines == 10
     # env yalnızca verilen alanı ezer, TOML'un geri kalanı korunur
-    assert settings.providers.default == "deepseek"
+    assert settings.providers.default == "gemini"
 
 
 @pytest.mark.usefixtures("toml_file")
