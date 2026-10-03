@@ -8,16 +8,16 @@ Kurallar:
 4. Karmaşıklığı önce reasoning_steps ile adım adım gerekçelendir (hangi döngü kaç kez döner, hangi çağrı ne kadar sürer), sonra sonucu yaz. time_complexity ve space_complexity alanlarına yalnızca Big-O ifadesi yaz, ör. "O(n^2)" veya "O(n log n)"; "per frame", "worst case" gibi ekleri bu alanlara değil reasoning_steps içine yaz.
 5. Statik ipucu verildiyse ona katılıp katılmadığını agreement alanında belirt ("agrees" ya da "conflicts"); ipucu yoksa "no_hint" yaz. Katılmıyorsan gerekçeni reasoning_steps içinde açıkla.
 6. Statik bulguları tekrar etme; yalnızca yeni bulgular ekle. Aynı satırdaki aynı sorunu farklı sözcüklerle yazmak da tekrardır. Yeni bulgu yoksa additional_findings boş liste olsun; bulgu uydurma.
-7. Yalnızca gerçek sorunları raporla: yanlış sonuç, çökme, tanımsız davranış, bellek/kaynak sızıntısı, sıcak yolda ya da büyük girdide ölçülebilir performans kaybı veya karşılanmamış soru gereksinimi. Stil, adlandırma, "daha iyi olabilir" önerileri ve kodun hiç karşılaşmayacağı durumlar için savunma önerileri bulgu değildir; az ve kesin bulgu, çok ve belirsiz bulgudan iyidir.
+7. Hata (kind "issue") yalnızca gerçek sorundur: yanlış sonuç, çökme, tanımsız davranış, bellek/kaynak sızıntısı, sıcak yolda ya da büyük girdide ölçülebilir performans kaybı veya karşılanmamış soru gereksinimi. Hataya yol açmayan ama bir mentorun değineceği bir iyileştirme varsa kind "suggestion" ve severity "low" ile öneri olarak yaz (en fazla 2); soru gereksinimi ihlali öneri değil hatadır. Stil, adlandırma ve kodun hiç karşılaşmayacağı durumlar için savunma ne hata ne öneridir. Kod doğruysa hata yazma: boş liste ya da yalnız öneri doğru yanıttır; az ve kesin bulgu, çok ve belirsiz bulgudan iyidir.
 8. Kategori seç: "input_handling" yalnızca dışarıdan gelen girdi (stdin, dosya, ağ, kullanıcı arayüzü) denetlenmiyorsa ya da soru o girdiyi tanımlıyorsa; iç ya da public bir fonksiyon parametresinin null/negatif denetimi tek başına bulgu değildir. "edge_case" yalnızca sorunun ya da kodun gerçekçi girdi alanındaki durumlar için (boş dizi, n = 0, tek eleman); INT_MIN, 2^31 eleman gibi kuramsal uç değer, soru böyle bir aralık vermedikçe raporlanmaz. "design" yalnızca (a) soruda istenen bir işlev ya da değer eksik veya yanlışsa ya da (b) yapısal bir hata yanlış davranışa yol açıyorsa; soru bir süre/bellek sınırı ya da girdi durumu (ör. O(n) süre, noktalama, boş girdi) şart koşuyorsa o sorunun kendi kategorisini ("performance", "edge_case" vb.) kullan.
 9. Soru gereksinimi karşılanmıyorsa: gereksinime aykırı somut bir değer ya da satır varsa o satırı, istenen bir işlev hiç yoksa dosyadaki ilk sınıf ya da fonksiyon bildiriminin satırını göster; aynı eksiklik için tek bulgu yaz.
-10. Önem: "high" çökme, tanımsız davranış, veri kaybı ya da gereksinimin hiç karşılanmaması; "medium" yanlış sonuç ya da belirgin performans sorunu; "low" küçük ama gerçek sorun. "low" önemde en fazla 2 bulgu yaz. Her bulgunun certainty alanına bunun gerçek bir hata olduğundan ne kadar emin olduğunu yaz: "high" somut bir girdide yanlış davranışı gösterebiliyorsan, "medium" büyük olasılıkla hataysa, "low" şüpheliysen.
+10. Önem: "high" çökme, tanımsız davranış, veri kaybı ya da gereksinimin hiç karşılanmaması; "medium" yanlış sonuç ya da belirgin performans sorunu; "low" küçük ama gerçek sorun. "low" önemde en fazla 2 hata yaz. Her bulgunun certainty alanına bunun gerçek bir hata olduğundan ne kadar emin olduğunu yaz: "high" somut bir girdide yanlış davranışı gösterebiliyorsan, "medium" büyük olasılıkla hataysa, "low" şüpheliysen.
 11. Yanıtın YALNIZCA verilen JSON şemasına uyan tek bir nesne olsun: öncesinde ya da sonrasında açıklama, Markdown veya ``` işareti olmasın.
 12. description ve reasoning_steps Türkçe, kısa ve öğrenciye dönük olsun.
 
 ===== user =====
 ## Örnekler
-Aşağıdaki örnekler yalnızca yanıt biçimini gösterir; öğrencinin koduyla ilgili değildir. Dikkat et: evidence satırdan birebir kopyalanmış, statik analizin bulduğu sorunlar tekrar edilmemiş.
+Aşağıdaki örnekler yalnızca yanıt biçimini gösterir; öğrencinin koduyla ilgili değildir. Dikkat et: evidence satırdan birebir kopyalanmış, statik analizin bulduğu sorunlar tekrar edilmemiş; doğru kodda hata yazılmamış (boş liste ya da yalnız öneri).
 
 ### Örnek 1: C++: iki vektörün kesişimi
 <example_code>
@@ -36,33 +36,27 @@ Aşağıdaki örnekler yalnızca yanıt biçimini gösterir; öğrencinin koduyl
 Statik ipucu: O(n^2)
 Statik analizin zaten bulduğu: yok
 Doğru yanıt:
-{"complexity": {"reasoning_steps": ["6. satırdaki döngü a'nın her elemanı için bir kez döner: n tur.", "7. satırdaki std::find her turda b'yi baştan sona tarar: m karşılaştırma.", "a n, b m elemanlıysa toplam n·m karşılaştırma: O(n*m); ikisi aynı boyuttaysa karesel.", "out en fazla n eleman tutar: ek bellek O(n)."], "time_complexity": "O(n*m)", "space_complexity": "O(n)", "optimal_time_target": "O(n + m)", "agreement": "agrees"}, "additional_findings": [{"category": "performance", "severity": "medium", "line_start": 7, "line_end": null, "evidence": "std::find(b.begin(), b.end(), x)", "description": "a'daki her eleman için b tamamen taranıyor; kesişim karesel sürede hesaplanıyor.", "certainty": null}, {"category": "edge_case", "severity": "low", "line_start": 8, "line_end": null, "evidence": "out.push_back(x);", "description": "a'da tekrar eden bir değer çıktıya birden çok kez ekleniyor; bu istenen davranış mı?", "certainty": null}]}
+{"complexity": {"reasoning_steps": ["6. satırdaki döngü a'nın her elemanı için bir kez döner: n tur.", "7. satırdaki std::find her turda b'yi baştan sona tarar: m karşılaştırma.", "a n, b m elemanlıysa toplam n·m karşılaştırma: O(n*m); ikisi aynı boyuttaysa karesel.", "out en fazla n eleman tutar: ek bellek O(n)."], "time_complexity": "O(n*m)", "space_complexity": "O(n)", "optimal_time_target": "O(n + m)", "agreement": "agrees"}, "additional_findings": [{"category": "performance", "severity": "medium", "line_start": 7, "line_end": null, "evidence": "std::find(b.begin(), b.end(), x)", "description": "a'daki her eleman için b tamamen taranıyor; kesişim karesel sürede hesaplanıyor.", "certainty": null, "kind": "issue"}, {"category": "edge_case", "severity": "low", "line_start": 8, "line_end": null, "evidence": "out.push_back(x);", "description": "a'da tekrar eden bir değer çıktıya birden çok kez ekleniyor; bu istenen davranış mı?", "certainty": null, "kind": "issue"}]}
 
-### Örnek 2: Unreal: hedef seçen taret
+### Örnek 2: C++: en uzun kelimenin uzunluğu (temiz kod, bir öneri)
 <example_code>
- 1 | UCLASS()
- 2 | class ATurret : public AActor {
- 3 |     GENERATED_BODY()
- 4 | public:
- 5 |     virtual void Tick(float DeltaTime) override;
- 6 | private:
- 7 |     AActor* Target;
- 8 |     TArray<AActor*> Enemies;
- 9 | };
-10 |
-11 | void ATurret::Tick(float DeltaTime) {
-12 |     Super::Tick(DeltaTime);
-13 |     for (AActor* Enemy : Enemies) {
-14 |         if (GetDistanceTo(Enemy) < 1000.f) {
-15 |             Target = Enemy;
-16 |         }
-17 |     }
-18 | }
+ 1 | #include <string>
+ 2 | #include <vector>
+ 3 |
+ 4 | std::size_t longest_word(const std::vector<std::string>& words) {
+ 5 |     std::size_t best = 0;
+ 6 |     for (const std::string& word : words) {
+ 7 |         if (word.size() > best) {
+ 8 |             best = word.size();
+ 9 |         }
+10 |     }
+11 |     return best;
+12 | }
 </example_code>
 Statik ipucu: O(n)
-Statik analizin zaten bulduğu: UE-GC-001 (7. satır: `AActor* Target;`); UE-GC-001 (8. satır: `TArray<AActor*> Enemies;`); UE-PERF-001 (13. satır: `for (AActor* Enemy : Enemies) {`)
+Statik analizin zaten bulduğu: yok
 Doğru yanıt:
-{"complexity": {"reasoning_steps": ["Tick her karede çalışır; aşağıdakiler kare başına maliyettir.", "13. satırdaki döngü n düşman üzerinde bir kez döner; GetDistanceTo O(1).", "Ek bellek ayrılmıyor."], "time_complexity": "O(n)", "space_complexity": "O(1)", "optimal_time_target": "O(n)", "agreement": "agrees"}, "additional_findings": [{"category": "edge_case", "severity": "medium", "line_start": 14, "line_end": null, "evidence": "GetDistanceTo(Enemy)", "description": "Yok edilmiş ya da null bir aktör için mesafe hesaplanıyor; geçerlilik denetimi yok.", "certainty": null}]}
+{"complexity": {"reasoning_steps": ["6. satırdaki döngü n kelimenin her birine bir kez bakar; size() O(1).", "Kelimeler referansla geziliyor, kopya yok: ek bellek O(1)."], "time_complexity": "O(n)", "space_complexity": "O(1)", "optimal_time_target": "O(n)", "agreement": "agrees"}, "additional_findings": [{"category": "design", "severity": "low", "line_start": 7, "line_end": null, "evidence": "if (word.size() > best) {", "description": "En büyük değeri elle izlemek doğru çalışıyor; aynı iş standart kütüphanedeki hazır bir algoritmayla da ifade edilebilir.", "certainty": null, "kind": "suggestion"}]}
 
 ## Serbest mod
 Soru bağlamı yok. Kodu kendi başına değerlendir; optimal_time_target alanına bu kodun amacı için ulaşılabilir en iyi zamanı yaz, emin değilsen null.
@@ -115,4 +109,4 @@ Kaçırılmış sorun ararken şu soruları kendine sor (her madde bir bulgu de�
 - İstisna fırlatılırsa ya da erken dönülürse kaynaklar yine serbest kalıyor mu?
 
 ## Görev
-Öğrencinin kodunun zaman ve bellek karmaşıklığını adım adım gerekçelendir ve statik analizin kaçırdığı en fazla 6 sorunu bul. Yanıt olarak yalnızca şemaya uyan JSON nesnesini döndür.
+Öğrencinin kodunun zaman ve bellek karmaşıklığını adım adım gerekçelendir ve statik analizin kaçırdığı en fazla 6 hatayı ve varsa en fazla 2 öneriyi bul. Yanıt olarak yalnızca şemaya uyan JSON nesnesini döndür.

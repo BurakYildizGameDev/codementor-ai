@@ -396,6 +396,8 @@ class UnityAllocInUpdate(Rule):
 
 **Doğrulama geçişi (Faz 35, ADR-0019):** `pipeline.verify_findings = true` ise A ile B arasında her LLM bulgusu ayrı bir çağrıda (`LLMVerifyOutput`) sınanır; model somut bir girdi (girdi/beklenen/gerçekleşen) ya da ihlal edilen gereksinim gösteremezse bulgu düşer. Statik ve `confirmed` bulgular girmez; hata/bozuk şemada bulgular olduğu gibi kalır. `single_pass`'ta bulgu düşerse Sokratik çıktı ayrı Geçiş B ile yeniden üretilir. Varsayılan açık: dev ölçümünde precision 69 → 79, recall değişmedi; bedeli ~%24 gecikme, ~%13 token (Faz 35B).
 
+**Hatalar ve öneriler (Faz 36, ADR-0022):** her bulgu `kind` taşır: `issue` (gerçek hata) ya da `suggestion` (hataya yol açmayan öneri; yalnız `low`, aksi halde sistem `issue` yapar). Statik bulgular hep `issue`'dur. Öneriler doğrulama geçişine girmez; Geçiş B'ye ve şablon sorulara yalnız hatalar gider.
+
 `pipeline.mode = "single_pass"` ile tek çağrıya indirilebilir (maliyet/gecikme için). Faz 12 eval sonucu (ADR-0003): kalite farkı ölçülmedi, single_pass ~%35–45 hızlı ama sızıntı koruması ~1,5× sık devreye giriyor; varsayılan `two_pass` kalır (güvenlik payı), `single_pass` hızlı mod.
 
 #### 5.4.3 Zorluk → mentorluk ayarı
@@ -581,6 +583,11 @@ class FindingSource(StrEnum):
     CONFIRMED = "confirmed"
 
 
+class FindingKind(StrEnum):  # Faz 36 (ADR-0022)
+    ISSUE = "issue"
+    SUGGESTION = "suggestion"
+
+
 class AuditCategory(StrEnum):
     MEMORY_SAFETY = "memory_safety"
     RESOURCE_LEAK = "resource_leak"
@@ -604,6 +611,7 @@ class LLMFinding(BaseModel):
     evidence: str = Field(max_length=200, description="Satırdan birebir alıntı")
     description: str = Field(max_length=400)
     certainty: Literal["high", "medium", "low"] | None = None  # Faz 35; rapor güveni buradan
+    kind: Literal["issue", "suggestion"] = "issue"  # Faz 36 (ADR-0022)
 
 
 class LLMComplexity(BaseModel):
@@ -668,6 +676,7 @@ class Finding(BaseModel):
     description: str
     source: FindingSource
     confidence: float = Field(ge=0, le=1)
+    kind: FindingKind = FindingKind.ISSUE  # Faz 36: "issue" | "suggestion" (ADR-0022)
 
 
 class ComplexityResult(BaseModel):
@@ -709,7 +718,7 @@ class ReportMeta(BaseModel):
 
 
 class AnalysisReport(BaseModel):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.0", "1.1"] = "1.1"  # 1.1: bulgu `kind` (Faz 36); 1.0 okunur
     analysis_id: str = Field(
         pattern=r"^[0-9A-HJKMNP-TV-Z]{26}$"
     )  # ULID (Faz 27: biçim doğrulanır; API'de bozuk kimlik → 404)
@@ -729,7 +738,7 @@ class AnalysisReport(BaseModel):
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "analysis_id": "01J9ZK4M8Q3W6Y2T5R7N1B0C9D",
   "created_at": "2026-09-29T10:15:02Z",
   "language": "csharp",
@@ -763,7 +772,8 @@ class AnalysisReport(BaseModel):
       "evidence": "var slots = new List<Slot>();",
       "description": "Update her karede yeni bir List tahsis ediyor; bu GC baskısı ve kare atlamaları üretir.",
       "source": "confirmed",
-      "confidence": 0.95
+      "confidence": 0.95,
+      "kind": "issue"
     }
   ],
   "socratic": {
@@ -781,7 +791,7 @@ class AnalysisReport(BaseModel):
     "model": "qwen2.5-coder:7b",
     "prompt_version": "v1+3fa9c2d1",
     "rules_version": "1.0.0",
-    "schema_version": "1.0",
+    "schema_version": "1.1",
     "tokens_in": 2140,
     "tokens_out": 412,
     "stage_latency_ms": { "normalize": 2, "tier0": 6, "tier1": 840, "facts": 14, "llm_a": 9120, "verify": 3, "llm_b": 4210 },
@@ -1151,7 +1161,8 @@ tags: [hot-path, injection-none]
 | `early_exit_precision / recall` | Erken çıkış kararlarının `syntax_valid` etiketiyle uyumu |
 | `complexity_time_exact_acc` | Kanonik Big-O birebir eşleşme |
 | `complexity_time_class_acc` | Aynı büyüme sınıfı (ör. `n log n` vs `n log n`) |
-| `audit_precision / recall / f1` | Eşleşme: aynı kategori ve satır farkı ≤ 2 |
+| `audit_precision / recall / f1` | Eşleşme: aynı kategori ve satır farkı ≤ 2. Yalnız `kind = issue` tahminler puanlanır (Faz 36) |
+| `suggestions_total` | Rapordaki öneri sayısı; puana girmez, `eval analyze`'da ayrıca gösterilir (Faz 36) |
 | `line_accuracy` | Eşleşen bulgularda satır birebir doğru oranı |
 | `leak_rate` | `must_not_contain` ifadelerinden birini içeren Sokratik çıktı oranı |
 | `injection_resistance` | Injection örneklerinde şema geçerli + sızıntısız oran |
@@ -1462,6 +1473,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0019 | LLM bulguları için doğrulama geçişi (varsayılan kapalı) | Kanıtlanamayan bulgu düşer; precision prompt'tan bağımsız artar, bedeli ek çağrı ([docs/adr/0019](adr/0019-bulgu-dogrulama-gecisi.md)) |
 | ADR-0020 | Gemini, OpenAI uyumlu uç nokta üzerinden | Belgelenmiş katı şema biçimi bizimkiyle aynı; ayrı adaptör yok ([docs/adr/0020](adr/0020-gemini-openai-uyumlu-uc.md)) |
 | ADR-0021 | OpenAI ve DeepSeek sağlayıcıları kaldırıldı | Canlı doğrulanamıyordu, bakım yükü; Gemini ve agy deneysel olarak kalır ([docs/adr/0021](adr/0021-openai-deepseek-kaldirildi.md)) |
+| ADR-0022 | Bulgularda hata ve öneri ayrımı | `kind`: `issue` / `suggestion`; öneriler katlı gösterilir, Sokratik sorulara ve eval puanına girmez ([docs/adr/0022](adr/0022-hata-oneri-ayrimi.md)) |
 
 ---
 

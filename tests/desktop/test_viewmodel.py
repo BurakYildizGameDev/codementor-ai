@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import yaml
 from hypothesis import given
@@ -17,6 +18,8 @@ from codementor.desktop.viewmodel import (
     format_ms,
     language_for_path,
     line_marks,
+    report_headline,
+    split_findings,
 )
 from codementor.models.enums import AuditCategory, Engine, Language, Severity
 from codementor.models.findings import Diagnostic, Finding
@@ -164,3 +167,39 @@ def test_format_ms() -> None:
 
 def test_samples_exist_for_every_language() -> None:
     assert set(SAMPLES) == set(Language)
+
+
+# ---------------------------------------------------------------- Faz 36: hatalar ve öneriler
+
+
+def suggestion(line: int) -> Finding:
+    return finding(line, severity=Severity.LOW).model_copy(update={"kind": "suggestion"})
+
+
+def test_split_findings_orders_issues_and_separates_suggestions() -> None:
+    low, high = finding(1, severity=Severity.LOW), finding(9, severity=Severity.HIGH)
+    issues, suggestions = split_findings([low, suggestion(3), high])
+    assert issues == [high, low]  # önem sırası
+    assert [f.line_start for f in suggestions] == [3]
+
+
+def test_line_marks_skip_suggestions() -> None:
+    """Editörde yalnız hatalar boyanır; öneri satırı işaretlenmez."""
+    assert line_marks([suggestion(2)], [], line_count=5) == []
+
+
+def test_report_headline_counts_errors_and_suggestions() -> None:
+    from types import SimpleNamespace
+
+    def report(findings: list[Finding]) -> Any:
+        return SimpleNamespace(
+            findings=findings,
+            compilation=SimpleNamespace(status=SimpleNamespace(value="passed")),
+            meta=SimpleNamespace(cache_hit=False),
+        )
+
+    assert report_headline(report([finding(1), suggestion(2)])).startswith(
+        "1 hata · 1 öneri · 1 yüksek önem"
+    )
+    assert report_headline(report([suggestion(2)])).startswith("Hata yok · 1 öneri")
+    assert report_headline(report([])).startswith("Hata yok ·")

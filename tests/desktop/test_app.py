@@ -635,3 +635,39 @@ def test_question_view_messages(app: App, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(view, "_load", lambda _l, _d: None)
     view.refresh()
     assert label_texts() == ["Soru bankası boş ya da okunamadı."]
+
+
+def test_finding_list_groups_suggestions(app: App) -> None:
+    """Faz 36: hatalar açık, öneriler "Öneriler (n)" düğmesinin altında katlı."""
+    from codementor.models.enums import AuditCategory, FindingSource, Severity
+    from codementor.models.findings import Finding
+
+    def make(line: int, kind: str) -> Finding:
+        return Finding(
+            id=f"F-00{line}",
+            rule_id=None,
+            category=AuditCategory.DESIGN,
+            severity=Severity.LOW,
+            line_start=line,
+            line_end=None,
+            evidence="x",
+            description=f"{kind} açıklaması",
+            source=FindingSource.LLM,
+            confidence=0.7,
+            kind=kind,  # type: ignore[arg-type]
+        )
+
+    findings = app.analyze_view.findings
+    findings.show([make(1, "issue"), make(2, "suggestion")], [])
+    app.update()
+    assert findings.count.cget("text") == "1"
+    toggle = findings.suggestion_toggle
+    assert toggle is not None
+    assert toggle.cget("text") == "Öneriler (1) ▸"
+    assert not findings.suggestion_body.grid_info()
+    toggle.invoke()
+    app.update()
+    assert toggle.cget("text") == "Öneriler (1) ▾"
+    assert findings.suggestion_body.grid_info()
+    findings.show([make(1, "issue")], [])
+    assert findings.suggestion_toggle is None

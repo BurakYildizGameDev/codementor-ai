@@ -223,3 +223,29 @@ def test_llm_certainty_sets_finding_confidence() -> None:
         settings=SETTINGS,
     )
     assert [f.confidence for f in result.findings] == [pytest.approx(0.5)]
+
+
+def _verified(finding: LLMFinding) -> list[Finding]:
+    return verify_analysis(
+        _output(finding),
+        code=CODE,
+        static_findings=[],
+        hint=HINT,
+        expected=None,
+        schema_first_try=True,
+        settings=SETTINGS,
+    ).findings
+
+
+def test_llm_kind_carried_to_finding() -> None:
+    """Faz 36: düşük önemli öneri rapora öneri olarak geçer."""
+    low = _llm(3, "i <= n").model_copy(update={"severity": Severity.LOW, "kind": "suggestion"})
+    assert [f.kind for f in _verified(low)] == ["suggestion"]
+    assert [f.kind for f in _verified(_llm(3, "i <= n"))] == ["issue"]
+
+
+@pytest.mark.parametrize("severity", [Severity.MEDIUM, Severity.HIGH])
+def test_suggestion_kept_only_for_low_severity(severity: Severity) -> None:
+    """Orta/yüksek önemde bir gözlem öneri olamaz: hata olarak raporlanır."""
+    finding = _llm(3, "i <= n").model_copy(update={"severity": severity, "kind": "suggestion"})
+    assert [f.kind for f in _verified(finding)] == ["issue"]

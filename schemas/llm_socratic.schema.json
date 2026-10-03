@@ -2,7 +2,6 @@
   "$id": "llm_socratic.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Geçiş B çıktısı: Sokratik yönlendirme soruları.",
   "properties": {
     "guiding_questions": {
       "items": {

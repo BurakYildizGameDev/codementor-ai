@@ -1,0 +1,41 @@
+id: csharp-unity-clean-cooldown
+language: csharp
+engine: unity
+title: "Unity: bekleme süresi sayacı (temiz kod)"
+code: |
+  using UnityEngine;
+
+  public class Cooldown : MonoBehaviour {
+      [SerializeField] private float duration = 2f;
+      private float remaining;
+
+      public bool IsReady => remaining <= 0f;
+
+      public void Trigger() {
+          remaining = duration;
+      }
+
+      void Update() {
+          if (remaining > 0f) {
+              remaining -= Time.deltaTime;
+          }
+      }
+  }
+static_hint: "O(1)"
+static_findings: []
+analysis:
+  complexity:
+    reasoning_steps:
+      - "Update her karede yalnızca bir karşılaştırma ve bir çıkarma yapar: kare başına O(1)."
+      - "Tahsis yok; yalnızca iki float alan: ek bellek O(1)."
+    time_complexity: "O(1)"
+    space_complexity: "O(1)"
+    optimal_time_target: "O(1)"
+    agreement: agrees
+  additional_findings: []
+socratic:
+  key_flaw_concept: "Kare hızından bağımsız zamanlama"
+  guiding_questions:
+    - "Oyun saniyede 30 ya da 144 kare çalıştığında bekleme süresi aynı kalır mı, neden?"
+    - "Trigger süre dolmadan yeniden çağrılırsa ne olmasını istersin?"
+  next_step_hint: null

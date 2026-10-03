@@ -9,7 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from codementor.models.enums import Severity
-from codementor.models.findings import Diagnostic, Finding
+from codementor.models.findings import Diagnostic, Finding, issues_only
 from codementor.models.pipeline import MentorTemplates
 from codementor.models.prompts import QuestionContext
 from codementor.models.report import SocraticResult
@@ -68,7 +68,7 @@ def degraded_socratic(
     questions: list[str] = []
     if question is not None and question.hint_ladder.get(hint_level):
         questions.append(question.hint_ladder[hint_level])
-    ranked = sorted(findings, key=lambda f: (_SEVERITY_RANK[f.severity], f.line_start))
+    ranked = sorted(issues_only(findings), key=lambda f: (_SEVERITY_RANK[f.severity], f.line_start))
     for finding in ranked:
         template = templates.categories.get(finding.category)
         if template is None:

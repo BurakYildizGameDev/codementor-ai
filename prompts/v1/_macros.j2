@@ -135,7 +135,7 @@ Kaçırılmış sorun ararken şu soruları kendine sor (her madde bir bulgu de�
 {% macro fewshots_block(examples, single_pass) %}
 {% if examples %}
 ## Örnekler
-Aşağıdaki örnekler yalnızca yanıt biçimini gösterir; öğrencinin koduyla ilgili değildir. Dikkat et: evidence satırdan birebir kopyalanmış, statik analizin bulduğu sorunlar tekrar edilmemiş.{% if single_pass %} Örnek sorular ipucu seviyesi 1 üslubundadır; sen mentorluk ayarındaki seviyeye uy.{% endif +%}
+Aşağıdaki örnekler yalnızca yanıt biçimini gösterir; öğrencinin koduyla ilgili değildir. Dikkat et: evidence satırdan birebir kopyalanmış, statik analizin bulduğu sorunlar tekrar edilmemiş; doğru kodda hata yazılmamış (boş liste ya da yalnız öneri).{% if single_pass %} Örnek sorular ipucu seviyesi 1 üslubundadır; sen mentorluk ayarındaki seviyeye uy.{% endif +%}
 {% for ex in examples %}
 
 ### Örnek {{ loop.index }}: {{ ex.title }}

@@ -194,3 +194,16 @@ def test_confidence_threshold_table() -> None:
     assert table[0.6].kept == 2
     assert table[0.85].scores.recall == 1.0
     assert "## Güven eşiği" in analysis_markdown(analysis)
+
+
+def test_suggestions_excluded_from_fp_and_counted() -> None:
+    """Faz 36: öneri yanlış pozitif listesine girmez, ayrı sayılır."""
+    lb = label(findings=[(MEM, 4)])
+    suggestion = _f(DESIGN, 20, "F-002").model_copy(update={"kind": "suggestion"})
+    analysis = analyze(
+        _run([result(report(findings=[_f(MEM, 4, "F-001"), suggestion]))]), _labels(lb)
+    )
+    assert analysis.false_positives == []
+    assert analysis.predicted_total == 1
+    assert analysis.suggestions_total == 1
+    assert "öneri 1" in analysis_markdown(analysis)

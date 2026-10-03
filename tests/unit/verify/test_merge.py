@@ -83,3 +83,20 @@ def test_numbering_by_line() -> None:
 def test_static_only_and_llm_only_unchanged() -> None:
     assert [f.source for f in merge_findings([static(1)], [])] == [FindingSource.STATIC]
     assert [f.source for f in merge_findings([], [llm(1)])] == [FindingSource.LLM]
+
+
+def test_merge_with_static_keeps_issue_kind() -> None:
+    """Faz 36: statik bir hatayla birleşen LLM önerisi hata olarak kalır."""
+    suggestion = llm(11).model_copy(update={"kind": "suggestion"})
+    (merged,) = merge_findings([static(10)], [suggestion])
+    assert merged.source == FindingSource.CONFIRMED
+    assert merged.kind == "issue"
+
+
+def test_dedupe_prefers_issue_over_suggestion() -> None:
+    """LLM aynı sorunu hem öneri hem hata olarak yazarsa hata kalır."""
+    suggestion = llm(10).model_copy(update={"kind": "suggestion", "description": "öneri"})
+    issue = llm(11).model_copy(update={"description": "hata"})
+    (merged,) = merge_findings([], [suggestion, issue])
+    assert merged.kind == "issue"
+    assert merged.description == "hata"

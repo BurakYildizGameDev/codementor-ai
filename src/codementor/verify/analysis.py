@@ -9,7 +9,7 @@ from typing import Literal
 
 from codementor.config import VerifySettings, get_settings
 from codementor.models.bigo import parse_bigo
-from codementor.models.enums import FindingSource
+from codementor.models.enums import FindingKind, FindingSource, Severity
 from codementor.models.facts import ComplexityHint
 from codementor.models.findings import Finding
 from codementor.models.llm_output import (
@@ -46,6 +46,13 @@ _AGREEMENT: dict[AgreementState, ReportAgreement] = {
 }
 
 
+def _kind(finding: LLMFinding) -> FindingKind:
+    """Faz 36: öneri yalnız `low` önemde olabilir; daha önemli bir gözlem hatadır."""
+    if finding.kind == "suggestion" and finding.severity != Severity.LOW:
+        return FindingKind.ISSUE
+    return FindingKind(finding.kind)
+
+
 def _to_finding(
     finding: LLMFinding, line_start: int, line_end: int | None, shifted: bool
 ) -> Finding:
@@ -60,6 +67,7 @@ def _to_finding(
         description=finding.description,
         source=FindingSource.LLM,
         confidence=finding_confidence(finding.certainty, shifted=shifted),
+        kind=_kind(finding),
     )
 
 

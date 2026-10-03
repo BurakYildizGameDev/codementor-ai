@@ -34,6 +34,7 @@
 | 28 (Codex) | ✅ | faz/28-cli-ajanlari | 2026-10-02 | Claude Code / — |
 | 34 + 35B | ✅ | faz/34-eval-genisletme | 2026-10-03 | Claude Code / — |
 | 37 | ✅ | faz/37-saglayici-sadelestirme | 2026-10-03 | Claude Code / — |
+| 36 | ✅ | faz/36-hata-oneri | 2026-10-04 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -900,7 +901,46 @@ kaldırmak için ortak katmanın (uyumlu uç) ayrı tutulmuş olması işi küç
 - Statik dev koşusu (96): Big-O %97, P/R/F1 100/58/73, satır %100. README dev tablosu yeniden üretildi; ayrıntı `docs/eval-findings.md` §10.
 - Açık: LLM dev koşuları 96 örnekle yenilenmedi (canlı, onayla). Öneri sınırındaki kural bulguları (`cpp-105`, `unreal-107`, `python-105`) Faz 36'ya.
 
+## Faz 36 — Notlar (hatalar ve öneriler; ADR-0022)
+**Yapılanlar:**
+- Model: `FindingKind` (`issue` / `suggestion`), `Finding.kind` ve `LLMFinding.kind` varsayılan
+  `issue`; rapor `schema_version` 1.1 (`Literal["1.0","1.1"]`, eski raporlar ve önbellek okunur).
+  `issues_only()` yardımcı fonksiyonu `models/findings.py`'de.
+- Doğrulama: `low` olmayan öneri `issue`'ya çevrilir (`verify/analysis.py::_kind`); öneriler
+  doğrulama geçişine girmez (`verify_targets`); LLM tekilleştirmesinde hata öneriye üstün gelir;
+  statikle birleşen bulgu hata kalır.
+- Pipeline: Geçiş B ve şablon sorulara yalnız hatalar gider (`passes.py`, `templates.py`).
+- Prompt: `_core_rules` 7/10, `_markup_rules` 4/6, mentorluk kuralı 3, görev "en fazla 6 hata ve
+  varsa en fazla 2 öneri"; few-shot giriş cümlesi. 5 temiz örnek (`*_clean_*.yaml`: C, C++,
+  Unity, Python, HTML; C++ ve Python tek öneri gösterir). `FewShotExample.analysis` işaretleme
+  çıktısını da kabul eder (dil ile uyum denetlenir). Seçim: önce hatalı, sonra temiz örnek;
+  limit 1'de yalnız hatalı.
+- Biçimler: Markdown "Hatalar" + `<details>` "Öneriler (n)"; SARIF öneri → `note` +
+  `properties.kind`; Rich ayrı "Öneriler" başlığı; masaüstü kartı "Hatalar" + katlı düğme,
+  başlık satırı "N hata · M öneri"; web `<details>`; editörde öneri satırı boyanmaz.
+- Eval: `audit_metrics` yalnız hatalar; `Metrics.suggestions_total`; `eval analyze` FP listesi
+  hatalardan, özet satırında öneri sayısı. `compare` tablosu değişmedi (README tabloları aynı).
+- Şemalar ve web tipleri yeniden üretildi; prompt golden'ları güncellendi; mimari §5.4.2, §6.2-6.5,
+  §14.2, ADR tablosu.
+**Alınan kararlar (ve neden):**
+- Kanıtlanamayan hata öneriye indirilmez, düşer (Faz 35 ölçümü bu davranışla; kanıtsız iddia
+  öneri olarak da yanlış bilgi olabilir).
+- Statik bulgular hep hata: kurallar "sorun" için seçildi, eval etiketleri de öyle.
+- LLM şema modellerindeki docstring'ler yoruma çevrildi: `kind` alanı 2048 bağlamlı bütçe
+  testini sınırın altına itiyordu; bu metinler (ör. "Ham metin; K5 normalize eder") modele bir
+  şey anlatmıyordu. `LLMFinding.kind` aynı nedenle `Literal` (enum `$ref`'inden kısa).
+- `cpp_none_nested_find` örneğindeki "tekrar eden değer" bulgusu hata olarak kaldı (kesişimde
+  yinelenen çıktı yanlış sonuç; Sokratik sorusu da ona dayanıyor).
+**Doğrulama:** ruff, ruff format, mypy --strict, pytest (2620 geçti), web vitest (33) + build.
+Statik dev koşusu değişmedi (96 örnek, P/R/F1 100/58/73; şema 1.1).
+**Açık sorular:** Canlı dev koşusu (precision artışı ve recall'un düşmediği) onay bekliyor
+(~1-1,4M token). Kural bazında öneri (`cpp-105` CPP-OWN-001, `unreal-107`, `python-105`).
+**Bu fazda öğrendiğim:** Şemaya giren her metin dar bağlamda bütçe demektir; geliştirici
+docstring'leri LLM şemasına sızıyordu. Öneriyi ayrı sınıf yapmak, "bulgu yazma" yasağından daha
+az bilgi kaybettiren bir precision aracıdır.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001); canlı dev koşusu ile precision/recall ve `suggestions_total` ölçümü.
 - Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.
 - ~~Faz 34: dev setini büyütmek~~ → yapıldı (2026-10-04, dev 96). Kalan: Codex (`gpt-6-luna`) ile üçüncü model ölçümü; few-shot'ların zayıf modelde etkisi.
 - Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde); doğrulama kararlarını (`finding_checks`) eval sonucuna yazıp düşürülen bulguların TP/FP dağılımını ölçmek.
@@ -1014,7 +1054,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    bekliyor). Sıradaki: Faz 36. Özgün tanım: her LLM bulgusu için ayrı bir "kanıtla"
    adımı; kanıtlanamayan düşer. Modelin kendi güveni şemaya (bugünkü `confidence` sistemden
    sabit 0,7 geliyor, ayırt etmiyor). ADR; dev'de doğrulamalı/doğrulamasız ölçüm.
-6. **Faz 36 — Hatalar ve öneriler ayrımı (önemli):** bulguya `issue`/`suggestion`; raporda
+6. ~~**Faz 36 — Hatalar ve öneriler ayrımı (önemli):**~~ Yapıldı (Faz 36 notları; canlı ölçüm onay bekliyor). bulguya `issue`/`suggestion`; raporda
    katlanmış "Öneriler"; Sokratik sorular yalnızca hatalardan; "temiz kod" few-shot örnekleri.
 7. ~~**Faz 31 — Güvenlik ve önbellek borcu:**~~ Yapıldı (Faz 31 notları). bulgu üst sınırı, `rules_version` hash'i, log
    gizliliği, `reference_solution_path`, belge temizliği.

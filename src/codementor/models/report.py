@@ -61,7 +61,8 @@ class ReportMeta(StrictModel):
 class AnalysisReport(StrictModel):
     """Bir analizin tam sonucu."""
 
-    schema_version: Literal["1.0"] = "1.0"
+    # 1.1 (Faz 36): bulguya `kind`; 1.0 raporlar (geçmiş, önbellek) okunmaya devam eder
+    schema_version: Literal["1.0", "1.1"] = "1.1"
     analysis_id: str = Field(
         pattern=ULID_PATTERN, description="ULID (Crockford base32, 26 karakter)"
     )

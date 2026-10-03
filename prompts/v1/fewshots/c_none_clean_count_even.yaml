@@ -1,0 +1,32 @@
+id: c-none-clean-count-even
+language: c
+engine: none
+title: "C: çift sayıları sayma (temiz kod)"
+code: |
+  int count_even(const int *values, int n) {
+      int count = 0;
+      for (int i = 0; i < n; i++) {
+          if (values[i] % 2 == 0) {
+              count++;
+          }
+      }
+      return count;
+  }
+static_hint: "O(n)"
+static_findings: []
+analysis:
+  complexity:
+    reasoning_steps:
+      - "3. satırdaki for döngüsü n kez döner; gövdedeki karşılaştırma ve artırma O(1)."
+      - "Yalnızca birkaç sayaç değişkeni kullanılıyor: ek bellek O(1)."
+    time_complexity: "O(n)"
+    space_complexity: "O(1)"
+    optimal_time_target: "O(n)"
+    agreement: agrees
+  additional_findings: []
+socratic:
+  key_flaw_concept: "Doğru çözümün sınanması"
+  guiding_questions:
+    - "Dizide hiç eleman yoksa ya da tüm elemanlar negatifse fonksiyonun ne döndürmesini beklersin ve bunu nasıl denersin?"
+    - "Her elemana bakmadan çift sayıların sayısını bilmenin bir yolu var mı?"
+  next_step_hint: "Kenar durumlar için küçük girdilerle birkaç deneme yazın."

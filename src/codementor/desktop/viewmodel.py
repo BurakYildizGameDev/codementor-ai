@@ -10,8 +10,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from codementor.models.enums import AuditCategory, Difficulty, Engine, Language, Severity
-from codementor.models.findings import Diagnostic, Finding
+from codementor.models.enums import (
+    AuditCategory,
+    Difficulty,
+    Engine,
+    FindingKind,
+    Language,
+    Severity,
+)
+from codementor.models.findings import Diagnostic, Finding, issues_only
 from codementor.models.pipeline import Stage, StageEvent
 from codementor.models.report import AnalysisReport
 from codementor.report.usage import usage_label
@@ -103,6 +110,7 @@ class StageTracker:
 # --- Satır işaretleri ------------------------------------------------------------------------
 
 _RANK: dict[Severity, int] = {Severity.LOW: 1, Severity.MEDIUM: 2, Severity.HIGH: 3}
+_ORDER: dict[Severity, int] = {Severity.HIGH: 0, Severity.MEDIUM: 1, Severity.LOW: 2}
 _DIAGNOSTIC_LEVEL: dict[str, Severity] = {"error": Severity.HIGH, "warning": Severity.MEDIUM}
 
 
@@ -113,10 +121,20 @@ class LineMark:
     messages: list[str]
 
 
+def split_findings(findings: list[Finding]) -> tuple[list[Finding], list[Finding]]:
+    """Faz 36: (hatalar, öneriler), her biri önem ve satır sırasıyla."""
+    ordered = sorted(findings, key=lambda f: (_ORDER[f.severity], f.line_start))
+    return (
+        [f for f in ordered if f.kind == FindingKind.ISSUE],
+        [f for f in ordered if f.kind == FindingKind.SUGGESTION],
+    )
+
+
 def line_marks(
     findings: list[Finding], diagnostics: list[Diagnostic], line_count: int
 ) -> list[LineMark]:
-    """Satır başına tek işaret: en yüksek önem rengi, birleşik mesajlar; dosya dışı satır yok."""
+    """Satır başına tek işaret: en yüksek önem rengi, birleşik mesajlar; dosya dışı satır yok.
+    Öneriler (Faz 36) boyanmaz: editörde yalnız hatalar öne çıkar."""
     marks: dict[int, LineMark] = {}
 
     def mark(line: int, level: Severity, message: str) -> None:
@@ -128,7 +146,7 @@ def line_marks(
         if _RANK[level] > _RANK[current.level]:
             current.level = level
 
-    for f in findings:
+    for f in issues_only(findings):
         if not 1 <= f.line_start <= line_count:
             continue
         end = min(max(f.line_end or f.line_start, f.line_start), line_count)
@@ -244,9 +262,12 @@ def report_usage(report: AnalysisReport) -> str | None:
 
 
 def report_headline(report: AnalysisReport) -> str:
-    """Rapor özeti: `3 bulgu · 1 yüksek · Derleme temiz`."""
-    parts = [f"{len(report.findings)} bulgu" if report.findings else "Bulgu yok"]
-    high = sum(1 for f in report.findings if f.severity is Severity.HIGH)
+    """Rapor özeti: `3 hata · 1 öneri · 1 yüksek önem · Derleme temiz` (Faz 36)."""
+    issues, suggestions = split_findings(report.findings)
+    parts = [f"{len(issues)} hata" if issues else "Hata yok"]
+    if suggestions:
+        parts.append(f"{len(suggestions)} öneri")
+    high = sum(1 for f in issues if f.severity is Severity.HIGH)
     if high:
         parts.append(f"{high} yüksek önem")
     parts.append(COMPILATION_LABELS[report.compilation.status.value])

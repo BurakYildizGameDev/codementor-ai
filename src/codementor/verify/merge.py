@@ -6,7 +6,7 @@ Aynı kategori + satır farkı ≤ 2 olan statik ve LLM bulgusu tek bulgu olur (
 
 from __future__ import annotations
 
-from codementor.models.enums import FindingSource
+from codementor.models.enums import FindingKind, FindingSource
 from codementor.models.findings import Finding
 from codementor.verify.confidence import CONFIRMED_CONFIDENCE
 
@@ -18,11 +18,15 @@ def _near(a: Finding, b: Finding) -> bool:
 
 
 def _dedupe_llm(findings: list[Finding]) -> list[Finding]:
-    """LLM'in aynı sorunu iki kez yazması: aynı kategori ve yakın satırda ilki kalır."""
+    """LLM'in aynı sorunu iki kez yazması: aynı kategori ve yakın satırda ilki kalır; biri
+    hata biri öneriyse hata kalır (Faz 36)."""
     unique: list[Finding] = []
     for finding in findings:
-        if not any(_near(finding, kept) for kept in unique):
+        twin = next((i for i, kept in enumerate(unique) if _near(finding, kept)), None)
+        if twin is None:
             unique.append(finding)
+        elif unique[twin].kind == FindingKind.SUGGESTION and finding.kind == FindingKind.ISSUE:
+            unique[twin] = finding
     return unique
 
 

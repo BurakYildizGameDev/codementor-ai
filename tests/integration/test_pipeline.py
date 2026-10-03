@@ -10,6 +10,7 @@ from codementor.models.pipeline import ALL_STAGES, StageEvent
 from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.pipeline.orchestrator import Orchestrator, PipelineError
 from codementor.providers.fake import FakeReply
+from codementor.rules.registry import all_rules
 from codementor.storage.db import Database
 from tests.integration.conftest import (
     BROKEN_C,
@@ -258,3 +259,55 @@ async def test_reasoning_step_leak_scrubbed(
     assert report.complexity is not None
     assert all("Node *next" not in s for s in report.complexity.reasoning_steps)
     assert any("gerekçesinden" in w for w in report.meta.warnings)
+
+
+SUGGESTION_TEXT = "Önceki düğüm adı daha açıklayıcı olabilir."
+
+
+def _with_suggestion(*, keep_issue: bool = True) -> dict[str, object]:
+    reply = analysis_reply()
+    suggestion = {
+        "category": "design",
+        "severity": "low",
+        "line_start": 27,
+        "line_end": None,
+        "evidence": "Node *prev = NULL;",
+        "description": SUGGESTION_TEXT,
+        "kind": "suggestion",
+    }
+    reply["additional_findings"] = [
+        *(reply["additional_findings"] if keep_issue else []),
+        suggestion,
+    ]
+    return reply
+
+
+def _prompt_b(provider: object) -> str:
+    calls = provider.calls  # type: ignore[attr-defined]
+    return "\n".join(m.content for m in calls[-1].messages)
+
+
+async def test_socratic_input_excludes_suggestions(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """Faz 36: öneri raporda kalır ama Geçiş B'ye (Sokratik) gitmez."""
+    provider = fake(_with_suggestion(), socratic_reply())
+    report = await orchestrator(settings, db, provider).analyze(_request())
+    kinds = {f.line_start: f.kind for f in report.findings if f.source is FindingSource.LLM}
+    assert kinds == {31: "issue", 27: "suggestion"}
+    prompt = _prompt_b(provider)
+    assert "*head = cur->next;" in prompt
+    assert SUGGESTION_TEXT not in prompt
+
+
+async def test_only_suggestions_uses_no_findings_branch(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """Statik bulgu da yoksa ve LLM yalnız öneri verdiyse Geçiş B "bulgu yok" dalını görür."""
+    settings.rules.disabled = [rule.id for rule in all_rules()]
+    provider = fake(_with_suggestion(keep_issue=False), socratic_reply())
+    report = await orchestrator(settings, db, provider).analyze(_request())
+    assert [f.kind for f in report.findings] == ["suggestion"]
+    prompt = _prompt_b(provider)
+    assert SUGGESTION_TEXT not in prompt
+    assert "Doğrulanmış bulgu yok" in prompt

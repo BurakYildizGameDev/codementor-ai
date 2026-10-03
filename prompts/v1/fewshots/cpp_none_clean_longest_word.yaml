@@ -1,0 +1,42 @@
+id: cpp-none-clean-longest-word
+language: cpp
+engine: none
+title: "C++: en uzun kelimenin uzunluğu (temiz kod, bir öneri)"
+code: |
+  #include <string>
+  #include <vector>
+
+  std::size_t longest_word(const std::vector<std::string>& words) {
+      std::size_t best = 0;
+      for (const std::string& word : words) {
+          if (word.size() > best) {
+              best = word.size();
+          }
+      }
+      return best;
+  }
+static_hint: "O(n)"
+static_findings: []
+analysis:
+  complexity:
+    reasoning_steps:
+      - "6. satırdaki döngü n kelimenin her birine bir kez bakar; size() O(1)."
+      - "Kelimeler referansla geziliyor, kopya yok: ek bellek O(1)."
+    time_complexity: "O(n)"
+    space_complexity: "O(1)"
+    optimal_time_target: "O(n)"
+    agreement: agrees
+  additional_findings:
+    - category: design
+      severity: low
+      kind: suggestion
+      line_start: 7
+      line_end: null
+      evidence: "if (word.size() > best) {"
+      description: "En büyük değeri elle izlemek doğru çalışıyor; aynı iş standart kütüphanedeki hazır bir algoritmayla da ifade edilebilir."
+socratic:
+  key_flaw_concept: "Doğru çözümün sınanması"
+  guiding_questions:
+    - "Liste boşsa fonksiyon ne döndürür ve bu çağıran kod için anlamlı bir sonuç mu?"
+    - "Aynı uzunlukta birden çok en uzun kelime olsaydı sonuç değişir miydi?"
+  next_step_hint: null

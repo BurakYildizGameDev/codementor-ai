@@ -50,6 +50,7 @@ export function lineDecorations(
     }
   };
   for (const f of findings) {
+    if (f.kind === "suggestion") continue; // Faz 36: editörde yalnız hatalar boyanır
     if (f.line_start < 1 || f.line_start > lineCount) continue;
     const end = Math.min(Math.max(f.line_end ?? f.line_start, f.line_start), lineCount);
     for (let line = f.line_start; line <= end; line++) {

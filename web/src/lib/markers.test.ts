@@ -63,4 +63,13 @@ describe("lineDecorations", () => {
       [7, "cm-line cm-line-high"],
     ]);
   });
+
+  it("önerileri boyamaz (Faz 36)", () => {
+    const decos = lineDecorations(
+      [finding({ id: "F-1", severity: "low", line_start: 2, kind: "suggestion" })],
+      [],
+      10,
+    );
+    expect(decos).toEqual([]);
+  });
 });

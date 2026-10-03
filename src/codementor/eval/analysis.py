@@ -17,10 +17,16 @@ from dataclasses import dataclass
 from typing import Literal
 
 from codementor.eval.compare import pct
-from codementor.eval.metrics import AuditScores, Pair, audit_metrics, match_findings
+from codementor.eval.metrics import (
+    AuditScores,
+    Pair,
+    audit_metrics,
+    match_findings,
+    suggestions_total,
+)
 from codementor.models.enums import AuditCategory, FindingSource, Severity
 from codementor.models.eval import ExpectedFinding, Label, RunResult
-from codementor.models.findings import Finding
+from codementor.models.findings import Finding, issues_only
 
 TEXT_LIMIT = 80
 # Faz 35: LLM bulgularının güven eşikleri (verify/confidence.py değerleriyle hizalı)
@@ -62,6 +68,7 @@ class PrecisionAnalysis:
     false_negatives: list[FindingRow]
     missing: list[str]
     thresholds: list[ThresholdRow]
+    suggestions_total: int = 0  # Faz 36: puana ve FP listesine girmez
 
     def fp_by(self, dimension: FpDimension) -> dict[str, int]:
         """FP sayısı, verilen boyuta göre (çoktan aza)."""
@@ -121,7 +128,7 @@ def _thresholds(pairs: list[Pair]) -> list[ThresholdRow]:
     rows: list[ThresholdRow] = []
     for threshold in CONFIDENCE_THRESHOLDS:
         kept = _above(pairs, threshold)
-        count = sum(len(r.report.findings) for _, r in kept if r.report is not None)
+        count = sum(len(issues_only(r.report.findings)) for _, r in kept if r.report is not None)
         rows.append(ThresholdRow(threshold, audit_metrics(kept), count))
     return rows
 
@@ -142,7 +149,7 @@ def analyze(result: RunResult, labels: dict[str, Label]) -> PrecisionAnalysis:
     fns: list[FindingRow] = []
     predicted_total = expected_total = 0
     for label, sample in pairs:
-        findings = sample.report.findings if sample.report is not None else []
+        findings = issues_only(sample.report.findings) if sample.report is not None else []
         predicted_total += len(findings)
         expected_total += len(label.expected.findings)
         lost_e, lost_p = _unmatched(label, findings)
@@ -185,6 +192,7 @@ def analyze(result: RunResult, labels: dict[str, Label]) -> PrecisionAnalysis:
         false_negatives=fns,
         missing=missing,
         thresholds=_thresholds(pairs),
+        suggestions_total=suggestions_total(pairs),
     )
 
 
@@ -221,7 +229,8 @@ def analysis_markdown(analysis: PrecisionAnalysis) -> str:
     lines += [
         "",
         f"Tahmin {a.predicted_total} · beklenen {a.expected_total} · "
-        f"FP {len(a.false_positives)} · FN {len(a.false_negatives)}",
+        f"FP {len(a.false_positives)} · FN {len(a.false_negatives)} · "
+        f"öneri {a.suggestions_total} (puana girmez)",
     ]
     if a.missing:
         lines.append(f"Etiketi bulunamayan örnekler: {', '.join(a.missing)}")

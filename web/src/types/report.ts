@@ -53,6 +53,10 @@ export type Evidence = string;
  * Rapor içi kimlik, ör. "F-001"
  */
 export type Id = string;
+/**
+ * issue: gerçek hata; suggestion: hataya yol açmayan öneri (yalnız low)
+ */
+export type FindingKind = "issue" | "suggestion";
 export type LineEnd = number | null;
 export type LineStart = number;
 /**
@@ -84,7 +88,7 @@ export type TokensOut = number;
 export type UsageEstimated = boolean;
 export type Warnings = string[];
 export type QuestionId = string | null;
-export type SchemaVersion1 = "1.0";
+export type SchemaVersion1 = "1.0" | "1.1";
 export type GuidingQuestions = string[];
 export type HintLevel = number;
 export type KeyFlawConcept = string;
@@ -145,6 +149,7 @@ export interface Finding {
   description: Description;
   evidence: Evidence;
   id: Id;
+  kind?: FindingKind;
   line_end: LineEnd;
   line_start: LineStart;
   rule_id: RuleId;

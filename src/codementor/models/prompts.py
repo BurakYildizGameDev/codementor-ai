@@ -17,7 +17,12 @@ from codementor.models.facts import (
     SymbolRef,
 )
 from codementor.models.findings import Finding
-from codementor.models.llm_output import LLMAnalysisOutput, LLMComplexity, LLMSocraticOutput
+from codementor.models.llm_output import (
+    LLMAnalysisOutput,
+    LLMComplexity,
+    LLMMarkupAnalysisOutput,
+    LLMSocraticOutput,
+)
 from codementor.models.provider import ChatMessage
 from codementor.models.questions import ChecklistItem, ExpectedComplexity, Question
 from codementor.models.request import NormalizedCode
@@ -80,7 +85,8 @@ class FewShotExample(StrictModel):
     code: str = Field(min_length=1)
     static_hint: str | None = Field(default=None, description='Statik ipucu, ör. "O(n)"')
     static_findings: list[FewShotStaticFinding] = Field(default_factory=list)
-    analysis: LLMAnalysisOutput
+    # HTML/CSS örneği karmaşıklıksız çıktı kullanır (Faz 36); dil ile uyumu yükleyici denetler
+    analysis: LLMAnalysisOutput | LLMMarkupAnalysisOutput
     socratic: LLMSocraticOutput
 
 

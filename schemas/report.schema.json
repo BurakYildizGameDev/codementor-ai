@@ -234,6 +234,11 @@
           "title": "Id",
           "type": "string"
         },
+        "kind": {
+          "$ref": "#/$defs/FindingKind",
+          "default": "issue",
+          "description": "issue: gerçek hata; suggestion: hataya yol açmayan öneri (yalnız low)"
+        },
         "line_end": {
           "anyOf": [
             {
@@ -282,6 +287,14 @@
       ],
       "title": "Finding",
       "type": "object"
+    },
+    "FindingKind": {
+      "enum": [
+        "issue",
+        "suggestion"
+      ],
+      "title": "FindingKind",
+      "type": "string"
     },
     "FindingSource": {
       "enum": [
@@ -547,8 +560,11 @@
       "title": "Question Id"
     },
     "schema_version": {
-      "const": "1.0",
-      "default": "1.0",
+      "default": "1.1",
+      "enum": [
+        "1.0",
+        "1.1"
+      ],
       "title": "Schema Version",
       "type": "string"
     },

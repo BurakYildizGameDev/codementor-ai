@@ -115,3 +115,13 @@ def test_leaky_reason_redacted() -> None:
     assert redacted[1].reason == ""
     assert redacted[0].reason == result.checks[0].reason
     assert [c.kept for c in redacted] == [c.kept for c in result.checks]
+
+
+def test_suggestions_not_verify_targets() -> None:
+    """Faz 36: öneri somut hatalı girdiyle kanıtlanamaz; doğrulamaya girmez, korunur."""
+    suggestion = _finding(4).model_copy(update={"kind": "suggestion", "severity": Severity.LOW})
+    findings = [_finding(3), suggestion]
+    assert [f.line_start for f in verify_targets(findings)] == [3]
+    result = apply_verdicts(findings, _output(_unproven(1)))
+    assert [f.line_start for f in result.findings] == [4]
+    assert result.findings[0].kind == "suggestion"

@@ -54,7 +54,6 @@
           "type": "string"
         },
         "time_complexity": {
-          "description": "Ham metin; K5 normalize eder",
           "title": "Time Complexity",
           "type": "string"
         }
@@ -103,6 +102,15 @@
           "title": "Evidence",
           "type": "string"
         },
+        "kind": {
+          "default": "issue",
+          "enum": [
+            "issue",
+            "suggestion"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
         "line_end": {
           "anyOf": [
             {
@@ -147,7 +155,6 @@
   "$id": "llm_analysis.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Geçiş A çıktısı: karmaşıklık + statik analizin kaçırdığı bulgular.",
   "properties": {
     "additional_findings": {
       "items": {

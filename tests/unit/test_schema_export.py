@@ -48,7 +48,9 @@ def test_report_schema_title_and_version(tmp_path: Path) -> None:
     CliRunner().invoke(app, ["schema", "export", "--out", str(tmp_path)])
     schema = json.loads((tmp_path / "report.schema.json").read_text(encoding="utf-8"))
     assert schema["title"] == "AnalysisReport"
-    assert schema["properties"]["schema_version"]["const"] == "1.0"
+    version = schema["properties"]["schema_version"]
+    assert version["default"] == "1.1"  # Faz 36
+    assert version["enum"] == ["1.0", "1.1"]  # eski raporlar okunur
 
 
 def test_llm_schema_excludes_system_fields() -> None:

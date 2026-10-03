@@ -7,7 +7,13 @@ from typing import Literal
 from pydantic import Field
 
 from codementor.models._base import StrictModel
-from codementor.models.enums import AuditCategory, CompilationStatus, FindingSource, Severity
+from codementor.models.enums import (
+    AuditCategory,
+    CompilationStatus,
+    FindingKind,
+    FindingSource,
+    Severity,
+)
 
 
 class Diagnostic(StrictModel):
@@ -40,3 +46,13 @@ class Finding(StrictModel):
     description: str
     source: FindingSource
     confidence: float = Field(ge=0, le=1)
+    # Faz 36 (ADR-0022); varsayılanlı: eski raporlar okunur, bulguları hata sayılır
+    kind: FindingKind = Field(
+        default=FindingKind.ISSUE,
+        description="issue: gerçek hata; suggestion: hataya yol açmayan öneri (yalnız low)",
+    )
+
+
+def issues_only(findings: list[Finding]) -> list[Finding]:
+    """Gerçek hatalar (Faz 36): Sokratik sorular ve eval puanı önerilere dayanmaz."""
+    return [f for f in findings if f.kind == FindingKind.ISSUE]

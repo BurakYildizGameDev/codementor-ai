@@ -1455,23 +1455,27 @@ P 69 → 79, R aynı, gecikme ~%24 → varsayılan açık, güven eşiği yok (A
 
 **Commit:** `feat(faz-35): LLM bulguları için doğrulama geçişi`
 
-### Faz 36 — Hatalar ve öneriler ayrımı + kısıtlama örnekleri (YAPILACAK)
+### Faz 36 — Hatalar ve öneriler ayrımı + kısıtlama örnekleri (YAPILDI; canlı ölçüm onay bekliyor)
 
-**Dal:** `faz/36-hata-oneri` · **Mimari:** §6 (rapor), §5.4.4 (few-shot), §15 · **ADR:** —
+**Dal:** `faz/36-hata-oneri` · **Mimari:** §6 (rapor), §5.4.4 (few-shot), §15 · **ADR:** 0022
 
 **Amaç:** Bilgi kaybetmeden öğrencinin önce gerçek hataları görmesi. Önemsiz bulguları silmek
 yerine ayrı bir sınıfta göstermek; kaçırma oranı düşmez.
 
-- [ ] Rapor modeli: bulguya `kind: "issue" | "suggestion"` (varsayılanlı; eski raporlar okunur).
+- [x] Rapor modeli: bulguya `kind: "issue" | "suggestion"` (varsayılanlı; eski raporlar okunur).
       LLM'den gelir, `low` önemli ve gereksinim ihlali olmayanlar `suggestion` olabilir
-- [ ] Sokratik geçiş ve özet yalnızca `issue` bulgularına dayanır
-- [ ] Masaüstü, web, Markdown/SARIF: "Hatalar" ve katlanmış "Öneriler" bölümü (SARIF'te
+- [x] Sokratik geçiş ve özet yalnızca `issue` bulgularına dayanır
+- [x] Masaüstü, web, Markdown/SARIF: "Hatalar" ve katlanmış "Öneriler" bölümü (SARIF'te
       `note` düzeyi)
-- [ ] Eval: denetim metrikleri `issue` üzerinden; `suggestion` ayrı sayılır (§14.2'ye not)
-- [ ] Few-shot: her dil ailesine en az bir "temiz kod, bulgu yok" örneği (dev/test ile
+- [x] Eval: denetim metrikleri `issue` üzerinden; `suggestion` ayrı sayılır (§14.2'ye not)
+- [x] Few-shot: her dil ailesine en az bir "temiz kod, bulgu yok" örneği (dev/test ile
       çakışmayan) ve öneri örneği
-- [ ] Testler: model geriye uyumluluğu, rapor biçimleyicileri, Sokratik girdinin süzülmesi,
+- [x] Testler: model geriye uyumluluğu, rapor biçimleyicileri, Sokratik girdinin süzülmesi,
       eval metriklerinin `issue` ile hesaplanması
+
+Notlar: öneri doğrulama geçişine girmez, statik bulgular hep hata; şema 1.1 (1.0 okunur);
+temiz örnekler C, C++, Unity, Python, HTML (ikisi tek öneri gösterir). Canlı dev koşusu (precision
+ve "kaçırma oranı düşmez" ölçümü) onayla yapılacak.
 
 **Commit:** `feat(faz-36): hatalar ve öneriler ayrımı, kısıtlama örnekleri`
 

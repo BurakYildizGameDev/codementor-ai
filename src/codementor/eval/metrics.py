@@ -12,8 +12,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from codementor.models.bigo import BigO, BigOError, parse_bigo
+from codementor.models.enums import FindingKind
 from codementor.models.eval import ExpectedFinding, Label, Metrics, PricingFile, SampleResult
-from codementor.models.findings import Finding
+from codementor.models.findings import Finding, issues_only
 from codementor.models.report import AnalysisReport
 from codementor.pipeline.cost import estimate_cost
 from codementor.pipeline.stages import SCRUB_WARNING_COMPLEXITY, SCRUB_WARNING_FINDINGS
@@ -144,24 +145,39 @@ class AuditScores:
 
 
 def audit_metrics(pairs: Sequence[Pair], *, ignore_category: bool = False) -> AuditScores:
-    """Mikro ortalamalı precision/recall/F1 + eşleşenlerde satırın birebir doğru oranı."""
+    """Mikro ortalamalı precision/recall/F1 + eşleşenlerde satırın birebir doğru oranı.
+
+    Yalnız hatalar puanlanır (Faz 36): öneriler ne FP ne TP sayılır.
+    """
     tp = predicted_total = expected_total = exact_lines = 0
     for label, result in pairs:
         if result.report is None:
             expected_total += len(label.expected.findings)
             continue
+        predicted = issues_only(result.report.findings)
         matches = match_findings(
-            label.expected.findings, result.report.findings, ignore_category=ignore_category
+            label.expected.findings, predicted, ignore_category=ignore_category
         )
         tp += len(matches)
         exact_lines += sum(1 for e, p in matches if e.line == p.line_start)
-        predicted_total += len(result.report.findings)
+        predicted_total += len(predicted)
         expected_total += len(label.expected.findings)
     precision, recall = ratio(tp, predicted_total), ratio(tp, expected_total)
     f1 = None
     if precision is not None and recall is not None:
         f1 = 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
     return AuditScores(precision, recall, f1, ratio(exact_lines, tp))
+
+
+def suggestions_total(pairs: Sequence[Pair]) -> int:
+    """Raporlardaki öneri sayısı (Faz 36, §14.2 notu)."""
+    return sum(
+        1
+        for _, r in pairs
+        if r.report is not None
+        for f in r.report.findings
+        if f.kind == FindingKind.SUGGESTION
+    )
 
 
 def leak_rate(pairs: Sequence[Pair]) -> float | None:
@@ -250,4 +266,5 @@ def compute_metrics(pairs: Sequence[Pair], pricing: PricingFile | None = None) -
         cost_est=cost_estimate([r for _, r in pairs], pricing),
         errors=sum(1 for _, r in pairs if r.error is not None),
         guard_interventions=guard_interventions(pairs),
+        suggestions_total=suggestions_total(pairs),
     )

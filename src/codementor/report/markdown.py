@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from codementor.models.enums import FindingKind
+from codementor.models.findings import Finding
 from codementor.models.report import AnalysisReport
 
 _SEVERITY = {"high": "🔴 yüksek", "medium": "🟠 orta", "low": "🟢 düşük"}
@@ -10,6 +12,32 @@ _STATUS = {"passed": "geçti", "warning": "uyarı", "failed": "başarısız", "s
 
 def _cell(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _finding_table(findings: list[Finding]) -> list[str]:
+    out = ["| # | Satır | Önem | Kategori | Kaynak | Açıklama |", "|---|---|---|---|---|---|"]
+    for f in findings:
+        lines = f"{f.line_start}" + (f"-{f.line_end}" if f.line_end else "")
+        out.append(
+            f"| {f.id} | {lines} | {_SEVERITY[f.severity.value]} | {f.category.value} "
+            f"| {f.source.value} | {_cell(f.description)} |"
+        )
+    return out
+
+
+def _findings(findings: list[Finding]) -> list[str]:
+    """Faz 36: önce hatalar; öneriler katlanmış `<details>` içinde (GitHub/VS Code açar)."""
+    if not findings:
+        return []
+    issues = [f for f in findings if f.kind == FindingKind.ISSUE]
+    suggestions = [f for f in findings if f.kind == FindingKind.SUGGESTION]
+    out = ["## Hatalar", ""]
+    out += _finding_table(issues) if issues else ["Hata bulunmadı."]
+    out.append("")
+    if suggestions:
+        out += ["<details>", f"<summary>Öneriler ({len(suggestions)})</summary>", ""]
+        out += [*_finding_table(suggestions), "", "</details>", ""]
+    return out
 
 
 def to_markdown(report: AnalysisReport) -> str:
@@ -44,16 +72,7 @@ def to_markdown(report: AnalysisReport) -> str:
         out += ["", "Gerekçe:", ""] + [f"{i}. {s}" for i, s in enumerate(c.reasoning_steps, 1)]
         out.append("")
 
-    if report.findings:
-        out += ["## Bulgular", "", "| # | Satır | Önem | Kategori | Kaynak | Açıklama |"]
-        out.append("|---|---|---|---|---|---|")
-        for f in report.findings:
-            lines = f"{f.line_start}" + (f"-{f.line_end}" if f.line_end else "")
-            out.append(
-                f"| {f.id} | {lines} | {_SEVERITY[f.severity.value]} | {f.category.value} "
-                f"| {f.source.value} | {_cell(f.description)} |"
-            )
-        out.append("")
+    out += _findings(report.findings)
 
     if report.socratic:
         s = report.socratic

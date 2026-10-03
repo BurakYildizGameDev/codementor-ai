@@ -2,6 +2,7 @@
 
 Örnekler küçük modellere kanıt biçimini (satırdan birebir alıntı, önek yok) ve statik
 bulguları tekrar etmemeyi gösterir; bu yüzden yüklenirken kanıtlar koda karşı doğrulanır.
+Faz 36: "temiz" örnekler (hata yok; en fazla öneri) modelin her kodda sorun aramamasını öğretir.
 """
 
 from __future__ import annotations
@@ -11,7 +12,8 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from codementor.ingest.normalize import numbered_view, split_lines
-from codementor.models.enums import Engine, Language
+from codementor.models.enums import Engine, Language, has_complexity
+from codementor.models.llm_output import LLMAnalysisOutput
 from codementor.models.prompts import FewShotExample, FewShotView
 from codementor.questions._loader import DataFileError, list_yaml_files, load_model
 
@@ -25,6 +27,9 @@ def _window(lines: list[str], start: int, end: int | None) -> str:
 
 
 def _validate(example: FewShotExample, source: Path) -> None:
+    if has_complexity(example.language) != isinstance(example.analysis, LLMAnalysisOutput):
+        need = "gerekli" if has_complexity(example.language) else "olmamalı"
+        raise FewShotError(f"{source.name}: {example.language} örneğinde karmaşıklık {need}")
     lines = split_lines(example.code)
     checks = [(f.line, None, f.evidence) for f in example.static_findings] + [
         (f.line_start, f.line_end, f.evidence) for f in example.analysis.additional_findings
@@ -63,16 +68,31 @@ def load_fewshots(directory: Path) -> list[FewShotExample]:
     return examples
 
 
+def is_clean(example: FewShotExample) -> bool:
+    """Temiz kod örneği: statik bulgu yok, modelin bulguları (varsa) yalnızca öneri."""
+    return not example.static_findings and all(
+        f.kind == "suggestion" for f in example.analysis.additional_findings
+    )
+
+
 def select_fewshots(
     examples: Iterable[FewShotExample], language: Language, engine: Engine, limit: int
 ) -> list[FewShotExample]:
-    """Önce aynı dil + motor, sonra aynı dilin diğer örnekleri; kimliğe göre belirleyici."""
+    """Önce aynı dil + motor, sonra aynı dilin diğer örnekleri; kimliğe göre belirleyici.
+
+    Faz 36: ilk sırada en uygun hatalı örnek, ikinci sırada en uygun temiz örnek (limit 1'de
+    yalnız hatalı örnek kalır: few-shot ablasyonu eskisi gibi).
+    """
     if limit <= 0:
         return []
     ordered = sorted(examples, key=lambda e: e.id)
     exact = [e for e in ordered if e.language == language and e.engine == engine]
     related = [e for e in ordered if e.language == language and e.engine != engine]
-    return (exact + related)[:limit]
+    ranked = exact + related
+    flawed = [e for e in ranked if not is_clean(e)]
+    clean = [e for e in ranked if is_clean(e)]
+    head = flawed[:1] + clean[:1]
+    return (head + [e for e in ranked if e not in head])[:limit]
 
 
 def fewshot_view(example: FewShotExample, *, numbered: bool = True) -> FewShotView:

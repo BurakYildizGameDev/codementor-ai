@@ -9,7 +9,7 @@ from __future__ import annotations
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
-from codementor.models.enums import Severity
+from codementor.models.enums import FindingKind, Severity
 from codementor.models.findings import Diagnostic, Finding
 from codementor.models.report import AnalysisReport
 
@@ -46,7 +46,8 @@ def _location(uri: str, start: int, end: int | None, snippet: str | None) -> dic
 def _finding_result(finding: Finding, uri: str) -> dict[str, Any]:
     return {
         "ruleId": rule_id(finding),
-        "level": _LEVELS[finding.severity],
+        # Faz 36: öneri hata değildir; önemi ne olursa olsun `note`
+        "level": "note" if finding.kind == FindingKind.SUGGESTION else _LEVELS[finding.severity],
         "message": {"text": finding.description},
         "locations": [_location(uri, finding.line_start, finding.line_end, finding.evidence)],
         "properties": {
@@ -54,6 +55,7 @@ def _finding_result(finding: Finding, uri: str) -> dict[str, Any]:
             "category": finding.category.value,
             "source": finding.source.value,
             "confidence": finding.confidence,
+            "kind": str(finding.kind),
         },
     }
 

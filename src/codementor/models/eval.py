@@ -132,6 +132,10 @@ class Metrics(StrictModel):
         default=None,
         description="Sızıntı korumasının devreye girdiği örnek sayısı (Faz 22); LLM yoksa None",
     )
+    suggestions_total: int | None = Field(
+        default=None,
+        description="Rapordaki öneri sayısı (Faz 36); denetim puanına girmez. Eski koşularda None",
+    )
 
 
 class RunResult(StrictModel):

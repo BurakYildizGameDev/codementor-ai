@@ -1,4 +1,7 @@
-"""Bulgu kartları ve derleyici tanıları; kart tıklanınca editör ilgili satıra gider."""
+"""Bulgu kartları ve derleyici tanıları; kart tıklanınca editör ilgili satıra gider.
+
+Faz 36: önce hatalar ve tanılar; öneriler "Öneriler (n)" düğmesinin altında katlı.
+"""
 
 from __future__ import annotations
 
@@ -8,20 +11,20 @@ from typing import Any
 import customtkinter as ctk
 
 from codementor.desktop import theme
-from codementor.desktop.viewmodel import CATEGORY_LABELS, SEVERITY_LABELS
+from codementor.desktop.viewmodel import CATEGORY_LABELS, SEVERITY_LABELS, split_findings
 from codementor.desktop.widgets.common import Card, Pill, clear, muted_label, wrap_label
-from codementor.models.enums import Severity
 from codementor.models.findings import Diagnostic, Finding
 
 _DIAG_COLORS = {"error": theme.ERROR, "warning": theme.WARN, "note": theme.INFO}
 _DIAG_LABELS = {"error": "Hata", "warning": "Uyarı", "note": "Not"}
-_ORDER = {Severity.HIGH: 0, Severity.MEDIUM: 1, Severity.LOW: 2}
 
 
 class FindingList(Card):
     def __init__(self, master: Any, on_select: Callable[[int], None]) -> None:
-        super().__init__(master, title="Bulgular")
+        super().__init__(master, title="Hatalar")
         self._on_select = on_select
+        self.suggestion_toggle: ctk.CTkButton | None = None
+        self.suggestion_body: ctk.CTkFrame | None = None
         self.count = ctk.CTkLabel(
             self.header_right, text="", font=theme.font(12, "bold"), text_color=theme.TEXT_SOFT
         )
@@ -29,11 +32,14 @@ class FindingList(Card):
 
     def show(self, findings: list[Finding], diagnostics: list[Diagnostic]) -> None:
         clear(self.body)
+        self.suggestion_toggle = self.suggestion_body = None
+        issues, suggestions = split_findings(findings)
         visible = [d for d in diagnostics if d.severity != "note"]
-        self.count.configure(text=str(len(findings) + len(visible)))
+        self.count.configure(text=str(len(issues) + len(visible)))
         row = 0
         for d in visible:
             self._item(
+                self.body,
                 row,
                 _DIAG_LABELS[d.severity],
                 _DIAG_COLORS[d.severity],
@@ -44,25 +50,61 @@ class FindingList(Card):
                 None,
             )
             row += 1
-        for f in sorted(findings, key=lambda f: (_ORDER[f.severity], f.line_start)):
-            self._item(
-                row,
-                SEVERITY_LABELS[f.severity],
-                theme.SEVERITY_COLORS[f.severity],
-                CATEGORY_LABELS[f.category],
-                f.line_start,
-                f.line_end,
-                f.description,
-                f.evidence,
-            )
+        for f in issues:
+            self._finding(self.body, row, f)
             row += 1
         if row == 0:
-            muted_label(self.body, "Bu kodda işaretlenecek bir şey bulunmadı.").grid(
-                row=0, column=0, sticky="w"
-            )
+            text = "Hata bulunmadı." if suggestions else "Bu kodda işaretlenecek bir şey bulunmadı."
+            muted_label(self.body, text).grid(row=0, column=0, sticky="w")
+            row += 1
+        if suggestions:
+            self._suggestions(row, suggestions)
+
+    def _suggestions(self, row: int, suggestions: list[Finding]) -> None:
+        """Öneriler katlı başlar; düğme açıp kapatır (öğrenci önce hataları görür)."""
+        label = f"Öneriler ({len(suggestions)})"
+        body = ctk.CTkFrame(self.body, fg_color="transparent")
+        body.grid_columnconfigure(0, weight=1)
+        for i, f in enumerate(suggestions):
+            self._finding(body, i, f)
+
+        def toggle() -> None:
+            if body.grid_info():
+                body.grid_forget()
+                button.configure(text=f"{label} ▸")
+            else:
+                body.grid(row=row + 1, column=0, sticky="ew")
+                button.configure(text=f"{label} ▾")
+
+        button = ctk.CTkButton(
+            self.body,
+            text=f"{label} ▸",
+            command=toggle,
+            fg_color="transparent",
+            hover_color=theme.SURFACE_2,
+            text_color=theme.TEXT_SOFT,
+            font=theme.font(12, "bold"),
+            anchor="w",
+        )
+        button.grid(row=row, column=0, sticky="w", pady=(4, 8))
+        self.suggestion_toggle, self.suggestion_body = button, body
+
+    def _finding(self, parent: Any, row: int, f: Finding) -> None:
+        self._item(
+            parent,
+            row,
+            SEVERITY_LABELS[f.severity],
+            theme.SEVERITY_COLORS[f.severity],
+            CATEGORY_LABELS[f.category],
+            f.line_start,
+            f.line_end,
+            f.description,
+            f.evidence,
+        )
 
     def _item(
         self,
+        parent: Any,
         row: int,
         level: str,
         color: str,
@@ -73,7 +115,7 @@ class FindingList(Card):
         evidence: str | None,
     ) -> None:
         item = ctk.CTkFrame(
-            self.body,
+            parent,
             fg_color=theme.SURFACE_2,
             corner_radius=theme.RADIUS_SM,
             border_width=1,

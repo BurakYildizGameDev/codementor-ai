@@ -24,13 +24,15 @@ from tests.unit.prompt_helpers import (
 )
 
 ISSUE_RULE_PHRASES = [
-    "Yalnızca gerçek sorunları raporla",
+    'Hata (kind "issue") yalnızca gerçek sorundur',
+    'kind "suggestion" ve severity "low"',  # Faz 36: öneri ayrı sınıf, yalnız low
+    "soru gereksinimi ihlali öneri değil hatadır",
     '"input_handling" yalnızca',
     '"edge_case" yalnızca',
     '"design" yalnızca',
     "kuramsal uç değer",
     "kendi kategorisini",
-    '"low" önemde en fazla 2 bulgu',
+    '"low" önemde en fazla 2 hata',
     "ilk sınıf ya da fonksiyon bildiriminin satırını",
 ]
 
@@ -55,7 +57,7 @@ def test_code_prompts_define_issue_criterion_and_categories(
 @pytest.mark.parametrize("builder", [build_analysis_messages, build_single_pass_messages])
 def test_code_task_asks_for_at_most_six_findings(tmp_path: Path, builder: object) -> None:
     built = builder(analysis_input(tmp_path), settings=prompt_settings())  # type: ignore[operator]
-    assert "en fazla 6 sorunu" in user_text(built.messages)
+    assert "en fazla 6 hatayı ve varsa en fazla 2 öneriyi" in user_text(built.messages)
 
 
 def test_markup_prompt_separates_issue_from_suggestion(tmp_path: Path) -> None:
@@ -64,10 +66,18 @@ def test_markup_prompt_separates_issue_from_suggestion(tmp_path: Path) -> None:
     built = build_markup_analysis_messages(inp, settings=prompt_settings())
     system = system_text(built.messages)
     assert "Yalnızca gerçek sorunları raporla" in system
-    assert "öneri" in system
+    assert 'kind "suggestion" ve severity "low"' in system
     assert '"design" yalnızca' in system
-    assert '"low" önemde en fazla 2 bulgu' in system
-    assert "en fazla 6 sorunu" in user_text(built.messages)
+    assert '"low" önemde en fazla 2 hata' in system
+    assert "en fazla 6 hatayı ve varsa en fazla 2 öneriyi" in user_text(built.messages)
+
+
+def test_mentoring_rules_ignore_suggestions(tmp_path: Path) -> None:
+    """Faz 36: tek geçişte de Sokratik sorular önerilerden üretilmez."""
+    built = build_single_pass_messages(analysis_input(tmp_path), settings=prompt_settings())
+    assert 'öneri (kind "suggestion") olarak işaretlenmiş bulgulardan soru üretme' in (
+        system_text(built.messages)
+    )
 
 
 def test_python_fewshot_selected() -> None:

@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from codementor.config import Settings
 from codementor.models.enums import PipelineMode, has_complexity
+from codementor.models.findings import issues_only
 from codementor.models.llm_output import (
     LLMAnalysisOutput,
     LLMMarkupAnalysisOutput,
@@ -312,7 +313,7 @@ async def run_llm_passes(
             SocraticPromptInput(
                 code=verify.code,
                 question=verify.question,
-                findings=verification.findings,
+                findings=issues_only(verification.findings),
                 complexity=(
                     pass_a.output.complexity
                     if isinstance(pass_a.output, LLMAnalysisOutput)

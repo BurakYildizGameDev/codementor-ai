@@ -16,6 +16,7 @@ from codementor.models.enums import (
     CompilationStatus,
     Difficulty,
     Engine,
+    FindingKind,
     FindingSource,
     Language,
     LoopBound,
@@ -62,6 +63,7 @@ def _fields(model: type[BaseModel]) -> set[str]:
         (Severity, {"high", "medium", "low"}),
         (CompilationStatus, {"passed", "warning", "failed", "skipped"}),
         (FindingSource, {"static", "llm", "confirmed"}),
+        (FindingKind, {"issue", "suggestion"}),
         (
             AuditCategory,
             {
@@ -128,6 +130,7 @@ def test_llm_schemas_have_no_system_fields() -> None:
                 "evidence",
                 "description",
                 "certainty",
+                "kind",  # Faz 36
             },
         ),
         (
@@ -156,6 +159,7 @@ def test_llm_schemas_have_no_system_fields() -> None:
                 "description",
                 "source",
                 "confidence",
+                "kind",  # Faz 36
             },
         ),
         (
@@ -252,6 +256,13 @@ def test_llm_finding_certainty_optional() -> None:
     assert LLMFinding.model_validate(_llm_finding(certainty="high")).certainty == "high"
     with pytest.raises(ValidationError):
         LLMFinding.model_validate(_llm_finding(certainty="kesin"))
+
+
+def test_llm_finding_kind_optional() -> None:
+    assert LLMFinding.model_validate(_llm_finding()).kind == "issue"
+    assert LLMFinding.model_validate(_llm_finding(kind="suggestion")).kind == "suggestion"
+    with pytest.raises(ValidationError):
+        LLMFinding.model_validate(_llm_finding(kind="hint"))
 
 
 def test_llm_verify_output_limits() -> None:
@@ -390,6 +401,13 @@ def test_confidence_range(confidence: float) -> None:
         Finding.model_validate(_finding(confidence=confidence))
 
 
+def test_finding_kind_defaults_to_issue() -> None:
+    assert Finding.model_validate(_finding()).kind == "issue"
+    assert Finding.model_validate(_finding(kind="suggestion")).kind == "suggestion"
+    with pytest.raises(ValidationError):
+        Finding.model_validate(_finding(kind="note"))
+
+
 def test_finding_required_nullable_fields() -> None:
     data = _finding()
     del data["rule_id"]
@@ -465,7 +483,7 @@ def _report(**kw: Any) -> dict[str, Any]:
 
 def test_report_minimal_early_exit() -> None:
     r = AnalysisReport.model_validate(_report())
-    assert r.schema_version == "1.0"
+    assert r.schema_version == "1.1"
     assert r.compilation.status is CompilationStatus.FAILED
     assert r.complexity is None
 
@@ -473,6 +491,16 @@ def test_report_minimal_early_exit() -> None:
 def test_report_schema_version_fixed() -> None:
     with pytest.raises(ValidationError):
         AnalysisReport.model_validate(_report(schema_version="2.0"))
+
+
+def test_report_v1_0_json_still_loads() -> None:
+    """Faz 36 öncesi rapor (geçmiş, önbellek): `kind` yok, sürüm 1.0; bulgular hata sayılır."""
+    old = AnalysisReport.model_validate(_report(findings=[_finding()])).model_dump(mode="json")
+    old["schema_version"] = "1.0"
+    del old["findings"][0]["kind"]
+    report = AnalysisReport.model_validate(old)
+    assert report.schema_version == "1.0"
+    assert report.findings[0].kind == "issue"
 
 
 def test_report_json_roundtrip() -> None:

@@ -8,7 +8,8 @@ from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
 
-from codementor.models.enums import Language
+from codementor.models.enums import FindingKind, Language
+from codementor.models.findings import Finding
 from codementor.models.report import AnalysisReport
 from codementor.report.usage import usage_label
 
@@ -51,8 +52,21 @@ def _snippet(code: str, language: Language, start: int, end: int) -> Syntax:
 
 
 def _findings(report: AnalysisReport, code: str | None) -> list[RenderableType]:
+    """Faz 36: önce hatalar, sonra soluk bir "Öneriler" başlığı altında öneriler."""
+    issues = [f for f in report.findings if f.kind == FindingKind.ISSUE]
+    suggestions = [f for f in report.findings if f.kind == FindingKind.SUGGESTION]
+    items = _panels(report, issues, code)
+    if suggestions:
+        items.append(Text(f"Öneriler ({len(suggestions)})", style="bold dim"))
+        items += _panels(report, suggestions, code)
+    return items
+
+
+def _panels(
+    report: AnalysisReport, findings: list[Finding], code: str | None
+) -> list[RenderableType]:
     items: list[RenderableType] = []
-    for f in report.findings:
+    for f in findings:
         severity = f.severity.value
         title = Text.assemble(
             (f"{f.id} ", "bold"),

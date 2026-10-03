@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Collection
 from dataclasses import dataclass, field
 
-from codementor.models.enums import FindingSource
+from codementor.models.enums import FindingKind, FindingSource
 from codementor.models.findings import Finding
 from codementor.models.llm_output import LLMFindingVerdict, LLMVerifyOutput
 from codementor.models.verification import FindingCheck, ProofBasis
@@ -28,8 +28,11 @@ class ProofResult:
 
 
 def verify_targets(findings: list[Finding]) -> list[Finding]:
-    """Doğrulamaya girecek bulgular: yalnız LLM kaynaklılar, rapordaki sırayla (1'den)."""
-    return [f for f in findings if f.source is FindingSource.LLM]
+    """Doğrulamaya girecek bulgular: yalnız LLM kaynaklı hatalar, rapordaki sırayla (1'den).
+
+    Öneriler (Faz 36) somut hatalı bir girdiyle kanıtlanamaz; doğrulamaya girmez, korunur.
+    """
+    return [f for f in findings if f.source is FindingSource.LLM and f.kind == FindingKind.ISSUE]
 
 
 def _filled(*values: str | None) -> bool:

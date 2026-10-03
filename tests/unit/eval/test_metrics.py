@@ -20,6 +20,7 @@ from codementor.eval.metrics import (
     schema_metrics,
 )
 from codementor.models.eval import ExpectedFinding, Metrics, ModelPrice, PricingFile
+from codementor.models.findings import Finding
 from codementor.models.report import AnalysisReport
 from codementor.pipeline.stages import SCRUB_WARNING_COMPLEXITY, SCRUB_WARNING_FINDINGS
 from tests.unit.eval.helpers import MEM, PERF, finding, label, report, result
@@ -225,3 +226,32 @@ def test_guard_interventions_none_without_llm() -> None:
 
 def test_old_result_without_guard_field_loads() -> None:
     assert Metrics.model_validate({"samples": 3}).guard_interventions is None
+
+
+def _suggestion(line: int) -> Finding:
+    return finding(MEM, line, "F-009").model_copy(update={"kind": "suggestion"})
+
+
+def test_audit_metrics_ignore_suggestions() -> None:
+    """Faz 36: öneriler denetim puanına girmez (FP sayılmaz, beklenen bulguyu da eşlemez)."""
+    pairs = [
+        (
+            label(findings=[(MEM, 10), (PERF, 20)]),
+            result(report(findings=[finding(MEM, 10), _suggestion(30), _suggestion(20)])),
+        )
+    ]
+    scores = audit_metrics(pairs)
+    assert scores.precision == 1.0  # TP 1 / hata tahmini 1
+    assert scores.recall == pytest.approx(1 / 2)
+
+
+def test_suggestions_total_counted() -> None:
+    pairs = [
+        (label(), result(report(findings=[finding(MEM, 1), _suggestion(2)]))),
+        (label("c-002"), result(report(findings=[_suggestion(3), _suggestion(4)]))),
+    ]
+    assert compute_metrics(pairs).suggestions_total == 3
+
+
+def test_old_metrics_without_suggestions_load() -> None:
+    assert Metrics.model_validate({"samples": 3}).suggestions_total is None

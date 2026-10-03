@@ -1,0 +1,35 @@
+id: python-none-clean-word-count
+language: python
+engine: none
+title: "Python: kelime sıklığı (temiz kod, bir öneri)"
+code: |
+  def word_frequencies(text: str) -> dict[str, int]:
+      counts: dict[str, int] = {}
+      for word in text.lower().split():
+          counts[word] = counts.get(word, 0) + 1
+      return counts
+static_hint: "O(n)"
+static_findings: []
+analysis:
+  complexity:
+    reasoning_steps:
+      - "split metni bir kez tarar; 3. satırdaki döngü n kelimeye bir kez bakar."
+      - "Sözlükte okuma ve yazma ortalama O(1); sözlük en çok n anahtar tutar: ek bellek O(n)."
+    time_complexity: "O(n)"
+    space_complexity: "O(n)"
+    optimal_time_target: "O(n)"
+    agreement: agrees
+  additional_findings:
+    - category: design
+      severity: low
+      kind: suggestion
+      line_start: 4
+      line_end: null
+      evidence: "counts[word] = counts.get(word, 0) + 1"
+      description: "Sayma doğru çalışıyor; aynı iş standart kütüphanedeki hazır bir sayaç türüyle daha kısa ifade edilebilir."
+socratic:
+  key_flaw_concept: "Doğru çözümün sınanması"
+  guiding_questions:
+    - "Noktalama işaretli bir cümlede \"merhaba,\" ile \"merhaba\" aynı kelime sayılıyor mu ve bu senin için istenen davranış mı?"
+    - "Boş bir metin verildiğinde fonksiyon ne döndürür?"
+  next_step_hint: null

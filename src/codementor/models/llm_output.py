@@ -20,6 +20,8 @@ MAX_PROOF_CHARS = 300
 
 # Modelin bulguya kendi güveni (Faz 35). `confidence` sistem alanıdır; LLM şemasında yer almaz.
 Certainty = Literal["high", "medium", "low"]
+# Faz 36: değerler `FindingKind` ile aynı; Literal şemada $defs/$ref'ten kısa (2048 bütçesi)
+Kind = Literal["issue", "suggestion"]
 
 
 class LLMFinding(StrictModel):
@@ -30,32 +32,34 @@ class LLMFinding(StrictModel):
     evidence: str = Field(max_length=200, description="Satırdan birebir alıntı")
     description: str = Field(max_length=400)
     certainty: Certainty | None = None  # anlamı prompt kurallarında (Faz 35)
+    kind: Kind = "issue"  # Faz 36; anlamı prompt kurallarında
 
 
 class LLMComplexity(StrictModel):
     reasoning_steps: list[str] = Field(min_length=1, max_length=8)
-    time_complexity: str = Field(description="Ham metin; K5 normalize eder")
+    time_complexity: str  # ham metin; K5 normalize eder
     space_complexity: str
     optimal_time_target: str | None
     agreement: Literal["agrees", "conflicts", "no_hint"]
 
 
-class LLMAnalysisOutput(StrictModel):
-    """Geçiş A çıktısı: karmaşıklık + statik analizin kaçırdığı bulgular."""
+# Faz 36: bu modellerde docstring yok; şemaya açıklama olarak girer, modele bir şey anlatmaz
+# ve dar bağlamlı (2048) bütçeyi tüketir. Anlam prompt kurallarındadır.
 
+
+# Geçiş A çıktısı: karmaşıklık + statik analizin kaçırdığı bulgular
+class LLMAnalysisOutput(StrictModel):
     complexity: LLMComplexity
     additional_findings: list[LLMFinding] = Field(max_length=10)
 
 
+# HTML/CSS Geçiş A çıktısı (ADR-0015): karmaşıklık yok, yalnızca ek bulgular
 class LLMMarkupAnalysisOutput(StrictModel):
-    """HTML/CSS Geçiş A çıktısı (ADR-0015): karmaşıklık yok, yalnızca ek bulgular."""
-
     additional_findings: list[LLMFinding] = Field(max_length=10)
 
 
+# Geçiş B çıktısı: Sokratik yönlendirme soruları
 class LLMSocraticOutput(StrictModel):
-    """Geçiş B çıktısı: Sokratik yönlendirme soruları."""
-
     key_flaw_concept: str = Field(max_length=80)
     guiding_questions: list[Annotated[str, Field(max_length=MAX_QUESTION_CHARS)]] = Field(
         min_length=1, max_length=4
@@ -63,9 +67,8 @@ class LLMSocraticOutput(StrictModel):
     next_step_hint: str | None = Field(default=None, max_length=300)
 
 
+# `pipeline.mode = "single_pass"` çıktısı: Geçiş A ve B tek çağrıda (mimari §5.4.2)
 class LLMSinglePassOutput(StrictModel):
-    """`pipeline.mode = "single_pass"` çıktısı: Geçiş A ve B tek çağrıda (mimari §5.4.2)."""
-
     analysis: LLMAnalysisOutput
     socratic: LLMSocraticOutput
 

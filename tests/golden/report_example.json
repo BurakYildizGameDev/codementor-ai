@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "analysis_id": "01J9ZK4M8Q3W6Y2T5R7N1B0C9D",
   "created_at": "2026-09-29T10:15:02Z",
   "language": "csharp",
@@ -33,7 +33,8 @@
       "evidence": "var slots = new List<Slot>();",
       "description": "Update her karede yeni bir List tahsis ediyor; bu GC baskısı ve kare atlamaları üretir.",
       "source": "confirmed",
-      "confidence": 0.95
+      "confidence": 0.95,
+      "kind": "issue"
     }
   ],
   "socratic": {
@@ -51,7 +52,7 @@
     "model": "qwen2.5-coder:7b",
     "prompt_version": "v1+3fa9c2d1",
     "rules_version": "1.0.0",
-    "schema_version": "1.0",
+    "schema_version": "1.1",
     "tokens_in": 2140,
     "tokens_out": 412,
     "stage_latency_ms": { "normalize": 2, "tier0": 6, "tier1": 840, "facts": 14, "llm_a": 9120, "verify": 3, "llm_b": 4210 },

@@ -46,6 +46,13 @@ class FindingSource(StrEnum):
     CONFIRMED = "confirmed"
 
 
+# Faz 36 (ADR-0022): gerçek hata mı, hataya yol açmayan öneri mi. Docstring yok: LLM şemasına
+# açıklama olarak girer ve dar bağlamlı bütçeyi tüketir.
+class FindingKind(StrEnum):
+    ISSUE = "issue"
+    SUGGESTION = "suggestion"
+
+
 class AuditCategory(StrEnum):
     MEMORY_SAFETY = "memory_safety"
     RESOURCE_LEAK = "resource_leak"

@@ -195,3 +195,49 @@ def test_rich_footer_marks_estimated_usage_and_cost() -> None:
     text = _rich(report)
     assert "token 10/5 (tahmini)" in text
     assert "~$0.0012" in text
+
+
+def _with_suggestion() -> AnalysisReport:
+    """Faz 36: bir hata (yüksek) + bir öneri (düşük)."""
+    report = _report()
+    suggestion = _finding("F-002", None, FindingSource.LLM, Severity.LOW).model_copy(
+        update={"kind": "suggestion", "line_start": 2, "description": "Ara toplam adı öneri."}
+    )
+    report.findings = [report.findings[0], suggestion]
+    return report
+
+
+def test_markdown_splits_issues_and_suggestions() -> None:
+    md = to_markdown(_with_suggestion())
+    errors, rest = md.split("<details>")
+    assert "## Hatalar" in errors
+    assert "| F-001 | 3 |" in errors
+    assert "Ara toplam" not in errors
+    assert "<summary>Öneriler (1)</summary>" in rest
+    assert "| F-002 | 2 |" in rest
+    assert "## Bulgular" not in md
+
+
+def test_markdown_only_suggestions_says_no_errors() -> None:
+    report = _with_suggestion()
+    report.findings = report.findings[1:]
+    md = to_markdown(report)
+    assert "Hata bulunmadı." in md
+    assert "<summary>Öneriler (1)</summary>" in md
+
+
+def test_sarif_suggestion_level_note() -> None:
+    report = _with_suggestion()
+    report.findings[0] = report.findings[0].model_copy(update={"severity": Severity.MEDIUM})
+    report.findings[1] = report.findings[1].model_copy(update={"severity": Severity.LOW})
+    log = to_sarif(report, "a.c")
+    Draft4Validator(SCHEMA).validate(log)
+    results = log["runs"][0]["results"]
+    assert [r["level"] for r in results] == ["warning", "note"]
+    assert [r["properties"]["kind"] for r in results] == ["issue", "suggestion"]
+
+
+def test_cli_render_suggestions() -> None:
+    text = _rich(_with_suggestion())
+    assert "Öneriler (1)" in text
+    assert text.index("F-001") < text.index("Öneriler (1)") < text.index("Ara toplam adı öneri.")
