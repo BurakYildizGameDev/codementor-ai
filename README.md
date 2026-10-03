@@ -193,11 +193,15 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 | claude_cli / claude-opus-5-5 | two_pass | fewshot0 | 46 (dev) | 100% / 100% | 100% / 100% | 97% / 97% | 68% / 91% / 78% | 98% | 0% | 100% | 19.3 / 33.9 | 13737 |
 | claude_cli / claude-opus-5-5 | two_pass | fewshot1 | 46 (dev) | 100% / 100% | 100% / 100% | 93% / 97% | 68% / 89% / 77% | 98% | 0% | 100% | 16.9 / 28.3 | 12641 |
 | Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 58% / 73% | 100% | 0% | — | 0.1 / 0.5 | — |
+| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 71% / 77% / 74% | 100% | 0% | 100% | 16.7 / 44.4 | 14366 |
 
 Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
+Sürümler: prompt v1+7205d091 · kurallar r1+d1852061 · şema 1.1
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 <!-- eval-table:dev:end -->
+
+> Faz 36 (2026-10-04): son two_pass satırı hata/öneri ayrımlı prompt'un dev parça 1/4'üdür (24 örnek, `eval run --part 1/4`; doğrulama açık). Denetim metrikleri yalnız hataları sayar, 9 öneri puana girmedi. Kalan 3 parça koşulmadı; diğer satırlarla doğrudan karşılaştırılamaz. Ayrıntı: `docs/eval-findings.md` §11.
 
 > Dev genişletmesi (2026-10-04): dev 46 → 96 örnek (50 yeni; Unity/Unreal 8'er, diğerleri 4-6). Son statik satır 96 örneklik güncel settir; LLM satırları henüz bu setle koşulmadı. Yeni örneklerin statik Big-O'su etiketle birebir. Ayrıntı: `docs/eval-findings.md` §10.
 

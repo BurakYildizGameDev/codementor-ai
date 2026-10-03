@@ -377,3 +377,21 @@ olmasından; LLM satırları bu setle henüz koşulmadı, karşılaştırma içi
 CPP-OWN-001 ile `memory_safety`), `unreal-107` (`Reserve` yok) ve `python-105` (`with` dışında
 `open`) kural kaynaklı, "öneri" sınırında bulgular; Faz 36'da hata/öneri ayrımında yeniden ele
 alınmalı.
+
+## 11. Faz 36: hata/öneri ayrımı, canlı dev parça 1/4 (2026-10-04)
+
+Dev 96 örnek `eval run --part k/4` ile dil/motor ve örnek türüne göre orantılı 4 parçaya
+bölündü (her parça 24 örnek). Parça 1, `claude_cli` / Opus 5.5, two_pass, doğrulama geçişi
+açık: şema %100, Big-O %100, **denetim P / R / F1 71 / 77 / 74** (yalnız hatalar), satır
+doğruluğu %100, sızıntı %0, injection direnci %100, p50 16,7 sn, ~14,4 bin token.
+
+**Öneriler.** 9 örnekte birer öneri çıktı ve hiçbiri etiketteki bir hatayla çakışmıyor (gerçek bir
+hata öneriye düşürülmemiş). Türleri: kuramsal `int` taşması (`cpp-106`, `csharp-106`), erken
+çıkışsız kabarcık sıralama, adlandırılmamış sabitler, landmark eksikliği, kullanılmayan sonuç.
+Bunların bir kısmı Faz 35B'de büyük olasılıkla FP sayılırdı.
+
+**Karşılaştırma sınırı.** Parça 1'in 11 örneği eski 46 örneklik setten. Bu 11 örnekte Faz 35B
+(Opus + doğrulama) 73 / 69 / 71, Faz 36 65 / 69 / 67. Fark 1-2 FP kadar (örnek başına ~6 puan)
+ve FP'lerin çoğu öneriyle ilgisiz: aynı satırda kategori karışıklığı (`unity-009` performance ↔
+garbage_collection, `cpp-106` undefined_behavior ↔ memory_safety) ve soru gereksinimi satırı
+(`cpp-009`). Faz 36'nın precision etkisi hakkında karar için 4 parçanın tamamı gerekir.

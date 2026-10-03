@@ -936,7 +936,7 @@ Statik dev koşusu değişmedi (96 örnek, P/R/F1 100/58/73; şema 1.1).
 **Canlı ölçüm planı:** dev 96 örnek `eval run --part k/4` ile 4 dengeli parçaya bölündü
 (`eval/parts.py`; her parça 24 örnek, dil/motor ve tür orantılı, belirleyici). Parçalar sırayla
 koşulur (`uv run codementor eval run --split dev --provider claude_cli --part k/4`, ~0,3M token):
-- [ ] Parça 1/4 (koşuluyor)
+- [x] Parça 1/4 (2026-10-04): P/R/F1 71/77/74, 9 öneri (hiçbiri etiketli hatayla çakışmıyor); eval-findings §11
 - [ ] Parça 2/4
 - [ ] Parça 3/4
 - [ ] Parça 4/4
