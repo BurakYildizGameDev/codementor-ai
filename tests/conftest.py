@@ -32,6 +32,13 @@ def _isolated_toolchain_dir(
     clear_toolchain_cache()
 
 
+@pytest.fixture(autouse=True)
+def _verify_findings_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Betikli FakeProvider yanıt sıraları doğrulama çağrısını içermez: testlerde doğrulama
+    geçişi kapalı başlar (ürün varsayılanı açık, Faz 35B). Doğrulama testleri açıkça açar."""
+    monkeypatch.setenv("CODEMENTOR_PIPELINE__VERIFY_FINDINGS", "false")
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--update-golden",

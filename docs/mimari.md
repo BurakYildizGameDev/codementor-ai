@@ -394,7 +394,7 @@ class UnityAllocInUpdate(Rule):
 | A — Analiz | Karmaşıklık + gerekçe adımları, ek bulgular | `LLMAnalysisOutput` | Teknik doğruluk; düşük sıcaklık |
 | B — Mentorluk | Doğrulanmış analizden Sokratik sorular üret | `LLMSocraticOutput` | Doğrulanmamış bulgular soruya dönüşmez; sızıntı kontrolü ayrı yapılır; ton ayarı bağımsız |
 
-**Doğrulama geçişi (Faz 35, ADR-0019):** `pipeline.verify_findings = true` ise A ile B arasında her LLM bulgusu ayrı bir çağrıda (`LLMVerifyOutput`) sınanır; model somut bir girdi (girdi/beklenen/gerçekleşen) ya da ihlal edilen gereksinim gösteremezse bulgu düşer. Statik ve `confirmed` bulgular girmez; hata/bozuk şemada bulgular olduğu gibi kalır. `single_pass`'ta bulgu düşerse Sokratik çıktı ayrı Geçiş B ile yeniden üretilir. Varsayılan kapalı (ek çağrı); karar canlı ölçüme bağlı.
+**Doğrulama geçişi (Faz 35, ADR-0019):** `pipeline.verify_findings = true` ise A ile B arasında her LLM bulgusu ayrı bir çağrıda (`LLMVerifyOutput`) sınanır; model somut bir girdi (girdi/beklenen/gerçekleşen) ya da ihlal edilen gereksinim gösteremezse bulgu düşer. Statik ve `confirmed` bulgular girmez; hata/bozuk şemada bulgular olduğu gibi kalır. `single_pass`'ta bulgu düşerse Sokratik çıktı ayrı Geçiş B ile yeniden üretilir. Varsayılan açık: dev ölçümünde precision 69 → 79, recall değişmedi; bedeli ~%24 gecikme, ~%13 token (Faz 35B).
 
 `pipeline.mode = "single_pass"` ile tek çağrıya indirilebilir (maliyet/gecikme için). Faz 12 eval sonucu (ADR-0003): kalite farkı ölçülmedi, single_pass ~%35–45 hızlı ama sızıntı koruması ~1,5× sık devreye giriyor; varsayılan `two_pass` kalır (güvenlik payı), `single_pass` hızlı mod.
 
@@ -1304,7 +1304,7 @@ sha256 = "089a16a4…"
 mode = "two_pass"            # two_pass | single_pass
 max_repair_attempts = 1
 use_cache = true
-verify_findings = false      # Faz 35 (ADR-0019): LLM bulguları için ayrı doğrulama çağrısı
+verify_findings = true       # Faz 35 (ADR-0019): LLM bulguları için ayrı doğrulama çağrısı
 
 [rules]
 disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]

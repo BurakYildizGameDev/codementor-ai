@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from codementor.report.progress import STAGE_LABELS, ProgressLine
-
 from codementor.models.pipeline import ALL_STAGES, StageEvent
+from codementor.report.progress import STAGE_LABELS, ProgressLine
 
 
 def _event(stage: str, status: str, tokens: int = 0) -> StageEvent:

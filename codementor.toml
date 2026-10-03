@@ -47,7 +47,7 @@ sha256 = "b61e5413c49508d9d62e5dcea543e3af491594154d74a00ff52f84ed508260cc"
 mode = "two_pass"            # two_pass | single_pass
 max_repair_attempts = 1
 use_cache = true
-verify_findings = false      # Faz 35 (ADR-0019): LLM bulguları için ayrı doğrulama çağrısı
+verify_findings = true       # Faz 35 (ADR-0019): LLM bulguları için ayrı doğrulama çağrısı
 
 [data]
 questions_dir = "data/questions"

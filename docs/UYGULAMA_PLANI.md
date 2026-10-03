@@ -1423,7 +1423,7 @@ başına bir öğrencinin birkaç saatlik çalışmasına bile yetmiyor; zorluk 
 
 **Commit:** `feat(faz-30): soru bankası genişletme ve filtreler`
 
-### Faz 35 — Bulgu doğrulama geçişi (YAPILDI çevrimdışı; canlı ölçüm Aşama B bekliyor)
+### Faz 35 — Bulgu doğrulama geçişi (YAPILDI; Aşama B ölçümüyle varsayılan açık)
 
 **Dal:** `faz/35-bulgu-dogrulama` · **Mimari:** §5.4, §5.5 · **ADR:** yeni (ek LLM geçişi)
 
@@ -1443,15 +1443,15 @@ artırmak. Prompt kuralları (Faz 22B) tek başına sınırlı kalıyor. Ölçü
 - [x] Config: `pipeline.verify_findings = true|false` (varsayılan ölçümle kararlaştırılır),
       single_pass'te de uygulanabilir
 - [x] Sızıntı: doğrulama çıktısı öğrenciye gitmez; yine de sızıntı korumasından geçer (§12)
-- [ ] Eval (yalnız dev): doğrulamalı / doğrulamasız two_pass, precision, recall, gecikme ve
+- [x] Eval (yalnız dev): doğrulamalı / doğrulamasız two_pass, precision, recall, gecikme ve
       token farkı; ADR'de karar
 - [x] Testler: FakeProvider ile düşen/kalan bulgu, şema hatasında güvenli geri dönüş
       (doğrulama başarısızsa bulgular olduğu gibi kalır ve uyarı yazılır), sızıntı korumasının
       uygulanması
 
 Uygulama notları: ADR-0019. Model güveni `certainty` adıyla (rapor `confidence` sistem alanı).
-Eval: `eval run --ablation verify`, `eval analyze` güven eşiği tablosu. Kalan: Aşama B canlı ölçüm
-(eval maddesi) ve varsayılan kararı.
+Eval: `eval run --ablate verify|noverify`, `eval analyze` güven eşiği tablosu. Aşama B (2026-10-03):
+P 69 → 79, R aynı, gecikme ~%24 → varsayılan açık, güven eşiği yok (ADR-0019, eval-findings §9).
 
 **Commit:** `feat(faz-35): LLM bulguları için doğrulama geçişi`
 
@@ -1534,15 +1534,16 @@ Notlar: ortak `report/usage.py` (CLI alt satırı, masaüstü başlığı, web `
 
 **Commit:** `feat(faz-33): kullanıcı deneyimi iyileştirmeleri`
 
-### Faz 34 — Ölçümün genişletilmesi (YAPILACAK, canlı, isteğe bağlı)
+### Faz 34 — Ölçümün genişletilmesi (YAPILDI; dev seti büyütme Sonraya)
 
 **Dal:** `faz/34-eval-genisletme` · **Mimari:** §14 · **ADR:** 0003
 
-- [ ] İkinci model ölçümü (Faz 28 sonrası Gemini/DeepSeek/OpenAI'den biri): two_pass vs
+- [x] İkinci model ölçümü (Faz 28 sonrası Gemini/DeepSeek/OpenAI'den biri): two_pass vs
       single_pass. ADR-0003'ün "zayıf modelde doğrulanmamış bulgu" kaygısı burada ölçülür
-- [ ] Few-shot 0/1/2 ablasyonu (§14.4)
-- [ ] Dev setini büyütme (yeni sorulardan, Faz 30), etiket incelemesi kullanıcıyla
-- [ ] README ve `docs/eval-findings.md` güncel
+      (API anahtarı yok → Claude Haiku 4.5, `claude_cli`, `thinking_tokens = 0`)
+- [x] Few-shot 0/1/2 ablasyonu (§14.4)
+- [ ] Dev setini büyütme (yeni sorulardan, Faz 30), etiket incelemesi kullanıcıyla → Sonraya
+- [x] README ve `docs/eval-findings.md` güncel
 
 **Commit:** `feat(faz-34): ikinci model ve ablasyon ölçümleri`
 

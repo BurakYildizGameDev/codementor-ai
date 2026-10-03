@@ -32,6 +32,7 @@
 | 27 | ✅ | faz/27-saglamlik | 2026-10-02 | Claude Code / — |
 | 22 | ✅ | faz/22-eval-precision, faz/22b-precision | 2026-10-02 | Claude Code / — |
 | 28 (Codex) | ✅ | faz/28-cli-ajanlari | 2026-10-02 | Claude Code / — |
+| 34 + 35B | ✅ | faz/34-eval-genisletme | 2026-10-03 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -842,15 +843,38 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 - `LLMFinding.certainty` (isteğe bağlı): rapor güveni high 0,85 / medium 0,7 / low 0,5
   (satır düzeltildiyse −0,1); beyan yoksa eski 0,7 / 0,6. Alan adı `confidence` değil: LLM
   şemasında sistem alanı yasak (ADR-0004 testi).
-- `pipeline.verify_findings = false` (varsayılan). Önbellek anahtarına `pipeline` imzası
+- `pipeline.verify_findings` (Faz 35B ölçümüyle varsayılan `true`, aşağıda). Önbellek anahtarına `pipeline` imzası
   (mod + doğrulama) eklendi; mod daha önce anahtarda yoktu (eski önbellek kayıtları geçersiz).
-- Eval: `eval run --ablation verify`; `eval analyze` çıktısında "Güven eşiği" tablosu
+- Eval: `eval run --ablate verify`; `eval analyze` çıktısında "Güven eşiği" tablosu
   (0,5 / 0,6 / 0,7 / 0,85; statik ve teyitli bulgular hep kalır).
 - Prompt'a certainty kuralı eklendi (golden'lar güncellendi, `prompt_version` değişti).
   `certainty` alanına açıklama konmadı: şema 2048 bağlamlı bütçe testinde sınırdaydı.
 - Açık: Aşama B canlı ölçüm (precision, recall, gecikme, token) ve varsayılan/eşik kararı.
+  → Yapıldı (Faz 34 + 35B notları).
+
+## Faz 34 + 35B — Notlar (ikinci model, few-shot ablasyonu, doğrulama ölçümü; canlı, yalnız dev)
+**Yapılanlar:**
+- 6 dev koşusu (46 örnek, `claude_cli`): Opus two_pass taban, Opus + doğrulama, Opus few-shot
+  0 / 1, Haiku 4.5 two_pass / single_pass. Tablo: `docs/eval-findings.md` §9, README dev tablosu.
+- `providers.claude_cli.thinking_tokens` → alt sürece `MAX_THINKING_TOKENS` (Haiku 4.5'te CLI
+  uzun düşünme açıyordu: örnek başına ~176 sn → 15 sn). `model_label()` bu ayarı model adına
+  ekler (`… (thinking=0)`): önbellek anahtarı ve eval etiketi karışmasın.
+- `pipeline.verify_findings` varsayılanı `true` (P 69 → 79, R aynı, gecikme ~%24, token ~%13);
+  `eval run --ablate noverify` eklendi. Testlerde doğrulama kapalı başlar (`tests/conftest.py`
+  ortam değişkeni; betikli FakeProvider yanıtları doğrulama çağrısını içermiyor).
+- Belgelerdeki `--ablation` yazımı `--ablate` olarak düzeltildi.
+**Alınan kararlar (ve neden):**
+- Güven eşiği yok: ≥ 0,85 P'yi 90'a çıkarıyor ama R 78'e düşüyor, F1 artmıyor (ADR-0019).
+- two_pass varsayılan kalır: Haiku'da da iki mod arasında fark ~1 örnek (ADR-0003 eki).
+- Few-shot sayısı 2 kalır: 0/1/2 arasında F1 farkı yok; biçim öğretimi için tutuluyor.
+- İkinci model Haiku 4.5: API anahtarı yok, Codex ölçümü kotaya göre sonraya.
+**Açık sorular:** Dev setini büyütme (etiket incelemesi kullanıcıyla).
+**Bu fazda öğrendiğim:** Doğrulama geçişi precision'ı prompt kurallarının yapamadığı ölçüde
+artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
+süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
 ## Sonraya (kapsam dışı fikirler)
+- Faz 34: dev setini Faz 30 sorularından büyütmek (taslak örnek + etiket incelemesi kullanıcıyla); Codex (`gpt-6-luna`) ile üçüncü model ölçümü; few-shot'ların zayıf modelde etkisi.
 - Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde); doğrulama kararlarını (`finding_checks`) eval sonucuna yazıp düşürülen bulguların TP/FP dağılımını ölçmek.
 - Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).
 - ~~Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.~~ → Faz 31.
@@ -957,8 +981,8 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    `questions validate`, zorluk filtreleri. Sıradaki: Faz 35.
    Ek (2026-10-03): Antigravity'nin 1200 aday sorusu `docs/soru-havuzu/` altında, analizi
    `docs/soru-havuzu/README.md`'de (şemadan geçiyor; çözüm/tablo yok, C++/C# ipuçları Sokratik değil).
-5. **Faz 35 — Bulgu doğrulama geçişi (önemli):** Çevrimdışı kısım yapıldı (ADR-0019,
-   varsayılan kapalı); kalan Aşama B: dev'de `claude_cli` ile doğrulamalı/doğrulamasız ölçüm (onay
+5. ~~**Faz 35 — Bulgu doğrulama geçişi (önemli):**~~ Yapıldı, Aşama B dahil (varsayılan açık).
+   Eski not: çevrimdışı kısım (ADR-0019); kalan Aşama B: dev'de `claude_cli` ile doğrulamalı/doğrulamasız ölçüm (onay
    bekliyor). Sıradaki: Faz 36. Özgün tanım: her LLM bulgusu için ayrı bir "kanıtla"
    adımı; kanıtlanamayan düşer. Modelin kendi güveni şemaya (bugünkü `confidence` sistemden
    sabit 0,7 geliyor, ayırt etmiyor). ADR; dev'de doğrulamalı/doğrulamasız ölçüm.
@@ -969,8 +993,8 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 8. ~~**Faz 32 — Statik kural doğruluğu II:**~~ Yapıldı (Faz 32 notları). sıcak yol kimliği (O3), C-MEM-001, UNITY-GC-001 struct,
    UE-GC-001 `TArray`, CS-PERF-001 `IList`, maliyet tablosu.
 9. ~~**Faz 33 — Kullanıcı deneyimi:**~~ Yapıldı (Faz 33 notları). token/maliyet gösterimi, arama/değiştir, CLI ilerleme.
-10. **Faz 34 — Ölçümün genişletilmesi (canlı, isteğe bağlı):** ikinci model, few-shot ablasyonu,
-   dev setini büyütme.
+10. ~~**Faz 34 — Ölçümün genişletilmesi:**~~ Yapıldı (Faz 34 + 35B notları); dev setini
+   büyütme Sonraya.
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,

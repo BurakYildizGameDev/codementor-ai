@@ -30,6 +30,7 @@ from codementor.prompts.budget import PromptBudgetError, PromptConfigError
 from codementor.prompts.mentoring import mentoring_profile
 from codementor.prompts.templates import prompt_version
 from codementor.providers.base import LLMProvider, ProviderError
+from codementor.providers.cli_agent import model_label
 from codementor.providers.factory import build_chain
 from codementor.questions.bank import QuestionBank, QuestionNotFoundError
 from codementor.storage import cache, sessions
@@ -159,6 +160,7 @@ class Orchestrator:
     ) -> str:
         config = getattr(self.settings.providers, run.provider_name, None)
         model = getattr(config, "model", None) or getattr(provider, "model", None)
+        model = model_label(model if isinstance(model, str) else None, config)
         return cache.cache_key(
             normalized_code=code.text,
             language=code.language.value,

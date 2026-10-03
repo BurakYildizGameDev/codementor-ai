@@ -423,3 +423,35 @@ def test_batch_target_outside_shim_dir_rejected(
     _isolated_path(monkeypatch, shim_dir)
     with pytest.raises(ProviderConfigError, match="toplu dosya"):
         resolve_executable("claude_cli", "tool")
+
+
+# --- Faz 34: düşünme bütçesi ---------------------------------------------------------------
+
+
+@pytest.mark.parametrize(("budget", "expected"), [(0, "0"), (4000, "4000"), (None, None)])
+async def test_claude_thinking_budget_env(budget: int | None, expected: str | None) -> None:
+    """Claude CLI Haiku'da uzun düşünme açar (Faz 34 ölçümü); `thinking_tokens` yalnız
+    verildiğinde `MAX_THINKING_TOKENS` olarak alt sürece geçer."""
+    runner = FakeRunner([ok(claude_json(structured_output=ANSWER))])
+    config = ClaudeCliConfig(command=EXE, model="m", thinking_tokens=budget)
+    provider = CliAgentProvider(
+        "claude_cli", config, retry=RetryPolicy(max_retries=0), runner=runner
+    )
+    await _run(provider)
+    env = runner.calls[0]["env"]
+    assert env.get("MAX_THINKING_TOKENS") == expected
+
+
+def test_thinking_tokens_not_negative() -> None:
+    with pytest.raises(ValueError, match="greater than or equal"):
+        ClaudeCliConfig(thinking_tokens=-1)
+
+
+def test_model_label_marks_thinking_budget() -> None:
+    from codementor.providers.cli_agent import model_label
+
+    assert model_label("claude-haiku-4-5", ClaudeCliConfig(thinking_tokens=0)) == (
+        "claude-haiku-4-5 (thinking=0)"
+    )
+    assert model_label("claude-haiku-4-5", ClaudeCliConfig()) == "claude-haiku-4-5"
+    assert model_label(None, ClaudeCliConfig(thinking_tokens=0)) is None

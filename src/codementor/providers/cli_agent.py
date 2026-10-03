@@ -151,6 +151,15 @@ def resolve_executable(provider: str, command: str | None) -> str:
     return str(target)
 
 
+def model_label(model: str | None, config: object) -> str | None:
+    """Model adı + çıktıyı değiştiren CLI ayarı: `claude-haiku-4-5 (thinking=0)` (Faz 34).
+    Önbellek anahtarında ve eval etiketinde aynı model adının farklı ayarları karışmasın."""
+    budget = getattr(config, "thinking_tokens", None)
+    if model is None or budget is None:
+        return model
+    return f"{model} (thinking={budget})"
+
+
 def profile_env() -> dict[str, str]:
     """CLI'nin kendi oturumunu bulması için kullanıcı profil değişkenleri (+ sessiz mod)."""
     env = {name: os.environ[name] for name in _PROFILE_ENV if os.environ.get(name)}
@@ -227,6 +236,14 @@ class CliAgentProvider:
         self.retry = retry or RetryPolicy()
         self.runner = runner
 
+    def _env(self) -> dict[str, str]:
+        """Profil değişkenleri + (claude_cli) düşünme bütçesi (Faz 34)."""
+        env = profile_env()
+        budget = getattr(self.config, "thinking_tokens", None)
+        if self.kind == "claude_cli" and budget is not None:
+            env["MAX_THINKING_TOKENS"] = str(budget)
+        return env
+
     def build_argv(self, executable: str, schema: dict[str, Any], model: str) -> list[str]:
         """Komut satırı: sabit bayraklar, şema ve model; mesaj içeriği asla argv'de değil."""
         schema_text = json.dumps(schema, ensure_ascii=False, separators=(",", ":"))
@@ -293,7 +310,7 @@ class CliAgentProvider:
             cancel = threading.Event()
             try:
                 result = await asyncio.to_thread(
-                    self.runner, argv, stdin, limits, extra_env=profile_env(), cancel=cancel
+                    self.runner, argv, stdin, limits, extra_env=self._env(), cancel=cancel
                 )
             except asyncio.CancelledError:
                 cancel.set()

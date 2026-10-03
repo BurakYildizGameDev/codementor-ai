@@ -314,3 +314,42 @@ test'te yeniden yapıldı (LLM yok; test bölümünü kirletmez):
 - p95 gecikmesi 0,1 → 0,5-0,6 sn: Faz 29'da geliştirici makinesine kurulan zig ile Tier 1'in
   C++ denetiminden (Tier 1 kapalıyken yine 0,1 sn; metrikler aynı).
 
+## 9. Faz 34 ve Faz 35B: ikinci model, doğrulama geçişi, few-shot ablasyonu (dev, canlı)
+
+Yalnızca dev bölümü (46 örnek: C ailesi 31 + Python/HTML/CSS 15), `claude_cli`, önbellek kapalı,
+prompt `v1+14a294f9`, kurallar `r1+d1852061`. Test bölümüne dokunulmadı. Taban: Opus two_pass
+(2026-10-03, Faz 33 sonrası kod).
+
+| Koşu (dev, 46) | Denetim P / R / F1 | Big-O birebir | Satır | p50 / p95 (sn) | Token ort. | Koruma müdahalesi |
+|---|---|---|---|---|---|---|
+| Opus two_pass (taban) | 69 / 89 / 78 | 93% | 98% | 17,9 / 36,1 | 14,1 bin | 11 |
+| Opus two_pass + **doğrulama** | **79 / 89 / 84** | 93% | 98% | 22,1 / 38,3 | 15,9 bin | 6 |
+| Opus two_pass, few-shot 0 | 68 / 91 / 78 | 97% | 98% | 19,3 / 33,9 | 13,7 bin | 11 |
+| Opus two_pass, few-shot 1 | 68 / 89 / 77 | 93% | 98% | 16,9 / 28,3 | 12,6 bin | 8 |
+| Haiku 4.5 two_pass (thinking=0) | 45 / 78 / 57 | 97% | 88% | 14,7 / 32,3 | 14,9 bin | 16 |
+| Haiku 4.5 single_pass (thinking=0) | 48 / 78 / 59 | 100% | 84% | 14,3 / 66,9 | 17,2 bin | 11 |
+
+Bütün koşularda hata 0, sızıntı %0, injection direnci %100.
+
+**Doğrulama geçişi (Faz 35B, ADR-0019).** Precision 69 → 79, recall değişmedi (89), F1
+78 → 84. Bedeli: p50 gecikme ~%24, token ~%13. Rapordaki toplam bulgu 71 → 62 (iki ayrı koşu;
+model çıktısı koşudan koşuya değişir), recall aynı kaldı. Sızıntı korumasının müdahalesi 11 → 6 (düşen bulgular Sokratik sorulara
+da girmiyor). Güven eşiği (`eval analyze`) F1'i artırmıyor: ≥ 0,85 eşiği P'yi 90'a çıkarıyor ama
+R 78'e düşüyor (F1 83). **Karar:** `pipeline.verify_findings` varsayılanı açık, güven eşiği yok.
+
+**İkinci model (Faz 34, ADR-0003).** API anahtarı olmadığından ikinci model `claude_cli` ile
+Claude Haiku 4.5. CLI bu modelde uzun düşünme açıyordu (örnek başına ~176 sn, ~44 bin token);
+`providers.claude_cli.thinking_tokens = 0` (`MAX_THINKING_TOKENS`) ile ~15 sn'ye indi. Haiku'da
+F1 57-59: precision belirgin düşük (45-48), satır doğruluğu %84-88. two_pass ile single_pass
+arasında anlamlı fark yok (2 puan, ~1 örnek). ADR-0003'ün "zayıf modelde doğrulanmamış bulgu
+soruya dönüşür" kaygısı bu ölçümde ayırt edici çıkmadı. Haiku two_pass'te sızıntı korumasının
+müdahalesi en yüksek (16) ama son çıktıda sızıntı %0: koruma çalışıyor ve zayıf modelde daha çok
+iş yapıyor. Varsayılan model Opus kalır.
+
+**Few-shot ablasyonu (§14.4).** 0, 1 ve 2 örnek (taban) arasında denetim F1'i 77-78; fark
+gürültü düzeyinde. Big-O ve satır doğruluğu da değişmiyor. Few-shot'ların bu modelde ölçülebilir
+katkısı yok; çıktı biçimini ve "statik bulguyu tekrar etme" davranışını öğretmek için (Faz 8)
+2 örnek varsayılan kalır. Zayıf modellerde etkisi ölçülmedi.
+
+**Sınır.** Dev 46 örnek; bir örnek yaklaşık 2 puan eder. Dev setini yeni sorulardan büyütmek
+etiket incelemesi gerektirdiği için yapılmadı (PROGRESS "Sonraya").

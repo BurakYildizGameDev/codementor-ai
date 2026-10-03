@@ -89,8 +89,9 @@ class PipelineSettings(BaseModel):
     mode: Literal["two_pass", "single_pass"] = "two_pass"
     max_repair_attempts: int = Field(default=1, ge=0)
     use_cache: bool = True
-    # Faz 35 (ADR-0019): LLM bulgularını ayrı bir "kanıtla" çağrısıyla süz
-    verify_findings: bool = False
+    # Faz 35 (ADR-0019): LLM bulgularını ayrı bir "kanıtla" çağrısıyla süz; canlı ölçümle
+    # (Faz 35B: dev P 69 → 79, R aynı) varsayılan açık
+    verify_findings: bool = True
 
 
 class DataSettings(BaseModel):
@@ -220,6 +221,9 @@ class ClaudeCliConfig(CliConfig):
 
     command: str | None = "claude"
     context_tokens: int | None = Field(default=200000, ge=1024)
+    # Faz 34: CLI bazı modellerde (Haiku 4.5) uzun düşünme açar; verilirse alt sürece
+    # MAX_THINKING_TOKENS olarak geçer (0 = kapalı). Verilmezse CLI'ın varsayılanı.
+    thinking_tokens: int | None = Field(default=None, ge=0)
 
 
 class AgyConfig(CliConfig):

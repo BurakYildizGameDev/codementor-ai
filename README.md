@@ -183,11 +183,19 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 | claude_cli / claude-opus-5-5 | two_pass | line_numbers | 31 (dev) | 100% / 100% | 100% / 100% | 92% / 92% | 28% / 100% / 44% | 96% | 0% | 100% | 20.4 / 41.3 | 13861 |
 | claude_cli / claude-opus-5-5 | two_pass | — | 31 (dev) | 100% / 100% | 100% / 100% | 96% / 96% | 67% / 86% / 75% | 100% | 0% | 100% | 17.5 / 31.3 | 13389 |
 | Yalnızca statik (LLM yok) | static | — | 31 (dev) | — / — | 100% / 100% | 96% / 96% | 100% / 37% / 54% | 100% | 0% | — | 0.1 / 0.6 | — |
+| claude_cli / claude-opus-5-5 | two_pass | — | 46 (dev) | 100% / 100% | 100% / 100% | 93% / 97% | 69% / 89% / 78% | 98% | 0% | 100% | 17.9 / 36.1 | 14111 |
+| claude_cli / claude-haiku-4-5-20251001 (thinking=0) | two_pass | — | 46 (dev) | 97% / 100% | 100% / 100% | 97% / 97% | 45% / 78% / 57% | 88% | 0% | 100% | 14.7 / 32.3 | 14926 |
+| claude_cli / claude-haiku-4-5-20251001 (thinking=0) | single_pass | — | 46 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 48% / 78% / 59% | 84% | 0% | 100% | 14.3 / 66.9 | 17247 |
+| claude_cli / claude-opus-5-5 | two_pass | verify | 46 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 79% / 89% / 84% | 98% | 0% | 100% | 22.1 / 38.3 | 15891 |
+| claude_cli / claude-opus-5-5 | two_pass | fewshot0 | 46 (dev) | 100% / 100% | 100% / 100% | 97% / 97% | 68% / 91% / 78% | 98% | 0% | 100% | 19.3 / 33.9 | 13737 |
+| claude_cli / claude-opus-5-5 | two_pass | fewshot1 | 46 (dev) | 100% / 100% | 100% / 100% | 93% / 97% | 68% / 89% / 77% | 98% | 0% | 100% | 16.9 / 28.3 | 12641 |
 
 Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 <!-- eval-table:dev:end -->
+
+> Faz 34/35B (2026-10-03): 46 örneklik satırlar güncel dev setidir (C ailesi + Python/HTML/CSS). `verify` = bulgu doğrulama geçişi (artık varsayılan açık, ADR-0019): precision 69 → 79, recall aynı. İkinci model Claude Haiku 4.5 (düşünme kapalı). Few-shot 0/1/2 arasında fark yok. Ayrıntı: `docs/eval-findings.md` §9.
 
 > Faz 22B (2026-10-02): son two_pass satırı yeni prompt'tur (`v1+fdc16030`: "sorun" ölçütü, kategori tanımları, en fazla 6 bulgu, Python few-shot). Dev etiketlerine 7 örnekte soru gereksinimi bulguları eklendi; statik satır güncel etiketlerle yeniden koşuldu, eski LLM satırları kayıtlı (eski etiketli) metriklerini korur. Güncel etiketlerle eski two_pass: P / R / F1 34 / 80 / 48. Ayrıntı: `docs/eval-findings.md` §7.
 
@@ -242,8 +250,9 @@ Okuma notları (ayrıntı: [docs/eval-findings.md](docs/eval-findings.md)):
   Windows'ta clang varsayılan olarak MSVC hedefler; Unreal stub denetimi atlanabilir.
 - **Kod çalıştırılmaz** (ADR-0005): Big-O statik ipucu + LLM gerekçesidir, ölçülmüş çalışma süresi
   değildir.
-- **Eval tek model ve 80 örnekle yapıldı.** Sonuçlar `claude-opus-5-5` içindir; yerel modeller
-  (Ollama) ölçülmedi. Test bölümü küçük olduğundan bir örnek yaklaşık 2–3 puan eder.
+- **Eval iki modelle ve küçük veriyle yapıldı.** Ana sonuçlar `claude-opus-5-5` içindir; dev
+  bölümünde ayrıca Claude Haiku 4.5 ölçüldü (F1 ~58, Opus 84). Yerel modeller (Ollama) ve API
+  sağlayıcıları ölçülmedi. Test bölümü küçük olduğundan bir örnek yaklaşık 2–3 puan eder.
 - **Precision düşük:** LLM gerçek ama etiketlenmemiş küçük sorunları da raporluyor; öğrenciye çok
   sayıda düşük önemli bulgu gidebilir.
 - **Sızıntı koruması sezgiseldir** (n-gram + işaret listesi). Eval'deki %0 sızıntı ölçülen işaretler

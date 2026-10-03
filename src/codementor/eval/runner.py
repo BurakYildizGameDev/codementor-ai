@@ -35,10 +35,11 @@ from codementor.pipeline.passes import SCHEMA_INVALID, SCHEMA_OK
 from codementor.pipeline.versions import SCHEMA_VERSION, rules_version
 from codementor.prompts.templates import prompt_version
 from codementor.providers.base import LLMProvider, ProviderUnavailableError
+from codementor.providers.cli_agent import model_label
 from codementor.providers.factory import build_chain
 
 STATIC_ONLY = "static-only"
-ABLATIONS = ("facts", "line_numbers", "fewshot0", "fewshot1", "verify")
+ABLATIONS = ("facts", "line_numbers", "fewshot0", "fewshot1", "verify", "noverify")
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]+")
 
 Progress = Callable[[int, int, SampleResult], None]
@@ -62,7 +63,8 @@ class StaticOnlyProvider:
 
 def apply_ablations(settings: Settings, ablations: list[str]) -> Settings:
     """§14.4 ablasyonları: `facts` (olgu + ipucu yok), `line_numbers` (düz kod),
-    `fewshot0`/`fewshot1` (örnek sayısı); `verify` bulgu doğrulama geçişini açar (Faz 35)."""
+    `fewshot0`/`fewshot1` (örnek sayısı); `verify` / `noverify` bulgu doğrulama geçişini
+    açar / kapatır (Faz 35; varsayılan açık)."""
     unknown = sorted(set(ablations) - set(ABLATIONS))
     if unknown:
         raise ValueError(f"Bilinmeyen ablasyon: {', '.join(unknown)}")
@@ -78,6 +80,8 @@ def apply_ablations(settings: Settings, ablations: list[str]) -> Settings:
     pipeline = settings.pipeline
     if "verify" in ablations:
         pipeline = pipeline.model_copy(update={"verify_findings": True})
+    elif "noverify" in ablations:
+        pipeline = pipeline.model_copy(update={"verify_findings": False})
     return settings.model_copy(
         update={"prompts": settings.prompts.model_copy(update=update), "pipeline": pipeline}
     )
@@ -178,7 +182,7 @@ async def run_eval(
 
         provider_factory = factory
     config = getattr(settings.providers, name, None)
-    model = getattr(config, "model", None) or None
+    model = model_label(getattr(config, "model", None) or None, config)
     run_config = RunConfig(
         split=split,
         provider=None if static_only else name,

@@ -32,9 +32,9 @@ bulguları ayırt etmiyordu (Faz 22B ölçümü).
    şemaya eklenir. Alan adı `confidence` değildir, çünkü o rapor şemasında sistem alanıdır
    (ADR-0004). Rapordaki bulgu güveni: high 0,85, medium 0,7, low 0,5. Satır düzeltildiyse bu
    değerden 0,1 düşülür. Beyan yoksa eski 0,7 / 0,6 kalır.
-6. `pipeline.verify_findings` (varsayılan `false`) ile açılır. Önbellek anahtarına pipeline
+6. `pipeline.verify_findings` ile açılır; varsayılan Faz 35B ölçümüyle `true` (aşağıda). Önbellek anahtarına pipeline
    imzası (mod + doğrulama) eklenir. Mod daha önce anahtarda yoktu ve bu bir açıktı.
-7. Ölçüm araçları: `eval run --ablation verify` doğrulamalı koşu yapar. `eval analyze`,
+7. Ölçüm araçları: `eval run --ablate verify` doğrulamalı koşu yapar. `eval analyze`,
    LLM bulgularını güven eşiğine (0,5 / 0,6 / 0,7 / 0,85) göre süzerek precision/recall tablosu
    üretir.
 
@@ -48,8 +48,20 @@ bulguları ayırt etmiyordu (Faz 22B ölçümü).
 - (−) Doğrulayıcı da bir LLM'dir. Gerçek bulguları da düşürebilir (recall kaybı). Bunun
   ölçülmesi gerekir.
 
-## Açık: canlı ölçüm (Faz 35 Aşama B)
+## Ölçüm ve karar (Faz 35 Aşama B, 2026-10-03)
 
-Yalnızca dev bölümünde, `claude_cli` ile doğrulamalı ve doğrulamasız `two_pass` karşılaştırması
-yapılacak: precision, recall, gecikme ve token farkı. Varsayılanın açılıp açılmayacağı ve
-güven eşiği bu ölçümle kararlaştırılıp buraya yazılacak. Koşu kullanıcı onayı bekliyor.
+Dev (46 örnek), `claude_cli` / `claude-opus-5-5`, two_pass, önbellek kapalı:
+
+| | P / R / F1 | p50 / p95 (sn) | Token ort. | Koruma müdahalesi |
+|---|---|---|---|---|
+| Doğrulamasız | 69 / 89 / 78 | 17,9 / 36,1 | 14,1 bin | 11 |
+| Doğrulamalı | **79 / 89 / 84** | 22,1 / 38,3 | 15,9 bin | 6 |
+
+Güven eşiği (doğrulamalı koşu): ≥ 0,5 / 0,6 F1 84, ≥ 0,7 F1 83, ≥ 0,85 P 90 / R 78 / F1 83.
+
+**Karar:** `pipeline.verify_findings = true` varsayılan. Precision 10 puan arttı, recall
+kaybı yok; ek gecikme (~%24) ve token (~%13) tek dosyalık mentorluk kullanımında kabul
+edilebilir. Güven eşiği uygulanmaz (F1'i artırmıyor; `certainty` rapordaki `confidence`
+değerini belirlemeye devam eder). Doğrulamasız ölçüm için `eval run --ablate noverify`.
+Testlerde doğrulama kapalı başlar (betikli FakeProvider yanıtları; `tests/conftest.py`).
+Ayrıntı: `docs/eval-findings.md` §9.

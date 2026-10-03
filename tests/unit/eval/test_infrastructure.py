@@ -12,7 +12,7 @@ import pytest
 from typer.testing import CliRunner
 
 from codementor.cli.main import app
-from codementor.config import Settings
+from codementor.config import PipelineSettings, Settings
 from codementor.eval.compare import compare_table, load_results
 from codementor.eval.dataset import DatasetError, check_disjoint, load_split, promote
 from codementor.eval.review import check_draft
@@ -303,12 +303,19 @@ def test_cli_check_drafts_and_promote(dataset: Path) -> None:
 
 
 def test_verify_ablation_enables_flag(settings: Settings) -> None:
-    """Faz 35: `--ablation verify` doğrulama geçişini açar; diğer ayarlara dokunmaz."""
-    assert not settings.pipeline.verify_findings
-    enabled = apply_ablations(settings, ["verify"])
+    """Faz 35: `--ablate verify` / `noverify` doğrulama geçişini açar / kapatır; diğer
+    ayarlara dokunmaz. Varsayılan açık (Faz 35B ölçümü)."""
+    assert PipelineSettings().verify_findings
+    off = settings.model_copy(
+        update={"pipeline": settings.pipeline.model_copy(update={"verify_findings": False})}
+    )
+    enabled = apply_ablations(off, ["verify"])
     assert enabled.pipeline.verify_findings
-    assert enabled.prompts == settings.prompts
-    assert not apply_ablations(settings, ["fewshot0"]).pipeline.verify_findings
+    assert enabled.prompts == off.prompts
+    assert not apply_ablations(off, ["fewshot0"]).pipeline.verify_findings
+    disabled = apply_ablations(settings, ["noverify"])
+    assert not disabled.pipeline.verify_findings
+    assert disabled.prompts == settings.prompts
 
 
 def test_compare_static_row_has_no_injection_score() -> None:

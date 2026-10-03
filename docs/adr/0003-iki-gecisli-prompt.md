@@ -57,3 +57,10 @@ diye bırakmıştı. Faz 12'de ikisi aynı prompt sürümüyle (`v1+fbc08625`), 
 - Mimari §5.4.2 ve §23'teki "eval ile teyit edilecek" ifadeleri bu ADR'ye bağlanır.
 - Sızıntı korumasının müdahale sayısı şu an yalnızca rapor uyarılarından sayılabiliyor;
   eval metriği olarak eklenmesi PROGRESS.md "Sonraya" bölümüne yazıldı.
+
+## Ek: ikinci model ölçümü (Faz 34, 2026-10-03)
+
+Dev (46 örnek), Claude Haiku 4.5 (`claude_cli`, `thinking_tokens = 0`): two_pass P / R / F1
+45 / 78 / 57, single_pass 48 / 78 / 59; sızıntı ikisinde de %0, koruma müdahalesi two_pass'te
+16, single_pass'te 11. Zayıf modelde iki mod arasında kalite farkı ölçülmedi (~1 örnek). Karar
+değişmedi: varsayılan `two_pass`, gerekçe yine güvenlik payı. Ayrıntı: `docs/eval-findings.md` §9.
