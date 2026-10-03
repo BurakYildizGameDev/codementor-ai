@@ -938,9 +938,9 @@ Statik dev koşusu değişmedi (96 örnek, P/R/F1 100/58/73; şema 1.1).
 koşulur (`uv run codementor eval run --split dev --provider claude_cli --part k/4`, ~0,3M token):
 - [x] Parça 1/4 (2026-10-04): P/R/F1 71/77/74, 9 öneri (hiçbiri etiketli hatayla çakışmıyor); eval-findings §11
 - [x] Parça 2/4 (2026-10-04): P/R/F1 78/90/84, 5 öneri; parça 1+2 (48): 75/83/78. `unity-104` etiket hatası düzeltildi (velocity y=0 yerçekimini iptal ediyor → engine_best_practice 14; güncel etiketle 1+2: 75/81/78)
-- [ ] Parça 3/4
-- [ ] Parça 4/4
-- [ ] Dört parçayı birleştirip 96 örneklik tabloyu üretmek (README, eval-findings §11)
+- [ ] Parça 3/4 → Faz 38 (Codex; `docs/EVAL_PARCA_REHBERI.md`)
+- [ ] Parça 4/4 → Faz 38
+- [ ] Dört parçayı birleştirip 96 örneklik tabloyu üretmek (README, eval-findings §11) → Faz 38
 **Açık sorular:** Canlı dev koşusu (precision artışı ve recall'un düşmediği) parça parça yapılıyor. Kural bazında öneri (`cpp-105` CPP-OWN-001, `unreal-107`, `python-105`).
 **Bu fazda öğrendiğim:** Şemaya giren her metin dar bağlamda bütçe demektir; geliştirici
 docstring'leri LLM şemasına sızıyordu. Öneriyi ayrı sınıf yapmak, "bulgu yazma" yasağından daha
@@ -1070,6 +1070,17 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 9. ~~**Faz 33 — Kullanıcı deneyimi:**~~ Yapıldı (Faz 33 notları). token/maliyet gösterimi, arama/değiştir, CLI ilerleme.
 10. ~~**Faz 34 — Ölçümün genişletilmesi:**~~ Yapıldı (Faz 34 + 35B notları); dev setini
    büyütme Sonraya.
+
+11. **Faz 38 — Faz 36 canlı ölçümünün tamamlanması:** dev parça 3/4 ve 4/4, birleşik 96 örneklik sonuç.
+   Codex'e verilecek; rehber `docs/EVAL_PARCA_REHBERI.md` (sorunlar oraya yazılır).
+12. **Faz 39 — Doğrulama geçişinde performans bulguları:** `cpp-007` gibi gerçek performans bulguları
+   "somut girdi" kanıtı istenince düşüyor; ölçek kanıtı (`scaling`).
+13. **Faz 40 — Kategori tutarlılığı:** doğru satır/yanlış kategori FP-FN'leri; prompt ve etiket
+   rehberinde tek kategori tanımı.
+14. **Faz 41 — Kural bazında öneri türü:** CPP-OWN-001, UE-MEM-001, PY-RES-001 gibi kurallarda öneri.
+15. **Faz 42 — Ölçüm altyapısı ve belge tazeleme:** `pytest-cov` + CI kapsama raporu, README eval
+   girişi, statik koşuların güncel etiketle yenilenmesi, `faz/36` dalının main'e birleştirilmesi.
+16. **Faz 43 — Büyük dosyaların bölünmesi:** 400 satırı aşan 4 modül (davranış değişmeden).
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,

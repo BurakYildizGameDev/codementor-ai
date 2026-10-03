@@ -1566,6 +1566,106 @@ Kullanıcı kararı: canlı doğrulanamayan OpenAI ve DeepSeek kaldırılır; Ge
 
 **Commit:** `feat(faz-34): ikinci model ve ablasyon ölçümleri`
 
+### Faz 38 — Faz 36 canlı dev ölçümünün tamamlanması (YAPILACAK; Codex'e verilecek)
+
+**Dal:** `faz/36-hata-oneri` · **Mimari:** §14 · **Rehber:** `docs/EVAL_PARCA_REHBERI.md`
+
+**Amaç:** Dev 96 örneğin kalan iki parçasını aynı prompt ve modelle koşup Faz 36'nın etkisini
+(precision, "kaçırma oranı düşmez", önerilerin gerçek hata yutup yutmadığı) tüm dev üzerinde ölçmek.
+
+- [ ] `eval run --part 3/4` ve `--part 4/4` (Opus, `claude_cli`, two_pass, doğrulama açık)
+- [ ] Dört parçanın güncel etiketle birleşik P/R/F1'i, öneri toplamı, Faz 35B ile ortak örneklerde kıyas
+- [ ] README dev tablosu, `docs/eval-findings.md` §11, PROGRESS; rehberin "Bulunan sorunlar" tablosu
+- [ ] Ölçüm sırasında prompt/kural/doğrulama koduna dokunulmaz (rehber §2)
+
+**Commit:** `eval(faz-36): canlı dev parça 3/4 ve 4/4, 96 örneklik sonuç`
+
+### Faz 39 — Doğrulama geçişinde performans bulguları (YAPILACAK)
+
+**Dal:** `faz/39-dogrulama-performans` · **Mimari:** §5.4.2 · **ADR:** 0019 eki
+
+**Amaç:** Faz 35 doğrulama geçişi "girdi / beklenen / gerçekleşen" kanıtı istiyor. Performans
+sorunlarında çıktı doğrudur, yanlış olan büyüme hızıdır. Bu yüzden gerçek performans bulguları
+düşüyor. Örnek: `cpp-007` (döngüde `erase`, O(n²)); model buldu, doğrulama "kanıtlanamadı" diye attı
+(Faz 36 parça 2).
+
+- [ ] `LLMFindingVerdict`'e ölçek kanıtı: girdi büyüklüğü + beklenen ve gerçekleşen işlem sayısı ya da
+      karmaşıklık (ör. "n = 10⁵: beklenen O(n) ≈ 10⁵, gerçekleşen O(n²) ≈ 10¹⁰"). `ProofBasis`'e `scaling`.
+      Şema bütçesi: 2048 testi (LLM şema modellerine docstring koyma, Faz 36 notu)
+- [ ] Sistem denetimi: `scaling` yalnız `performance` / `garbage_collection` kategorisinde geçerli ve
+      karmaşıklık ifadeleri `parse_bigo` ile ayrışmalı; aksi halde `no_demonstration`
+- [ ] `verify.system.j2` kural 3'e ölçek kanıtı; golden'lar
+- [ ] Testler: `tests/unit/verify/test_proof.py` (`test_scaling_proof_kept_for_performance`,
+      `test_scaling_proof_rejected_for_memory_safety`, `test_unparseable_scaling_dropped`), şema/bütçe
+- [ ] Eval: `eval analyze`'a doğrulamanın düşürdüğü bulguların TP/FP dağılımı (Faz 35 Sonraya maddesi;
+      `finding_checks` sonuç dosyasına yazılır). Canlı ölçüm onayla, yalnız dev
+
+**Commit:** `feat(faz-39): doğrulama geçişinde performans bulguları için ölçek kanıtı`
+
+### Faz 40 — Kategori tutarlılığı (YAPILACAK)
+
+**Dal:** `faz/40-kategori` · **Mimari:** §6.2, §14.2
+
+**Amaç:** Faz 36 parça 1-2'de FP/FN'lerin önemli kısmı doğru satırda yanlış kategoriden geliyor:
+performance↔garbage_collection (`unity-009`), undefined_behavior↔memory_safety (`cpp-106`),
+resource_leak↔garbage_collection (`csharp-014`), design↔engine_best_practice (`unity-104`).
+Etiket sınırları da tutarsız (Faz 22: `unreal-009` vs `unreal-014`).
+
+- [ ] Kategori sınırlarını tek yerde tanımla: `docs/EVAL_ORNEK_REHBERI.md` §3.1 ile `_core_rules.j2`
+      kural 8 aynı metni kullansın (sıcak yolda tahsis → garbage_collection; dizi sınırı → memory_safety;
+      olay aboneliği sızıntısı → resource_leak; motor API'sinin yanlış kullanımı → engine_best_practice)
+- [ ] Dev ve test etiketlerini bu sınırlara göre denetle (değişiklik listesi kullanıcı onayıyla; test
+      etiketi değişirse not düş)
+- [ ] `eval analyze` karışıklık tablosu raporlanır; eşleşme kuralı (§14.2) **değişmez**
+- [ ] Testler: `test_prompt_precision.py` kategori ifadeleri; rehber ile prompt metninin eşitliği
+
+**Commit:** `feat(faz-40): kategori tanımlarının prompt ve etiket rehberinde birleştirilmesi`
+
+### Faz 41 — Kural bazında öneri türü (YAPILACAK)
+
+**Dal:** `faz/41-kural-oneri` · **Mimari:** §5.3, §6.4 · **ADR:** 0022 eki
+
+**Amaç:** Bazı statik kurallar gerçek hata değil iyi uygulama işaret ediyor: doğru eşleşmiş
+`new[]`/`delete[]` için CPP-OWN-001 (`cpp-105`), `Reserve` yok UE-MEM-001 (`unreal-107`), `with` dışı
+`open` PY-RES-001 (`python-105`). Statik bulgular bugün hep `issue`.
+
+- [ ] Kural meta verisine varsayılan tür (`kind`) ve gerekirse koşullu tür (ör. CPP-OWN-001: aynı
+      fonksiyonda eşleşen `delete` varsa öneri)
+- [ ] Eval etiketleri: ilgili dev/test bulgularının `notes`'a taşınması kullanıcı onayıyla
+      (`EVAL_ORNEK_REHBERI.md` §4.2); statik dev/test koşuları yenilenir
+- [ ] Testler: kural fixture'larına tür beklentisi; birleştirmede statik öneri + LLM hata → hata
+
+**Commit:** `feat(faz-41): statik kurallarda öneri türü`
+
+### Faz 42 — Ölçüm altyapısı ve belge tazeleme (YAPILACAK)
+
+**Dal:** `faz/42-olcum-belge`
+
+**Amaç:** Tarama (2026-10-04) bulguları: mimari §15'teki kapsama hedefleri (%95 / %90) ölçülmüyor,
+çünkü `pytest-cov` yok; README eval girişi eskimiş ("80 örnek, dev 31 / test 49"); statik dev satırı
+eski etiketle kayıtlı (`unity-104` düzeltmesi).
+
+- [ ] `pytest-cov` geliştirme bağımlılığı; CI'da kapsama raporu (eşik önce yalnız raporla, sonra modül
+      bazında §15 hedefleri)
+- [ ] README "Eval sonuçları" girişi güncel veri setiyle (dev 96 / test 70; dil başına örnek sayısı)
+- [ ] Statik dev ve test koşularının güncel etiketlerle yenilenmesi; README tabloları
+- [ ] `faz/36-hata-oneri` dalının main'e birleştirilmesi ve push (Faz 38 sonrası, kullanıcı onayıyla)
+
+**Commit:** `chore(faz-42): kapsama ölçümü, README ve statik eval tazeleme`
+
+### Faz 43 — Büyük dosyaların bölünmesi (YAPILACAK)
+
+**Dal:** `faz/43-bolme` · **Kural:** AGENTS.md "400 satırı geçen dosya için bölme öner"
+
+**Amaç:** `analysis/_loops.py` (449), `analysis/extractor.py` (438), `providers/cli_agent.py` (409),
+`desktop/app.py` (408) 400 satırı geçti. Davranış değişmeden bölünür.
+
+- [ ] Her dosya için bölme önerisi (sorumluluk sınırları), sonra uygulama; genel API ve içe aktarma
+      yolları korunur (yeniden dışa aktarım)
+- [ ] Testler değişmeden geçer; golden'lar aynı kalır
+
+**Commit:** `refactor(faz-43): 400 satırı aşan modüllerin bölünmesi`
+
 ---
 
 ## 7. PROGRESS.md Şablonu
