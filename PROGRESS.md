@@ -874,7 +874,7 @@ artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan d
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
 ## Sonraya (kapsam dışı fikirler)
-- Faz 34: dev setini Faz 30 sorularından büyütmek (taslak örnek + etiket incelemesi kullanıcıyla); Codex (`gpt-6-luna`) ile üçüncü model ölçümü; few-shot'ların zayıf modelde etkisi.
+- Faz 34: dev setini büyütmek: yazım rehberi `docs/EVAL_ORNEK_REHBERI.md` (50 taslak; kullanıcı Antigravity'ye yazdıracak, etiket incelemesi kullanıcıyla); Codex (`gpt-6-luna`) ile üçüncü model ölçümü; few-shot'ların zayıf modelde etkisi.
 - Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde); doğrulama kararlarını (`finding_checks`) eval sonucuna yazıp düşürülen bulguların TP/FP dağılımını ölçmek.
 - Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).
 - ~~Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.~~ → Faz 31.
