@@ -937,7 +937,7 @@ Statik dev koşusu değişmedi (96 örnek, P/R/F1 100/58/73; şema 1.1).
 (`eval/parts.py`; her parça 24 örnek, dil/motor ve tür orantılı, belirleyici). Parçalar sırayla
 koşulur (`uv run codementor eval run --split dev --provider claude_cli --part k/4`, ~0,3M token):
 - [x] Parça 1/4 (2026-10-04): P/R/F1 71/77/74, 9 öneri (hiçbiri etiketli hatayla çakışmıyor); eval-findings §11
-- [ ] Parça 2/4
+- [x] Parça 2/4 (2026-10-04): P/R/F1 78/90/84, 5 öneri; parça 1+2 (48): 75/83/78. `unity-104` etiket hatası bulundu (temiz değil: velocity y=0 yerçekimini iptal ediyor), karar bekliyor
 - [ ] Parça 3/4
 - [ ] Parça 4/4
 - [ ] Dört parçayı birleştirip 96 örneklik tabloyu üretmek (README, eval-findings §11)

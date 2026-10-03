@@ -395,3 +395,19 @@ Bunların bir kısmı Faz 35B'de büyük olasılıkla FP sayılırdı.
 ve FP'lerin çoğu öneriyle ilgisiz: aynı satırda kategori karışıklığı (`unity-009` performance ↔
 garbage_collection, `cpp-106` undefined_behavior ↔ memory_safety) ve soru gereksinimi satırı
 (`cpp-009`). Faz 36'nın precision etkisi hakkında karar için 4 parçanın tamamı gerekir.
+
+**Parça 2/4.** P / R / F1 **78 / 90 / 84**, Big-O %93 (`csharp-014`: model `k`, etiket `1`),
+satır %100, sızıntı %0, p50 20,7 sn. 5 öneri; yine hiçbiri etiketli bir hatayla aynı kategori ve
+satırda değil (`unreal-107`'de öneri 6. satırda ama başka bir konu: dizinin önceden
+temizlenmemesi). **Parça 1 + 2 (48 örnek): 75 / 83 / 78.**
+
+**Eski koşuyla ortak 25 örnek:** Faz 35B 80 / 83 / 81, Faz 36 71 / 76 / 73. Yalnız 4 örnek
+farklı: `cpp-007`'de model performans hatasını buldu ama doğrulama geçişi "somut girdiyle
+kanıtlanamadı" diye düşürdü (Faz 35 zayıflığı: performans sorunu girdi/beklenen/gerçekleşen
+biçimine uymuyor); `csharp-014`'te kategori resource_leak → garbage_collection; `cpp-009` ve
+`unity-009`'da birer ek FP. Önerilerle ilgili bir kayıp yok; fark LLM değişkenliği ve doğrulama
+geçişi düzeyinde.
+
+**Etiket hatası (dev genişletmesi):** `unity-104` "temiz" etiketli ama `rb.velocity = movement *
+speed` dikey hızı her fizik adımında sıfırlıyor, yerçekimi çalışmıyor. Model bunu buldu ve FP
+sayıldı. Etiket düzeltmesi kullanıcı kararına bırakıldı.
