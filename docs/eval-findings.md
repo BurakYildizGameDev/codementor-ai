@@ -410,4 +410,8 @@ geçişi düzeyinde.
 
 **Etiket hatası (dev genişletmesi):** `unity-104` "temiz" etiketli ama `rb.velocity = movement *
 speed` dikey hızı her fizik adımında sıfırlıyor, yerçekimi çalışmıyor. Model bunu buldu ve FP
-sayıldı. Etiket düzeltmesi kullanıcı kararına bırakıldı.
+sayıldı. Kullanıcı kararıyla düzeltildi: 14. satıra `engine_best_practice` bulgusu, `clean` etiketi
+kaldırıldı (kategori rehberdeki tanıma göre seçildi, modelin yanıtına göre değil). Kayıtlı sonuç
+dosyaları eski etiketle puanlanmıştır; güncel etiketle yeniden puanlama: parça 2 78 / 86 / 82,
+parça 1 + 2 75 / 81 / 78 (model bulguyu `design` kategorisinde verdiği için hâlâ FP + FN). Statik
+dev satırı da eski etiketle kayıtlı (yeni bulguyu statik kural yakalamaz).

@@ -1,4 +1,4 @@
-# Temiz: önbellekli Rigidbody, FixedUpdate içinde fizik, CompareTag kullanımı
+# Hatalı: hız atamasında y bileşeni 0, yerçekimi her fizik adımında iptal oluyor (2026-10-04 düzeltmesi; önceden yanlışlıkla temiz)
 id: unity-104
 language: csharp
 engine: unity
@@ -8,9 +8,10 @@ expected:
   compilation_status: passed
   time_complexity: "1"
   space_complexity: "1"
-  findings: []
-  must_not_contain: ["other.tag =="]
-tags: [clean]
+  findings:
+    - { category: engine_best_practice, line: 14, note: "rb.velocity'ye y = 0 olan vektör atanıyor; dikey hız her FixedUpdate'te sıfırlanır, karakter düşmez" }
+  must_not_contain: ["rb.velocity.y", "other.tag =="]
+tags: [engine]
 split: dev
 reviewed: true
 notes: null
