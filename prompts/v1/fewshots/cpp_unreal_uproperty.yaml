@@ -27,6 +27,10 @@ static_findings:
     line: 7
     evidence: "AActor* Target;"
     description: "Çöp toplayıcı yalnızca UPROPERTY ile işaretli alanları görür; bu alan ne gösterir?"
+  - rule_id: UE-GC-001
+    line: 8
+    evidence: "TArray<AActor*> Enemies;"
+    description: "Çöp toplayıcı yalnızca UPROPERTY ile işaretli alanları görür; bu alan ne gösterir?"
   - rule_id: UE-PERF-001
     line: 13
     evidence: "for (AActor* Enemy : Enemies) {"
@@ -42,12 +46,6 @@ analysis:
     optimal_time_target: "O(n)"
     agreement: agrees
   additional_findings:
-    - category: garbage_collection
-      severity: high
-      line_start: 8
-      line_end: null
-      evidence: "TArray<AActor*> Enemies;"
-      description: "UPROPERTY olmayan dizideki aktörler çöp toplayıcıya görünmez; yok edilen aktörler geçersiz işaretçi olarak kalabilir."
     - category: edge_case
       severity: medium
       line_start: 14

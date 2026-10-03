@@ -660,6 +660,22 @@
 **Açık sorular:** (1) `memory_safety` / `undefined_behavior` etiket sınırı tutarsız (`unreal-009` null Cast `memory_safety`, `unreal-014` yineleyici geçersizleşmesi `undefined_behavior`); kalan 3 FP/FN buradan. (2) Sızıntı korumasının müdahalesi C ailesinde 2 → 6 (son çıktı yine %0); sebep ölçülmedi. (3) `private/solutions/` dosyaları eksik (`reference_solution_unreadable` uyarıları; Faz 30'da yazılacak).
 **Bu fazda öğrendiğim:** Prompt'a kategori eşlemesi eklemeden önce veri setinin etiket kurallarına bakmak gerekiyordu; çelişen bir cümle 3 doğru bulguyu kaçırttı. Bulgu modelden değil sistemden gelen `confidence` (sabit 0,7) eşik olarak kullanılamaz.
 
+## Faz 32 — Notlar (statik kural doğruluğu II)
+- Sıcak yol eşlemesi ada göre değil kimliğe göre: `CallFact`/`LoopFact.function_line`,
+  `RuleContext.in_hot_function`. Aynı dosyada tabansız sınıfın `Update`'i artık UNITY-PERF-001
+  vermiyor (UE-PERF-001 de aynı yoldan).
+- C-MEM-001: aynı dosyada tanımlı ve parametreyi yalnız ödünç alan (free etmeyen, saklamayan,
+  döndürmeyen) fonksiyona verilen işaretçi sahiplik aktarımı sayılmıyor; aynı adla birden çok
+  tanım varsa muhafazakâr (sahiplenir varsayılır).
+- UE-GC-001: `TArray`/`TSet`/`TMap` içindeki UObject işaretçisi ya da `TObjectPtr`; UCLASS/USTRUCT
+  olmayan tipte soru UPROPERTY yerine TStrongObjectPtr/FGCObject'i düşündürür
+  (`EngineSymbols.unreflected_fields`).
+- Döngüde metin biriktirme tur başına O(n) olgusu (C# `+=` ve `s = s + x`, C++ `s = s + x`).
+- Few-shot örnekleri yeni motorla uyumlandı (Unreal `TArray` artık statik bulgu, C# biriktirme
+  ipucu O(n^2)); prompt ve olgu golden'ları güncellendi.
+- UNITY-GC-001 struct, CS-PERF-001 `IList` ve maliyet tablosu kalemleri Faz 21'de yapılmıştı.
+- Statik test: Big-O 91 → 97, denetim F1 61 → 63; dev değişmedi (eval-findings §8).
+
 ## Faz 31 — Notlar (güvenlik ve önbellek borcu)
 - Kural motoru bulgu sınırı `rules.max_findings` (varsayılan 50): aşılırsa önem (high → low),
   eşitlikte satır sırasıyla kesilir, kullanıcıya Türkçe uyarı.
@@ -936,7 +952,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    katlanmış "Öneriler"; Sokratik sorular yalnızca hatalardan; "temiz kod" few-shot örnekleri.
 7. ~~**Faz 31 — Güvenlik ve önbellek borcu:**~~ Yapıldı (Faz 31 notları). bulgu üst sınırı, `rules_version` hash'i, log
    gizliliği, `reference_solution_path`, belge temizliği.
-8. **Faz 32 — Statik kural doğruluğu II:** sıcak yol kimliği (O3), C-MEM-001, UNITY-GC-001 struct,
+8. ~~**Faz 32 — Statik kural doğruluğu II:**~~ Yapıldı (Faz 32 notları). sıcak yol kimliği (O3), C-MEM-001, UNITY-GC-001 struct,
    UE-GC-001 `TArray`, CS-PERF-001 `IList`, maliyet tablosu.
 9. **Faz 33 — Kullanıcı deneyimi:** token/maliyet gösterimi, arama/değiştir, CLI ilerleme.
 10. **Faz 34 — Ölçümün genişletilmesi (canlı, isteğe bağlı):** ikinci model, few-shot ablasyonu,

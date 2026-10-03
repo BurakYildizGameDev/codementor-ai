@@ -14,7 +14,7 @@ code: |
           return result.Substring(0, result.Length - 2);
       }
   }
-static_hint: "O(n)"
+static_hint: "O(n^2)"
 static_findings:
   - rule_id: CS-ALLOC-001
     line: 7
@@ -25,11 +25,11 @@ analysis:
     reasoning_steps:
       - "6. satırdaki döngü n kez döner."
       - "7. satırdaki her birleştirme o ana kadarki metnin tamamını yeni bir string'e kopyalar; toplam kopyalama 1 + 2 + ... + n ile orantılı."
-      - "Döngü tek katmanlı görünse de birleştirmenin maliyeti yüzünden zaman O(n^2); statik ipucu O(n) bu maliyeti saymıyor."
+      - "Döngü tek katmanlı görünse de birleştirmenin maliyeti yüzünden zaman O(n^2); statik ipucu da bunu gösteriyor."
     time_complexity: "O(n^2)"
     space_complexity: "O(n)"
     optimal_time_target: "O(n)"
-    agreement: conflicts
+    agreement: agrees
   additional_findings:
     - category: edge_case
       severity: high

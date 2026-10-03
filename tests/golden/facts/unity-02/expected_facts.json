@@ -40,6 +40,7 @@
         "depth": 1,
         "bound": "linear",
         "function": "Start",
+        "function_line": 26,
         "parent_line": null,
         "parent_index": null,
         "counter_outer": false
@@ -53,6 +54,7 @@
         "loop_depth": 1,
         "known_cost": null,
         "function": "Start",
+        "function_line": 26,
         "loop_line": 28,
         "loop_index": 0
       },
@@ -62,6 +64,7 @@
         "loop_depth": 0,
         "known_cost": "1*",
         "function": "Add",
+        "function_line": 34,
         "loop_line": null,
         "loop_index": null
       },
@@ -71,6 +74,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "Add",
+        "function_line": 34,
         "loop_line": null,
         "loop_index": null
       },
@@ -80,6 +84,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "Add",
+        "function_line": 34,
         "loop_line": null,
         "loop_index": null
       },
@@ -89,6 +94,7 @@
         "loop_depth": 0,
         "known_cost": "1*",
         "function": "Remove",
+        "function_line": 41,
         "loop_line": null,
         "loop_index": null
       },
@@ -98,6 +104,7 @@
         "loop_depth": 0,
         "known_cost": "1*",
         "function": "Remove",
+        "function_line": 41,
         "loop_line": null,
         "loop_index": null
       },
@@ -107,6 +114,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "Remove",
+        "function_line": 41,
         "loop_line": null,
         "loop_index": null
       }
@@ -131,6 +139,7 @@
     "engine_symbols": {
       "uproperty_fields": [],
       "uobject_fields": [],
+      "unreflected_fields": [],
       "event_subscriptions": [],
       "has_on_enable": false,
       "has_on_disable": false

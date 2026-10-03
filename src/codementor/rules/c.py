@@ -110,9 +110,14 @@ class _Owners:
     bağlamında mı" bayrağını taşır: `return`, tahsis olmayan atama/ilk değerin sağ tarafı,
     `free` ya da sahiplenmediği bilinmeyen bir fonksiyonun argümanı. Bu bağlamdaki adlar
     serbest bırakılmış/sahipliği aktarılmış sayılır (muhafazakâr: yanlış bulgu yerine kaçırma).
+
+    `borrowers`: aynı dosyada tanımlı fonksiyon → işaretçiyi yalnızca ödünç alan (free etmeyen,
+    saklamayan, döndürmeyen, başkasına vermeyen) parametre indeksleri. Bu konumlardaki argüman
+    kaçış sayılmaz (Faz 32); tanımı dosyada olmayan fonksiyon hâlâ sahiplenir varsayılır.
     """
 
-    def __init__(self, fn: Node) -> None:
+    def __init__(self, fn: Node, borrowers: dict[str, frozenset[int]] | None = None) -> None:
+        self.borrowers = borrowers or {}
         self.locals = {
             text(name)
             for n in iter_nodes(fn)
@@ -147,7 +152,13 @@ class _Owners:
         if kind == "return_statement":
             return [(c, True) for c in node.named_children]
         if kind == "call_expression":
-            owning = callee_name(node) not in NON_OWNING | _ALLOCATORS  # `free` dahil
+            name = callee_name(node)
+            borrowed = self.borrowers.get(name)
+            args = node.child_by_field_name("arguments")
+            if borrowed is not None and args is not None:
+                others = [(c, False) for c in node.named_children if c != args]
+                return others + [(a, i not in borrowed) for i, a in enumerate(args.named_children)]
+            owning = name not in NON_OWNING | _ALLOCATORS  # `free` dahil
             return [(c, owning and c.type == "argument_list") for c in node.named_children]
         if _value_only(node):
             return [(c, False) for c in node.named_children]
@@ -183,12 +194,36 @@ class MallocWithoutFree(Rule):
 
     def check(self, ctx: RuleContext) -> list[Finding]:
         owners = {a.function for a in ctx.facts.allocations if a.kind.value in _ALLOCATORS}
+        if not owners:
+            return []
+        borrowers = _borrowers(ctx)
         return [
             self.finding(ctx, n)
             for fn in ctx.function_nodes
             if fn.fact.name in owners
-            for n in _Owners(fn.node).leaked_lines()
+            for n in _Owners(fn.node, borrowers).leaked_lines()
         ]
+
+
+def _borrowers(ctx: RuleContext) -> dict[str, frozenset[int]]:
+    """Aynı dosyada tanımlı fonksiyonların yalnızca ödünç aldığı parametre indeksleri.
+
+    Parametre adı fonksiyon gövdesinde kaçış bağlamında (free, döndürme, saklama, başka bir
+    fonksiyona verme) geçmiyorsa ödünç alınmıştır. Aynı adla birden çok tanım varsa (ör.
+    `static` yardımcılar) hiçbiri ödünç sayılmaz: hangisinin çağrıldığı bilinmez.
+    """
+    seen: dict[str, int] = {}
+    for fn in ctx.function_nodes:
+        seen[fn.fact.name] = seen.get(fn.fact.name, 0) + 1
+    result: dict[str, frozenset[int]] = {}
+    for fn in ctx.function_nodes:
+        if seen[fn.fact.name] != 1 or not fn.fact.parameters:
+            continue
+        released = _Owners(fn.node).released
+        result[fn.fact.name] = frozenset(
+            i for i, name in enumerate(fn.fact.parameters) if name not in released
+        )
+    return result
 
 
 _SCANF = frozenset({"scanf", "fscanf", "sscanf"})

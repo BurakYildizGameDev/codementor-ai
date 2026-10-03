@@ -29,6 +29,7 @@
         "depth": 1,
         "bound": "linear",
         "function": "reverse",
+        "function_line": 5,
         "parent_line": null,
         "parent_index": null,
         "counter_outer": false
@@ -42,6 +43,7 @@
         "loop_depth": 0,
         "known_cost": "n",
         "function": "reverse",
+        "function_line": 5,
         "loop_line": null,
         "loop_index": null
       },
@@ -51,6 +53,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "main",
+        "function_line": 17,
         "loop_line": null,
         "loop_index": null
       },
@@ -60,6 +63,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "main",
+        "function_line": 17,
         "loop_line": null,
         "loop_index": null
       }
@@ -69,6 +73,7 @@
     "engine_symbols": {
       "uproperty_fields": [],
       "uobject_fields": [],
+      "unreflected_fields": [],
       "event_subscriptions": [],
       "has_on_enable": false,
       "has_on_disable": false

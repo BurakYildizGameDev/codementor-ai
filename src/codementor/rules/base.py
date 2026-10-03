@@ -87,8 +87,18 @@ class RuleContext:
 
     @cached_property
     def hot_functions(self) -> frozenset[str]:
-        """Sıcak yoldaki (Update, Tick ...) fonksiyon adları."""
+        """Sıcak yoldaki (Update, Tick ...) fonksiyon adları (yalnız görüntüleme/ipucu için)."""
         return frozenset(f.name for f in self.facts.functions if f.is_hot_path)
+
+    @cached_property
+    def hot_function_lines(self) -> frozenset[int]:
+        """Sıcak fonksiyonların kimliği (ilk satır). Eşleme ada göre yapılmaz: aynı dosyada
+        tabansız bir sınıfın `Update`'i sıcak değildir (Faz 21 denetimi O3, Faz 32)."""
+        return frozenset(f.line_start for f in self.facts.functions if f.is_hot_path)
+
+    def in_hot_function(self, function_line: int | None) -> bool:
+        """Olgunun (çağrı, döngü) sahibi fonksiyon sıcak yolda mı."""
+        return function_line is not None and function_line in self.hot_function_lines
 
     @cached_property
     def _loop_bodies(self) -> list[tuple[int, int]]:

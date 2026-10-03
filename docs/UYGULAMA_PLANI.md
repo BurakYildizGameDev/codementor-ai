@@ -1495,19 +1495,25 @@ ADR-0013/14/15/18 satırları.
 
 **Commit:** `fix(faz-31): bulgu sınırı, kural sürümü hash'i, log gizliliği, yol çözümü`
 
-### Faz 32 — Statik kural doğruluğu II (YAPILACAK, çevrimdışı)
+### Faz 32 — Statik kural doğruluğu II (YAPILDI)
 
 **Dal:** `faz/32-kural-dogrulugu-2` · **Mimari:** §8 · **ADR:** —
 
-- [ ] Sıcak yol eşlemesi fonksiyon adı yerine kimlik (satır) ile (Faz 21 denetimi O3); sınıf
+- [x] Sıcak yol eşlemesi fonksiyon adı yerine kimlik (satır) ile (Faz 21 denetimi O3); sınıf
       tabanı (MonoBehaviour/UCLASS) denetimi
-- [ ] C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi
-- [ ] UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı değer tipi sayılır
-- [ ] UE-GC-001: `TArray<AActor*>` / `TMap` alanları; UCLASS olmayan sınıfta doğru öneri
-- [ ] CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection`
-- [ ] Maliyet tablosu: `memset`/`memcpy`, `GetAllActorsOfClass`, `TArray::Remove`, C#
+- [x] C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi
+- [x] UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı değer tipi sayılır
+- [x] UE-GC-001: `TArray<AActor*>` / `TMap` alanları; UCLASS olmayan sınıfta doğru öneri
+- [x] CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection`
+- [x] Maliyet tablosu: `memset`/`memcpy`, `GetAllActorsOfClass`, `TArray::Remove`, C#
       `RemoveAt(0)`/`Insert(0)`, döngüde `string +=` / `std::string +` karesel
-- [ ] Static-only dev/test eval'i yeniden; README tablosu
+- [x] Static-only dev/test eval'i yeniden; README tablosu
+
+Notlar: UNITY-GC-001 struct, CS-PERF-001 `IList` ve maliyet tablosundaki `memset`/`memcpy`,
+`GetAllActorsOfClass`, `TArray::Remove`, C# `RemoveAt`/`Insert` Faz 21'de yapılmıştı (fixture ve
+tablo satırlarıyla doğrulandı). Bu fazda: sıcak yol kimliği (`function_line`), C-MEM-001 ödünç
+parametre, UE-GC-001 kapsayıcılar + yansıtılmayan sınıf sorusu, döngüde metin biriktirme O(n).
+Statik test: Big-O 91 → 97, F1 61 → 63 (eval-findings §8).
 
 **Commit:** `feat(faz-32): statik kural doğruluğu II`
 

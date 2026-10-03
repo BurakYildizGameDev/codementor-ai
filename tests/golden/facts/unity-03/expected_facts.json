@@ -35,6 +35,7 @@
         "depth": 1,
         "bound": "linear",
         "function": "Update",
+        "function_line": 21,
         "parent_line": null,
         "parent_index": null,
         "counter_outer": false
@@ -45,6 +46,7 @@
         "depth": 2,
         "bound": "linear",
         "function": "Update",
+        "function_line": 21,
         "parent_line": 24,
         "parent_index": 0,
         "counter_outer": false
@@ -58,6 +60,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "OnEnable",
+        "function_line": 15,
         "loop_line": null,
         "loop_index": null
       },
@@ -67,6 +70,7 @@
         "loop_depth": 0,
         "known_cost": "n",
         "function": "Update",
+        "function_line": 21,
         "loop_line": null,
         "loop_index": null
       },
@@ -76,6 +80,7 @@
         "loop_depth": 0,
         "known_cost": "n",
         "function": "Update",
+        "function_line": 21,
         "loop_line": null,
         "loop_index": null
       },
@@ -85,6 +90,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "Update",
+        "function_line": 21,
         "loop_line": null,
         "loop_index": null
       },
@@ -94,6 +100,7 @@
         "loop_depth": 1,
         "known_cost": "n",
         "function": "Update",
+        "function_line": 21,
         "loop_line": 24,
         "loop_index": 0
       },
@@ -103,6 +110,7 @@
         "loop_depth": 1,
         "known_cost": null,
         "function": "Update",
+        "function_line": 21,
         "loop_line": 24,
         "loop_index": 0
       },
@@ -112,6 +120,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "HandleDeath",
+        "function_line": 40,
         "loop_line": null,
         "loop_index": null
       }
@@ -157,6 +166,7 @@
     "engine_symbols": {
       "uproperty_fields": [],
       "uobject_fields": [],
+      "unreflected_fields": [],
       "event_subscriptions": [
         {
           "name": "health.OnDeath",

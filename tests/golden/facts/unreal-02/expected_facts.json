@@ -24,6 +24,7 @@
         }
       ],
       "uobject_fields": [],
+      "unreflected_fields": [],
       "event_subscriptions": [],
       "has_on_enable": false,
       "has_on_disable": false

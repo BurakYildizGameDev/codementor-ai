@@ -30,6 +30,7 @@ from codementor.analysis._symbols import (
     function_name,
     key,
     line,
+    operator_of,
     parameters,
     simple_name,
     text,
@@ -149,7 +150,14 @@ class _Extractor:
         )
         facts = CodeFacts(functions=functions)
         facts.loops = self._section("Döngü", lambda: self._loops(loops), [])
-        facts.calls = self._section("Çağrı", lambda: [self._call(*c) for c in calls], [])
+        facts.calls = self._section(
+            "Çağrı",
+            lambda: sorted(
+                [self._call(*c) for c in calls] + self._accumulations(),
+                key=lambda c: c.line,
+            ),
+            [],
+        )
         facts.recursion = self._section(
             "Özyineleme", lambda: self._recursion(fn_nodes, functions, calls), []
         )
@@ -225,6 +233,7 @@ class _Extractor:
                     depth=here.depth + 1,
                     bound=shape.bound,
                     function=_name(self._owner(loop)),
+                    function_line=_start(self._owner(loop)),
                     parent_line=line(parent) if parent is not None else None,
                     parent_index=self._index(parent),
                     counter_outer=outer,
@@ -257,6 +266,7 @@ class _Extractor:
             loop_depth=here.depth,
             known_cost=resolved[1] if resolved else None,
             function=_name(self._owner(node)),
+            function_line=_start(self._owner(node)),
             loop_line=line(here.loop) if here.loop is not None else None,
             loop_index=self._index(here.loop),
         )
@@ -289,6 +299,43 @@ class _Extractor:
                 )
             )
         return result
+
+    def _accumulations(self) -> list[CallFact]:
+        """Döngüde metin biriktirme (Faz 32): her tur birikmiş metni kopyalar, yani tur başına
+        O(n). C#'ta `s += x` ve `s = s + x` (string değişmez); C++'ta yalnız `s = s + x`
+        (`s += x` yerinde, amortize sabit büyür). Döngü dışındaki birleştirme olgu üretmez."""
+        if self.language not in (Language.CSHARP, Language.CPP):
+            return []
+        strings = {name for name, t in self.types.items() if t in _STRING_TYPES}
+        found: list[CallFact] = []
+        for node in self.found["memory"].get("concat_assign", []):
+            here = self.ctx.get(key(node))
+            if here is None or here.depth == 0:
+                continue
+            target = text(node.child_by_field_name("left")).removeprefix("this.")
+            if target not in strings:
+                continue
+            operator = operator_of(node)
+            appends = operator == "+=" and self.language is Language.CSHARP
+            rebuilds = (
+                operator == "=" and _leftmost_operand(node.child_by_field_name("right")) == target
+            )
+            if not (appends or rebuilds):
+                continue
+            owner = self._owner(node)
+            found.append(
+                CallFact(
+                    name=f"{target} metin birleştirme (her turda kopya)",
+                    line=line(node),
+                    loop_depth=here.depth,
+                    known_cost="n",
+                    function=_name(owner),
+                    function_line=_start(owner),
+                    loop_line=line(here.loop) if here.loop is not None else None,
+                    loop_index=self._index(here.loop),
+                )
+            )
+        return found
 
     def _allocations(self, calls: list[_Call]) -> list[AllocationFact]:
         string_vars = {name for name, t in self.types.items() if t in _STRING_TYPES}
@@ -332,6 +379,30 @@ class _Extractor:
 
 def _name(fn: FunctionFact | None) -> str | None:
     return fn.name if fn is not None else None
+
+
+def _start(fn: FunctionFact | None) -> int | None:
+    return fn.line_start if fn is not None else None
+
+
+_MAX_CHAIN = 64  # `a + b + ... ` zincirinde en soldaki işlenene kadar en fazla bu kadar adım
+
+
+def _leftmost_operand(node: Node | None) -> str | None:
+    """`s + a + b` → `s` (yalnız `+` zinciri); başka ifadede None."""
+    for _ in range(_MAX_CHAIN):
+        if node is None or node.type != "binary_expression" or operator_of(node) != "+":
+            break
+        node = node.child_by_field_name("left")
+    else:
+        return None
+    if node is None or node.type not in (
+        "identifier",
+        "member_access_expression",
+        "field_expression",
+    ):
+        return None
+    return text(node).removeprefix("this.")
 
 
 def extract_facts(

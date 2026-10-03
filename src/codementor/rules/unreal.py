@@ -66,11 +66,22 @@ class UObjectWithoutUProperty(Rule):
     def check(self, ctx: RuleContext) -> list[Finding]:
         symbols = ctx.facts.engine_symbols
         marked = {(s.name, s.line) for s in symbols.uproperty_fields}
+        plain = {(s.name, s.line) for s in symbols.unreflected_fields}
         return [
-            self.finding(ctx, s.line)
+            self.finding(
+                ctx, s.line, description=_UNREFLECTED if (s.name, s.line) in plain else None
+            )
             for s in symbols.uobject_fields
             if (s.name, s.line) not in marked
         ]
+
+
+# UCLASS/USTRUCT olmayan tipte UPROPERTY yansıtma sistemine görünmez (Faz 32)
+_UNREFLECTED = (
+    "Bu tip UCLASS ya da USTRUCT değil; yansıtma sistemi onu görmediği için UPROPERTY de "
+    "burada işe yaramaz. Çöp toplayıcıya bu referansı başka hangi yolla bildirebilirsin "
+    "(ör. TStrongObjectPtr ya da FGCObject)?"
+)
 
 
 @register_rule
@@ -89,13 +100,13 @@ class HeavyTick(Rule):
     default_severity = Severity.MEDIUM
 
     def check(self, ctx: RuleContext) -> list[Finding]:
-        hot = ctx.hot_functions
         facts = ctx.facts
-        lines = [lp.line for lp in facts.loops if lp.function in hot and lp.depth == 1]
+        hot = ctx.in_hot_function
+        lines = [lp.line for lp in facts.loops if hot(lp.function_line) and lp.depth == 1]
         lines += [
             c.line
             for c in facts.calls
-            if c.function in hot
+            if hot(c.function_line)
             and c.loop_depth == 0
             and (
                 simple_name(c.name) in _HEAVY_CALLS

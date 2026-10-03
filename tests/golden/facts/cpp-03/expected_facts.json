@@ -94,6 +94,7 @@
         "loop_depth": 0,
         "known_cost": "n",
         "function": "Buffer",
+        "function_line": 11,
         "loop_line": null,
         "loop_index": null
       },
@@ -103,6 +104,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "Buffer",
+        "function_line": 14,
         "loop_line": null,
         "loop_index": null
       },
@@ -112,6 +114,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "Buffer",
+        "function_line": 14,
         "loop_line": null,
         "loop_index": null
       },
@@ -121,6 +124,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "operator=",
+        "function_line": 17,
         "loop_line": null,
         "loop_index": null
       },
@@ -130,6 +134,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "swap",
+        "function_line": 22,
         "loop_line": null,
         "loop_index": null
       },
@@ -139,6 +144,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "swap",
+        "function_line": 22,
         "loop_line": null,
         "loop_index": null
       },
@@ -148,6 +154,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "main",
+        "function_line": 36,
         "loop_line": null,
         "loop_index": null
       },
@@ -157,6 +164,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "main",
+        "function_line": 36,
         "loop_line": null,
         "loop_index": null
       }
@@ -180,6 +188,7 @@
     "engine_symbols": {
       "uproperty_fields": [],
       "uobject_fields": [],
+      "unreflected_fields": [],
       "event_subscriptions": [],
       "has_on_enable": false,
       "has_on_disable": false

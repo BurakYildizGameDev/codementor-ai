@@ -56,6 +56,7 @@
         "depth": 1,
         "bound": "linear",
         "function": "visit",
+        "function_line": 25,
         "parent_line": null,
         "parent_index": null,
         "counter_outer": false
@@ -69,6 +70,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "Node",
+        "function_line": 9,
         "loop_line": null,
         "loop_index": null
       },
@@ -78,6 +80,7 @@
         "loop_depth": 0,
         "known_cost": "1*",
         "function": "add_child",
+        "function_line": 12,
         "loop_line": null,
         "loop_index": null
       },
@@ -87,6 +90,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "add_child",
+        "function_line": 12,
         "loop_line": null,
         "loop_index": null
       },
@@ -96,6 +100,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "add_child",
+        "function_line": 12,
         "loop_line": null,
         "loop_index": null
       },
@@ -105,6 +110,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "path",
+        "function_line": 17,
         "loop_line": null,
         "loop_index": null
       },
@@ -114,6 +120,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "visit",
+        "function_line": 25,
         "loop_line": null,
         "loop_index": null
       },
@@ -123,6 +130,7 @@
         "loop_depth": 1,
         "known_cost": null,
         "function": "visit",
+        "function_line": 25,
         "loop_line": 27,
         "loop_index": 0
       },
@@ -132,6 +140,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "main",
+        "function_line": 40,
         "loop_line": null,
         "loop_index": null
       },
@@ -141,6 +150,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "main",
+        "function_line": 40,
         "loop_line": null,
         "loop_index": null
       },
@@ -150,6 +160,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "main",
+        "function_line": 40,
         "loop_line": null,
         "loop_index": null
       },
@@ -159,6 +170,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "main",
+        "function_line": 40,
         "loop_line": null,
         "loop_index": null
       }
@@ -204,6 +216,7 @@
     "engine_symbols": {
       "uproperty_fields": [],
       "uobject_fields": [],
+      "unreflected_fields": [],
       "event_subscriptions": [],
       "has_on_enable": false,
       "has_on_disable": false

@@ -6,10 +6,10 @@
     "mode": "static",
     "static_only": true,
     "ablations": [],
-    "prompt_version": "v1+fdc16030",
-    "rules_version": "r1+fa6fff47",
+    "prompt_version": "v1+14a294f9",
+    "rules_version": "r1+d1852061",
     "schema_version": "1.0",
-    "started_at": "2026-10-02T02:16:49.536573Z",
+    "started_at": "2026-10-03T15:55:00.463605Z",
     "sample_ids": [
       "c-001",
       "c-005",
@@ -64,8 +64,8 @@
     "line_accuracy": 1.0,
     "leak_rate": 0.0,
     "injection_resistance": 0.0,
-    "latency_p50_ms": 38.0,
-    "latency_p95_ms": 135.0,
+    "latency_p50_ms": 119.0,
+    "latency_p95_ms": 579.0,
     "tokens_mean": null,
     "cost_est": null,
     "errors": 0,
@@ -76,8 +76,8 @@
       "id": "c-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CS40RK2RBC4RJA3KX37J",
-        "created_at": "2026-10-02T02:16:49.543737Z",
+        "analysis_id": "01M417KMFFNBKMV4MMH46ZZD1V",
+        "created_at": "2026-10-03T15:55:00.469596Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
@@ -108,8 +108,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -123,6 +123,9 @@
             "prompt_a": 0,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -147,14 +150,14 @@
       "id": "c-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CS4BXHD8JVT4NQPNBRGK",
-        "created_at": "2026-10-02T02:16:49.619876Z",
+        "analysis_id": "01M417KMFTJE391QEVAFV7S6VN",
+        "created_at": "2026-10-03T15:55:00.729630Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -183,8 +186,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -192,12 +195,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 31,
-            "facts": 13,
-            "rules": 13,
+            "tier1": 209,
+            "facts": 12,
+            "rules": 18,
             "prompt_a": 11,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -208,15 +214,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 71,
+      "latency_ms": 254,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -225,14 +230,14 @@
       "id": "c-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CS6KVDT6KACG0FS4XB6F",
-        "created_at": "2026-10-02T02:16:49.636223Z",
+        "analysis_id": "01M417KMQT83EETN0W6DF761TT",
+        "created_at": "2026-10-03T15:55:00.789503Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -261,8 +266,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -270,12 +275,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 36,
             "facts": 0,
-            "rules": 12,
+            "rules": 16,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -286,15 +294,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 17,
+      "latency_ms": 59,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -303,14 +310,14 @@
       "id": "c-008",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CS7452NKX1EMDA6HV5XR",
-        "created_at": "2026-10-02T02:16:49.654930Z",
+        "analysis_id": "01M417KMSNHG4ET2WNWVQP81BC",
+        "created_at": "2026-10-03T15:55:00.850943Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -365,8 +372,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -374,12 +381,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
-            "facts": 0,
-            "rules": 13,
+            "tier1": 38,
+            "facts": 1,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -390,15 +400,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 19,
+      "latency_ms": 61,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -407,14 +416,14 @@
       "id": "c-010",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CS7PBW66BWE7DB7H7EAZ",
-        "created_at": "2026-10-02T02:16:49.676073Z",
+        "analysis_id": "01M417KMVKC975231NGH6EE950",
+        "created_at": "2026-10-03T15:55:00.906941Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -443,8 +452,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -452,12 +461,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 32,
             "facts": 1,
-            "rules": 12,
+            "rules": 16,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -468,15 +480,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 19,
+      "latency_ms": 55,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -485,14 +496,14 @@
       "id": "c-012",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CS8C1M5SKS6E0EYR3DBW",
-        "created_at": "2026-10-02T02:16:49.712411Z",
+        "analysis_id": "01M417KMXBJ4JTEC3MPGG16AWH",
+        "created_at": "2026-10-03T15:55:01.032799Z",
         "language": "c",
         "engine": "none",
         "question_id": "c-medium-linked-list",
         "difficulty": "medium",
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -522,8 +533,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -531,12 +542,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 36,
             "facts": 0,
-            "rules": 12,
+            "rules": 16,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -547,15 +561,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 37,
+      "latency_ms": 126,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -564,14 +577,14 @@
       "id": "c-015",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CS9NN52RWXAY3BMEX33K",
-        "created_at": "2026-10-02T02:16:49.735253Z",
+        "analysis_id": "01M417KN191RYTM10XNNREJ11T",
+        "created_at": "2026-10-03T15:55:01.096673Z",
         "language": "c",
         "engine": "none",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -613,8 +626,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -622,12 +635,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 38,
             "facts": 1,
-            "rules": 12,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -638,15 +654,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 18,
+      "latency_ms": 62,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -655,8 +670,8 @@
       "id": "cpp-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSA7CT9KW74FRE99KC6F",
-        "created_at": "2026-10-02T02:16:49.737908Z",
+        "analysis_id": "01M417KN38K04H0E49CJA845PV",
+        "created_at": "2026-10-03T15:55:01.099185Z",
         "language": "cpp",
         "engine": "none",
         "question_id": null,
@@ -687,8 +702,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -702,6 +717,9 @@
             "prompt_a": 0,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -717,7 +735,7 @@
         }
       },
       "error": null,
-      "latency_ms": 1,
+      "latency_ms": 2,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -726,15 +744,23 @@
       "id": "cpp-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSAA8PSMTZN51SWBCA6Q",
-        "created_at": "2026-10-02T02:16:49.795223Z",
+        "analysis_id": "01M417KN3B0QAJ4TRKD9S1KXXR",
+        "created_at": "2026-10-03T15:55:01.677884Z",
         "language": "cpp",
         "engine": "none",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
-          "diagnostics": []
+          "status": "warning",
+          "diagnostics": [
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 13,
+              "column": 12,
+              "message": "reference to stack memory associated with local variable 'best' returned [-Wreturn-stack-address]"
+            }
+          ]
         },
         "complexity": {
           "time_complexity": "n",
@@ -762,8 +788,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -771,12 +797,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 518,
             "facts": 39,
-            "rules": 13,
+            "rules": 16,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -787,15 +816,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 57,
+      "latency_ms": 579,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -804,14 +832,14 @@
       "id": "cpp-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSC3VQ28N1GX7PAT6X1M",
-        "created_at": "2026-10-02T02:16:49.814247Z",
+        "analysis_id": "01M417KNNDT9AD2RK6SDXZTP1Q",
+        "created_at": "2026-10-03T15:55:02.221772Z",
         "language": "cpp",
         "engine": "none",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -840,8 +868,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -849,12 +877,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 519,
             "facts": 1,
-            "rules": 13,
+            "rules": 16,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -865,15 +896,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 19,
+      "latency_ms": 543,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -882,14 +912,14 @@
       "id": "cpp-009",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSCPRHRC9KEMSHVSKP7E",
-        "created_at": "2026-10-02T02:16:49.855913Z",
+        "analysis_id": "01M417KP6FSMN72GH8ZSFZ7SJN",
+        "created_at": "2026-10-03T15:55:02.355162Z",
         "language": "cpp",
         "engine": "none",
         "question_id": "cpp-easy-rule-of-zero",
         "difficulty": "easy",
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -945,8 +975,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -954,12 +984,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 43,
             "facts": 1,
-            "rules": 14,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -970,15 +1003,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 40,
+      "latency_ms": 132,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -987,14 +1019,14 @@
       "id": "cpp-011",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSDZYQTBX559J196R0H5",
-        "created_at": "2026-10-02T02:16:49.877137Z",
+        "analysis_id": "01M417KPAK82JZT57QVF7JZHPH",
+        "created_at": "2026-10-03T15:55:02.890653Z",
         "language": "cpp",
         "engine": "none",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -1023,8 +1055,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1032,12 +1064,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
-            "facts": 1,
-            "rules": 13,
-            "prompt_a": 3,
+            "tier1": 508,
+            "facts": 2,
+            "rules": 18,
+            "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1048,15 +1083,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 20,
+      "latency_ms": 534,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1065,14 +1099,14 @@
       "id": "cpp-014",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSENBMBT4K4H2YMCHX20",
-        "created_at": "2026-10-02T02:16:49.915689Z",
+        "analysis_id": "01M417KPVAA6Y3RSC3YQV6WVMX",
+        "created_at": "2026-10-03T15:55:03.497023Z",
         "language": "cpp",
         "engine": "none",
         "question_id": "cpp-medium-tree-smartptr",
         "difficulty": "medium",
         "compilation": {
-          "status": "skipped",
+          "status": "passed",
           "diagnostics": []
         },
         "complexity": {
@@ -1115,8 +1149,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1124,12 +1158,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 513,
             "facts": 0,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1140,15 +1177,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 38,
+      "latency_ms": 606,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1157,8 +1193,8 @@
       "id": "csharp-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSFV1Z2XFTAZMKF9ERYM",
-        "created_at": "2026-10-02T02:16:49.918758Z",
+        "analysis_id": "01M417KQE90DSKRCNBMY3YAA7P",
+        "created_at": "2026-10-03T15:55:03.499962Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1189,8 +1225,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1204,6 +1240,9 @@
             "prompt_a": 0,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1228,8 +1267,8 @@
       "id": "csharp-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSFY7A9QX8GC73KBCWCA",
-        "created_at": "2026-10-02T02:16:50.068435Z",
+        "analysis_id": "01M417KQEBGCSQ4EG38PDE7SBX",
+        "created_at": "2026-10-03T15:55:03.657051Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1277,8 +1316,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1286,12 +1325,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 99,
-            "facts": 32,
-            "rules": 13,
+            "tier1": 100,
+            "facts": 33,
+            "rules": 18,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1302,14 +1344,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 150,
+      "latency_ms": 157,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1318,8 +1360,8 @@
       "id": "csharp-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSMMRJPMGQ95MX4XB7WK",
-        "created_at": "2026-10-02T02:16:50.182404Z",
+        "analysis_id": "01M417KQKAVRDAPE16NB9B2K3S",
+        "created_at": "2026-10-03T15:55:03.773804Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1355,8 +1397,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1364,12 +1406,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 94,
+            "tier1": 92,
             "facts": 0,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1380,14 +1425,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 113,
+      "latency_ms": 116,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1396,8 +1441,8 @@
       "id": "csharp-009",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSR65SSEMMEYCEEETWWW",
-        "created_at": "2026-10-02T02:16:50.301193Z",
+        "analysis_id": "01M417KQPYY4ZKBNV03ZNDCTSM",
+        "created_at": "2026-10-03T15:55:03.896462Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1445,8 +1490,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1454,12 +1499,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 97,
-            "facts": 1,
-            "rules": 13,
-            "prompt_a": 2,
+            "tier1": 95,
+            "facts": 2,
+            "rules": 18,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1470,14 +1518,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 117,
+      "latency_ms": 121,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1486,8 +1534,8 @@
       "id": "csharp-011",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSVXRDJAG1AF8PFC2SMB",
-        "created_at": "2026-10-02T02:16:50.411918Z",
+        "analysis_id": "01M417KQTR21JYATD1ZK9DSC1N",
+        "created_at": "2026-10-03T15:55:04.014282Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1524,8 +1572,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1533,12 +1581,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 94,
+            "tier1": 93,
             "facts": 1,
-            "rules": 14,
+            "rules": 18,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1549,14 +1600,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 114,
+      "latency_ms": 117,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1565,8 +1616,8 @@
       "id": "csharp-014",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CSZB8G5HK874AYN5JXS8",
-        "created_at": "2026-10-02T02:16:50.522931Z",
+        "analysis_id": "01M417KQYE6J8BY7PB5KHT5WV2",
+        "created_at": "2026-10-03T15:55:04.132483Z",
         "language": "csharp",
         "engine": "none",
         "question_id": null,
@@ -1601,8 +1652,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1610,12 +1661,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 92,
+            "tier1": 95,
             "facts": 0,
-            "rules": 12,
+            "rules": 16,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1626,14 +1680,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 110,
+      "latency_ms": 117,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1642,8 +1696,8 @@
       "id": "unity-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CT2T38033Y3JFTBAGY8B",
-        "created_at": "2026-10-02T02:16:50.529634Z",
+        "analysis_id": "01M417KR244G6ZR78B1PZC9TAP",
+        "created_at": "2026-10-03T15:55:04.134490Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -1674,8 +1728,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1689,6 +1743,9 @@
             "prompt_a": 0,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1713,8 +1770,8 @@
       "id": "unity-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CT31V1QTMBHFARK3HTY3",
-        "created_at": "2026-10-02T02:16:50.654847Z",
+        "analysis_id": "01M417KR268T9C0WP713DZHDDA",
+        "created_at": "2026-10-03T15:55:04.250865Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -1762,8 +1819,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1771,12 +1828,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 110,
+            "tier1": 94,
             "facts": 0,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1787,14 +1847,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 129,
+      "latency_ms": 117,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1803,8 +1863,8 @@
       "id": "unity-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CT6YSQSMBKKJ4WRZGHN8",
-        "created_at": "2026-10-02T02:16:50.765600Z",
+        "analysis_id": "01M417KR5W9JGE6JMAQJ4CKG5F",
+        "created_at": "2026-10-03T15:55:04.370037Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -1852,8 +1912,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1861,12 +1921,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 91,
+            "tier1": 94,
             "facts": 0,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1877,14 +1940,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 111,
+      "latency_ms": 117,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1893,8 +1956,8 @@
       "id": "unity-009",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CTAD06CDPWNW774C8XWB",
-        "created_at": "2026-10-02T02:16:50.904865Z",
+        "analysis_id": "01M417KR9JMNTF3569A53DRRBB",
+        "created_at": "2026-10-03T15:55:04.556354Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": "unity-medium-object-pool",
@@ -1929,8 +1992,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -1938,12 +2001,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 95,
+            "tier1": 94,
             "facts": 0,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -1954,14 +2020,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 135,
+      "latency_ms": 186,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -1970,8 +2036,8 @@
       "id": "unity-011",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CTETP7QFW1N7T9E4J80N",
-        "created_at": "2026-10-02T02:16:51.022885Z",
+        "analysis_id": "01M417KRFCTVTTX3ZD5GYQ529Q",
+        "created_at": "2026-10-03T15:55:04.676578Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -2006,8 +2072,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2015,12 +2081,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 96,
+            "tier1": 95,
             "facts": 1,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -2031,14 +2100,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 115,
+      "latency_ms": 119,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2047,8 +2116,8 @@
       "id": "unity-014",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CTJEQEGRNHAPWW4Y7C0Q",
-        "created_at": "2026-10-02T02:16:51.133747Z",
+        "analysis_id": "01M417KRK5KGRXWDCNAQYVX4P1",
+        "created_at": "2026-10-03T15:55:04.786862Z",
         "language": "csharp",
         "engine": "unity",
         "question_id": null,
@@ -2096,8 +2165,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2105,12 +2174,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 94,
+            "tier1": 87,
             "facts": 0,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -2121,14 +2193,14 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 113,
+      "latency_ms": 110,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2137,8 +2209,8 @@
       "id": "unreal-001",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CTNXGPJ1HRX14QJANYEB",
-        "created_at": "2026-10-02T02:16:51.133747Z",
+        "analysis_id": "01M417KRPKJFPKNH2MYPS443Z8",
+        "created_at": "2026-10-03T15:55:04.790533Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": null,
@@ -2169,8 +2241,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2184,6 +2256,9 @@
             "prompt_a": 0,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -2199,7 +2274,7 @@
         }
       },
       "error": null,
-      "latency_ms": 1,
+      "latency_ms": 2,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2208,15 +2283,44 @@
       "id": "unreal-005",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CTNX8X69FPS9WYED4R51",
-        "created_at": "2026-10-02T02:16:51.154997Z",
+        "analysis_id": "01M417KRPPDFWK57BFXVC80GRT",
+        "created_at": "2026-10-03T15:55:04.937696Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
-          "diagnostics": []
+          "status": "warning",
+          "diagnostics": [
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 1,
+              "column": 9,
+              "message": "#pragma once in main file [-Wpragma-once-outside-header]"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 15,
+              "column": 22,
+              "message": "unknown type name 'UStaticMesh'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 18,
+              "column": 5,
+              "message": "unknown type name 'UStaticMesh'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 18,
+              "column": 18,
+              "message": "private field 'CachedMesh' is not used [-Wunused-private-field]"
+            }
+          ]
         },
         "complexity": {
           "time_complexity": "1",
@@ -2257,8 +2361,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2266,12 +2370,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 122,
             "facts": 0,
-            "rules": 12,
-            "prompt_a": 2,
+            "rules": 18,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -2282,15 +2389,15 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Unreal kodu gerçek motor başlıkları olmadan (stub ile) denetlendi; derleyici mesajları tavsiye niteliğindedir.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 18,
+      "latency_ms": 146,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2299,15 +2406,23 @@
       "id": "unreal-007",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CTPJXSQEJ1E7BW2E9XYR",
-        "created_at": "2026-10-02T02:16:51.189727Z",
+        "analysis_id": "01M417KRV960EXYZ1KKJ40EKX7",
+        "created_at": "2026-10-03T15:55:05.142223Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": "unreal-medium-actor-component",
         "difficulty": "medium",
         "compilation": {
-          "status": "skipped",
-          "diagnostics": []
+          "status": "warning",
+          "diagnostics": [
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 1,
+              "column": 9,
+              "message": "#pragma once in main file [-Wpragma-once-outside-header]"
+            }
+          ]
         },
         "complexity": {
           "time_complexity": "1",
@@ -2349,8 +2464,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2358,12 +2473,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 110,
             "facts": 0,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -2374,15 +2492,15 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Unreal kodu gerçek motor başlıkları olmadan (stub ile) denetlendi; derleyici mesajları tavsiye niteliğindedir.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 37,
+      "latency_ms": 204,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2391,15 +2509,65 @@
       "id": "unreal-009",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CTQWHQTHBC063Q06T3AT",
-        "created_at": "2026-10-02T02:16:51.230956Z",
+        "analysis_id": "01M417KS1QKA727J9XKY1KSBWT",
+        "created_at": "2026-10-03T15:55:05.355866Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": "unreal-medium-actor-component",
         "difficulty": "medium",
         "compilation": {
-          "status": "skipped",
-          "diagnostics": []
+          "status": "warning",
+          "diagnostics": [
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 4,
+              "column": 6,
+              "message": "use of undeclared identifier 'URegenComponent'; did you mean 'UActorComponent'?"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 4,
+              "column": 6,
+              "message": "use of undeclared identifier 'URegenComponent'; did you mean 'UActorComponent'?"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 4,
+              "column": 23,
+              "message": "redefinition of 'BeginPlay'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 6,
+              "column": 5,
+              "message": "use of undeclared identifier 'Super'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 7,
+              "column": 5,
+              "message": "unknown type name 'ACharacter'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 7,
+              "column": 39,
+              "message": "use of undeclared identifier 'ACharacter'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 8,
+              "column": 61,
+              "message": "use of undeclared identifier 'SpeedMultiplier'"
+            }
+          ]
         },
         "complexity": {
           "time_complexity": "1",
@@ -2427,8 +2595,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2436,12 +2604,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 116,
             "facts": 0,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -2452,15 +2623,15 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Unreal kodu gerçek motor başlıkları olmadan (stub ile) denetlendi; derleyici mesajları tavsiye niteliğindedir.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 38,
+      "latency_ms": 212,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2469,15 +2640,30 @@
       "id": "unreal-011",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CTRYA1WHF8ZZCHFD7AMZ",
-        "created_at": "2026-10-02T02:16:51.272622Z",
+        "analysis_id": "01M417KS8BHKY37JE6D70VDY0S",
+        "created_at": "2026-10-03T15:55:05.564832Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": "unreal-medium-actor-component",
         "difficulty": "medium",
         "compilation": {
-          "status": "skipped",
-          "diagnostics": []
+          "status": "warning",
+          "diagnostics": [
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 3,
+              "column": 1,
+              "message": "use of undeclared identifier 'UHealthRegenComponent'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 8,
+              "column": 6,
+              "message": "use of undeclared identifier 'UHealthRegenComponent'"
+            }
+          ]
         },
         "complexity": {
           "time_complexity": "1",
@@ -2505,8 +2691,8 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
@@ -2514,12 +2700,15 @@
             "cache": 0,
             "ingest": 0,
             "tier0": 0,
-            "tier1": 0,
+            "tier1": 116,
             "facts": 0,
-            "rules": 13,
+            "rules": 17,
             "prompt_a": 2,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -2530,15 +2719,15 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Unreal kodu gerçek motor başlıkları olmadan (stub ile) denetlendi; derleyici mesajları tavsiye niteliğindedir.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 38,
+      "latency_ms": 208,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null
@@ -2547,15 +2736,23 @@
       "id": "unreal-014",
       "report": {
         "schema_version": "1.0",
-        "analysis_id": "01M3X6CTT8SYGZX1G4Y6KCS7W2",
-        "created_at": "2026-10-02T02:16:51.290053Z",
+        "analysis_id": "01M417KSEWHJ4E7V1X210C8W28",
+        "created_at": "2026-10-03T15:55:05.700734Z",
         "language": "cpp",
         "engine": "unreal",
         "question_id": null,
         "difficulty": null,
         "compilation": {
-          "status": "skipped",
-          "diagnostics": []
+          "status": "warning",
+          "diagnostics": [
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 3,
+              "column": 6,
+              "message": "use of undeclared identifier 'ASquad'"
+            }
+          ]
         },
         "complexity": {
           "time_complexity": "n",
@@ -2583,21 +2780,24 @@
         "meta": {
           "provider": null,
           "model": null,
-          "prompt_version": "v1+fdc16030",
-          "rules_version": "r1+fa6fff47",
+          "prompt_version": "v1+14a294f9",
+          "rules_version": "r1+d1852061",
           "schema_version": "1.0",
           "tokens_in": 0,
           "tokens_out": 0,
           "stage_latency_ms": {
             "cache": 0,
             "ingest": 0,
-            "tier0": 0,
-            "tier1": 0,
+            "tier0": 1,
+            "tier1": 110,
             "facts": 0,
-            "rules": 13,
-            "prompt_a": 2,
+            "rules": 17,
+            "prompt_a": 3,
             "llm_a": 0,
             "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
             "prompt_b": 0,
             "llm_b": 0,
             "verify_b": 0,
@@ -2608,15 +2808,15 @@
           "degraded": true,
           "repair_attempts": 0,
           "warnings": [
-            "Unreal C++ için yerel derleyici bulunamadı; yalnızca sözdizimi ağacı denetlendi.",
-            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, anthropic, claude_cli, agy)); rapor statik analizle hazırlandı."
+            "Unreal kodu gerçek motor başlıkları olmadan (stub ile) denetlendi; derleyici mesajları tavsiye niteliğindedir.",
+            "Model kullanılamadı (Bilinmeyen sağlayıcı: 'static-only' (seçenekler: ollama, openai, deepseek, gemini, anthropic, claude_cli, agy, codex)); rapor statik analizle hazırlandı."
           ],
           "usage_estimated": false,
           "cost_est": null
         }
       },
       "error": null,
-      "latency_ms": 18,
+      "latency_ms": 135,
       "llm_called": false,
       "schema_first_try": null,
       "schema_final": null

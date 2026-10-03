@@ -106,11 +106,10 @@ class HotPathLookup(Rule):
     default_severity = Severity.HIGH
 
     def check(self, ctx: RuleContext) -> list[Finding]:
-        hot = ctx.hot_functions
         found = [
             self.finding(ctx, c.line)
             for c in ctx.facts.calls
-            if c.function in hot and _expensive_lookup(c.name)
+            if ctx.in_hot_function(c.function_line) and _expensive_lookup(c.name)
         ]
         covered = -1  # iç içe yerel fonksiyonlar dıştakiyle bir kez gezilir (Faz 17 denetimi)
         for fn in sorted(ctx.function_nodes, key=lambda f: f.node.start_byte):

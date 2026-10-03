@@ -295,3 +295,22 @@ kaldırıldı. `design` tanımı da soru performans/girdi şartı koyduğunda ya
 
 **Sonraki adımlar:** bulgu doğrulama geçişi (Faz 35), hatalar/öneriler ayrımı (Faz 36);
 `memory_safety` / `undefined_behavior` etiket sınırının netleştirilmesi (dev etiket kararı).
+
+## 8. Faz 32: statik kural doğruluğu II (C ailesi, statik taban çizgisi)
+
+Statik koşu (`eval run --static-only --language c --language cpp --language csharp`) dev ve
+test'te yeniden yapıldı (LLM yok; test bölümünü kirletmez):
+
+| Bölüm | Big-O birebir | Denetim P / R / F1 |
+|---|---|---|
+| test (49), Faz 21 | 91% | 89% / 46% / 61% |
+| test (49), Faz 32 | **97%** | **90% / 49% / 63%** |
+| dev (31) | 96% → 96% | 100% / 37% / 54% (değişmedi) |
+
+- Big-O artışı döngüde metin biriktirmeden geliyor: C# `s += x` / `s = s + x` ve C++
+  `s = s + x` artık tur başına O(n) sayılıyor (C++ `s += x` yerinde büyüdüğü için O(n) kalır).
+- Denetim artışı: aynı dosyadaki fonksiyona ödünç verilen işaretçinin sızıntısı (C-MEM-001),
+  `TArray`/`TMap`/`TSet` içindeki UObject alanları (UE-GC-001).
+- p95 gecikmesi 0,1 → 0,5-0,6 sn: Faz 29'da geliştirici makinesine kurulan zig ile Tier 1'in
+  C++ denetiminden (Tier 1 kapalıyken yine 0,1 sn; metrikler aynı).
+

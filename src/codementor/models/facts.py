@@ -34,6 +34,9 @@ class LoopFact(StrictModel):
     depth: int = Field(ge=1, description="İç içe derinlik; en dış döngü 1")
     bound: LoopBound
     function: str | None = None
+    function_line: int | None = Field(
+        default=None, ge=1, description="Sahibi fonksiyonun ilk satırı (kimlik; Faz 32)"
+    )
     parent_line: int | None = Field(default=None, description="Doğrudan dıştaki döngünün satırı")
     parent_index: int | None = Field(
         default=None, ge=0, description="Dıştaki döngünün `loops` listesindeki indeksi"
@@ -60,6 +63,9 @@ class CallFact(StrictModel):
     loop_depth: int = Field(ge=0)
     known_cost: str | None = Field(default=None, description="data/call_costs.yaml değeri")
     function: str | None = None
+    function_line: int | None = Field(
+        default=None, ge=1, description="Sahibi fonksiyonun ilk satırı (kimlik; Faz 32)"
+    )
     loop_line: int | None = Field(default=None, description="En içteki döngünün satırı")
     loop_index: int | None = Field(
         default=None, ge=0, description="En içteki döngünün `loops` listesindeki indeksi"
@@ -88,6 +94,10 @@ class SymbolRef(StrictModel):
 class EngineSymbols(StrictModel):
     uproperty_fields: list[SymbolRef] = Field(default_factory=list)
     uobject_fields: list[SymbolRef] = Field(default_factory=list)
+    unreflected_fields: list[SymbolRef] = Field(
+        default_factory=list,
+        description="UCLASS/USTRUCT olmayan tipteki UObject alanları (UPROPERTY işlemez)",
+    )
     event_subscriptions: list[SymbolRef] = Field(default_factory=list)
     has_on_enable: bool = False
     has_on_disable: bool = False

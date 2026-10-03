@@ -59,6 +59,11 @@ _UPROPERTY = re.compile(r"\bUPROPERTY\s*\(")
 _UOBJECT_TYPE = re.compile(r"^(?:class\s+)?[UA][A-Z][a-z]\w*$")
 _UNITY_LISTENERS = frozenset({"AddListener"})
 _OBJECT_PTR = frozenset({"TObjectPtr"})
+# GC'nin UPROPERTY ile izlediği kapsayıcılar; öğe ya da değer UObject ise alan aynı risktedir
+_CONTAINERS = frozenset({"TArray", "TSet", "TMap"})
+_UOBJECT_ARG = re.compile(r"^(?:class\s+)?[UA][A-Z][a-z]\w*\s*\*$|^TObjectPtr\s*<")
+_REFLECTION = re.compile(r"\b(?:UCLASS|USTRUCT)\s*\(")
+_MAX_TEMPLATE_BYTES = 300  # daha uzun şablon argümanı incelenmez (doğrusal süre)
 _DELEGATE_BIND = frozenset(
     {"AddDynamic", "AddUniqueDynamic", "AddUObject", "AddLambda", "AddRaw", "AddSP", "AddUFunction"}
 )
@@ -124,8 +129,40 @@ def _is_method(field: Node) -> bool:
     )
 
 
-def _unreal_fields(original: str, fields: list[Node]) -> tuple[list[SymbolRef], list[SymbolRef]]:
+def _holds_uobject(type_node: Node | None) -> bool:
+    """`TArray<AActor*>`, `TMap<FName, UTexture2D*>`, `TSet<TObjectPtr<AEnemy>>`."""
+    if type_node is None or type_node.type != "template_type":
+        return False
+    if strip_templates(text(type_node)) not in _CONTAINERS:
+        return False
+    args = type_node.child_by_field_name("arguments")
+    if args is None or args.end_byte - args.start_byte > _MAX_TEMPLATE_BYTES:
+        return False
+    return any(_UOBJECT_ARG.match(text(a).strip()) for a in args.named_children)
+
+
+def _reflected(field: Node, masked_lines: list[str]) -> bool:
+    """Alanın tipi UCLASS()/USTRUCT() ile işaretli mi (makro, tipten önceki dolu satırda).
+
+    Tip bulunamazsa (ör. ayrıştırma hatası) işaretli sayılır: yanlış öneri vermeyelim.
+    """
+    owner = field.parent.parent if field.parent is not None else None
+    if owner is None or owner.type not in _CPP_TYPES:
+        return True
+    row = owner.start_point[0]
+    if _REFLECTION.search(masked_lines[row][: owner.start_point[1]]):
+        return True
+    for previous in range(row - 1, max(row - 4, -1), -1):
+        if masked_lines[previous].strip():
+            return _REFLECTION.search(masked_lines[previous]) is not None
+    return False
+
+
+def _unreal_fields(
+    original: str, fields: list[Node]
+) -> tuple[list[SymbolRef], list[SymbolRef], list[SymbolRef]]:
     masked = mask_non_code(original)
+    masked_lines = masked.split("\n")
     macro_lines = [masked.count("\n", 0, m.start()) + 1 for m in _UPROPERTY.finditer(masked)]
     data_fields = [f for f in fields if not _is_method(f)]
     uproperty: list[SymbolRef] = []
@@ -141,6 +178,7 @@ def _unreal_fields(original: str, fields: list[Node]) -> tuple[list[SymbolRef], 
         if name:
             uproperty.append(SymbolRef(name=clip(name), line=line(target)))
     uobject: list[SymbolRef] = []
+    unreflected: list[SymbolRef] = []
     for field in data_fields:
         type_node = field.child_by_field_name("type")
         type_name = strip_templates(text(type_node))
@@ -154,9 +192,12 @@ def _unreal_fields(original: str, fields: list[Node]) -> tuple[list[SymbolRef], 
             and (type_name in _OBJECT_PTR)
         )
         name = _field_name(field)
-        if (raw_pointer or wrapped) and name:
-            uobject.append(SymbolRef(name=clip(name), line=line(field)))
-    return uproperty, uobject
+        if (raw_pointer or wrapped or _holds_uobject(type_node)) and name:
+            ref = SymbolRef(name=clip(name), line=line(field))
+            uobject.append(ref)
+            if not _reflected(field, masked_lines):
+                unreflected.append(ref)
+    return uproperty, uobject, unreflected
 
 
 def _csharp_event_names(fields: list[Node], events: list[Node]) -> set[str]:
@@ -221,9 +262,11 @@ def engine_symbols(
         symbols.has_on_enable = "OnEnable" in names
         symbols.has_on_disable = "OnDisable" in names
     elif engine is Engine.UNREAL:
-        symbols.uproperty_fields, symbols.uobject_fields = _unreal_fields(
-            original, fields.get("field", [])
-        )
+        (
+            symbols.uproperty_fields,
+            symbols.uobject_fields,
+            symbols.unreflected_fields,
+        ) = _unreal_fields(original, fields.get("field", []))
         symbols.event_subscriptions = [
             SymbolRef(name=clip(call.receiver or call.display), line=call_line)
             for call, call_line in calls

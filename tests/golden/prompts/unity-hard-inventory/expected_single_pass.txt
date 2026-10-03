@@ -66,10 +66,10 @@ Doğru yanıt:
 10 |     }
 11 | }
 </example_code>
-Statik ipucu: O(n)
+Statik ipucu: O(n^2)
 Statik analizin zaten bulduğu: CS-ALLOC-001 (7. satır: `result += names[i] + ", ";`)
 Doğru yanıt:
-{"analysis": {"complexity": {"reasoning_steps": ["6. satırdaki döngü n kez döner.", "7. satırdaki her birleştirme o ana kadarki metnin tamamını yeni bir string'e kopyalar; toplam kopyalama 1 + 2 + ... + n ile orantılı.", "Döngü tek katmanlı görünse de birleştirmenin maliyeti yüzünden zaman O(n^2); statik ipucu O(n) bu maliyeti saymıyor."], "time_complexity": "O(n^2)", "space_complexity": "O(n)", "optimal_time_target": "O(n)", "agreement": "conflicts"}, "additional_findings": [{"category": "edge_case", "severity": "high", "line_start": 9, "line_end": null, "evidence": "result.Length - 2", "description": "Liste boşsa result boş kalır ve Substring negatif uzunlukla çağrılır; çalışma zamanında istisna oluşur.", "certainty": null}]}, "socratic": {"key_flaw_concept": "Değişmez string ve tekrarlı kopyalama", "guiding_questions": ["C#'ta bir string'e += ile ekleme yaptığınızda var olan string mi değişir, yoksa yeni bir string mi oluşur?", "names boş bir liste olduğunda sondaki virgülü silen kod ne yapar?"], "next_step_hint": "1000 isimle döngünün toplamda kaç karakter kopyaladığını kabaca hesaplayın."}}
+{"analysis": {"complexity": {"reasoning_steps": ["6. satırdaki döngü n kez döner.", "7. satırdaki her birleştirme o ana kadarki metnin tamamını yeni bir string'e kopyalar; toplam kopyalama 1 + 2 + ... + n ile orantılı.", "Döngü tek katmanlı görünse de birleştirmenin maliyeti yüzünden zaman O(n^2); statik ipucu da bunu gösteriyor."], "time_complexity": "O(n^2)", "space_complexity": "O(n)", "optimal_time_target": "O(n)", "agreement": "agrees"}, "additional_findings": [{"category": "edge_case", "severity": "high", "line_start": 9, "line_end": null, "evidence": "result.Length - 2", "description": "Liste boşsa result boş kalır ve Substring negatif uzunlukla çağrılır; çalışma zamanında istisna oluşur.", "certainty": null}]}, "socratic": {"key_flaw_concept": "Değişmez string ve tekrarlı kopyalama", "guiding_questions": ["C#'ta bir string'e += ile ekleme yaptığınızda var olan string mi değişir, yoksa yeni bir string mi oluşur?", "names boş bir liste olduğunda sondaki virgülü silen kod ne yapar?"], "next_step_hint": "1000 isimle döngünün toplamda kaç karakter kopyaladığını kabaca hesaplayın."}}
 
 ## Soru: ScriptableObject tabanlı envanter ve UI senkronizasyonu
 Zorluk: zor

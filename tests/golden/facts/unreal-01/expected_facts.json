@@ -37,6 +37,7 @@
         "depth": 1,
         "bound": "linear",
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "parent_line": null,
         "parent_index": null,
         "counter_outer": false
@@ -50,6 +51,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::BeginPlay",
+        "function_line": 44,
         "loop_line": null,
         "loop_index": null
       },
@@ -59,6 +61,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::BeginPlay",
+        "function_line": 44,
         "loop_line": null,
         "loop_index": null
       },
@@ -68,6 +71,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "loop_line": null,
         "loop_index": null
       },
@@ -77,6 +81,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "loop_line": null,
         "loop_index": null
       },
@@ -86,6 +91,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "loop_line": null,
         "loop_index": null
       },
@@ -95,6 +101,7 @@
         "loop_depth": 1,
         "known_cost": null,
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "loop_line": 59,
         "loop_index": 0
       },
@@ -104,6 +111,7 @@
         "loop_depth": 1,
         "known_cost": null,
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "loop_line": 59,
         "loop_index": 0
       },
@@ -113,6 +121,7 @@
         "loop_depth": 1,
         "known_cost": null,
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "loop_line": 59,
         "loop_index": 0
       },
@@ -122,6 +131,7 @@
         "loop_depth": 1,
         "known_cost": null,
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "loop_line": 59,
         "loop_index": 0
       },
@@ -131,6 +141,7 @@
         "loop_depth": 1,
         "known_cost": null,
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "loop_line": 59,
         "loop_index": 0
       },
@@ -140,6 +151,7 @@
         "loop_depth": 1,
         "known_cost": "1*",
         "function": "AWaveSpawner::StartWave",
+        "function_line": 50,
         "loop_line": 59,
         "loop_index": 0
       },
@@ -149,6 +161,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "function_line": 70,
         "loop_line": null,
         "loop_index": null
       },
@@ -158,6 +171,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "function_line": 70,
         "loop_line": null,
         "loop_index": null
       },
@@ -167,6 +181,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "function_line": 70,
         "loop_line": null,
         "loop_index": null
       },
@@ -176,6 +191,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "function_line": 70,
         "loop_line": null,
         "loop_index": null
       },
@@ -185,6 +201,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "function_line": 70,
         "loop_line": null,
         "loop_index": null
       },
@@ -194,6 +211,7 @@
         "loop_depth": 0,
         "known_cost": null,
         "function": "AWaveSpawner::HandleEnemyDestroyed",
+        "function_line": 70,
         "loop_line": null,
         "loop_index": null
       }
@@ -223,7 +241,13 @@
           "line": 37
         }
       ],
-      "uobject_fields": [],
+      "uobject_fields": [
+        {
+          "name": "AliveEnemies",
+          "line": 34
+        }
+      ],
+      "unreflected_fields": [],
       "event_subscriptions": [
         {
           "name": "Enemy->OnDestroyed",
