@@ -7,6 +7,8 @@ sessizce kapanır, uygulamanın geri kalanı etkilenmez.
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -22,6 +24,7 @@ if TYPE_CHECKING:
 log = get_logger("codementor.desktop")
 
 MAX_LABEL = 70
+MAX_FOLDER_FILES = 50  # bırakılan klasörde menüye en fazla bu kadar dosya (Faz 33)
 
 
 def parse_drop_data(data: str) -> list[str]:
@@ -44,6 +47,16 @@ def parse_drop_data(data: str) -> list[str]:
             paths.append(data[index:end])
             index = end
     return [p for p in paths if p]
+
+
+def folder_sources(folder: Path, limit: int = MAX_FOLDER_FILES) -> list[str]:
+    """Klasördeki (alt klasörler hariç) tanınan dildeki kaynak dosyaları, ada göre sıralı."""
+    try:
+        entries = sorted(folder.iterdir(), key=lambda p: p.name.lower())
+    except OSError:
+        return []
+    found = [str(p) for p in entries if p.is_file() and language_for_path(p) is not None]
+    return found[:limit]
 
 
 def recent_label(path: str) -> str:
@@ -104,14 +117,32 @@ class FileController:
         app.toast(f"{Path(path).name} açıldı")
 
     def on_drop(self, data: str) -> None:
-        """Bırakılan ilk dosyayı açar (klasör ya da çoklu bırakmada bildirim)."""
-        paths = [p for p in parse_drop_data(data) if Path(p).is_file()]
+        """Bırakılan ilk dosyayı açar; klasörse içindeki kaynak dosyalarını seçtirir (Faz 33)."""
+        dropped = parse_drop_data(data)
+        paths = [p for p in dropped if Path(p).is_file()]
         if not paths:
-            self.app.toast("Bırakılan öğe bir dosya değil.")
+            folder = next((Path(p) for p in dropped if Path(p).is_dir()), None)
+            if folder is not None:
+                self._offer_folder(folder)
+            else:
+                self.app.toast("Bırakılan öğe bir dosya değil.")
             return
         self.load(paths[0])
         if len(paths) > 1:
             self.app.toast(f"{Path(paths[0]).name} açıldı; aynı anda tek dosya açılır.")
+
+    def _offer_folder(self, folder: Path) -> None:
+        sources = folder_sources(folder)
+        if not sources:
+            self.app.toast(f"{folder.name} klasöründe tanınan kaynak dosya yok.")
+            return
+        if len(sources) == 1:
+            self.load(sources[0])
+            return
+        items: list[tuple[str, Callable[[], None]]] = [
+            (recent_label(p), partial(self.load, p)) for p in sources
+        ]
+        self.app.analyze_view.show_file_menu(items)
 
     def enable_drop(self, widget: Any) -> bool:
         """`widget`'ı dosya bırakma hedefi yapar; tkdnd yoksa False."""

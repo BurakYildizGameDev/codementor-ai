@@ -13,6 +13,7 @@ import { getSessionId } from "./lib/session";
 import type { ProviderStatus } from "./types/provider_status";
 import type { Difficulty, QuestionPublic } from "./types/question_public";
 import type { AnalysisReport } from "./types/report";
+import { usageLabel } from "./lib/usage";
 import type { Engine, Language, PipelineMode } from "./types/request";
 import type { StageEvent } from "./types/stage_event";
 
@@ -172,6 +173,11 @@ export default function App() {
             </div>
           )}
           <StageProgress stages={stages} busy={busy} />
+          {report && usageLabel(report.meta) && (
+            <p className="usage" aria-label="Kullanım">
+              {usageLabel(report.meta)}
+            </p>
+          )}
           {report && (report.meta.degraded || notes.length > 0) && (
             <div className="card notice" role="status">
               {report.meta.degraded && <p>LLM yanıt vermedi; yalnızca statik analiz gösteriliyor.</p>}

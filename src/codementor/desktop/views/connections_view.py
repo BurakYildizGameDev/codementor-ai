@@ -37,6 +37,7 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
         open_folder: Callable[[str], None],
         locations: list[tuple[str, str]],
         write_config: Callable[[], None] | None = None,
+        reload_config: Callable[[], None] | None = None,
         download: Callable[[], None] | None = None,
         cancel_download: Callable[[], None] | None = None,
     ) -> None:
@@ -120,6 +121,21 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
             )
             self.write_config_button.grid(
                 row=2 * len(locations), column=0, columnspan=2, sticky="w", pady=(14, 0)
+            )
+        if reload_config is not None:  # Faz 33: elle düzenlenen toml'u yeniden başlatmadan uygula
+            self.reload_config_button = ctk.CTkButton(
+                where.body,
+                text="codementor.toml'dan yeniden yükle",
+                height=32,
+                corner_radius=8,
+                fg_color=theme.SURFACE_2,
+                hover_color=theme.SURFACE_3,
+                text_color=theme.TEXT,
+                font=theme.font(12, "bold"),
+                command=reload_config,
+            )
+            self.reload_config_button.grid(
+                row=2 * len(locations) + 1, column=0, columnspan=2, sticky="w", pady=(8, 0)
             )
 
     def _build_download(

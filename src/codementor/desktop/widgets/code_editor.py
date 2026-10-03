@@ -21,7 +21,12 @@ TAB = "    "
 class CodeEditor(ctk.CTkFrame):  # type: ignore[misc]
     """`tk.Text` tabanlı editör; işaretli satırın mesajı imleç oradayken alt şeritte görünür."""
 
-    def __init__(self, master: Any, on_change: Callable[[], None] | None = None) -> None:
+    def __init__(
+        self,
+        master: Any,
+        on_change: Callable[[], None] | None = None,
+        notify: Callable[[str], None] | None = None,
+    ) -> None:
         super().__init__(
             master,
             fg_color=theme.SURFACE,
@@ -109,9 +114,11 @@ class CodeEditor(ctk.CTkFrame):  # type: ignore[misc]
         self.text.bind("<KeyRelease>", lambda _e: self._update_footer(), add="+")
         self.text.bind("<ButtonRelease-1>", lambda _e: self._update_footer(), add="+")
         self.text.bind("<Configure>", lambda _e: self._redraw_gutter(), add="+")
-        self.find_bar = FindBar(self, self.text)
+        self.find_bar = FindBar(self, self.text, notify)
         for sequence in ("<Control-f>", "<Control-F>"):
             self.text.bind(sequence, self._open_find)
+        for sequence in ("<Control-h>", "<Control-H>"):  # Faz 33: değiştir
+            self.text.bind(sequence, self._open_replace)
 
     # --- Genel API ----------------------------------------------------------------------
 
@@ -167,6 +174,10 @@ class CodeEditor(ctk.CTkFrame):  # type: ignore[misc]
     def _open_find(self, _event: Any) -> str:
         self.find_bar.open()
         return "break"
+
+    def _open_replace(self, _event: Any) -> str:
+        self.find_bar.open(replace=True)
+        return "break"  # Tk'nin Ctrl+H'si (geri silme) çalışmasın
 
     def _insert_tab(self, _event: Any) -> str:
         self.text.insert("insert", TAB)

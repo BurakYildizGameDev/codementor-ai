@@ -17,7 +17,7 @@ from typing import Any
 import customtkinter as ctk
 
 from codementor.api.state import ApiState
-from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE, Settings
+from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE, Settings, load_settings
 from codementor.desktop import runtime, theme
 from codementor.desktop.bridge import Bridge, Cancellation, Message, analysis_work
 from codementor.desktop.config_writer import write_provider_prefs
@@ -119,6 +119,7 @@ class App(ctk.CTk):  # type: ignore[misc]
                 load_sample=self.load_sample,
                 export=self.export,
                 questions=self.questions_for,
+                notify=self.toast,
             ),
             self.prefs.language,
         )
@@ -133,6 +134,7 @@ class App(ctk.CTk):  # type: ignore[misc]
             self.open_folder,
             self._locations(),
             write_config=self.write_config,
+            reload_config=self.reload_config,
             download=self.connections.download_compiler,
             cancel_download=self.connections.cancel_download,
         )
@@ -370,6 +372,19 @@ class App(ctk.CTk):  # type: ignore[misc]
             self.toast(f"codementor.toml yazılamadı: {exc}")
             return
         self.toast(f"Seçimler yazıldı: {path}")
+
+    def reload_config(self) -> None:
+        """`codementor.toml`'u (ve ortamı) yeniden okur; arayüz seçimleri yine üstüne uygulanır.
+        Bozuk dosya uygulanmaz. Veritabanı yolu gibi açılışta kurulanlar yeniden başlatma ister."""
+        try:
+            base = load_settings()
+        except Exception as exc:  # bozuk toml, geçersiz değer, okunamayan dosya
+            self.toast(f"codementor.toml okunamadı: {exc}")
+            return
+        self.base_settings = base
+        self.apply_settings()
+        self.connections.refresh_all()
+        self.toast("codementor.toml yeniden yüklendi")
 
     def save_prefs(self, **changes: Any) -> None:
         self.prefs = self.prefs.model_copy(update=changes)

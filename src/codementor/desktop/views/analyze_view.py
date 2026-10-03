@@ -26,6 +26,7 @@ from codementor.desktop.viewmodel import (
     line_marks,
     report_headline,
     report_notices,
+    report_usage,
 )
 from codementor.desktop.widgets.code_editor import CodeEditor
 from codementor.desktop.widgets.common import Card, clear, wrap_label
@@ -64,6 +65,7 @@ class AnalyzeActions:
     load_sample: Callable[[], None]
     export: Callable[[str], None]
     questions: Callable[[Language, Engine], list[QuestionPublic]]
+    notify: Callable[[str], None] | None = None  # kısa bildirim (toast; Faz 33)
 
 
 class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
@@ -88,7 +90,7 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
         content.grid_columnconfigure(0, weight=5, uniform="content")
         content.grid_columnconfigure(1, weight=4, uniform="content")
         content.grid_rowconfigure(0, weight=1)
-        self.editor = CodeEditor(content)
+        self.editor = CodeEditor(content, notify=actions.notify)
         self.editor.grid(row=0, column=0, sticky="nsew", padx=(0, theme.GAP))
 
         self.panel = ctk.CTkScrollableFrame(
@@ -236,6 +238,10 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
     def _recent_menu(self) -> None:
         self._popup(self.recent_button, self.recent_items())
 
+    def show_file_menu(self, items: list[tuple[str, Callable[[], None]]]) -> None:
+        """Bırakılan klasördeki kaynak dosyalarından seçim (Faz 33)."""
+        self._popup(self.recent_button, items)
+
     # --- Seçimler -------------------------------------------------------------------------
 
     def _on_language(self, label: str) -> None:
@@ -333,9 +339,13 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
             font=theme.font(13, "bold"),
             text_color=theme.TEXT,
         ).pack(side="left")
+        usage = report_usage(report)
+        self.usage_text = f"{format_ms(total)} · {report.meta.provider or 'LLM yok'}" + (
+            f" · {usage}" if usage else ""
+        )
         ctk.CTkLabel(
             headline,
-            text=f"{format_ms(total)} · {report.meta.provider or 'LLM yok'}",
+            text=self.usage_text,
             font=theme.font(12),
             text_color=theme.MUTED,
         ).pack(side="right")

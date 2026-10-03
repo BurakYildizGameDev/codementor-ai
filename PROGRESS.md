@@ -660,6 +660,20 @@
 **Açık sorular:** (1) `memory_safety` / `undefined_behavior` etiket sınırı tutarsız (`unreal-009` null Cast `memory_safety`, `unreal-014` yineleyici geçersizleşmesi `undefined_behavior`); kalan 3 FP/FN buradan. (2) Sızıntı korumasının müdahalesi C ailesinde 2 → 6 (son çıktı yine %0); sebep ölçülmedi. (3) `private/solutions/` dosyaları eksik (`reference_solution_unreadable` uyarıları; Faz 30'da yazılacak).
 **Bu fazda öğrendiğim:** Prompt'a kategori eşlemesi eklemeden önce veri setinin etiket kurallarına bakmak gerekiyordu; çelişen bir cümle 3 doğru bulguyu kaçırttı. Bulgu modelden değil sistemden gelen `confidence` (sabit 0,7) eşik olarak kullanılamaz.
 
+## Faz 33 — Notlar (kullanıcı deneyimi)
+- Token/maliyet: `report/usage.py::usage_label` tek kaynak (CLI alt satırı, masaüstü rapor
+  başlığı, web `lib/usage.ts` aynı metni üretir; LLM token'ı harcanmadıysa gösterilmez).
+- CLI ilerleme: `report/progress.py::ProgressLine` — Türkçe aşama adı, 0,2 sn'de bir yenilenen
+  geçen süre ve biriken token (olaylar iş parçacığından gelebildiği için kilitli).
+- Editör: Ctrl+F'de `Aa` (büyük/küçük harf) ve `ab|` (tam sözcük, Türkçe harfler tanımlayıcı
+  sayılır); Ctrl+H değiştirme satırı (tek / tümü; "tümü" tek geri alma adımı, sonuç toast'ta).
+- Klasör bırakma: içindeki tanınan kaynak dosyaları (alt klasörsüz, ≤ 50) menüde; tek dosya
+  varsa doğrudan açılır, hiç yoksa bildirim.
+- Bağlantılar: "codementor.toml'dan yeniden yükle" (ortam dahil); arayüz seçimleri yine üstüne
+  uygulanır, bozuk dosya uygulanmaz. Veritabanı yolu gibi açılışta kurulanlar yeniden başlatma ister.
+- Faz 31/32 gerçek CLI ile sınandı (LLM'siz): bulgu sınırı, C-MEM-001, sıcak yol kimliği,
+  UE-GC-001, metin biriktirme O(n²), maliyet tablosu değişince `rules_version` değişiyor.
+
 ## Faz 32 — Notlar (statik kural doğruluğu II)
 - Sıcak yol eşlemesi ada göre değil kimliğe göre: `CallFact`/`LoopFact.function_line`,
   `RuleContext.in_hot_function`. Aynı dosyada tabansız sınıfın `Update`'i artık UNITY-PERF-001
@@ -849,10 +863,10 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 - Faz 26: API hız sınırı (istemci başına, süreçler arası doğru); web arayüzünün API anahtarı göndermesi.
 - Faz 26: SQLite çağrılarını da iş parçacığına almak (bağlantı başına iş parçacığı ya da havuz).
 - Faz 25: OpenAI katı mod kısıtlarını canlı anahtarla doğrulayıp `SchemaAdapter.openai_strict`'te desteklenenleri korumak.
-- Faz 25: masaüstü ve web raporunda tahmini token/maliyet gösterimi (şu an yalnız CLI alt satırı ve JSON).
+- ~~Faz 25: masaüstü ve web raporunda tahmini token/maliyet gösterimi (şu an yalnız CLI alt satırı ve JSON).~~ → Faz 33.
 - Faz 25: agy canlı doğrulaması (oturum var; `allow_tool_agent = true` ile tek analiz).
-- Faz 24: arama büyük/küçük harf ve "tam sözcük" seçenekleri, değiştir (Ctrl+H); bırakılan klasördeki kaynak dosyalarını listeleme.
-- Faz 24: toml'a yazıldıktan sonra masaüstü tercihlerindeki aynı geçersiz kılmalar gereksizleşir (zararsız); "toml'dan yeniden yükle" düğmesi yok.
+- ~~Faz 24: arama büyük/küçük harf ve "tam sözcük" seçenekleri, değiştir (Ctrl+H); bırakılan klasördeki kaynak dosyalarını listeleme.~~ → Faz 33.
+- ~~Faz 24: toml'a yazıldıktan sonra masaüstü tercihlerindeki aynı geçersiz kılmalar gereksizleşir (zararsız); "toml'dan yeniden yükle" düğmesi yok.~~ → Faz 33.
 - ~~Faz 23: `reference_solution_path` (`private/solutions/`) hâlâ çalışma dizinine göre; soru dosyasının ya da kaynak kökünün dizinine göre çözülmeli (sızıntı testi buna göre güncellenmeli).~~ → Faz 31.
 - ~~Faz 23: mimari §20 ADR tablosunda ADR-0013/0014/0015 satırları eksik.~~ → Faz 31.
 - ~~Faz 23: CI exe işi Roslyn denetleyicisini derlemiyor~~ → Faz 27.
@@ -914,7 +928,7 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 - ~~Faz 9: sızıntı korumasını `reasoning_steps` ve LLM açıklamalarına genişletmek~~ → Faz 10'da yapıldı.
 - ~~Faz 9: `guiding_questions` öğelerine şemada `max_length`~~ → Faz 27.
 - ~~Faz 10: `prompt_version` mtime önbelleği~~ → Faz 26.
-- Faz 10: CLI ilerleme göstergesi yalnızca aşama adını gösteriyor; token/süre canlı gösterilebilir.
+- ~~Faz 10: CLI ilerleme göstergesi yalnızca aşama adını gösteriyor; token/süre canlı gösterilebilir.~~ → Faz 33.
 - ~~Faz 11: senkron aşamaları `asyncio.to_thread`'e taşımak~~ → Faz 24 (Tier 1) + Faz 26 (Tier 0, olgular); SQLite Sonraya.
 - Faz 11: API anahtarı / hız sınırlama (§12); yerel olmayan bağlamada zorunlu kılınabilir. (Faz 13 kararı: v1'de yok, README Sınırlamalar.)
 - ~~CLI ajanı iptali~~ → Faz 19'da yapıldı.
@@ -954,7 +968,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    gizliliği, `reference_solution_path`, belge temizliği.
 8. ~~**Faz 32 — Statik kural doğruluğu II:**~~ Yapıldı (Faz 32 notları). sıcak yol kimliği (O3), C-MEM-001, UNITY-GC-001 struct,
    UE-GC-001 `TArray`, CS-PERF-001 `IList`, maliyet tablosu.
-9. **Faz 33 — Kullanıcı deneyimi:** token/maliyet gösterimi, arama/değiştir, CLI ilerleme.
+9. ~~**Faz 33 — Kullanıcı deneyimi:**~~ Yapıldı (Faz 33 notları). token/maliyet gösterimi, arama/değiştir, CLI ilerleme.
 10. **Faz 34 — Ölçümün genişletilmesi (canlı, isteğe bağlı):** ikinci model, few-shot ablasyonu,
    dev setini büyütme.
 

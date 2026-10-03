@@ -10,10 +10,12 @@ import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from codementor.api.state import ApiState
+from codementor.config import CONFIG_FILE_ENV
 from codementor.desktop import connections_controller as controller_module
 from codementor.desktop import runtime
 from codementor.desktop.app import App
@@ -419,6 +421,112 @@ def test_write_toml_button(app: App, tmp_path: Path, monkeypatch: pytest.MonkeyP
     target.write_text("[bozuk", encoding="utf-8")
     app.write_config()
     assert "yazılamadı" in app.toast_label.cget("text")
+
+
+# --- Faz 33: kullanıcı deneyimi -------------------------------------------------------------
+
+
+def test_find_options_case_and_whole_word(app: App) -> None:
+    editor = app.analyze_view.editor
+    editor.set("int Count = 0;\nint count = counter;\n", Language.C)
+    bar = editor.find_bar
+    editor._open_find(None)
+    bar.entry.insert(0, "count")
+    bar.refresh()
+    assert len(bar.matches) == 3
+    bar.case_var.set(True)
+    bar.refresh()
+    assert len(bar.matches) == 2
+    bar.word_var.set(True)
+    bar.refresh()
+    assert len(bar.matches) == 1
+    assert bar.count.cget("text") == "1/1"
+
+
+def test_ctrl_h_replace_current_and_all(app: App) -> None:
+    editor = app.analyze_view.editor
+    editor.set("x = x + x;\n", Language.C)
+    bar = editor.find_bar
+    assert editor._open_replace(None) == "break"
+    assert bar.is_open
+    assert bar.replace_open
+    bar.entry.insert(0, "x")
+    bar.replace_entry.insert(0, "y")
+    bar.refresh()
+    bar.replace_current()
+    assert editor.get() == "y = x + x;\n"
+    assert bar.count.cget("text") == "1/2"  # kalan eşleşmeler yeniden sayıldı
+    bar.replace_every()
+    assert editor.get() == "y = y + y;\n"
+    assert "2" in app.toast_label.cget("text")
+    assert bar.count.cget("text") == "Sonuç yok"
+
+
+def test_folder_drop_offers_source_files(
+    app: App, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for name in ("Oyuncu.cs", "Dusman.cs", "notlar.txt"):
+        (tmp_path / name).write_text(f"// {name}\n", encoding="utf-8")
+    offered: list[list[tuple[str, Any]]] = []
+    monkeypatch.setattr(app.analyze_view, "show_file_menu", offered.append)
+    app.files.on_drop(tmp_path.as_posix())
+    (items,) = offered
+    assert [label.split()[0] for label, _ in items] == ["Dusman.cs", "Oyuncu.cs"]
+    items[1][1]()  # menüden seç
+    assert app.analyze_view.editor.get() == "// Oyuncu.cs\n"
+
+
+def test_folder_drop_without_sources_notifies(app: App, tmp_path: Path) -> None:
+    (tmp_path / "notlar.txt").write_text("x", encoding="utf-8")
+    app.files.on_drop(tmp_path.as_posix())
+    assert "kaynak dosya yok" in app.toast_label.cget("text")
+
+
+def test_reload_config_button(app: App, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    target = tmp_path / "codementor.toml"
+    target.write_text('[providers.ollama]\nmodel = "toml-model"\n', encoding="utf-8")
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(target))
+    app.connections.check = lambda _name: None  # type: ignore[method-assign]
+    app.settings_view.reload_config_button.invoke()
+    assert app.base_settings.providers.ollama.model == "toml-model"
+    assert "yeniden yüklendi" in app.toast_label.cget("text")
+    target.write_text("[bozuk", encoding="utf-8")
+    app.reload_config()
+    assert "okunamadı" in app.toast_label.cget("text")
+    assert app.base_settings.providers.ollama.model == "toml-model"  # bozuk dosya uygulanmaz
+
+
+def test_report_headline_shows_usage() -> None:
+    from codementor.desktop.viewmodel import report_usage
+
+    assert report_usage(_usage_report(tokens=(1200, 340), cost=0.0123)) == (
+        "token 1200/340 · ~$0.0123"
+    )
+    assert report_usage(_usage_report(tokens=(0, 0), cost=None)) is None
+
+
+def _usage_report(tokens: tuple[int, int], cost: float | None) -> Any:
+    from types import SimpleNamespace
+
+    from codementor.models.report import ReportMeta
+
+    meta = ReportMeta(
+        provider="fake",
+        model="m",
+        prompt_version="v1",
+        rules_version="r1",
+        schema_version="1.0",
+        tokens_in=tokens[0],
+        tokens_out=tokens[1],
+        stage_latency_ms={},
+        early_exit=False,
+        cache_hit=False,
+        degraded=False,
+        repair_attempts=0,
+        warnings=[],
+        cost_est=cost,
+    )
+    return SimpleNamespace(meta=meta)
 
 
 # --- Faz 29: derleyiciyi indir --------------------------------------------------------------

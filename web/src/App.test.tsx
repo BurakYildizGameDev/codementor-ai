@@ -94,6 +94,7 @@ it("analiz sonrası karmaşıklık, bulgular, sorular ve aşamalar görünür", 
   expect(within(mentor).getByText(/Seviye 1/)).toBeInTheDocument();
 
   expect(screen.getByText("Sözdizimi")).toBeInTheDocument();
+  expect(screen.getByLabelText("Kullanım")).toHaveTextContent(/^token 100\/\d+/);
   expect(analyzeBodies[0]).toMatchObject({ language: "c", engine: "none" });
   expect(analyzeBodies[0]?.session_id).toMatch(/^web-/);
 });

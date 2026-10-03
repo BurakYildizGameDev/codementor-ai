@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
+import time
 import tomllib
 from enum import StrEnum
 from pathlib import Path
@@ -21,12 +22,12 @@ from rich.markup import escape
 
 from codementor.config import Settings, load_settings
 from codementor.models.enums import Engine, Language, PipelineMode, Severity
-from codementor.models.pipeline import StageEvent
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.pipeline.orchestrator import Orchestrator, PipelineError
 from codementor.report.cli_render import print_report
 from codementor.report.markdown import to_markdown
+from codementor.report.progress import ProgressLine
 from codementor.report.sarif import to_sarif
 from codementor.storage.db import Database
 
@@ -35,6 +36,7 @@ EXIT_HIGH_FINDINGS = 1
 EXIT_COMPILE_FAILED = 2
 EXIT_SYSTEM_ERROR = 3
 MAX_FILE_BYTES = 1024 * 1024  # K0 sınırı (40 KB) ayrıca uygulanır; bu yalnızca okuma koruması
+PROGRESS_TICK_S = 0.2  # canlı süre bu aralıkla yenilenir (Faz 33)
 
 
 class OutputFormat(StrEnum):
@@ -81,14 +83,14 @@ async def _run(
     try:
         orchestrator = Orchestrator(settings, db)
         if progress:
-            with console.status("Analiz başlıyor…") as status:
-
-                def show(event: StageEvent) -> None:
-                    if event.status == "started":
-                        status.update(f"Aşama: {event.stage}")
-
-                orchestrator.bus.subscribe(show)
-                return await orchestrator.analyze(request)
+            line = ProgressLine(started=time.perf_counter())
+            orchestrator.bus.subscribe(line.on_event)
+            with console.status(line.text(time.perf_counter())) as status:
+                task = asyncio.ensure_future(orchestrator.analyze(request))
+                while not task.done():
+                    status.update(line.text(time.perf_counter()))
+                    await asyncio.wait({task}, timeout=PROGRESS_TICK_S)
+                return await task
         return await orchestrator.analyze(request)
     finally:
         db.close()

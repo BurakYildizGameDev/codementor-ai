@@ -1517,15 +1517,20 @@ Statik test: Big-O 91 → 97, F1 61 → 63 (eval-findings §8).
 
 **Commit:** `feat(faz-32): statik kural doğruluğu II`
 
-### Faz 33 — Kullanıcı deneyimi (YAPILACAK)
+### Faz 33 — Kullanıcı deneyimi (YAPILDI)
 
 **Dal:** `faz/33-ux` · **Mimari:** §15 · **ADR:** —
 
-- [ ] Masaüstü ve web raporunda tahmini token/maliyet
-- [ ] Arama: büyük/küçük harf, tam sözcük, değiştir (Ctrl+H); bırakılan klasördeki dosyaları
+- [x] Masaüstü ve web raporunda tahmini token/maliyet
+- [x] Arama: büyük/küçük harf, tam sözcük, değiştir (Ctrl+H); bırakılan klasördeki dosyaları
       listeleme
-- [ ] CLI ilerleme göstergesinde canlı süre/token
-- [ ] "toml'dan yeniden yükle" düğmesi
+- [x] CLI ilerleme göstergesinde canlı süre/token
+- [x] "toml'dan yeniden yükle" düğmesi
+
+Notlar: ortak `report/usage.py` (CLI alt satırı, masaüstü başlığı, web `lib/usage.ts`);
+`report/progress.py` canlı CLI satırı (aşama · süre · token); arama `Aa` / `ab|` ve Ctrl+H
+(tek / tümü, tek geri alma adımı); klasör bırakınca kaynak dosya menüsü (≤ 50); Bağlantılar'da
+"codementor.toml'dan yeniden yükle" (bozuk dosya uygulanmaz).
 
 **Commit:** `feat(faz-33): kullanıcı deneyimi iyileştirmeleri`
 
