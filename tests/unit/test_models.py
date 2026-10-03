@@ -35,6 +35,7 @@ from codementor.models.llm_output import (
     LLMComplexity,
     LLMFinding,
     LLMSocraticOutput,
+    LLMVerifyOutput,
 )
 from codementor.models.report import (
     AnalysisReport,
@@ -119,7 +120,15 @@ def test_llm_schemas_have_no_system_fields() -> None:
     [
         (
             LLMFinding,
-            {"category", "severity", "line_start", "line_end", "evidence", "description"},
+            {
+                "category",
+                "severity",
+                "line_start",
+                "line_end",
+                "evidence",
+                "description",
+                "certainty",
+            },
         ),
         (
             LLMComplexity,
@@ -236,6 +245,25 @@ def test_llm_finding_valid() -> None:
     f = LLMFinding.model_validate(_llm_finding())
     assert f.category is AuditCategory.PERFORMANCE
     assert f.line_end is None
+
+
+def test_llm_finding_certainty_optional() -> None:
+    assert LLMFinding.model_validate(_llm_finding()).certainty is None
+    assert LLMFinding.model_validate(_llm_finding(certainty="high")).certainty == "high"
+    with pytest.raises(ValidationError):
+        LLMFinding.model_validate(_llm_finding(certainty="kesin"))
+
+
+def test_llm_verify_output_limits() -> None:
+    verdict = {"finding": 1, "verdict": "proven", "requirement": "boş girdi", "reason": "x"}
+    LLMVerifyOutput.model_validate({"verdicts": [verdict] * 10})
+    with pytest.raises(ValidationError):
+        LLMVerifyOutput.model_validate({"verdicts": [verdict] * 11})
+    with pytest.raises(ValidationError):
+        LLMVerifyOutput.model_validate({"verdicts": [{**verdict, "finding": 0}]})
+    with pytest.raises(ValidationError):
+        LLMVerifyOutput.model_validate({"verdicts": [{**verdict, "reason": "y" * 401}]})
+    assert not (_fields(LLMVerifyOutput) & {"source", "confidence", "id", "rule_id"})
 
 
 def test_llm_finding_line_end_defaults_to_none() -> None:

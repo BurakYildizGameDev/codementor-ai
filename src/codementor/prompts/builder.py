@@ -22,6 +22,7 @@ from codementor.models.llm_output import (
     LLMMarkupAnalysisOutput,
     LLMSinglePassOutput,
     LLMSocraticOutput,
+    LLMVerifyOutput,
 )
 from codementor.models.prompts import (
     AnalysisPromptInput,
@@ -29,6 +30,7 @@ from codementor.models.prompts import (
     FewShotExample,
     QuestionContext,
     SocraticPromptInput,
+    VerifyPromptInput,
 )
 from codementor.models.provider import ChatMessage
 from codementor.models.request import NormalizedCode
@@ -214,6 +216,35 @@ def build_socratic_messages(
     budget = context_budget(settings, provider, LLMSocraticOutput)
     messages, _ = fit_to_budget(
         lambda _: _messages(directory, "socratic", context),
+        {},
+        budget,
+        code_tokens=estimate_tokens(inp.code.numbered_view),
+    )
+    return BuiltPrompt(
+        messages=messages,
+        prompt_version=prompt_version(directory),
+        estimated_tokens=estimate_messages(messages),
+        budget_tokens=budget,
+    )
+
+
+def build_verify_messages(
+    inp: VerifyPromptInput, *, settings: Settings | None = None, provider: str | None = None
+) -> BuiltPrompt:
+    """Doğrulama geçişi (Faz 35): LLM bulgularını tek tek sınatır (`LLMVerifyOutput`).
+    Kırpılmaz; bulgular rapordaki sırayla numaralanır (`verify.proof.verify_targets`)."""
+    settings = settings or get_settings()
+    directory = settings.prompts.dir
+    context: dict[str, Any] = {
+        "language": inp.code.language,
+        "engine": inp.code.engine,
+        "question": inp.question,
+        "code_view": guard_delimiters(_code_view(inp.code, settings)),
+        "findings": inp.findings,
+    }
+    budget = context_budget(settings, provider, LLMVerifyOutput)
+    messages, _ = fit_to_budget(
+        lambda _: _messages(directory, "verify", context),
         {},
         budget,
         code_tokens=estimate_tokens(inp.code.numbered_view),

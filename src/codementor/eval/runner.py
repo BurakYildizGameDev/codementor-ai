@@ -38,7 +38,7 @@ from codementor.providers.base import LLMProvider, ProviderUnavailableError
 from codementor.providers.factory import build_chain
 
 STATIC_ONLY = "static-only"
-ABLATIONS = ("facts", "line_numbers", "fewshot0", "fewshot1")
+ABLATIONS = ("facts", "line_numbers", "fewshot0", "fewshot1", "verify")
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]+")
 
 Progress = Callable[[int, int, SampleResult], None]
@@ -62,7 +62,7 @@ class StaticOnlyProvider:
 
 def apply_ablations(settings: Settings, ablations: list[str]) -> Settings:
     """§14.4 ablasyonları: `facts` (olgu + ipucu yok), `line_numbers` (düz kod),
-    `fewshot0`/`fewshot1` (örnek sayısı)."""
+    `fewshot0`/`fewshot1` (örnek sayısı); `verify` bulgu doğrulama geçişini açar (Faz 35)."""
     unknown = sorted(set(ablations) - set(ABLATIONS))
     if unknown:
         raise ValueError(f"Bilinmeyen ablasyon: {', '.join(unknown)}")
@@ -75,7 +75,12 @@ def apply_ablations(settings: Settings, ablations: list[str]) -> Settings:
         update["max_fewshots"] = 0
     elif "fewshot1" in ablations:
         update["max_fewshots"] = 1
-    return settings.model_copy(update={"prompts": settings.prompts.model_copy(update=update)})
+    pipeline = settings.pipeline
+    if "verify" in ablations:
+        pipeline = pipeline.model_copy(update={"verify_findings": True})
+    return settings.model_copy(
+        update={"prompts": settings.prompts.model_copy(update=update), "pipeline": pipeline}
+    )
 
 
 def pricing_for(settings: Settings) -> PricingFile | None:

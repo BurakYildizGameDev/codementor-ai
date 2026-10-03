@@ -769,7 +769,26 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 3. Yeni soruların içerik kalitesi bir öğretmen gözüyle gözden geçirilmeli (özellikle Unity/Unreal API ayrıntıları).
 **Bu fazda öğrendiğim:** Çözüm dosyası olmayan bir özellik (K5) kendi yol hatasını gizler; veri gelince ilk iş o verinin tüketildiği kodu yeniden doğrulamak gerekiyor. Testlerdeki Tk nesneleri, başka iş parçacığında çalışan kodun çöp toplama zamanlamasına bağlı kilitlenmeler üretebiliyor.
 
+## Faz 35 — Notlar (bulgu doğrulama geçişi; ADR-0019)
+- Yeni aşamalar `prompt_v` / `llm_v` / `verify_v` (Geçiş A ile B arasında). Yalnız LLM kaynaklı
+  bulgular sınanır; `proven` için girdi+beklenen+gerçekleşen ya da gereksinim zorunlu (sistem
+  denetler). Kararlar `AnalysisVerification.finding_checks`'te; gerekçeler sızıntı korumasından
+  geçer, öğrenciye gitmez. Hata/bozuk şemada bulgular aynen kalır ve uyarı yazılır; karar
+  verilmeyen bulgu korunur.
+- `single_pass`'ta bulgu düşerse Sokratik çıktı ayrı Geçiş B ile yeniden üretilir.
+- `LLMFinding.certainty` (isteğe bağlı): rapor güveni high 0,85 / medium 0,7 / low 0,5
+  (satır düzeltildiyse −0,1); beyan yoksa eski 0,7 / 0,6. Alan adı `confidence` değil: LLM
+  şemasında sistem alanı yasak (ADR-0004 testi).
+- `pipeline.verify_findings = false` (varsayılan). Önbellek anahtarına `pipeline` imzası
+  (mod + doğrulama) eklendi; mod daha önce anahtarda yoktu (eski önbellek kayıtları geçersiz).
+- Eval: `eval run --ablation verify`; `eval analyze` çıktısında "Güven eşiği" tablosu
+  (0,5 / 0,6 / 0,7 / 0,85; statik ve teyitli bulgular hep kalır).
+- Prompt'a certainty kuralı eklendi (golden'lar güncellendi, `prompt_version` değişti).
+  `certainty` alanına açıklama konmadı: şema 2048 bağlamlı bütçe testinde sınırdaydı.
+- Açık: Aşama B canlı ölçüm (precision, recall, gecikme, token) ve varsayılan/eşik kararı.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde); doğrulama kararlarını (`finding_checks`) eval sonucuna yazıp düşürülen bulguların TP/FP dağılımını ölçmek.
 - Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).
 - Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.
 - Faz 30: yöntem işaretlerini (`METHOD_LEAKS`) soru verisine taşıyıp `validate`'e eklemek; eski soruların kontrol listesi seçimini kilitleyen bir anlık görüntü testi.
@@ -875,7 +894,9 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    `questions validate`, zorluk filtreleri. Sıradaki: Faz 35.
    Ek (2026-10-03): Antigravity'nin 1200 aday sorusu `docs/soru-havuzu/` altında, analizi
    `docs/soru-havuzu/README.md`'de (şemadan geçiyor; çözüm/tablo yok, C++/C# ipuçları Sokratik değil).
-5. **Faz 35 — Bulgu doğrulama geçişi (önemli):** her LLM bulgusu için ayrı bir "kanıtla"
+5. **Faz 35 — Bulgu doğrulama geçişi (önemli):** Çevrimdışı kısım yapıldı (ADR-0019,
+   varsayılan kapalı); kalan Aşama B: dev'de `claude_cli` ile doğrulamalı/doğrulamasız ölçüm (onay
+   bekliyor). Sıradaki: Faz 36. Özgün tanım: her LLM bulgusu için ayrı bir "kanıtla"
    adımı; kanıtlanamayan düşer. Modelin kendi güveni şemaya (bugünkü `confidence` sistemden
    sabit 0,7 geliyor, ayırt etmiyor). ADR; dev'de doğrulamalı/doğrulamasız ölçüm.
 6. **Faz 36 — Hatalar ve öneriler ayrımı (önemli):** bulguya `issue`/`suggestion`; raporda

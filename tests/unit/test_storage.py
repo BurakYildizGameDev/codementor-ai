@@ -24,6 +24,7 @@ BASE = {
     "prompt_version": "v1+a",
     "rules_version": "r1+b",
     "schema_version": "1.0",
+    "pipeline": "two_pass",  # Faz 35: mod + doğrulama geçişi
 }
 
 

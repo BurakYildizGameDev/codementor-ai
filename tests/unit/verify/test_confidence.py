@@ -6,8 +6,16 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from codementor.models.llm_output import Certainty
 from codementor.models.verification import AgreementState
-from codementor.verify.confidence import AGREEMENT_SCORES, analysis_confidence, evidence_ratio
+from codementor.verify.confidence import (
+    AGREEMENT_SCORES,
+    LLM_EXACT_CONFIDENCE,
+    LLM_SHIFTED_CONFIDENCE,
+    analysis_confidence,
+    evidence_ratio,
+    finding_confidence,
+)
 
 STATES: list[AgreementState] = ["agrees", "justified_conflict", "no_hint", "unjustified_conflict"]
 
@@ -55,3 +63,30 @@ def test_monotonic_in_each_component() -> None:
         True, "justified_conflict", 1
     )
     assert analysis_confidence(True, "agrees", 1) > analysis_confidence(True, "agrees", 0.5)
+
+
+@pytest.mark.parametrize(
+    ("certainty", "shifted", "expected"),
+    [
+        ("high", False, 0.85),
+        ("medium", False, 0.7),
+        ("low", False, 0.5),
+        ("high", True, 0.75),
+        ("low", True, 0.4),
+    ],
+)
+def test_certainty_maps_confidence(certainty: Certainty, shifted: bool, expected: float) -> None:
+    """Faz 35: rapordaki bulgu güveni modelin kendi beyanından gelir."""
+    assert finding_confidence(certainty, shifted=shifted) == pytest.approx(expected)
+
+
+def test_shifted_lowers_certainty_confidence() -> None:
+    for certainty in ("high", "medium", "low"):
+        assert finding_confidence(certainty, shifted=True) < finding_confidence(
+            certainty, shifted=False
+        )
+
+
+def test_missing_certainty_keeps_legacy() -> None:
+    assert finding_confidence(None, shifted=False) == LLM_EXACT_CONFIDENCE
+    assert finding_confidence(None, shifted=True) == LLM_SHIFTED_CONFIDENCE

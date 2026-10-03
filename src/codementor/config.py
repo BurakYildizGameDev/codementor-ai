@@ -89,6 +89,8 @@ class PipelineSettings(BaseModel):
     mode: Literal["two_pass", "single_pass"] = "two_pass"
     max_repair_attempts: int = Field(default=1, ge=0)
     use_cache: bool = True
+    # Faz 35 (ADR-0019): LLM bulgularını ayrı bir "kanıtla" çağrısıyla süz
+    verify_findings: bool = False
 
 
 class DataSettings(BaseModel):

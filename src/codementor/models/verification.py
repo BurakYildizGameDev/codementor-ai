@@ -97,6 +97,19 @@ class LeakDecision(StrictModel):
         return self.action == "dropped_questions" and not self.guiding_questions
 
 
+ProofBasis = Literal["input", "requirement", "unproven", "no_demonstration", "no_verdict"]
+
+
+class FindingCheck(StrictModel):
+    """Doğrulama geçişinin bir LLM bulgusu için kararı (Faz 35); öğrenciye gösterilmez."""
+
+    finding_id: str
+    line_start: int = Field(ge=1)
+    kept: bool
+    basis: ProofBasis
+    reason: str = Field(default="", description="Modelin gerekçesi; sızıntı varsa boş")
+
+
 class AnalysisVerification(StrictModel):
     """Geçiş A çıktısının doğrulanmış hali."""
 
@@ -106,6 +119,9 @@ class AnalysisVerification(StrictModel):
     evidence_ratio: float = Field(ge=0, le=1)
     warnings: list[str] = Field(default_factory=list, description="Kullanıcıya dönük notlar")
     repair: RepairRequest | None = None
+    finding_checks: list[FindingCheck] = Field(
+        default_factory=list, description="Doğrulama geçişi kararları (Faz 35)"
+    )
 
 
 class SocraticVerification(StrictModel):

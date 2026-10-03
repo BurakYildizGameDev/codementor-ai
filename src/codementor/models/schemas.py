@@ -13,6 +13,7 @@ from codementor.models.llm_output import (
     LLMAnalysisOutput,
     LLMSinglePassOutput,
     LLMSocraticOutput,
+    LLMVerifyOutput,
 )
 from codementor.models.pipeline import StageEvent
 from codementor.models.provider import ProviderStatus
@@ -27,6 +28,7 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "llm_analysis.schema.json": LLMAnalysisOutput,
     "llm_socratic.schema.json": LLMSocraticOutput,
     "llm_single_pass.schema.json": LLMSinglePassOutput,
+    "llm_verify.schema.json": LLMVerifyOutput,  # bulgu doğrulama geçişi (Faz 35)
     # Web UI tipleri bunlardan üretilir (web/scripts/gen-types.mjs)
     "request.schema.json": AnalysisRequest,
     "stage_event.schema.json": StageEvent,

@@ -32,12 +32,7 @@ from codementor.models.verification import (
     SocraticVerification,
 )
 from codementor.verify.complexity import check_complexity
-from codementor.verify.confidence import (
-    LLM_EXACT_CONFIDENCE,
-    LLM_SHIFTED_CONFIDENCE,
-    analysis_confidence,
-    evidence_ratio,
-)
+from codementor.verify.confidence import analysis_confidence, evidence_ratio, finding_confidence
 from codementor.verify.leak_guard import check_leaks, decide_leak_action
 from codementor.verify.lines import check_line_range, match_evidence
 from codementor.verify.merge import merge_findings
@@ -64,7 +59,7 @@ def _to_finding(
         evidence=finding.evidence,
         description=finding.description,
         source=FindingSource.LLM,
-        confidence=LLM_SHIFTED_CONFIDENCE if shifted else LLM_EXACT_CONFIDENCE,
+        confidence=finding_confidence(finding.certainty, shifted=shifted),
     )
 
 

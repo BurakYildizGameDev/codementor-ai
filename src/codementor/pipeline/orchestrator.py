@@ -170,7 +170,16 @@ class Orchestrator:
             prompt_version=version,
             rules_version=rules_version(),
             schema_version=SCHEMA_VERSION,
+            pipeline=self._pipeline_signature(run.request),
         )
+
+    def _mode(self, request: AnalysisRequest) -> PipelineMode:
+        return request.options.mode or PipelineMode(self.settings.pipeline.mode)
+
+    def _pipeline_signature(self, request: AnalysisRequest) -> str:
+        """Önbellek anahtarı için çıktıyı etkileyen pipeline ayarları (Faz 35)."""
+        verify = "+verify" if self.settings.pipeline.verify_findings else ""
+        return f"{self._mode(request).value}{verify}"
 
     async def _tier1(self, code: NormalizedCode, request: AnalysisRequest) -> Tier1Result:
         """Tier 1 iş parçacığında koşar (olay döngüsünü kilitlemez); görev iptal edilirse
@@ -233,7 +242,7 @@ class Orchestrator:
             code, static.findings, static.facts_input.hint, run.context, reference, settings
         )
         llm = LLMSession(provider, settings, timer)
-        mode = run.request.options.mode or PipelineMode(settings.pipeline.mode)
+        mode = self._mode(run.request)
         try:
             outcome = await run_llm_passes(
                 llm, static, verify, profile, mode=mode, provider=run.provider_name

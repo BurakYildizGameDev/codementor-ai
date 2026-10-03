@@ -149,6 +149,14 @@ class SocraticPromptInput(StrictModel):
     attempt: int = Field(default=1, ge=1)
 
 
+class VerifyPromptInput(StrictModel):
+    """Doğrulama geçişi girdisi (Faz 35): yalnızca LLM bulguları, numaralı sırayla."""
+
+    code: NormalizedCode
+    question: QuestionContext | None = None
+    findings: list[Finding] = Field(min_length=1)
+
+
 class BuiltPrompt(StrictModel):
     """Oluşturulan mesajlar ve bütçe bilgisi."""
 

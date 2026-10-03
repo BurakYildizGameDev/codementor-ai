@@ -15,6 +15,11 @@ from codementor.models.enums import AuditCategory, Severity
 
 # Soru başına üst sınır (Faz 27): sızıntı denetiminin regex süresi doğrusal kalsın
 MAX_QUESTION_CHARS = 1000
+# Doğrulama geçişinde gösterim alanı başına üst sınır (Faz 35)
+MAX_PROOF_CHARS = 300
+
+# Modelin bulguya kendi güveni (Faz 35). `confidence` sistem alanıdır; LLM şemasında yer almaz.
+Certainty = Literal["high", "medium", "low"]
 
 
 class LLMFinding(StrictModel):
@@ -24,6 +29,7 @@ class LLMFinding(StrictModel):
     line_end: int | None = None
     evidence: str = Field(max_length=200, description="Satırdan birebir alıntı")
     description: str = Field(max_length=400)
+    certainty: Certainty | None = None  # anlamı prompt kurallarında (Faz 35)
 
 
 class LLMComplexity(StrictModel):
@@ -62,3 +68,29 @@ class LLMSinglePassOutput(StrictModel):
 
     analysis: LLMAnalysisOutput
     socratic: LLMSocraticOutput
+
+
+class LLMFindingVerdict(StrictModel):
+    """Doğrulama geçişi (Faz 35): tek bir bulgunun kanıtı ya da reddi."""
+
+    finding: int = Field(ge=1, description="Doğrulanan bulgunun listedeki numarası")
+    verdict: Literal["proven", "unproven"]
+    input: str | None = Field(
+        default=None, max_length=MAX_PROOF_CHARS, description="Hatayı ortaya çıkaran somut girdi"
+    )
+    expected: str | None = Field(
+        default=None, max_length=MAX_PROOF_CHARS, description="Bu girdide doğru davranış"
+    )
+    actual: str | None = Field(
+        default=None, max_length=MAX_PROOF_CHARS, description="Kodun bu girdide yaptığı"
+    )
+    requirement: str | None = Field(
+        default=None, max_length=MAX_PROOF_CHARS, description="İhlal edilen soru gereksinimi"
+    )
+    reason: str = Field(max_length=400)
+
+
+class LLMVerifyOutput(StrictModel):
+    """Doğrulama geçişi çıktısı: her LLM bulgusu için bir karar."""
+
+    verdicts: list[LLMFindingVerdict] = Field(max_length=10)

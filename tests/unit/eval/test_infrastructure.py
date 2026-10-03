@@ -299,3 +299,12 @@ def test_cli_check_drafts_and_promote(dataset: Path) -> None:
     )
     assert moved.exit_code == 0
     assert (dataset / "test" / "c-002").is_dir()
+
+
+def test_verify_ablation_enables_flag(settings: Settings) -> None:
+    """Faz 35: `--ablation verify` doğrulama geçişini açar; diğer ayarlara dokunmaz."""
+    assert not settings.pipeline.verify_findings
+    enabled = apply_ablations(settings, ["verify"])
+    assert enabled.pipeline.verify_findings
+    assert enabled.prompts == settings.prompts
+    assert not apply_ablations(settings, ["fewshot0"]).pipeline.verify_findings

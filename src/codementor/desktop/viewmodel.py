@@ -25,12 +25,16 @@ class StageGroup:
     stages: tuple[Stage, ...]
 
 
-# 13 iç aşama kullanıcıya 6 anlamlı adım olarak gösterilir.
+# 16 iç aşama kullanıcıya 6 anlamlı adım olarak gösterilir.
 STAGE_GROUPS: tuple[StageGroup, ...] = (
     StageGroup("prepare", "Hazırlık", ("cache", "ingest")),
     StageGroup("compile", "Derleme denetimi", ("tier0", "tier1")),
     StageGroup("static", "Statik analiz", ("facts", "rules")),
-    StageGroup("analysis", "Derin analiz", ("prompt_a", "llm_a", "verify_a")),
+    StageGroup(
+        "analysis",
+        "Derin analiz",
+        ("prompt_a", "llm_a", "verify_a", "prompt_v", "llm_v", "verify_v"),
+    ),
     StageGroup("mentor", "Mentor soruları", ("prompt_b", "llm_b", "verify_b")),
     StageGroup("report", "Rapor", ("report",)),
 )

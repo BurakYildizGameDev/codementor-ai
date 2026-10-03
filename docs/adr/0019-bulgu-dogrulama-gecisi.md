@@ -1,0 +1,55 @@
+# ADR-0019: LLM bulguları için doğrulama geçişi
+
+**Tarih:** 2026-10-03 · **Durum:** Kabul edildi (varsayılan kapalı; açma kararı canlı ölçüme bağlı) ·
+**Etkilenen bölümler:** mimari §4, §5.4.2, §5.6, §6.3, §11, §17; ADR-0003
+
+## Bağlam
+
+Faz 22B'de prompt kuralları C ailesinde F1'i 48'den 75'e çıkardı. Ama precision'ın kalan açığı
+tek prompt'la kapanmıyor: model "olabilir" türünden bulgular yazıyor ve K5 bunları yalnızca
+kanıt satırı kodda var mı diye denetliyor. Rapordaki bulgu `confidence` değeri de modelden
+gelmiyordu. Sistem kanıt eşleşmesine göre sabit 0,7 / 0,6 veriyordu, yani doğru ve yanlış
+bulguları ayırt etmiyordu (Faz 22B ölçümü).
+
+## Karar
+
+1. Geçiş A ile Sokratik geçiş arasına isteğe bağlı bir **doğrulama geçişi** eklenir
+   (`prompt_v` → `llm_v` → `verify_v`, şema `LLMVerifyOutput`, şablon `prompts/v1/verify.*.j2`).
+   Yalnızca kaynağı `llm` olan bulgular girer. Statik ve `confirmed` bulgular deterministiktir,
+   doğrulanmaz. Doğrulanacak LLM bulgusu yoksa çağrı yapılmaz.
+2. Model her bulgu için `proven` / `unproven` kararı verir. `proven` için ya somut bir girdi
+   (`input`, `expected`, `actual`) ya da sorudan ihlal edilen gereksinim (`requirement`)
+   göstermek **zorundadır**. Bunu sistem denetler: alanları boş bir `proven` de düşer.
+   Kararlar ve gerekçeler `AnalysisVerification.finding_checks`'te tutulur. Öğrenciye
+   gösterilmezler ve gerekçeler yine de sızıntı korumasından geçer (§12).
+3. **Güvenli geri dönüş:** Sağlayıcı ya da bütçe hatası olursa, ya da şema onarımdan sonra da
+   bozuksa bulgular olduğu gibi kalır ve uyarı yazılır. Model bir bulgu için karar vermediyse
+   bulgu korunur (bilgi kaybı yok).
+4. `single_pass` modunda doğrulama bir bulguyu düşürürse tek çağrının Sokratik çıktısı atılır,
+   ayrı bir Geçiş B üretilir (sorular düşen bulguya dayanıyor olabilir). Hiçbir bulgu düşmezse
+   ilk çıktı aynen kullanılır.
+5. Modelin kendi güveni `LLMFinding.certainty` (`high` / `medium` / `low`, isteğe bağlı) olarak
+   şemaya eklenir. Alan adı `confidence` değildir, çünkü o rapor şemasında sistem alanıdır
+   (ADR-0004). Rapordaki bulgu güveni: high 0,85, medium 0,7, low 0,5. Satır düzeltildiyse bu
+   değerden 0,1 düşülür. Beyan yoksa eski 0,7 / 0,6 kalır.
+6. `pipeline.verify_findings` (varsayılan `false`) ile açılır. Önbellek anahtarına pipeline
+   imzası (mod + doğrulama) eklenir. Mod daha önce anahtarda yoktu ve bu bir açıktı.
+7. Ölçüm araçları: `eval run --ablation verify` doğrulamalı koşu yapar. `eval analyze`,
+   LLM bulgularını güven eşiğine (0,5 / 0,6 / 0,7 / 0,85) göre süzerek precision/recall tablosu
+   üretir.
+
+## Sonuçlar
+
+- (+) Precision'ı prompt'tan bağımsız, açıklanabilir bir adımla artırma imkânı. Kararın
+  gerekçesi kayıtlıdır.
+- (+) `certainty` ile güven eşiği uygulanabilir. Eşik kararı ölçümle verilir.
+- (−) LLM bulgusu olan her analizde bir çağrı daha yapılır: gecikme ve token artar. Bu yüzden
+  varsayılan kapalıdır.
+- (−) Doğrulayıcı da bir LLM'dir. Gerçek bulguları da düşürebilir (recall kaybı). Bunun
+  ölçülmesi gerekir.
+
+## Açık: canlı ölçüm (Faz 35 Aşama B)
+
+Yalnızca dev bölümünde, `claude_cli` ile doğrulamalı ve doğrulamasız `two_pass` karşılaştırması
+yapılacak: precision, recall, gecikme ve token farkı. Varsayılanın açılıp açılmayacağı ve
+güven eşiği bu ölçümle kararlaştırılıp buraya yazılacak. Koşu kullanıcı onayı bekliyor.

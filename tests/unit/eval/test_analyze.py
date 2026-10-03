@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from codementor.cli.main import app
@@ -174,3 +175,22 @@ def test_eval_analyze_cli_writes_markdown(tmp_path: Path) -> None:
 def test_eval_analyze_cli_bad_file(tmp_path: Path) -> None:
     out = CliRunner().invoke(app, ["eval", "analyze", str(tmp_path / "yok.json")])
     assert out.exit_code == 3
+
+
+def test_confidence_threshold_table() -> None:
+    """Faz 35: eşik altındaki LLM bulguları atılınca precision/recall; statik hep kalır."""
+    lb = label(findings=[(MEM, 4), (PERF, 10)])
+    sure = _f(MEM, 4, "F-001").model_copy(update={"confidence": 0.85})
+    unsure = _f(DESIGN, 20, "F-002").model_copy(update={"confidence": 0.5})
+    static = _f(PERF, 10, "F-003").model_copy(
+        update={"confidence": 0.4, "source": FindingSource.STATIC}
+    )
+    analysis = analyze(_run([result(report(findings=[sure, unsure, static]))]), _labels(lb))
+    table = {row.threshold: row for row in analysis.thresholds}
+    assert sorted(table) == [0.5, 0.6, 0.7, 0.85]
+    assert table[0.5].scores.precision == pytest.approx(2 / 3)
+    assert table[0.5].kept == 3
+    assert table[0.6].scores.precision == 1.0
+    assert table[0.6].kept == 2
+    assert table[0.85].scores.recall == 1.0
+    assert "## Güven eşiği" in analysis_markdown(analysis)

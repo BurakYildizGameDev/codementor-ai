@@ -1,0 +1,111 @@
+{
+  "$defs": {
+    "LLMFindingVerdict": {
+      "additionalProperties": false,
+      "description": "Doğrulama geçişi (Faz 35): tek bir bulgunun kanıtı ya da reddi.",
+      "properties": {
+        "actual": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Kodun bu girdide yaptığı",
+          "title": "Actual"
+        },
+        "expected": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Bu girdide doğru davranış",
+          "title": "Expected"
+        },
+        "finding": {
+          "description": "Doğrulanan bulgunun listedeki numarası",
+          "minimum": 1,
+          "title": "Finding",
+          "type": "integer"
+        },
+        "input": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hatayı ortaya çıkaran somut girdi",
+          "title": "Input"
+        },
+        "reason": {
+          "maxLength": 400,
+          "title": "Reason",
+          "type": "string"
+        },
+        "requirement": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "İhlal edilen soru gereksinimi",
+          "title": "Requirement"
+        },
+        "verdict": {
+          "enum": [
+            "proven",
+            "unproven"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "finding",
+        "verdict",
+        "reason"
+      ],
+      "title": "LLMFindingVerdict",
+      "type": "object"
+    }
+  },
+  "$id": "llm_verify.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Doğrulama geçişi çıktısı: her LLM bulgusu için bir karar.",
+  "properties": {
+    "verdicts": {
+      "items": {
+        "$ref": "#/$defs/LLMFindingVerdict"
+      },
+      "maxItems": 10,
+      "title": "Verdicts",
+      "type": "array"
+    }
+  },
+  "required": [
+    "verdicts"
+  ],
+  "title": "LLMVerifyOutput",
+  "type": "object"
+}

@@ -15,6 +15,7 @@ EXPECTED = {
     "llm_analysis.schema.json",
     "llm_socratic.schema.json",
     "llm_single_pass.schema.json",
+    "llm_verify.schema.json",
     # Web UI tipleri bunlardan üretilir (Faz 13, web/scripts/gen-types.mjs)
     "request.schema.json",
     "stage_event.schema.json",
@@ -52,7 +53,7 @@ def test_report_schema_title_and_version(tmp_path: Path) -> None:
 
 def test_llm_schema_excludes_system_fields() -> None:
     schemas = build_schemas()
-    for name in ("llm_analysis.schema.json", "llm_socratic.schema.json"):
+    for name in ("llm_analysis.schema.json", "llm_socratic.schema.json", "llm_verify.schema.json"):
         text = json.dumps(schemas[name])
         for field in ("compilation", "meta", '"source"', "confidence", "analysis_id"):
             assert field not in text, (name, field)

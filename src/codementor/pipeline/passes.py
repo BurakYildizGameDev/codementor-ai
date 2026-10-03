@@ -14,28 +14,38 @@ from codementor.models.llm_output import (
     LLMMarkupAnalysisOutput,
     LLMSinglePassOutput,
     LLMSocraticOutput,
+    LLMVerifyOutput,
 )
 from codementor.models.pipeline import Stage
-from codementor.models.prompts import BuiltPrompt, MentoringProfile, SocraticPromptInput
+from codementor.models.prompts import (
+    BuiltPrompt,
+    MentoringProfile,
+    SocraticPromptInput,
+    VerifyPromptInput,
+)
 from codementor.models.provider import GenerationOptions, ProviderResult, TokenUsage
 from codementor.models.report import SocraticResult
 from codementor.models.verification import AnalysisVerification, SocraticVerification
 from codementor.pipeline.events import StageTimer
 from codementor.pipeline.stages import StaticAnalysis, VerifyArgs
-from codementor.prompts.budget import estimate_messages, estimate_tokens
+from codementor.prompts.budget import PromptBudgetError, estimate_messages, estimate_tokens
 from codementor.prompts.builder import (
     build_analysis_messages,
     build_markup_analysis_messages,
     build_repair_messages,
     build_single_pass_messages,
     build_socratic_messages,
+    build_verify_messages,
 )
-from codementor.providers.base import LLMProvider
+from codementor.providers.base import LLMProvider, ProviderError
+from codementor.verify.proof import apply_verdicts, redact_reasons, verify_targets
 from codementor.verify.schema_check import check_schema
 
 # `verify_a` olayının `detail`i: eval `schema_valid_first_try/after_repair` buradan ölçer
 SCHEMA_OK = "schema:ok"
 SCHEMA_INVALID = "schema:invalid"
+VERIFY_STAGES: tuple[Stage, ...] = ("prompt_v", "llm_v", "verify_v")
+VERIFY_FAILED = "Bulgu doğrulama geçişi tamamlanamadı; bulgular olduğu gibi bırakıldı."
 
 
 @dataclass
@@ -160,15 +170,13 @@ async def run_pass_b(
     return None
 
 
-async def run_pass_socratic_schema(
-    llm: LLMSession, built: BuiltPrompt
-) -> tuple[LLMSocraticOutput | None, BuiltPrompt]:
-    """Sokratik yanıtı şemaya uydur (onarımlı)."""
-    result = await llm.call("llm_b", built, LLMSocraticOutput)
+async def call_structured[M: BaseModel](
+    llm: LLMSession, stage: Stage, built: BuiltPrompt, model: type[M]
+) -> tuple[M | None, BuiltPrompt]:
+    """Yanıtı şemaya uydur (`max_repair_attempts` kez onarımlı); olmazsa None."""
+    result = await llm.call(stage, built, model)
     for attempt in range(llm.settings.pipeline.max_repair_attempts + 1):
-        parsed, check = check_schema(
-            LLMSocraticOutput, parsed=result.parsed, raw_text=result.raw_text
-        )
+        parsed, check = check_schema(model, parsed=result.parsed, raw_text=result.raw_text)
         if parsed is not None:
             return parsed, built
         if attempt == llm.settings.pipeline.max_repair_attempts:
@@ -177,8 +185,60 @@ async def run_pass_socratic_schema(
         built = build_repair_messages(
             built, raw_text=result.raw_text, errors=check.errors, settings=llm.settings
         )
-        result = await llm.call("llm_b", built, LLMSocraticOutput)
+        result = await llm.call(stage, built, model)
     return None, built
+
+
+async def run_pass_socratic_schema(
+    llm: LLMSession, built: BuiltPrompt
+) -> tuple[LLMSocraticOutput | None, BuiltPrompt]:
+    """Sokratik yanıtı şemaya uydur (onarımlı)."""
+    return await call_structured(llm, "llm_b", built, LLMSocraticOutput)
+
+
+async def run_pass_verify(
+    llm: LLMSession,
+    verification: AnalysisVerification,
+    verify: VerifyArgs,
+    provider: str | None,
+) -> tuple[AnalysisVerification, int]:
+    """Doğrulama geçişi (Faz 35, ADR-0019): LLM bulgularını kanıtlatır, kanıtlanamayanı atar.
+
+    Dönen sayı atılan bulgu sayısıdır. Sağlayıcı/bütçe hatası ya da onarımdan sonra da bozuk
+    şema bulguları değiştirmez; uyarı yazılır (güvenli geri dönüş).
+    """
+    targets = verify_targets(verification.findings)
+    if not targets:
+        for stage in VERIFY_STAGES:
+            llm.timer.skip(stage, "Doğrulanacak model bulgusu yok")
+        return verification, 0
+    try:
+        with llm.timer.stage("prompt_v"):
+            built = build_verify_messages(
+                VerifyPromptInput(code=verify.code, question=verify.question, findings=targets),
+                settings=llm.settings,
+                provider=provider,
+            )
+        parsed, _ = await call_structured(llm, "llm_v", built, LLMVerifyOutput)
+    except (ProviderError, PromptBudgetError) as exc:
+        llm.warnings.append(f"{VERIFY_FAILED} ({exc})")
+        return verification, 0
+    if parsed is None:
+        llm.warnings.append(VERIFY_FAILED)
+        return verification, 0
+    with llm.timer.stage("verify_v"):
+        result = apply_verdicts(verification.findings, parsed)
+        leaks = verify.leaks([c.reason for c in result.checks])
+        leaky = {v.index for v in leaks.violations if v.index is not None}
+        llm.timer.note("verify_v", f"dropped:{result.dropped}/{len(targets)}")
+    updated = verification.model_copy(
+        update={
+            "findings": result.findings,
+            "finding_checks": redact_reasons(result.checks, leaky),
+            "warnings": [*verification.warnings, *result.warnings],
+        }
+    )
+    return updated, result.dropped
 
 
 @dataclass
@@ -236,15 +296,23 @@ async def run_llm_passes(
     else:
         _, pass_a = await run_pass_a(llm, built, LLMAnalysisOutput, _identity, verify)
     if pass_a.verification is None or pass_a.output is None:
-        for stage in ("prompt_b", "llm_b", "verify_b"):
+        for stage in (*VERIFY_STAGES, "prompt_b", "llm_b", "verify_b"):
             timer.skip(stage, "Geçiş A doğrulanamadı")
         return LLMOutcome(verification=None, socratic=None)
+    verification = pass_a.verification
+    if settings.pipeline.verify_findings:
+        verification, dropped = await run_pass_verify(llm, verification, verify, provider)
+        if dropped:  # tek geçişin soruları atılan bulguya dayanıyor olabilir: ayrı Geçiş B
+            first = None
+    else:
+        for stage in VERIFY_STAGES:
+            timer.skip(stage, "Bulgu doğrulama kapalı")
     with timer.stage("prompt_b"):
         built_b = build_socratic_messages(
             SocraticPromptInput(
                 code=verify.code,
                 question=verify.question,
-                findings=pass_a.verification.findings,
+                findings=verification.findings,
                 complexity=(
                     pass_a.output.complexity
                     if isinstance(pass_a.output, LLMAnalysisOutput)
@@ -258,6 +326,6 @@ async def run_llm_passes(
     checked = await run_pass_b(llm, built_b, verify, profile.hint_level, first)
     if checked is None:
         return LLMOutcome(
-            pass_a.verification, None, ["Mentor soruları doğrulanamadı; şablon sorular kullanıldı."]
+            verification, None, ["Mentor soruları doğrulanamadı; şablon sorular kullanıldı."]
         )
-    return LLMOutcome(pass_a.verification, checked.result, list(checked.warnings))
+    return LLMOutcome(verification, checked.result, list(checked.warnings))

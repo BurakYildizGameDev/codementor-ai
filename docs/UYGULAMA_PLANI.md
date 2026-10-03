@@ -1412,7 +1412,7 @@ başına bir öğrencinin birkaç saatlik çalışmasına bile yetmiyor; zorluk 
 
 **Commit:** `feat(faz-30): soru bankası genişletme ve filtreler`
 
-### Faz 35 — Bulgu doğrulama geçişi (YAPILACAK, canlı ölçüm)
+### Faz 35 — Bulgu doğrulama geçişi (YAPILDI çevrimdışı; canlı ölçüm Aşama B bekliyor)
 
 **Dal:** `faz/35-bulgu-dogrulama` · **Mimari:** §5.4, §5.5 · **ADR:** yeni (ek LLM geçişi)
 
@@ -1421,22 +1421,26 @@ artırmak. Prompt kuralları (Faz 22B) tek başına sınırlı kalıyor. Ölçü
 `confidence` değeri modelden gelmiyor, sistem kanıt eşleşmesine göre veriyor (tam eşleşmede
 0,7), yani doğru ve yanlış bulguları ayırmıyor (Faz 22B ölçümü).
 
-- [ ] Geçiş A ile Sokratik geçişin arasına "doğrula" geçişi. Her LLM bulgusu için model, hatanın
+- [x] Geçiş A ile Sokratik geçişin arasına "doğrula" geçişi. Her LLM bulgusu için model, hatanın
       somut bir girdide nasıl ortaya çıktığını (girdi, beklenen, gerçekleşen) ya da hangi
       gereksinimi ihlal ettiğini göstermek zorunda; gösteremediği bulgu düşer. Şema
       `models/llm_output.py`'de, karar ve gerekçe `AnalysisVerification`'da
-- [ ] Statik bulgular doğrulamaya girmez (deterministik). Kanıt metni koddan birebir kalır
+- [x] Statik bulgular doğrulamaya girmez (deterministik). Kanıt metni koddan birebir kalır
       (mevcut doğrulayıcı)
-- [ ] Modelin kendi güveni (`high`/`medium`/`low`) şemaya eklenir ve rapordaki `confidence`
+- [x] Modelin kendi güveni (`high`/`medium`/`low`) şemaya eklenir ve rapordaki `confidence`
       buna göre hesaplanır; eval'de güven eşiği eğrisi ölçülür
-- [ ] Config: `pipeline.verify_findings = true|false` (varsayılan ölçümle kararlaştırılır),
+- [x] Config: `pipeline.verify_findings = true|false` (varsayılan ölçümle kararlaştırılır),
       single_pass'te de uygulanabilir
-- [ ] Sızıntı: doğrulama çıktısı öğrenciye gitmez; yine de sızıntı korumasından geçer (§12)
+- [x] Sızıntı: doğrulama çıktısı öğrenciye gitmez; yine de sızıntı korumasından geçer (§12)
 - [ ] Eval (yalnız dev): doğrulamalı / doğrulamasız two_pass, precision, recall, gecikme ve
       token farkı; ADR'de karar
-- [ ] Testler: FakeProvider ile düşen/kalan bulgu, şema hatasında güvenli geri dönüş
+- [x] Testler: FakeProvider ile düşen/kalan bulgu, şema hatasında güvenli geri dönüş
       (doğrulama başarısızsa bulgular olduğu gibi kalır ve uyarı yazılır), sızıntı korumasının
       uygulanması
+
+Uygulama notları: ADR-0019. Model güveni `certainty` adıyla (rapor `confidence` sistem alanı).
+Eval: `eval run --ablation verify`, `eval analyze` güven eşiği tablosu. Kalan: Aşama B canlı ölçüm
+(eval maddesi) ve varsayılan kararı.
 
 **Commit:** `feat(faz-35): LLM bulguları için doğrulama geçişi`
 

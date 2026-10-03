@@ -7,6 +7,7 @@ confidence = 0.4·şema_ilk_denemede_geçti
 
 from __future__ import annotations
 
+from codementor.models.llm_output import Certainty
 from codementor.models.verification import AgreementState
 
 SCHEMA_WEIGHT = 0.4
@@ -23,6 +24,17 @@ AGREEMENT_SCORES: dict[AgreementState, float] = {
 LLM_EXACT_CONFIDENCE = 0.7  # kanıt bildirilen satırda bulundu
 LLM_SHIFTED_CONFIDENCE = 0.6  # kanıt bulundu, satır düzeltildi
 CONFIRMED_CONFIDENCE = 0.95  # statik kural + LLM aynı sorunu bağımsız buldu
+# Modelin kendi beyanı (Faz 35): kanıt bildirilen satırda bulunduysa; satır düzeltildiyse eksi
+CERTAINTY_CONFIDENCE: dict[Certainty, float] = {"high": 0.85, "medium": 0.7, "low": 0.5}
+SHIFTED_PENALTY = 0.1
+
+
+def finding_confidence(certainty: Certainty | None, *, shifted: bool) -> float:
+    """LLM bulgusunun rapordaki güveni; model beyan etmediyse eski sabitler (Faz 9)."""
+    if certainty is None:
+        return LLM_SHIFTED_CONFIDENCE if shifted else LLM_EXACT_CONFIDENCE
+    score = CERTAINTY_CONFIDENCE[certainty] - (SHIFTED_PENALTY if shifted else 0.0)
+    return round(score, 4)
 
 
 def evidence_ratio(matched: int, total: int) -> float:

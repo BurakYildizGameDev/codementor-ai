@@ -23,6 +23,8 @@ from codementor.models.eval import ExpectedFinding, Label, RunResult
 from codementor.models.findings import Finding
 
 TEXT_LIMIT = 80
+# Faz 35: LLM bulgularının güven eşikleri (verify/confidence.py değerleriyle hizalı)
+CONFIDENCE_THRESHOLDS = (0.5, 0.6, 0.7, 0.85)
 FpDimension = Literal["category", "severity", "source"]
 
 
@@ -40,6 +42,15 @@ class FindingRow:
 
 
 @dataclass(frozen=True)
+class ThresholdRow:
+    """Güveni eşiğin altındaki LLM bulguları atıldığında skorlar; `kept` kalan bulgu sayısı."""
+
+    threshold: float
+    scores: AuditScores
+    kept: int
+
+
+@dataclass(frozen=True)
 class PrecisionAnalysis:
     strict: AuditScores
     line_only: AuditScores
@@ -50,6 +61,7 @@ class PrecisionAnalysis:
     false_positives: list[FindingRow]
     false_negatives: list[FindingRow]
     missing: list[str]
+    thresholds: list[ThresholdRow]
 
     def fp_by(self, dimension: FpDimension) -> dict[str, int]:
         """FP sayısı, verilen boyuta göre (çoktan aza)."""
@@ -87,6 +99,31 @@ def _without_low(pairs: list[Pair]) -> list[Pair]:
             report = report.model_copy(update={"findings": kept})
         filtered.append((label, result.model_copy(update={"report": report})))
     return filtered
+
+
+def _above(pairs: list[Pair], threshold: float) -> list[Pair]:
+    """Statik ve `confirmed` bulgular hep kalır; LLM bulgusu güveni eşiğin altındaysa atılır."""
+    filtered: list[Pair] = []
+    for label, result in pairs:
+        report = result.report
+        if report is not None:
+            kept = [
+                f
+                for f in report.findings
+                if f.source is not FindingSource.LLM or f.confidence >= threshold
+            ]
+            report = report.model_copy(update={"findings": kept})
+        filtered.append((label, result.model_copy(update={"report": report})))
+    return filtered
+
+
+def _thresholds(pairs: list[Pair]) -> list[ThresholdRow]:
+    rows: list[ThresholdRow] = []
+    for threshold in CONFIDENCE_THRESHOLDS:
+        kept = _above(pairs, threshold)
+        count = sum(len(r.report.findings) for _, r in kept if r.report is not None)
+        rows.append(ThresholdRow(threshold, audit_metrics(kept), count))
+    return rows
 
 
 def analyze(result: RunResult, labels: dict[str, Label]) -> PrecisionAnalysis:
@@ -147,6 +184,7 @@ def analyze(result: RunResult, labels: dict[str, Label]) -> PrecisionAnalysis:
         false_positives=fps,
         false_negatives=fns,
         missing=missing,
+        thresholds=_thresholds(pairs),
     )
 
 
@@ -187,6 +225,15 @@ def analysis_markdown(analysis: PrecisionAnalysis) -> str:
     ]
     if a.missing:
         lines.append(f"Etiketi bulunamayan örnekler: {', '.join(a.missing)}")
+    lines += ["", "## Güven eşiği", ""]
+    lines += [
+        "Güveni eşiğin altındaki LLM bulguları atılınca (statik ve teyitli bulgular kalır):",
+        "",
+    ]
+    lines += _table(
+        ["Eşik", "Kalan bulgu", "P", "R", "F1"],
+        [[f"≥ {row.threshold:g}", row.kept, *_scores("", row.scores)[1:]] for row in a.thresholds],
+    )
     dims: list[tuple[str, FpDimension]] = [
         ("Kategori", "category"),
         ("Önem", "severity"),

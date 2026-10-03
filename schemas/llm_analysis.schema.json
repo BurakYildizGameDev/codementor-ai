@@ -75,6 +75,23 @@
         "category": {
           "$ref": "#/$defs/AuditCategory"
         },
+        "certainty": {
+          "anyOf": [
+            {
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Certainty"
+        },
         "description": {
           "maxLength": 400,
           "title": "Description",

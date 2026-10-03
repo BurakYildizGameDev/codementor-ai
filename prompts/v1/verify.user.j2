@@ -1,0 +1,22 @@
+{% import "_macros.j2" as m %}
+{% if question %}
+{{ m.question_block(question) }}
+{% else %}
+## Serbest mod
+Soru bağlamı yok: gereksinime dayalı kanıt (requirement) kullanılamaz, yalnızca somut girdi gösterilebilir.
+{% endif %}
+
+{{ m.code_block(language, engine, code_view) }}
+
+## Sınanacak iddialar
+{% for f in findings %}
+### Bulgu {{ loop.index }}
+- Satır: {{ f.line_start }}{% if f.line_end and f.line_end != f.line_start %}–{{ f.line_end }}{% endif %}
+
+- Kategori: {{ f.category }}, önem: {{ f.severity }}
+- Kanıt: `{{ f.evidence | guard }}`
+- İddia: {{ f.description | guard }}
+{% endfor %}
+
+## Görev
+Yukarıdaki {{ findings | length }} iddianın her biri için kodu izleyerek karar ver. Yanıt olarak yalnızca şemaya uyan JSON nesnesini döndür.

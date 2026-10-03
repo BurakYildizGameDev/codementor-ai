@@ -29,8 +29,10 @@ def cache_key(
     prompt_version: str,
     rules_version: str,
     schema_version: str,
+    pipeline: str,
 ) -> str:
-    """§11'deki alanların tamamından belirleyici anahtar."""
+    """§11'deki alanların tamamından belirleyici anahtar. `pipeline`: çıktıyı değiştiren
+    pipeline ayarları (mod, doğrulama geçişi; Faz 35), ör. `"two_pass+verify"`."""
     fields = [
         normalized_code,
         language,
@@ -42,6 +44,7 @@ def cache_key(
         prompt_version,
         rules_version,
         schema_version,
+        pipeline,
     ]
     digest = hashlib.sha256()
     for value in fields:

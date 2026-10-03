@@ -208,3 +208,18 @@ def test_socratic_all_dropped_returns_no_result() -> None:
     assert result.result is None
     assert result.decision.all_dropped
     assert any("tümü" in w for w in result.warnings)
+
+
+def test_llm_certainty_sets_finding_confidence() -> None:
+    """Faz 35: modelin `certainty` beyanı rapordaki bulgu güvenine yansır."""
+    sure = _llm(3, "i <= n").model_copy(update={"certainty": "low"})
+    result = verify_analysis(
+        _output(sure),
+        code=CODE,
+        static_findings=[],
+        hint=HINT,
+        expected=None,
+        schema_first_try=True,
+        settings=SETTINGS,
+    )
+    assert [f.confidence for f in result.findings] == [pytest.approx(0.5)]

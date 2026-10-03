@@ -187,6 +187,7 @@ flowchart TD
 | 6 | K3-A | olgular + soru + kontrol listesi | analiz prompt'u | Hayır |
 | 7 | K4 | prompt + şema | ham JSON | **Evet** |
 | 8 | K5 | ham JSON + olgular | `VerifiedAnalysis` | Hayır |
+| 8b | K3-V + K4 + K5 | LLM bulguları | kanıtlanamayan bulgu düşer (yalnız `pipeline.verify_findings`; ADR-0019) | **Evet** |
 | 9 | K3-B + K4 | doğrulanmış analiz | Sokratik JSON | **Evet** |
 | 10 | K5 | Sokratik JSON + referans çözüm | sızıntı kontrolü geçti | Hayır |
 | 11 | K6 | tüm parçalar | `AnalysisReport` + önbelleğe yazma | Hayır |
@@ -393,6 +394,8 @@ class UnityAllocInUpdate(Rule):
 | A — Analiz | Karmaşıklık + gerekçe adımları, ek bulgular | `LLMAnalysisOutput` | Teknik doğruluk; düşük sıcaklık |
 | B — Mentorluk | Doğrulanmış analizden Sokratik sorular üret | `LLMSocraticOutput` | Doğrulanmamış bulgular soruya dönüşmez; sızıntı kontrolü ayrı yapılır; ton ayarı bağımsız |
 
+**Doğrulama geçişi (Faz 35, ADR-0019):** `pipeline.verify_findings = true` ise A ile B arasında her LLM bulgusu ayrı bir çağrıda (`LLMVerifyOutput`) sınanır; model somut bir girdi (girdi/beklenen/gerçekleşen) ya da ihlal edilen gereksinim gösteremezse bulgu düşer. Statik ve `confirmed` bulgular girmez; hata/bozuk şemada bulgular olduğu gibi kalır. `single_pass`'ta bulgu düşerse Sokratik çıktı ayrı Geçiş B ile yeniden üretilir. Varsayılan kapalı (ek çağrı); karar canlı ölçüme bağlı.
+
 `pipeline.mode = "single_pass"` ile tek çağrıya indirilebilir (maliyet/gecikme için). Faz 12 eval sonucu (ADR-0003): kalite farkı ölçülmedi, single_pass ~%35–45 hızlı ama sızıntı koruması ~1,5× sık devreye giriyor; varsayılan `two_pass` kalır (güvenlik payı), `single_pass` hızlı mod.
 
 #### 5.4.3 Zorluk → mentorluk ayarı
@@ -502,6 +505,8 @@ Bu katman "halüsinasyonu nasıl engelliyorsun?" sorusunun asıl cevabıdır.
 
 **Uygulama notları (Faz 9):** kanıt aramasında `Line 18:` / `18 |` önekleri, çevreleyen tırnak, sondaki `;` ve Faz 8'in `&lt;` kaçışı yok sayılır; `O(...)` dışındaki ekler (`per frame`, `amortized`, `Θ(...)`) normalize edilir. Sızıntı korumasında öğrencinin kendi kodundan birebir alıntı ve Türkçe düzyazıdaki `;` kod sayılmaz; genel adlar `data/leak_common_identifiers.yaml`'dadır; 1000 karakteri aşan soru/ipucu ihlaldir (regex süresi doğrusal kalsın). Kontrolleri sırayla çağıran `verify/analysis.py` (`verify_analysis`, `verify_socratic`) karar döndürür; onarımı Faz 10 pipeline'ı yapar.
 
+**Bulgu güveni (Faz 35):** LLM bulgusu `certainty` (`high`/`medium`/`low`) beyan ederse güven 0,85 / 0,7 / 0,5 (satır düzeltildiyse −0,1); beyan yoksa 0,7 / 0,6. Teyitli (`confirmed`) bulgu ≥ 0,95. `eval analyze` LLM bulgularını bu güvene göre eşikleyerek precision/recall tablosu verir.
+
 **Big-O dilbilgisi (desteklenen):** `1`, `log n`, `n`, `n log n`, `n^k`, `2^n`, `n!`, çok değişkenli çarpım/toplam (`n*m`, `V+E`). Tek değişkenli ifadeler sıralanabilir (`1 < log n < n < n log n < n^2 < ... < 2^n < n!`); `is_optimal` kontrolü bu sıralamayla doğrulanır.
 
 **Güven skoru (0–1):**
@@ -599,6 +604,7 @@ class LLMFinding(BaseModel):
     line_end: int | None = None
     evidence: str = Field(max_length=200, description="Satırdan birebir alıntı")
     description: str = Field(max_length=400)
+    certainty: Literal["high", "medium", "low"] | None = None  # Faz 35; rapor güveni buradan
 
 
 class LLMComplexity(BaseModel):
@@ -625,6 +631,20 @@ class LLMSocraticOutput(BaseModel):
 class LLMSinglePassOutput(BaseModel):  # pipeline.mode = "single_pass" (§5.4.2)
     analysis: LLMAnalysisOutput
     socratic: LLMSocraticOutput
+
+
+class LLMFindingVerdict(BaseModel):  # doğrulama geçişi (Faz 35, ADR-0019)
+    finding: int = Field(ge=1)  # LLM bulgusunun listedeki numarası
+    verdict: Literal["proven", "unproven"]
+    input: str | None = None  # proven: input + expected + actual ya da requirement zorunlu
+    expected: str | None = None
+    actual: str | None = None
+    requirement: str | None = None
+    reason: str = Field(max_length=400)
+
+
+class LLMVerifyOutput(BaseModel):
+    verdicts: list[LLMFindingVerdict] = Field(max_length=10)
 ```
 
 ### 6.4 Rapor modeli
@@ -1044,7 +1064,7 @@ codementor schema export --out schemas/
 | `eval_results` | `run_id`, `sample_id`, `passed_checks_json`, `report_json` |
 
 - **Önbellek anahtarı:**
-  `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version)`
+  `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version | pipeline)`; `pipeline` mod ve doğrulama geçişi imzasıdır, ör. `two_pass+verify` (Faz 35)
 - Önbellek isabeti `meta.cache_hit = true` ile işaretlenir; eval çalıştırmalarında önbellek **kapalıdır**.
 
 ---
@@ -1283,6 +1303,7 @@ sha256 = "089a16a4…"
 mode = "two_pass"            # two_pass | single_pass
 max_repair_attempts = 1
 use_cache = true
+verify_findings = false      # Faz 35 (ADR-0019): LLM bulguları için ayrı doğrulama çağrısı
 
 [rules]
 disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]
@@ -1439,6 +1460,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0012 | CLI ajanları (Claude Code, Antigravity) sağlayıcı olarak | Abonelikle API anahtarsız kullanım; araçlar kapalı, prompt stdin'den, süreç yalıtımı ([docs/adr/0012](adr/0012-cli-ajanlari-saglayici.md)) |
 | ADR-0016 | Yapılandırma yollarının çözümü ve paket verisi | Çalışma dizininden bağımsız çalışma; wheel `data/` ve `prompts/`'u içerir ([docs/adr/0016](adr/0016-yol-cozumu.md)) |
 | ADR-0017 | OpenAI Codex CLI sağlayıcı olarak | ChatGPT aboneliğiyle API anahtarsız; salt okunur sandbox, kullanıcı ayarları yok sayılır, açık onay ([docs/adr/0017](adr/0017-codex-cli-saglayici.md)) |
+| ADR-0019 | LLM bulguları için doğrulama geçişi (varsayılan kapalı) | Kanıtlanamayan bulgu düşer; precision prompt'tan bağımsız artar, bedeli ek çağrı ([docs/adr/0019](adr/0019-bulgu-dogrulama-gecisi.md)) |
 
 ---
 
