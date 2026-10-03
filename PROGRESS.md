@@ -671,7 +671,60 @@
 **Açık sorular:** (1) **agy hesabı:** oturum açık (`agy models` 14 model listeliyor) ama her modelde (Gemini 3.8 Flash, Claude Sonnet 4.6) tur başlıyor, `streamGenerateContent` isteği gidiyor ve 60 sn'de hiç adım gelmiyor (`num_turns: 0`). Bizim argv'den bağımsız (düz `agy -p "merhaba"` de aynı). Kullanıcının etkileşimli `agy` ile yanıt alıp alamadığı bekleniyor; alırsa tek analizle canlı doğrulama. (2) API anahtarı yok: Gemini API sağlayıcısı ve OpenAI/DeepSeek canlı teşhisi ertelendi.
 **Bu fazda öğrendiğim:** CLI'ların bayrak sözdizimi sürümle değişiyor (agy `-p`); her CLI için sürümü ve `--help`'i canlı kontrol etmek, sahte betikli testlerin göremediği hatayı gösteriyor. Model kataloğu ≠ erişim.
 
+## Faz 29 — Notlar (derleyicisiz kullanıcı: indirilebilir zig, gömülü Roslyn; ADR-0018)
+**Ölçüm (Windows 11):** `ziglang` 0.16.0 wheel'i 99 MB indirme, açılınca 382 MB. `zig cc -` temizlenmiş ortamda çöküyor (`AppDataDirUnavailable`); önbellek dizini verilince çalışıyor ama stdin'i önbellek dizinine `…-stdin.c` olarak **diske yazıyor** (§5.2.3 ihlali). `zig clang <bayraklar> -x c -` ise diske dosya yazmıyor ve `<stdin>:L:C:` biçiminde tanı veriyor. `run_process` sınırlarıyla süreler: C 0,06–0,1 sn, C++ (`<iostream>`) 1,4 sn, Unreal stub 0,24 sn. Bayrak sondası `zig c++ -###` düz hâliyle 23–38 sn sürüyor ve 105 MB kütüphane derliyor; `-c` ile 0,19 sn. Self-contained Roslyn: kırpılmamış 83 MB, trimmed 14,8 MB, çalışıyor (0,35–0,66 sn).
+
+**Yapılanlar:**
+- **Yeni modüller (`validation/`):**
+  - `zig.py`: `-cc1` ayrıştırma (hedef, `-nostdinc`, `-isystem`, `-D`; göreli yol ya da hiç `-isystem` yoksa sonuç `None`) ve `probe_flags` (boş girdi, silinen geçici önbellek, istisna fırlatmaz, loglar).
+  - `toolchain_install.py`:
+    - https kancası her yönlendirme adımını denetler; sha256 akışta hesaplanır ve açmadan önce diskten yeniden doğrulanır.
+    - `.install.lock` süreçler arası kilit; benzersiz `.part` adı.
+    - Staging'e açma, C ve C++ sondası, tamamlanma işareti, son iptal denetimi, atomik taşıma; çökme artıklarının temizliği ve yetim kalan eski kurulumun geri getirilmesi.
+  - `archive.py`: güvenli zip açma; Windows'a özgü adlar, ayrılmış aygıt adları ve büyük-küçük harf çakışması da reddedilir.
+- **Keşif (`toolchain.py`):**
+  - Sıra: `path_first` gcc/clang → PATH'teki zig → indirilen zig; `bundled_first` bunu çevirir. C#: dotnet + dll → self-contained exe.
+  - Zig yalnızca bir hedef boş kalırsa sondalanır. Keşif hiçbir zaman istisna fırlatmaz.
+  - `compiler_statuses()` API ile masaüstünün ortak özeti oldu; `CompilerStatus.origin` eklendi. `Runner` protokolü `runner.py`'ye taşındı (döngüsel içe aktarma).
+- **Yapılandırma:**
+  - `ValidationSettings`: `toolchain_dir` (varsayılan `~/.codementor/toolchain`), `toolchain_priority`, `roslyn_check_exe`, `zig` (`ZigSettings`, `DownloadSource` yalnız https).
+  - `codementor.toml`'da 6 platformun PyPI adresi ve sha256 değeri.
+- **CLI:** `codementor toolchain status` ve `codementor toolchain install zig` (Rich ilerleme çubuğu, Türkçe hata).
+- **Masaüstü:** Bağlantılar → Derleme kartında "Derleyiciyi indir (~100 MB)".
+  - Düğme yalnızca C ailesinde derleyici eksikse, zig kurulu değilse ve platform için kaynak tanımlıysa görünür.
+  - İlerleme çubuğu (MB) ve İptal düğmesi var. İptal edilince "İptal ediliyor…" görünür; sonuç işçi bittikten sonra gelir.
+  - Araç kökeni etikette gösterilir ("zig (indirilen)").
+- **Paketleme:**
+  - `make roslyn-check-sc`; `build_exe.py` self-contained Roslyn'i dll yerine tercih eder.
+  - CI exe işi: `dotnet publish -r win-x64 --self-contained -p:PublishTrimmed=true`.
+  - CI check (Linux): zig `actions/cache` ile önbelleklenir, `codementor toolchain install zig` ile kurulur; `CODEMENTOR_REQUIRE_ZIG=1`.
+- **Gerçek doğrulama:** Gerçek indirme 38 sn sürdü ve sha256 tuttu. `-m compiler` testleri yerelde zig ve self-contained Roslyn ile 17/17 yeşil; bu makinede gcc/clang yok.
+- **Testler:**
+  - `test_zig_flags.py` (12), `test_toolchain_install.py` (40), `test_toolchain.py` (+11), `test_cli_toolchain.py` (4).
+  - `test_tier1.py` (+1), `test_diagnostics.py` (+1; CRLF fixture, `.gitattributes` `-text`), `tests/api` (+1).
+  - Masaüstü: `test_services.py` (5), `test_app.py` (+3), `test_build_exe.py` (+1).
+  - `tests/compiler/test_tier1_zig.py` (11; keşif fikstürle tembel), `test_packaging.py` (CI sözleşmesi).
+  - `tests/conftest.py`: testler geliştiricinin `~/.codementor/toolchain` dizinini görmez.
+
+**Denetim (kod-denetci):** Kritik ve Yüksek yok. 6 Orta bulgunun hepsi düzeltildi ve testlendi:
+1. Eşzamanlı kurulumlar birbirinin dosyalarını siliyordu → süreçler arası kilit ve benzersiz `.part`.
+2. Masaüstünde iptal ile tamamlanma arasında yarış vardı; "silindi" mesajı silmeden önce görünüyordu → iptal işaret oldu, işaretten sonra iptal denetimi eklendi.
+3. Yalnız `-D` içeren cc1 satırı sessizce "başlık bulunamadı" üretiyordu → en az bir `-isystem` şartı.
+4. Keşif `PermissionError` ya da TEMP hatasıyla istisna fırlatıyordu → istisna fırlatmaz.
+5. Derleyici testi, testler toplanırken gerçek zig'i sondalıyordu → keşif fikstürle tembel.
+6. İndirme ile açma arasında TOCTOU açığı vardı → sha256 diskten yeniden doğrulanıyor.
+
+Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istisnalarının Türkçe'ye çevrilmesi; http yönlendirmesinin istek gitmeden engellenmesi; yetim eski kurulumun korunması; kurulumda C ve C++ sondası; sonda hatalarının loglanması; `strerror` `None` olunca mesaj. Kalan iki madde "Sonraya"da.
+**Mimariden sapmalar (ADR linki):** [ADR-0018](docs/adr/0018-gomulu-arac-zinciri.md). Mimaride değişenler: §5.2.2 tablosu, §5.2.3 zig maddesi, §12'de indirilen derleyici tehdidi, config örneği.
+**Açık sorular:**
+1. Linux'ta zig'in `RLIMIT_AS` 1 GB altındaki davranışı yerelde ölçülemedi (WSL yok); ilk CI koşusu doğrulayacak.
+2. Exe boyutunun gömülü Roslyn'le yaklaşık +15 MB büyümesi CI artefaktında ölçülecek.
+**Bu fazda öğrendiğim:** Bir aracın "stdin'den okur" demesi kodu diske yazmadığı anlamına gelmiyor; sözleşmeyi `-###` çıktısıyla doğrulamak gerekiyordu. Aynı aracın sürücüsü (`cc`) ile alt komutu (`clang`) arasında hem güvenlik hem 150 kat performans farkı çıkabiliyor.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 29: kurulu zig sürümünü `codementor.toml` ile karşılaştırıp masaüstünde "güncelle" önermek (işaret dosyasında sürüm/sha var, okunmuyor).
+- Faz 29: indirilen zig'den yerel hedef dışındaki libc başlıklarını budamak (382 MB → tahminen <150 MB).
+- Faz 29: tek dosya exe gömülü RoslynCheck.exe'yi %TEMP%'e açıyor; AppLocker/antivirüs engellerse `/health/ready`'de araç hatası. Gerekirse onedir dağıtımı ya da kullanıcı dizinine kopyalama.
 - Faz 26: API hız sınırı (istemci başına, süreçler arası doğru); web arayüzünün API anahtarı göndermesi.
 - Faz 26: SQLite çağrılarını da iş parçacığına almak (bağlantı başına iş parçacığı ya da havuz).
 - Faz 25: OpenAI katı mod kısıtlarını canlı anahtarla doğrulayıp `SchemaAdapter.openai_strict`'te desteklenenleri korumak.
@@ -763,8 +816,8 @@ Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
-3. **Faz 29 — Derleyicisiz kullanıcı:** Tier 1 PATH'teki gcc/clang/dotnet'e bağlı; öneri: C/C++/
-   Unreal için `zig cc`, C# için self-contained Roslyn; "Derleyiciyi indir" (sha256) ya da gömme. ADR.
+3. ~~**Faz 29 — Derleyicisiz kullanıcı.**~~ Yapıldı (ADR-0018): indirilebilir zig (`zig clang`),
+   gömülü self-contained Roslyn, "Derleyiciyi indir". Sıradaki: Faz 30.
 4. **Faz 30 — Soru bankası:** 18 soru → dil/motor başına ≥ 8 (~64), zorluk dağılımı, filtreler.
    Kullanıcı soru havuzu verecek; soruları ve referans çözümleri Claude yazar.
 5. **Faz 35 — Bulgu doğrulama geçişi (önemli):** her LLM bulgusu için ayrı bir "kanıtla"

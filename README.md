@@ -71,6 +71,7 @@ Derlemek için (Windows, depo kökünde):
 
 ```bash
 uv sync
+make roslyn-check-sc                 # isteğe bağlı: dotnet gerektirmeyen C# denetleyicisi (+~15 MB)
 uv run python build_exe.py --both    # dist/CodeMentor.exe (~37 MB) + dist/CodeMentor-0.1.0-win64.zip
 uv run python -m codementor.desktop  # derlemeden çalıştırmak için
 ```
@@ -89,7 +90,10 @@ toml'un bulunduğu dizine, varsayılanlar paketin kendi `data/` ve `prompts/` di
 Gerekenler: Python 3.12 + [uv](https://docs.astral.sh/uv/), Node.js 20+ ve bir LLM sağlayıcısı
 (varsayılan: oturum açılmış [Claude Code](https://claude.com/claude-code) CLI'ı, `claude`).
 İsteğe bağlı: gcc/clang (C/C++/Unreal Tier 1) ve .NET SDK (C# Tier 1, `make roslyn-check`).
-Derleyici yoksa Tier 1 atlanır, analiz yine çalışır.
+Derleyici yoksa Tier 1 atlanır, analiz yine çalışır. Derleyicin yoksa
+`uv run codementor toolchain install zig` zig'i (~100 MB, sha256 doğrulamalı) `~/.codementor`
+altına kurar; masaüstünde aynısı Bağlantılar → "Derleyiciyi indir" düğmesidir. Exe, C# için
+dotnet gerektirmeyen gömülü Roslyn'le gelir (ADR-0018). Durum: `codementor toolchain status`.
 
 ```bash
 git clone https://github.com/BurakYildizGameDev/codementor-ai.git

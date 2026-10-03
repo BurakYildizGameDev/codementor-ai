@@ -139,3 +139,13 @@ def test_long_message_is_capped() -> None:
     diags, _ = parse_compiler_output("<stdin>:1:1: error: " + "a" * 5000 + "\n", "gcc")
     assert len(diags[0].message) <= MAX_MESSAGE_CHARS + 1
     assert diags[0].message.endswith("…")
+
+
+def test_parse_zig_clang_crlf_output() -> None:
+    """`zig clang` (Faz 29) clang biçimini Windows'ta CRLF ile basar; `\r` mesaja sızmaz."""
+    raw = (SAMPLES / "zig_clang_cpp_crlf.txt").read_bytes().decode("utf-8")
+    assert "\r\n" in raw  # .gitattributes: -text
+    diags, capped = parse_compiler_output(raw, "clang")
+    assert [(d.line, d.column, d.severity) for d in diags] == [(5, 19, "error")]
+    assert diags[0].message == "expected ';' after expression"
+    assert not capped

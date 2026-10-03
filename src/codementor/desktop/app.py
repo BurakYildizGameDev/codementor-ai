@@ -133,6 +133,8 @@ class App(ctk.CTk):  # type: ignore[misc]
             self.open_folder,
             self._locations(),
             write_config=self.write_config,
+            download=self.connections.download_compiler,
+            cancel_download=self.connections.cancel_download,
         )
         self.connections.attach(self.settings_view)
         self.views: dict[str, ctk.CTkFrame] = {
@@ -252,7 +254,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         runtime.save_prefs(self.prefs, self.prefs_dir)
 
     def _on_message(self, message: Message) -> None:
-        if message.task.partition(":")[0] in ("probe", "test", "compilers"):
+        if message.task.partition(":")[0] in ("probe", "test", "compilers", "toolchain"):
             self.connections.handle(message)
             return
         handler = getattr(self, f"_on_{message.task}", None)

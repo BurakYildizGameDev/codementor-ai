@@ -12,6 +12,8 @@ from codementor.models.enums import CompilationStatus, Engine, Language
 from codementor.models.findings import CompilationBlock, Diagnostic
 
 DiagnosticTool = Literal["gcc", "clang", "roslyn"]
+# system: PATH'te bulundu · downloaded: kullanıcı dizinine indirildi · bundled: pakete gömülü
+ToolOrigin = Literal["system", "downloaded", "bundled"]
 
 
 class Tier0Result(StrictModel):
@@ -40,9 +42,10 @@ class SkipReason(StrEnum):
 class CompilerTool(StrictModel):
     """Keşfedilmiş bir derleyici/araç: çağrı öneki ve tanı biçimi."""
 
-    name: str = Field(description="gcc, g++, clang, clang++ veya roslyn-check")
+    name: str = Field(description="gcc, g++, clang, clang++, zig veya roslyn-check")
     kind: DiagnosticTool
     command: list[str] = Field(description="Mutlak yollu çağrı öneki")
+    origin: ToolOrigin = "system"
 
 
 class Toolchain(StrictModel):
@@ -93,3 +96,11 @@ class PolicyDecision(StrictModel):
     def to_block(self) -> CompilationBlock:
         """Rapordaki `compilation` bloğu."""
         return CompilationBlock(status=self.status, diagnostics=self.diagnostics)
+
+
+class DownloadProgress(StrictModel):
+    """Derleyici kurulumunun ilerlemesi (Faz 29): masaüstü ve CLI gösterir."""
+
+    stage: Literal["download", "extract", "check"]
+    done: int = Field(ge=0, description="İndirilen bayt / açılan dosya sayısı")
+    total: int | None = Field(default=None, ge=0, description="Bilinmiyorsa None")

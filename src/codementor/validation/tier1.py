@@ -13,8 +13,6 @@ from __future__ import annotations
 
 import re
 import threading
-from collections.abc import Mapping, Sequence
-from typing import Protocol
 
 from codementor.analysis.parsers import neutralize_unreal_macros
 from codementor.config import ValidationSettings
@@ -30,7 +28,7 @@ from codementor.validation.diagnostics import (
 )
 from codementor.validation.include_guard import check_includes
 from codementor.validation.python_check import check_python
-from codementor.validation.runner import ProcessLimits, ProcessResult, run_process
+from codementor.validation.runner import ProcessLimits, ProcessResult, Runner, run_process
 from codementor.validation.toolchain import get_toolchain
 
 _COMMON_FLAGS = ("-fsyntax-only", "-Wall", "-Wextra", "-fno-diagnostics-color")
@@ -56,20 +54,6 @@ _TARGET_NAMES = {
     (Language.CSHARP, Engine.UNITY): "Unity C#",
 }
 _MAX_REASONS_SHOWN = 3
-
-
-class Runner(Protocol):
-    """`run_process` imzası; testlerde sahtesi verilir."""
-
-    def __call__(
-        self,
-        argv: Sequence[str],
-        stdin: str,
-        limits: ProcessLimits,
-        *,
-        extra_env: Mapping[str, str] | None = None,
-        cancel: threading.Event | None = None,
-    ) -> ProcessResult: ...
 
 
 def _skipped(reason: SkipReason, message: str, tool: str | None = None) -> Tier1Result:

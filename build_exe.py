@@ -37,8 +37,10 @@ DATA = [
     (ROOT / "codementor.toml", "."),
     (ASSETS, "codementor/desktop/assets"),
 ]
-# Roslyn denetleyicisi derlenmişse (make roslyn-check) C# Tier 1 de pakete girer
+# Roslyn denetleyicisi pakete girer (C# Tier 1). Self-contained tek dosya (make roslyn-check-sc,
+# Faz 29) dotnet gerektirmez ve tercih edilir; yoksa dotnet'e bağlı derleme (make roslyn-check)
 ROSLYN_OUT = ROOT / "tools" / "roslyn-check" / "out"
+ROSLYN_SC = ROOT / "tools" / "roslyn-check" / "sc" / "RoslynCheck.exe"
 
 # Veri dosyaları ya da dinamik yüklenen uzantılar içeren paketler
 COLLECT_ALL = [
@@ -140,7 +142,9 @@ def pyinstaller_args(onefile: bool, console: bool, work: Path) -> list[str]:
     if onefile:
         args += ["--splash", str(ASSETS / "splash.png")]
     data = list(DATA)
-    if ROSLYN_OUT.is_dir():
+    if ROSLYN_SC.is_file():
+        data.append((ROSLYN_SC, "tools/roslyn-check/sc"))
+    elif ROSLYN_OUT.is_dir():
         data.append((ROSLYN_OUT, "tools/roslyn-check/out"))
     for source, target in data:
         args += ["--add-data", f"{source}{sep}{target}"]

@@ -10,11 +10,26 @@ import io
 import json
 import logging
 from collections.abc import Callable, Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
 
+import codementor.config
 from codementor.log import configure_logging
+from codementor.validation.toolchain import clear_toolchain_cache
+
+
+@pytest.fixture(autouse=True)
+def _isolated_toolchain_dir(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[None]:
+    """Testler geliştiricinin indirdiği derleyiciyi (~/.codementor/toolchain) görmez (Faz 29)."""
+    empty: Path = tmp_path_factory.getbasetemp() / "no-toolchain"
+    monkeypatch.setattr(codementor.config, "_default_toolchain_dir", lambda: empty)
+    clear_toolchain_cache()
+    yield
+    clear_toolchain_cache()
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

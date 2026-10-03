@@ -8,6 +8,40 @@ compile_timeout_s = 10
 compile_memory_mb = 1024     # POSIX RLIMIT_AS / Windows Job Object bellek sınırı
 stub_header = "data/stubs/ue_stubs.h"
 roslyn_check_dll = "tools/roslyn-check/out/RoslynCheck.dll"   # make roslyn-check
+# roslyn_check_exe: self-contained aracın yolu (varsayılan tools/roslyn-check/sc; make roslyn-check-sc)
+# toolchain_dir: indirilen derleyicilerin dizini (varsayılan ~/.codementor/toolchain)
+toolchain_priority = "path_first"   # path_first: önce PATH'teki gcc/clang/dotnet | bundled_first
+
+# Derleyicisi olmayanlar için indirilebilir zig (C/C++/Unreal Tier 1; Faz 29, ADR-0018).
+# Kaynak: PyPI `ziglang` wheel'i (zip). Sürüm değişirse URL ve sha256 birlikte güncellenir.
+[validation.zig]
+version = "0.16.0"
+max_download_mb = 300
+max_extract_mb = 1024
+
+[validation.zig.sources.windows-x86_64]
+url = "https://files.pythonhosted.org/packages/a6/3c/baff40b3fc8ab4e83530246a52e8f3a5186c3606562712dfb58483b04f79/ziglang-0.16.0-py3-none-win_amd64.whl"
+sha256 = "089a16a4eb5a2f45151993342f8fabad24ff1a0723dc146642895c29208a3939"
+
+[validation.zig.sources.windows-aarch64]
+url = "https://files.pythonhosted.org/packages/f0/0b/bff28a4acc437cb7da705bffafd81fafbbd37a23144363cecc72becaef93/ziglang-0.16.0-py3-none-win_arm64.whl"
+sha256 = "e44a5271f7b72f7980017bb615823ed52e765f96b6482d93a2fd338cd53101bf"
+
+[validation.zig.sources.linux-x86_64]
+url = "https://files.pythonhosted.org/packages/3e/ed/7b79023aa27ceb5d461ecf761181e7c33c57bbc1a6256a39535d1c7083d2/ziglang-0.16.0-py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.musllinux_1_1_x86_64.whl"
+sha256 = "9fcda73f62b851dd72a54b710ad40a209896db14cfb13649e62191243556342b"
+
+[validation.zig.sources.linux-aarch64]
+url = "https://files.pythonhosted.org/packages/7e/ed/d6663a5e52c504944d578b9e0bfcb7857f292803bcd09ebe0d10fe2b293d/ziglang-0.16.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl"
+sha256 = "e27d409812b11e0fb89ed0200cf2e55b6464d43f9461553104e4a4f9a94a1fd5"
+
+[validation.zig.sources.macos-x86_64]
+url = "https://files.pythonhosted.org/packages/75/60/f924aa24b95a1ad347e845acc7ab6b5d062ae5b0b540d494654cd40d4e0b/ziglang-0.16.0-py3-none-macosx_12_0_x86_64.whl"
+sha256 = "18e14f6b25678d7b7c65708c82501ee6090fe39ed5c783477d56267af1fa5629"
+
+[validation.zig.sources.macos-aarch64]
+url = "https://files.pythonhosted.org/packages/cd/59/012f0c2800f7428b87bb16c5c78db7ef806efed274491998155955c02558/ziglang-0.16.0-py3-none-macosx_12_0_arm64.whl"
+sha256 = "b61e5413c49508d9d62e5dcea543e3af491594154d74a00ff52f84ed508260cc"
 
 [pipeline]
 mode = "two_pass"            # two_pass | single_pass

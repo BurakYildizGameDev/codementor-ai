@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from functools import lru_cache
@@ -15,7 +16,7 @@ from codementor import __version__
 from codementor.api.errors import ApiProblemError
 from codementor.api.sse import SSE_HEADERS, stream_analysis
 from codementor.api.state import ApiState
-from codementor.models.api import PROBLEM_JSON, CompilerStatus, Health, Problem, Readiness
+from codementor.models.api import PROBLEM_JSON, Health, Problem, Readiness
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.provider import ProviderStatus
 from codementor.models.questions import QuestionPublic
@@ -29,7 +30,7 @@ from codementor.report.markdown import to_markdown
 from codementor.report.sarif import to_sarif
 from codementor.rules.catalog import rule_catalog
 from codementor.storage.cache import get_analysis
-from codementor.validation.toolchain import get_toolchain
+from codementor.validation.toolchain import compiler_statuses, get_toolchain
 
 SARIF_MEDIA_TYPE = "application/sarif+json"
 MARKDOWN_MEDIA_TYPE = "text/markdown; charset=utf-8"
@@ -197,14 +198,7 @@ async def ready(request: Request) -> Readiness:
     """Hazırlık: birincil sağlayıcı hazır mı + bulunan derleyiciler (yoksa Tier 1 SKIPPED)."""
     settings = _state(request).settings
     statuses = await check_providers([settings.providers.default], settings.providers)
-    toolchain = get_toolchain(settings.validation)
-    compilers = [
-        CompilerStatus(target=target, tool=tool.name if tool else None)
-        for target, tool in (
-            ("c", toolchain.c),
-            ("cpp", toolchain.cpp),
-            ("unreal", toolchain.unreal),
-            ("csharp", toolchain.csharp),
-        )
-    ]
+    # zig sondası (ilk keşifte ~0,4 sn) olay döngüsünü kilitlemesin
+    toolchain = await asyncio.to_thread(get_toolchain, settings.validation)
+    compilers = compiler_statuses(toolchain)
     return Readiness(ready=all(s.ready for s in statuses), providers=statuses, compilers=compilers)

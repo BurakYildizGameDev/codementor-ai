@@ -35,9 +35,9 @@ from codementor.questions.bank import QuestionBank, QuestionNotFoundError
 from codementor.storage import cache, sessions
 from codementor.storage.db import Database
 from codementor.validation.policy import decide
-from codementor.validation.runner import run_process
+from codementor.validation.runner import Runner, run_process
 from codementor.validation.tier0 import run_tier0
-from codementor.validation.tier1 import Runner, run_tier1
+from codementor.validation.tier1 import run_tier1
 
 ProviderFactory = Callable[[str], LLMProvider]
 

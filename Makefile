@@ -14,6 +14,10 @@ test:
 roslyn-check:
 	dotnet build tools/roslyn-check -c Release -o tools/roslyn-check/out
 
+# Faz 29: dotnet gerektirmeyen tek dosya (trimmed, ~15 MB); exe paketine gömülür
+roslyn-check-sc:
+	dotnet publish tools/roslyn-check -c Release --use-current-runtime --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o tools/roslyn-check/sc
+
 test-compiler:
 	uv run pytest -m compiler
 
@@ -54,4 +58,4 @@ exe:
 
 check: lint typecheck test
 
-.PHONY: setup lint typecheck test roslyn-check test-compiler schema rules-doc check serve web-install web-types web web-test web-e2e desktop desktop-assets exe
+.PHONY: setup lint typecheck test roslyn-check roslyn-check-sc test-compiler schema rules-doc check serve web-install web-types web web-test web-e2e desktop desktop-assets exe

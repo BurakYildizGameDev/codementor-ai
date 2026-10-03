@@ -5,6 +5,7 @@ from __future__ import annotations
 import gc
 import os
 import sys
+import threading
 import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
@@ -20,8 +21,10 @@ from codementor.desktop.connections import PROVIDERS, KeyStore, Probe
 from codementor.desktop.views import analyze_view as analyze_view_module
 from codementor.models.enums import Engine, Language
 from codementor.models.provider import ProviderStatus
+from codementor.models.validation import DownloadProgress
 from codementor.providers.base import RetryPolicy
 from codementor.providers.fake import FakeProvider, FakeReply
+from codementor.validation.toolchain_install import InstallCancelledError, ToolchainInstallError
 from tests.desktop.conftest import StallingProvider
 from tests.integration.conftest import LINKED_LIST
 
@@ -411,3 +414,76 @@ def test_write_toml_button(app: App, tmp_path: Path, monkeypatch: pytest.MonkeyP
     target.write_text("[bozuk", encoding="utf-8")
     app.write_config()
     assert "yazılamadı" in app.toast_label.cget("text")
+
+
+# --- Faz 29: derleyiciyi indir --------------------------------------------------------------
+
+
+def _toast(app: App) -> str:
+    return str(app.toast_label.cget("text"))
+
+
+def test_compiler_download_progress_and_success(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    proceed = threading.Event()
+
+    def fake_install(
+        settings: object, *, progress: Callable[[object], None], cancel: object
+    ) -> Path:
+        progress(DownloadProgress(stage="download", done=50 * 1024 * 1024, total=100 * 1024 * 1024))
+        assert proceed.wait(10)
+        return Path("/tc/zig/zig")
+
+    monkeypatch.setattr(controller_module, "install_zig", fake_install)
+    view = app.settings_view
+    view.download_button.invoke()
+    assert view.downloading
+    pump(app, lambda: "50 / 100 MB" in str(view.download_text.cget("text")))
+    assert view.download_cancel.grid_info()  # sürerken İptal görünür
+    proceed.set()
+    pump(app, lambda: not view.downloading)
+    assert "kuruldu" in str(view.download_text.cget("text"))
+    assert "kuruldu" in _toast(app)
+    assert not view.download_button.grid_info()
+
+
+def test_compiler_download_error_shown(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    def failing(settings: object, **_kwargs: object) -> Path:
+        raise ToolchainInstallError("İndirilen dosya doğrulanamadı (sha256 uyuşmuyor).")
+
+    monkeypatch.setattr(controller_module, "install_zig", failing)
+    view = app.settings_view
+    view.download_button.invoke()
+    pump(app, lambda: not view.downloading)
+    assert "sha256 uyuşmuyor" in str(view.download_text.cget("text"))
+    assert view.download_button.grid_info()  # yeniden denenebilir
+
+
+def test_compiler_download_cancel(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    started = threading.Event()
+    stopped = threading.Event()
+
+    release = threading.Event()
+
+    def waiting(settings: object, *, progress: object, cancel: threading.Event) -> Path:
+        started.set()
+        assert cancel.wait(10), "iptal gelmedi"
+        stopped.set()
+        assert release.wait(10)  # yarım dosyaların silinmesi sürüyor
+        raise InstallCancelledError
+
+    monkeypatch.setattr(controller_module, "install_zig", waiting)
+    view = app.settings_view
+    view.download_button.invoke()
+    assert started.wait(5)
+    view.download_cancel.invoke()
+    assert stopped.wait(5)  # arka plandaki indirme gerçekten durdu
+    # işçi bitmeden "iptal edildi / silindi" denmez; yeniden başlatma da reddedilir (denetim O2)
+    assert "İptal ediliyor" in str(view.download_text.cget("text"))
+    assert view.downloading
+    view.download_button.invoke()
+    assert "kapanıyor" in _toast(app)
+    release.set()
+    app.bridge.join("toolchain", 5)
+    pump(app, lambda: not view.downloading)
+    assert "iptal edildi" in str(view.download_text.cget("text"))
+    assert view.download_button.grid_info()

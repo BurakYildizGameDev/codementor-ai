@@ -1351,9 +1351,9 @@ doğrulanmadı ve kullanıcıda çalışmıyor.
 
 **Commit:** `feat(faz-28): Gemini sağlayıcısı, OpenAI/DeepSeek canlı düzeltmeleri`
 
-### Faz 29 — Derleyicisiz kullanıcı: gömülü araç zinciri (YAPILACAK)
+### Faz 29 — Derleyicisiz kullanıcı: gömülü araç zinciri (YAPILDI)
 
-**Dal:** `faz/29-gomulu-derleyici` · **Mimari:** §5.2.2 · **ADR:** 0009 (+ yeni ADR)
+**Dal:** `faz/29-gomulu-derleyici` · **Mimari:** §5.2.2 · **ADR:** 0009, 0018
 
 **Sorun:** Tier 1 kullanıcının PATH'indeki gcc/clang/dotnet'e bağlı. Çoğu öğrencide bunlar yok, ve
 o durumda Tier 1 `skipped` kalıyor: derleme hataları ve uyarılar kaçıyor. Docker yasak (ADR-0009).
@@ -1370,15 +1370,17 @@ o durumda Tier 1 `skipped` kalıyor: derleme hataları ve uyarılar kaçıyor. D
   düğmesiyle isteğe bağlı indirmek. (b)'de indirme kullanıcı veri dizinine yapılır, sha256 ve
   URL config'den gelir, indirme bir kez. Öneri: (b), exe küçük kalır.
 
-- [ ] Ölçüm: zig cc ile mevcut derleyici testleri (`-m compiler`) ve Unreal stub denetimi;
-      tanı biçimi ve süre (soğuk başlangıç)
-- [ ] `toolchain.discover`: PATH'ten sonra gömülü/indirilmiş araç (öncelik config'den);
-      `/health/ready` ve masaüstü Bağlantılar'da araç durumu
-- [ ] Self-contained Roslyn yayını (CI exe işi); yoksa mevcut `dotnet` yolu
-- [ ] Masaüstü: "Derleyiciyi indir" (ilerleme, iptal, sha256 doğrulama, hata Türkçe)
-- [ ] Güvenlik: indirilen arşiv yalnızca sabit dizine açılır (yol geçişi denetimi), çalıştırma
+- [x] Ölçüm: zig cc ile mevcut derleyici testleri (`-m compiler`) ve Unreal stub denetimi;
+      tanı biçimi ve süre (soğuk başlangıç) → ADR-0018 tablosu; `zig cc` stdin'i diske yazdığı
+      için `zig clang` + `-###` sondası seçildi
+- [x] `toolchain.discover`: PATH'ten sonra gömülü/indirilmiş araç (öncelik config'den);
+      `/health/ready` ve masaüstü Bağlantılar'da araç durumu (`origin`)
+- [x] Self-contained Roslyn yayını (CI exe işi); yoksa mevcut `dotnet` yolu (trimmed 14,8 MB)
+- [x] Masaüstü: "Derleyiciyi indir" (ilerleme, iptal, sha256 doğrulama, hata Türkçe);
+      aynı kurulum `codementor toolchain install zig` ile CLI'dan da
+- [x] Güvenlik: indirilen arşiv yalnızca sabit dizine açılır (yol geçişi denetimi), çalıştırma
       mevcut `run_process` sınırlarıyla (§12)
-- [ ] Testler: keşif önceliği, sha256 uyuşmazlığı, yarım indirme, arşiv yol geçişi, zig
+- [x] Testler: keşif önceliği, sha256 uyuşmazlığı, yarım indirme, arşiv yol geçişi, zig
       tanılarının ayrıştırılması (fixture)
 
 **Commit:** `feat(faz-29): derleyicisiz kullanıcı için gömülü/indirilebilir araç zinciri`

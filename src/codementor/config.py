@@ -7,11 +7,12 @@ CLI bayrakları `get_settings(**overrides)` ile init argümanı olarak verilir.
 from __future__ import annotations
 
 import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal, get_args
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -21,6 +22,7 @@ from pydantic_settings import (
 
 from codementor.paths import resolve_relative, resource_path
 
+_EXE_SUFFIX = ".exe" if sys.platform == "win32" else ""
 CONFIG_FILE_ENV = "CODEMENTOR_CONFIG_FILE"
 DEFAULT_CONFIG_FILE = "codementor.toml"
 
@@ -30,8 +32,41 @@ class LimitsSettings(BaseModel):
     max_bytes: int = Field(default=40960, ge=1)
 
 
+class DownloadSource(BaseModel):
+    """İndirilebilir bir arşiv: yalnızca https, sha256 zorunlu (Faz 29, ADR-0018)."""
+
+    url: str
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @field_validator("url")
+    @classmethod
+    def _https_only(cls, value: str) -> str:
+        if not value.startswith("https://"):
+            raise ValueError("indirme adresi https:// ile başlamalı")
+        return value
+
+
+class ZigSettings(BaseModel):
+    """İndirilebilir zig derleyicisi; adres ve sha256 yalnızca yapılandırmadan gelir.
+
+    `sources` anahtarı platformdur: `windows-x86_64`, `linux-aarch64`, `macos-aarch64` …
+    """
+
+    version: str = ""
+    sources: dict[str, DownloadSource] = Field(default_factory=dict)
+    max_download_mb: int = Field(default=300, ge=1)
+    max_extract_mb: int = Field(default=1024, ge=1)
+    max_files: int = Field(default=50000, ge=1)
+    download_timeout_s: float = Field(default=30, gt=0)
+    probe_timeout_s: float = Field(default=30, gt=0)
+
+
+def _default_toolchain_dir() -> Path:
+    return Path.home() / ".codementor" / "toolchain"
+
+
 class ValidationSettings(BaseModel):
-    """Tier 1 yerel derleyici ayarları (mimari §5.2.2-5.2.3, ADR-0009)."""
+    """Tier 1 yerel derleyici ayarları (mimari §5.2.2-5.2.3, ADR-0009, ADR-0018)."""
 
     tier1_enabled: bool = True
     compile_timeout_s: int = Field(default=10, ge=1)
@@ -40,6 +75,14 @@ class ValidationSettings(BaseModel):
     roslyn_check_dll: Path = Field(
         default_factory=lambda: resource_path("tools/roslyn-check/out/RoslynCheck.dll")
     )
+    # self-contained tek dosya (dotnet gerekmez); exe paketine gömülür (Faz 29)
+    roslyn_check_exe: Path = Field(
+        default_factory=lambda: resource_path(f"tools/roslyn-check/sc/RoslynCheck{_EXE_SUFFIX}")
+    )
+    # indirilen araçlar (zig) burada; PATH'teki derleyicilerden önce mi sonra mı denenecekleri
+    toolchain_dir: Path = Field(default_factory=lambda: _default_toolchain_dir())
+    toolchain_priority: Literal["path_first", "bundled_first"] = "path_first"
+    zig: ZigSettings = Field(default_factory=ZigSettings)
 
 
 class PipelineSettings(BaseModel):

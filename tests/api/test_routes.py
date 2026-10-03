@@ -8,7 +8,9 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft4Validator
 
+from codementor.api import routes
 from codementor.config import Settings
+from codementor.models.validation import CompilerTool, Toolchain
 from codementor.providers.fake import FakeReply
 from tests.api.conftest import ClientFactory
 from tests.integration.conftest import (
@@ -172,3 +174,31 @@ async def test_health_and_ready(client_for: ClientFactory, settings: Settings) -
     ready = (await client_for(cfg=cfg).get("/health/ready")).json()
     assert ready["ready"] is False  # deepseek model/anahtar yok
     assert {c["target"] for c in ready["compilers"]} == {"c", "cpp", "unreal", "csharp"}
+
+
+async def test_ready_reports_compiler_origin(
+    client_for: ClientFactory, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz 29: hangi derleyicinin PATH'ten, hangisinin indirilenden geldiği görünür."""
+    chain = Toolchain(
+        c=CompilerTool(name="gcc", kind="gcc", command=["/usr/bin/gcc"]),
+        cpp=CompilerTool(
+            name="zig", kind="clang", command=["/z/zig", "clang"], origin="downloaded"
+        ),
+    )
+    monkeypatch.setattr(routes, "get_toolchain", lambda _settings: chain)
+    cfg = settings.model_copy(
+        update={
+            "providers": settings.providers.model_copy(
+                update={"default": "deepseek", "fallback": []}
+            )
+        }
+    )
+    ready = (await client_for(cfg=cfg).get("/health/ready")).json()
+    by_target = {c["target"]: (c["tool"], c["origin"]) for c in ready["compilers"]}
+    assert by_target == {
+        "c": ("gcc", "system"),
+        "cpp": ("zig", "downloaded"),
+        "unreal": (None, None),
+        "csharp": (None, None),
+    }

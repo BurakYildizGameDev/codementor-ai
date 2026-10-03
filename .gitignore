@@ -19,6 +19,7 @@ node_modules/
 tools/roslyn-check/bin/
 tools/roslyn-check/obj/
 tools/roslyn-check/out/
+tools/roslyn-check/sc/
 
 # Web UI (Faz 13)
 web/test-results/

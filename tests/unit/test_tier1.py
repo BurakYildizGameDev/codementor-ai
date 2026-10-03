@@ -438,3 +438,32 @@ def test_roslyn_env_keeps_fsize_limit_compatible() -> None:
     assert env["DOTNET_EnableWriteXorExecute"] == "0"
     assert "DOTNET_GCHeapHardLimit" in env
     assert not limits.limit_address_space
+
+
+def test_zig_argv_reads_stdin_only() -> None:
+    """Zig (Faz 29): `zig clang` + sonda bayrakları; kod yalnız stdin'den, diske yazılmaz."""
+    zig = CompilerTool(
+        name="zig",
+        kind="clang",
+        command=[
+            "/tc/zig/zig",
+            "clang",
+            "--target=x86_64-linux-gnu",
+            "-nostdinc",
+            "-isystem",
+            "/tc/zig/lib/include",
+        ],
+        origin="downloaded",
+    )
+    runner = FakeRunner(ProcessResult(1, "", _stderr("zig_clang_cpp_crlf.txt")))
+    code = _code(CPP_CODE, Language.CPP)
+    result = run_tier1(code, SETTINGS, toolchain=Toolchain(cpp=zig), runner=runner)
+    ((argv, stdin, _, env),) = runner.calls
+    assert argv[:2] == ["/tc/zig/zig", "clang"]
+    assert argv[-1] == "-"
+    assert "cc" not in argv
+    assert "c++" not in argv[:2]
+    assert stdin == code.text
+    assert "ZIG_GLOBAL_CACHE_DIR" not in env  # zig clang önbellek dizini istemez
+    assert result.status is CompilationStatus.FAILED
+    assert result.tool == "zig"

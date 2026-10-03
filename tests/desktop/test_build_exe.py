@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import zipfile
 from pathlib import Path
 
 import build_exe
+import pytest
 
 
 def test_version_comes_from_pyproject() -> None:
@@ -49,3 +51,21 @@ def test_zip_skips_artifacts(tmp_path: Path) -> None:
     with zipfile.ZipFile(archive) as zf:
         names = sorted(zf.namelist())
     assert names == ["CodeMentor/CodeMentor.exe", "CodeMentor/_internal/lib.dll"]
+
+
+def test_self_contained_roslyn_preferred(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Faz 29: tek dosyalık Roslyn varsa yalnız o gömülür (dotnet gerekmez, ~15 MB)."""
+    sc = tmp_path / "sc" / "RoslynCheck.exe"
+    sc.parent.mkdir()
+    sc.write_bytes(b"MZ")
+    out = tmp_path / "out"
+    out.mkdir()
+    monkeypatch.setattr(build_exe, "ROSLYN_SC", sc)
+    monkeypatch.setattr(build_exe, "ROSLYN_OUT", out)
+    args = " ".join(build_exe.pyinstaller_args(onefile=True, console=False, work=tmp_path))
+    assert f"{sc}{os.pathsep}tools/roslyn-check/sc" in args
+    assert "tools/roslyn-check/out" not in args
+
+    sc.unlink()
+    args = " ".join(build_exe.pyinstaller_args(onefile=True, console=False, work=tmp_path))
+    assert f"{out}{os.pathsep}tools/roslyn-check/out" in args

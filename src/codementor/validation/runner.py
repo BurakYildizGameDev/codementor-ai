@@ -147,6 +147,20 @@ def _launch_argv(argv: list[str], limits: ProcessLimits) -> list[str]:
     return [sys.executable, "-I", "-S", "-c", _RLIMIT_BOOTSTRAP, *limits_args, *argv]
 
 
+class Runner(Protocol):
+    """`run_process` imzası; testlerde sahtesi verilir."""
+
+    def __call__(
+        self,
+        argv: Sequence[str],
+        stdin: str,
+        limits: ProcessLimits,
+        *,
+        extra_env: Mapping[str, str] | None = None,
+        cancel: threading.Event | None = None,
+    ) -> ProcessResult: ...
+
+
 class _Job(Protocol):
     def terminate(self) -> None: ...
     def close(self) -> None: ...

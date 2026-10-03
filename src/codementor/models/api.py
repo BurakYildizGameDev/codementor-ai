@@ -8,6 +8,7 @@ from pydantic import Field
 
 from codementor.models._base import StrictModel
 from codementor.models.provider import ProviderStatus
+from codementor.models.validation import ToolOrigin
 
 PROBLEM_JSON = "application/problem+json"
 
@@ -31,6 +32,9 @@ class Health(StrictModel):
 class CompilerStatus(StrictModel):
     target: str = Field(description="c, cpp, unreal veya csharp")
     tool: str | None = Field(description="Bulunan derleyici; yoksa None (Tier 1 SKIPPED)")
+    origin: ToolOrigin | None = Field(
+        default=None, description="system (PATH), downloaded (indirilen) ya da bundled (gömülü)"
+    )
 
 
 class Readiness(StrictModel):

@@ -48,16 +48,22 @@ def test_exe_job_uploads_artifact() -> None:
 
 
 def test_ci_builds_roslyn_for_tests_and_exe() -> None:
-    """Faz 27: Linux'ta C# derleyici testleri koşar, exe Roslyn denetleyicisini içerir."""
+    """Faz 27: Linux'ta C# derleyici testleri koşar. Faz 29: zig kurulur ve zorunludur; exe
+    self-contained Roslyn'i (dotnet gerektirmeyen) paketlemeden önce yayımlar."""
     workflow = yaml.safe_load((REPO / ".github" / "workflows" / "ci.yml").read_text("utf-8"))
-    roslyn = "dotnet build tools/roslyn-check"
     check = workflow["jobs"]["check"]["steps"]
-    assert any(roslyn in str(step.get("run", "")) for step in check)
+    check_runs = [str(step.get("run", "")) for step in check]
+    assert any("dotnet build tools/roslyn-check" in r for r in check_runs)
     linux_pytest = 'uv run pytest -m "not live"'
-    pytest_steps = [s for s in check if str(s.get("run", "")).strip() == linux_pytest]
-    assert pytest_steps[0]["env"]["CODEMENTOR_REQUIRE_ROSLYN"] == "1"
+    pytest_index = check_runs.index(linux_pytest)
+    install_index = check_runs.index("uv run codementor toolchain install zig")
+    assert install_index < pytest_index
+    env = check[pytest_index]["env"]
+    assert env["CODEMENTOR_REQUIRE_ROSLYN"] == "1"
+    assert env["CODEMENTOR_REQUIRE_ZIG"] == "1"
     exe = workflow["jobs"]["exe"]["steps"]
     runs = [str(step.get("run", "")) for step in exe]
-    assert runs.index(next(r for r in runs if roslyn in r)) < runs.index(
-        next(r for r in runs if "build_exe.py" in r)
-    )
+    publish = next(r for r in runs if "dotnet publish tools/roslyn-check" in r)
+    assert "--self-contained true" in publish
+    assert "-o tools/roslyn-check/sc" in publish
+    assert runs.index(publish) < runs.index(next(r for r in runs if "build_exe.py" in r))

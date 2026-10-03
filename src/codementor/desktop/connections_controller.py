@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any
 
-from codementor.desktop.bridge import Message
+from codementor.desktop.bridge import Cancellation, Emit, Message
 from codementor.desktop.connections import (
     INFO,
     PROVIDERS,
@@ -26,11 +26,19 @@ from codementor.desktop.connections import (
     probe,
     try_connection,
 )
-from codementor.desktop.services import compiler_statuses
+from codementor.desktop.services import (
+    compiler_statuses,
+    describe_progress,
+    offer_compiler_download,
+)
 from codementor.desktop.widgets.provider_card import CardActions
+from codementor.models.api import CompilerStatus
 from codementor.models.desktop import ProviderOverride
 from codementor.models.provider import ProviderStatus
+from codementor.models.validation import DownloadProgress
 from codementor.providers.base import ProviderError
+from codementor.validation.toolchain import clear_toolchain_cache
+from codementor.validation.toolchain_install import InstallCancelledError, install_zig
 
 if TYPE_CHECKING:
     from codementor.desktop.app import App
@@ -46,6 +54,7 @@ class ConnectionsController:
         self.probes: dict[str, Probe] = {}
         self.vaulted = load_vault_keys(app.settings.providers, store)
         self.view: ConnectionsView | None = None
+        self.download_cancellation: Cancellation | None = None
 
     def actions(self) -> CardActions:
         return CardActions(
@@ -114,7 +123,11 @@ class ConnectionsController:
         kind, _, name = message.task.partition(":")
         if kind == "compilers":
             if message.kind == "result" and self.view is not None:
-                self.view.show_compilers(message.payload)  # type: ignore[arg-type]
+                compilers: list[CompilerStatus] = message.payload  # type: ignore[assignment]
+                offer = offer_compiler_download(self.app.settings, compilers)
+                self.view.show_compilers(compilers, offer_download=offer)
+        elif kind == "toolchain":
+            self._on_toolchain(message)
         elif kind == "probe":
             self._on_probe(name, message)
         elif kind == "test" and message.kind != "event":
@@ -134,6 +147,60 @@ class ConnectionsController:
         if name == self.app.provider_name():
             self.app.sidebar.set_provider(name, result.ready, result.status.model or "")
         self.render()
+
+    # --- Derleyici indirme (Faz 29) ------------------------------------------------------
+
+    def download_compiler(self) -> None:
+        """Zig'i arka planda indirir; ilerleme `toolchain` görevi olaylarıyla gelir."""
+        if self.app.bridge.is_running("toolchain"):  # iptal edilen indirme henüz kapanıyor
+            self.app.toast("Önceki indirme kapanıyor; birkaç saniye sonra yeniden dene.")
+            return
+        settings = self.app.settings.validation
+        cancellation = Cancellation()
+        self.download_cancellation = cancellation
+
+        def work(emit: Emit) -> str | None:
+            try:
+                return str(install_zig(settings, progress=emit, cancel=cancellation.event))
+            except InstallCancelledError:
+                return None  # yarım dosyalar install_zig içinde silindi
+
+        if self.view is not None:
+            self.view.set_download_running("İndirme başlatılıyor…", None)
+        self.app.bridge.submit("toolchain", work, cancellation=cancellation)
+
+    def cancel_download(self) -> None:
+        """İşçiye iptal işareti verir; sonuç (iptal ya da son anda tamamlanma) işçiden gelir."""
+        if self.download_cancellation is None:
+            return
+        self.download_cancellation.cancel()
+        if self.view is not None:
+            self.view.set_download_cancelling()
+
+    def _on_toolchain(self, message: Message) -> None:
+        if self.view is None:
+            return
+        if message.kind == "event" and isinstance(message.payload, DownloadProgress):
+            self.view.set_download_running(*describe_progress(message.payload))
+        elif message.kind == "result" and message.payload is None:
+            self.download_cancellation = None
+            self.view.set_download_idle(
+                "İndirme iptal edildi; yarım kalan dosyalar silindi.", ok=True, offer=True
+            )
+        elif message.kind == "result":
+            self.download_cancellation = None
+            clear_toolchain_cache()
+            self.view.set_download_idle(
+                "Derleyici kuruldu; C/C++/Unreal kodu artık derleyiciyle de denetlenir.",
+                ok=True,
+                offer=False,
+            )
+            self.app.toast("Derleyici (zig) kuruldu")
+            settings = self.app.settings
+            self.app.bridge.submit("compilers", lambda _emit: compiler_statuses(settings))
+        elif message.kind == "error":
+            self.download_cancellation = None
+            self.view.set_download_idle(str(message.payload), ok=False, offer=True)
 
     # --- Eylemler -----------------------------------------------------------------------
 

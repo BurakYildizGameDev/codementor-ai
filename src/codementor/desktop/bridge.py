@@ -25,6 +25,7 @@ from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest
 from codementor.pipeline.events import EventBus
 from codementor.pipeline.orchestrator import PipelineError
+from codementor.validation.toolchain_install import ToolchainInstallError
 
 MessageKind = Literal["event", "result", "error"]
 Emit = Callable[[object], None]
@@ -159,7 +160,7 @@ class Bridge:
 
 def user_message(exc: Exception) -> str:
     """Kullanıcıya gösterilecek Türkçe hata metni; beklenmeyen hatanın ayrıntısı log'a gider."""
-    if isinstance(exc, PipelineError | AnalysisCancelledError):
+    if isinstance(exc, PipelineError | AnalysisCancelledError | ToolchainInstallError):
         return str(exc)  # iptal beklenen bir son: ERROR log'u üretmez
     log.error("desktop_task_failed", error=type(exc).__name__, detail=str(exc)[:300])
     return f"Beklenmeyen bir hata oluştu ({type(exc).__name__}). Ayrıntı log dosyasında."
