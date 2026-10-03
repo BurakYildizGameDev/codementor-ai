@@ -1,0 +1,28 @@
+id: html-hard-site-navigation
+version: 1
+language: html
+engine: none
+difficulty: hard
+title: "Çok sayfalı site gezinme menüsü"
+prompt: |
+  Bir üniversite sitesi için her sayfada tekrarlanan üst gezinme menüsünün HTML'ini yazın:
+  Akademik (alt sayfalar: Fakülteler, Takvim), Öğrenci (alt sayfalar: Burslar, Kulüpler),
+  Duyurular ve İletişim. Klavye kullanıcısı her sayfada menüdeki tüm bağlantılardan geçmek
+  zorunda kalmadan doğrudan sayfa içeriğine atlayabilmeli. Ekran okuyucu bulunulan sayfanın
+  menüdeki hangi bağlantı olduğunu söylemeli. Alt menüler JavaScript olmadan da açılıp
+  kullanılabilmeli. Örnek olarak Burslar sayfasındaki halini yazın.
+constraints:
+  - "Klavye kullanıcısı tek adımda menüyü atlayıp ana içeriğe geçebilmeli"
+  - "Ekran okuyucu bulunulan sayfayı menüde belirtebilmeli"
+  - "Menünün yapısı iç içe gruplarla anlamlı olmalı"
+  - "Alt menüler JavaScript olmadan çalışmalı"
+concept_tags: [navigation, accessibility, semantics]
+checklist_extra:
+  - "Menü, düz bir bağlantı yığını olarak mı yazılmış (gruplar anlaşılmıyor)?"
+  - "Bulunulan sayfa yalnızca renkle mi belirtiliyor?"
+  - "İçeriğe atlama bağlantısı var mı ve hedefi odaklanabilir mi?"
+reference_solution_path: private/solutions/html-hard-site-navigation.html
+hint_ladder:
+  1: "Klavyeyle gezinen biri her sayfa değiştirdiğinde içeriğe ulaşmak için kaç kez Tab'a basmak zorunda?"
+  2: "Ekran okuyucu 'Burslar' bağlantısına geldiğinde bunun şu anki sayfa olduğunu nereden anlar? Renk yeterli mi?"
+  3: "Bu kavramlar 'içeriğe atla bağlantısı (skip link)' ve 'aria-current ile bulunulan sayfa' olarak bilinir."

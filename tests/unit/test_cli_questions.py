@@ -46,9 +46,7 @@ def test_list_filters_engine() -> None:
 
 
 def test_list_empty_result_message() -> None:
-    code, out = _run(
-        "list", "--engine", "unreal", "--difficulty", "very_easy", "--dir", str(QUESTIONS)
-    )
+    code, out = _run("list", "--language", "css", "--engine", "unreal", "--dir", str(QUESTIONS))
     assert code == 0
     assert "Eşleşen soru yok" in out
 
@@ -127,3 +125,39 @@ def test_show_reflows_prompt_lines() -> None:
     code, out = _run("show", "c-hard-stack", "--dir", str(QUESTIONS))
     assert code == 0, out
     assert "işlemlerini destekleyen, kapasitesi dolduğunda iki katına çıkan" in out
+
+
+def test_validate_real_bank() -> None:
+    code, out = _run("validate", "--dir", str(QUESTIONS))
+    assert code == 0, out
+    assert "64 soru geçerli" in out
+
+
+def test_validate_reports_missing_distribution(tmp_path: Path) -> None:
+    for name in ("c-hard-stack", "c-easy-reverse-string"):
+        (tmp_path / f"{name}.yaml").write_bytes((QUESTIONS / f"{name}.yaml").read_bytes())
+    code, out = _run("validate", "--dir", str(tmp_path), "--solutions-root", str(tmp_path))
+    assert code == 1
+    assert "c: 2 soru var, en az 8 olmalı" in out
+    assert "very_easy, medium" in out
+
+
+def test_validate_warns_missing_solution(tmp_path: Path) -> None:
+    code, out = _run(
+        "validate",
+        "--dir",
+        str(QUESTIONS),
+        "--solutions-root",
+        str(tmp_path),
+        "--min-per-group",
+        "1",
+    )
+    assert code == 0, out
+    assert "uyarı" in out
+    assert "c-hard-stack: referans çözüm dosyası yok" in out
+
+
+def test_validate_empty_dir_fails(tmp_path: Path) -> None:
+    code, out = _run("validate", "--dir", str(tmp_path))
+    assert code == 1
+    assert "Soru bankası boş" in out

@@ -26,3 +26,18 @@ items:
   - id: CS-CL-008
     text: "LINQ zincirleri sık çalışan yollarda gizli tahsis ve tekrarlı numaralandırma yapıyor mu?"
     tags: [gc, hot-path, allocation]
+  - id: CS-CL-009
+    text: "async void yalnızca olay işleyicilerinde mi; görevler .Result ya da .Wait() ile bloklanarak mı bekleniyor; iptal belirteci iletiliyor mu; bağlantı nesneleri yeniden kullanılıyor mu?"
+    tags: [async-await, resource-management]
+  - id: CS-CL-010
+    text: "Olay aboneliklerinin ömrü yönetiliyor mu (abonelikten çıkma ya da zayıf referans); paylaşılan koleksiyonlar iş parçacıkları arasında güvenli mi?"
+    tags: [memory-leak, concurrency]
+  - id: CS-CL-011
+    text: "Bir IEnumerable kaynağı birden çok kez numaralandırılıyor mu; döngü içinde aynı koleksiyon üzerinde tekrar tekrar sorgu çalışıyor mu?"
+    tags: [deferred-execution]
+  - id: CS-CL-012
+    text: "Para gibi tam ondalık gerektiren değerler double ile mi tutuluyor; tam sayı bölmesi ondalıklı sonucu kesiyor mu?"
+    tags: [floating-point, integer-division]
+  - id: CS-CL-013
+    text: "Nesnenin durumu dışarıdan doğrudan değiştirilebiliyor mu; geçersiz girdiler ve boş koleksiyonlar tanımlı biçimde ele alınıyor mu?"
+    tags: [encapsulation, edge-cases, error-handling]

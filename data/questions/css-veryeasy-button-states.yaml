@@ -1,0 +1,25 @@
+id: css-veryeasy-button-states
+version: 1
+language: css
+engine: none
+difficulty: very_easy
+title: "Birincil ve ikincil düğme stilleri"
+prompt: |
+  Bir sitenin birincil ve ikincil düğmeleri için CSS yazın. Düğmeler fare üzerine geldiğinde,
+  klavyeyle odaklanıldığında, basılırken ve devre dışıyken birbirinden ayırt edilebilir
+  görünmeli. Düğme metni zeminiyle yeterli kontrastta olmalı ve telefonda parmakla rahat
+  basılabilecek büyüklükte olmalı.
+constraints:
+  - "Klavye odağı her zaman görünür olmalı; tarayıcının odak göstergesi yerine konmadan kaldırılmamalı"
+  - "Metin ile zemin arasındaki kontrast en az 4.5:1 olmalı"
+  - "Devre dışı düğme hem görünümüyle hem imleçle belli olmalı"
+concept_tags: [focus, color, accessibility]
+checklist_extra:
+  - "outline: none yazılıp yerine başka bir odak göstergesi konmuş mu?"
+  - "Durumlar yalnızca renk farkıyla mı ayrılıyor?"
+  - "Dokunma alanı 44 pikselden küçük mü?"
+reference_solution_path: private/solutions/css-veryeasy-button-states.css
+hint_ladder:
+  1: "Fare kullanmayan biri sayfada Tab'a bastığında hangi düğmenin seçili olduğunu nasıl anlıyor?"
+  2: "Açık gri zemin üzerindeki beyaz metni güneş altında telefondan okuyabilir misin? Bunu ölçmenin bir yolu var mı?"
+  3: "Bu kavramlar 'görünür odak göstergesi' ve 'renk kontrast oranı' olarak bilinir."

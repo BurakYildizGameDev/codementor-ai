@@ -1,0 +1,28 @@
+id: unreal-medium-cached-actor-lookup
+version: 1
+language: cpp
+engine: unreal
+difficulty: medium
+title: "Yakındaki etkileşimli nesneleri vurgulayan bileşen"
+prompt: |
+  Oyuncu karakterine eklenen ve belirli bir yarıçap içindeki etkileşimli nesneleri (kapı, sandık,
+  kol) her karede vurgulayan bir bileşen yazın. Sahnede n etkileşimli nesne olabilir; nesneler
+  oyun sırasında doğup yok olabilir. Yarıçap dışına çıkan nesnenin vurgusu kalkmalı. Yok edilmiş
+  bir nesneye erişim oyunu çökertmemeli.
+constraints:
+  - "Her karede tüm sahne nesneleri taranmamalı"
+  - "Yok edilen nesnelere erişim çökme yaratmamalı"
+  - "Kare başına bellek tahsisi yapılmamalı"
+expected:
+  time: { per_frame: "n" }
+  space: "n"
+concept_tags: [tick, performance, tobjectptr]
+checklist_extra:
+  - "Tick içinde sahne genelinde aktör araması yapılıyor mu?"
+  - "Etkileşimli nesneler güçlü işaretçiyle tutulup yok edildikten sonra kullanılıyor mu?"
+  - "Mesafe karşılaştırmasında gereksiz karekök alınıyor mu?"
+reference_solution_path: private/solutions/unreal-medium-cached-actor-lookup.cpp
+hint_ladder:
+  1: "Sahnede 2000 aktör varken her karede tüm aktörleri sınıfına göre ararsan saniyede kaç aktöre bakarsın?"
+  2: "Etkileşimli nesneler doğduklarında ve yok olduklarında kendilerini bir listeye ekleyip çıkarabilir mi?"
+  3: "Bu kavramlar 'kayıt listesi (registry)' ve 'zayıf nesne işaretçisi (TWeakObjectPtr)' olarak bilinir."

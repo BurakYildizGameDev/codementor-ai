@@ -1,0 +1,28 @@
+id: cs-medium-linq-report
+version: 1
+language: csharp
+engine: none
+difficulty: medium
+title: "Müşteri harcama raporu"
+prompt: |
+  Bir mağazanın n siparişi ve m müşterisi var. Her müşteri için toplam harcamayı ve sipariş
+  sayısını hesaplayan, yalnızca toplam harcaması 1000 TL'yi geçen müşterileri harcamaya göre
+  azalan sırada listeleyen bir rapor metodu yazın. Siparişler bir veritabanı sorgusundan
+  IEnumerable olarak gelir ve bu dizi her dolaşıldığında sorgu yeniden çalışır. Gerçek veride
+  on binlerce müşteri ve milyonlarca sipariş vardır.
+constraints:
+  - "Her müşteri için siparişlerin tamamı yeniden taranmamalı"
+  - "Sipariş kaynağı yalnızca bir kez dolaşılmalı"
+  - "Hiç siparişi olmayan müşteriler raporda yer almamalı"
+expected:
+  time: { build_report: "n + m log m" }
+  space: "m"
+concept_tags: [deferred-execution, performance, data-structures]
+checklist_extra:
+  - "Müşteri döngüsünün içinde siparişler üzerinde Where/Sum çağrılıyor mu (n × m)?"
+  - "Aynı IEnumerable önce Count() sonra foreach ile birden çok kez dolaşılıyor mu?"
+reference_solution_path: private/solutions/cs-medium-linq-report.cs
+hint_ladder:
+  1: "On bin müşteri ve bir milyon siparişte her müşteri için tüm siparişleri dolaşırsan kaç karşılaştırma yaparsın?"
+  2: "Sipariş dizisini iki kez dolaştığında veritabanı sorgusu kaç kez çalışıyor?"
+  3: "Bu kavramlar 'ertelenmiş yürütme (deferred execution)' ve 'tek geçişte gruplama' olarak bilinir."

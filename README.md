@@ -52,8 +52,9 @@ sağlayıcının hazır olup olmadığını gösterir.
   editörde önem rengiyle boyanır, karta tıklayınca satıra gidilir.
 - **Sokratik mentor:** ana kavram, yönlendirici sorular ve sonraki adım. **Bir ipucu daha**
   aynı oturumla yeniden denetler ve ipucu seviyesini (1→3) artırır; **Baştan başla** sıfırlar.
-- **Soru bankası:** 18 görev (C, C++, C#, Unity, Unreal, Python, HTML, CSS); seçilen görev
-  editörün üstünde hedefiyle görünür.
+- **Soru bankası:** 64 görev; her dil/motorda (C, C++, C#, Unity, Unreal, Python, HTML, CSS)
+  çok kolaydan zora 8 görev, dil ve zorluk filtresiyle; seçilen görev editörün üstünde hedefiyle
+  görünür.
 - **Geçmiş:** önceki analizler kodlarıyla yeniden açılır; raporlar Markdown/SARIF/JSON olarak
   dışa aktarılır.
 - **Bağlantılar:** Claude Code, Antigravity (agy), Codex, Ollama, Anthropic, OpenAI ve DeepSeek

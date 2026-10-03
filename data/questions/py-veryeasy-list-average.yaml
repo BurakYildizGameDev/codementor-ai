@@ -1,0 +1,28 @@
+id: py-veryeasy-list-average
+version: 1
+language: python
+engine: none
+difficulty: very_easy
+title: "Günlük sıcaklık ortalaması"
+prompt: |
+  Bir ayın günlük sıcaklık ölçümlerinden oluşan listenin ortalamasını döndüren
+  `average(values: list[float]) -> float | None` ve ortalamanın üstünde kalan gün sayısını
+  döndüren `days_above_average(values: list[float]) -> int` fonksiyonlarını yazın. Ölçüm
+  cihazı bozuk olduğunda liste boş gelebilir; bu durumda ortalama None, gün sayısı 0 olmalı.
+  Sıcaklıklar negatif olabilir.
+constraints:
+  - "Boş listede program hata vermemeli"
+  - "Ortalama listeyi yalnızca bir kez dolaşarak hesaplanmalı"
+  - "Negatif değerler doğru işlenmeli"
+expected:
+  time: { average: "n", days_above_average: "n" }
+  space: "1"
+concept_tags: [edge-cases, input-validation]
+checklist_extra:
+  - "Boş listede len(values) sıfıra bölme hatasına yol açıyor mu?"
+  - "days_above_average içinde ortalama her eleman için yeniden mi hesaplanıyor?"
+reference_solution_path: private/solutions/py-veryeasy-list-average.py
+hint_ladder:
+  1: "Liste boşken toplamı eleman sayısına bölen satır ne yapıyor?"
+  2: "Gün sayısını bulurken her gün için ortalamayı yeniden hesaplarsan liste uzunluğu iki katına çıkınca iş kaç katına çıkar?"
+  3: "Bu kavramlar 'boş koleksiyon durumu' ve 'döngü dışına çıkarılabilen hesap (loop-invariant)' olarak bilinir."

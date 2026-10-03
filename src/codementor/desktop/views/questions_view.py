@@ -1,4 +1,4 @@
-"""Soru bankası: dil filtreli görev kartları; seçilen görev analiz ekranına bağlamıyla açılır."""
+"""Soru bankası: dil ve zorluk filtreli görev kartları; seçilen görev analiz ekranına açılır."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from codementor.desktop import theme
 from codementor.desktop.viewmodel import DIFFICULTY_LABELS, ENGINE_LABELS, LANGUAGE_LABELS
 from codementor.desktop.widgets.common import Pill, clear, wrap_label
 from codementor.desktop.widgets.task_card import DIFFICULTY_COLORS
-from codementor.models.enums import Engine, Language
+from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.questions import QuestionPublic
 
 ALL = "Tümü"
@@ -34,7 +34,7 @@ class QuestionsView(ctk.CTkFrame):  # type: ignore[misc]
     def __init__(
         self,
         master: Any,
-        load: Callable[[Language | None], list[QuestionPublic]],
+        load: Callable[[Language | None, Difficulty | None], list[QuestionPublic] | None],
         on_start: Callable[[QuestionPublic], None],
     ) -> None:
         super().__init__(master, fg_color="transparent")
@@ -47,9 +47,28 @@ class QuestionsView(ctk.CTkFrame):  # type: ignore[misc]
             "Soru bankası",
             "Bir görev seç; CodeMentor çözümünü bu görevin hedefine göre değerlendirir.",
         ).grid(row=0, column=0, sticky="w", pady=(0, 16))
-        self.filter = ctk.CTkSegmentedButton(
-            self,
-            values=[ALL, *LANGUAGE_LABELS.values()],
+        filters = ctk.CTkFrame(self, fg_color="transparent")
+        filters.grid(row=1, column=0, sticky="ew", pady=(0, 14))
+        filters.grid_columnconfigure(2, weight=1)
+        self.filter = self._segmented(filters, [ALL, *LANGUAGE_LABELS.values()])
+        self.filter.grid(row=0, column=0, sticky="w")
+        # Faz 30: soru sayısı arttı; zorluk filtresi dil filtresiyle birlikte (VE) uygulanır
+        self.difficulty_filter = self._segmented(filters, [ALL, *DIFFICULTY_LABELS.values()])
+        self.difficulty_filter.grid(row=1, column=0, sticky="w", pady=(8, 0))
+        self.count_label = ctk.CTkLabel(
+            filters, text="", font=theme.font(12), text_color=theme.MUTED
+        )
+        self.count_label.grid(row=1, column=2, sticky="e")
+        self.grid_area = ctk.CTkScrollableFrame(
+            self, fg_color="transparent", scrollbar_button_color=theme.SURFACE_3
+        )
+        self.grid_area.grid(row=2, column=0, sticky="nsew")
+        self.grid_area.grid_columnconfigure((0, 1), weight=1, uniform="cards")
+
+    def _segmented(self, master: Any, values: list[str]) -> ctk.CTkSegmentedButton:
+        button = ctk.CTkSegmentedButton(
+            master,
+            values=values,
             command=lambda _v: self.refresh(),
             height=34,
             corner_radius=10,
@@ -60,23 +79,24 @@ class QuestionsView(ctk.CTkFrame):  # type: ignore[misc]
             unselected_color=theme.SURFACE,
             unselected_hover_color=theme.SURFACE_2,
         )
-        self.filter.set(ALL)
-        self.filter.grid(row=1, column=0, sticky="w", pady=(0, 14))
-        self.grid_area = ctk.CTkScrollableFrame(
-            self, fg_color="transparent", scrollbar_button_color=theme.SURFACE_3
-        )
-        self.grid_area.grid(row=2, column=0, sticky="nsew")
-        self.grid_area.grid_columnconfigure((0, 1), weight=1, uniform="cards")
+        button.set(ALL)
+        return button
 
     def refresh(self) -> None:
         clear(self.grid_area)
-        label = self.filter.get()
+        label, level = self.filter.get(), self.difficulty_filter.get()
         language = next((lang for lang, text in LANGUAGE_LABELS.items() if text == label), None)
-        questions = self._load(language)
+        difficulty = next((d for d, text in DIFFICULTY_LABELS.items() if text == level), None)
+        loaded = self._load(language, difficulty)
+        questions = loaded or []
+        self.count_label.configure(text=f"{len(questions)} soru")
         if not questions:
+            filtered = language is not None or difficulty is not None
             ctk.CTkLabel(
                 self.grid_area,
-                text="Soru bankası boş ya da okunamadı.",
+                text="Bu filtrelerle eşleşen soru yok."
+                if loaded is not None and filtered
+                else "Soru bankası boş ya da okunamadı.",
                 font=theme.font(13),
                 text_color=theme.MUTED,
             ).grid(row=0, column=0)

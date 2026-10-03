@@ -19,7 +19,7 @@ from codementor.desktop import runtime
 from codementor.desktop.app import App
 from codementor.desktop.connections import PROVIDERS, KeyStore, Probe
 from codementor.desktop.views import analyze_view as analyze_view_module
-from codementor.models.enums import Engine, Language
+from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.provider import ProviderStatus
 from codementor.models.validation import DownloadProgress
 from codementor.providers.base import RetryPolicy
@@ -63,6 +63,11 @@ def _open(core: ApiState, prefs_dir: Path, store: KeyStore) -> Iterator[App]:
     if window.winfo_exists():
         window._closing = True
         window.destroy()
+    # Yok edilen pencerenin Tk nesneleri (font vb.) burada, ana iş parçacığında toplansın: aksi
+    # halde sonraki testin iş parçacığında toplanır, Font.__del__ ana döngüsü çalışmayan Tcl'i
+    # bekler ve test kilitlenir (Faz 30'da büyüyen veriyle görüldü)
+    window = None
+    gc.collect()
 
 
 def pump(app: App, until: Callable[[], bool], timeout: float = 30) -> None:
@@ -487,3 +492,38 @@ def test_compiler_download_cancel(app: App, monkeypatch: pytest.MonkeyPatch) -> 
     pump(app, lambda: not view.downloading)
     assert "iptal edildi" in str(view.download_text.cget("text"))
     assert view.download_button.grid_info()
+
+
+def test_question_difficulty_filter(app: App) -> None:
+    """Faz 30: dil ve zorluk filtreleri birlikte uygulanır; sayı etiketi güncellenir."""
+    app.navigate("questions")
+    view = app.questions_view
+    expected = app.core.questions().filter(Language.C, None, Difficulty.HARD)
+    assert len(expected) >= 1
+    view.filter.set("C")
+    view.difficulty_filter.set("Zor")
+    view.refresh()
+    assert view.count_label.cget("text") == f"{len(expected)} soru"
+    assert len(view.grid_area.winfo_children()) == len(expected)
+    view.filter.set("Tümü")
+    view.difficulty_filter.set("Tümü")
+    view.refresh()
+    assert view.count_label.cget("text") == f"{len(app.core.questions())} soru"
+
+
+def test_question_view_messages(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Boş filtre sonucu ile okunamayan banka farklı mesaj verir (denetim D1)."""
+    app.navigate("questions")
+    view = app.questions_view
+
+    def label_texts() -> list[str]:
+        return [str(w.cget("text")) for w in view.grid_area.winfo_children()]
+
+    monkeypatch.setattr(view, "_load", lambda _l, _d: [])
+    view.difficulty_filter.set("Zor")
+    view.refresh()
+    assert label_texts() == ["Bu filtrelerle eşleşen soru yok."]
+
+    monkeypatch.setattr(view, "_load", lambda _l, _d: None)
+    view.refresh()
+    assert label_texts() == ["Soru bankası boş ya da okunamadı."]

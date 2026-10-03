@@ -1,0 +1,27 @@
+id: cs-veryeasy-temperature-convert
+version: 1
+language: csharp
+engine: none
+difficulty: very_easy
+title: "Sıcaklık dönüştürücü"
+prompt: |
+  Kullanıcıdan Celsius cinsinden bir sıcaklık okuyup Fahrenheit ve Kelvin karşılıklarını
+  yazdıran bir konsol programı yazın. Kullanıcı ondalıklı değer girebilir. Sayı olmayan bir
+  giriş yapılırsa program kapanmamalı, değeri yeniden istemeli. Mutlak sıfırın (-273,15 °C)
+  altındaki değerler anlaşılır bir mesajla reddedilmeli.
+constraints:
+  - "Hesaplanan sonuçların ondalık kısmı kaybolmamalı"
+  - "Sayı olmayan girişte program istisnayla sonlanmamalı"
+  - "Mutlak sıfırın altındaki değerler kabul edilmemeli"
+expected:
+  time: { convert: "1" }
+  space: "1"
+concept_tags: [integer-division, parsing, input-validation]
+checklist_extra:
+  - "Formülde 9 / 5 gibi bir tam sayı bölmesi var mı?"
+  - "double.Parse hatalı girişte istisna fırlatıp programı sonlandırıyor mu?"
+reference_solution_path: private/solutions/cs-veryeasy-temperature-convert.cs
+hint_ladder:
+  1: "Formüldeki 9 / 5 ifadesinin C#'ta sonucu tam olarak kaç?"
+  2: "Kullanıcı 'otuz' yazarsa sayıya çeviren satır ne yapıyor? Programın geri kalanı çalışıyor mu?"
+  3: "Bu kavramlar 'tam sayı bölmesi' ve 'istisnasız ayrıştırma (TryParse)' olarak bilinir."

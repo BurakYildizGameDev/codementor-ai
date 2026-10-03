@@ -1,0 +1,29 @@
+id: c-easy-palindrome
+version: 1
+language: c
+engine: none
+difficulty: easy
+title: "Cümlenin palindrom olup olmadığı"
+prompt: |
+  Bir metnin, harf olmayan karakterler ve büyük/küçük harf farkı yok sayıldığında tersten de
+  aynı okunup okunmadığını söyleyen `int is_palindrome(const char *text)` fonksiyonunu ve onu
+  standart girişten okunan bir satırla deneyen bir program yazın. Metin 1000 karaktere kadar
+  olabilir ve UTF-8 Türkçe karakterler (ş, ğ, ü …) içerebilir; bu karakterlerde program
+  çökmemeli ya da tanımsız davranışa girmemeli.
+constraints:
+  - "Metnin kopyası oluşturulmamalı; ek bellek O(1) olmalı"
+  - "Harf sınıflandırma fonksiyonlarına geçersiz bir değer verilmemeli"
+  - "Boş metin ve yalnızca noktalama içeren metin palindrom sayılmalı"
+expected:
+  time: { is_palindrome: "n" }
+  space: "1"
+concept_tags: [strings, undefined-behavior, edge-cases]
+checklist_extra:
+  - "isalpha/tolower'a negatif olabilecek bir char doğrudan veriliyor mu?"
+  - "İki uçtan ilerleyen indeksler harf olmayan karakterleri atlarken birbirini geçebiliyor mu?"
+  - "Sağ indeks size_t iken 0'dan aşağı inebiliyor mu?"
+reference_solution_path: private/solutions/c-easy-palindrome.c
+hint_ladder:
+  1: "UTF-8'deki 'ş' harfinin baytları char olarak okunduğunda hangi sayısal değerleri alıyor?"
+  2: "ctype.h fonksiyonlarının kabul ettiği değer aralığı nedir; senin verdiğin değer bu aralıkta mı?"
+  3: "Bu kavram 'işaretli char değerinin ctype fonksiyonlarında tanımsız davranışa yol açması' olarak bilinir."

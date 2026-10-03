@@ -29,3 +29,12 @@ items:
   - id: UNITY-CL-008
     text: "UI yalnızca veri değiştiğinde mi güncelleniyor, yoksa her karede yeniden mi kuruluyor?"
     tags: [ui, hot-path, events]
+  - id: UNITY-CL-009
+    text: "Fizik hareketi Rigidbody üzerinden ve fizik adımında mı yapılıyor; tek seferlik girdiler karede okunup fizik adımına aktarılıyor mu; hareket kare hızından bağımsız mı?"
+    tags: [physics, input, frame-rate]
+  - id: UNITY-CL-010
+    text: "Sahne genelinde arama (Find, FindObjectsOfType) ve GetComponent sonuçları önbelleğe alınıyor mu?"
+    tags: [caching]
+  - id: UNITY-CL-011
+    text: "Kayıt dosyası atomik yazılıyor mu; bozuk ya da eski sürüm veri oyunu çökertiyor mu; yazma konumu her platformda yazılabilir mi?"
+    tags: [serialization, files]

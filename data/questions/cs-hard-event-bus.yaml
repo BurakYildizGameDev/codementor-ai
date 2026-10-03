@@ -1,0 +1,31 @@
+id: cs-hard-event-bus
+version: 1
+language: csharp
+engine: none
+difficulty: hard
+title: "Uygulama içi olay yolu"
+prompt: |
+  Bileşenlerin olay türüne göre abone olduğu ve olay yayınladığı bir EventBus sınıfı yazın.
+  Aboneler (ör. kapatılan pencereler) başka hiçbir yerde kullanılmadıklarında, abonelikten
+  çıkmayı unutmuş olsalar bile bellekte tutulmamalı. Abonelik açıkça iptal de edilebilmeli.
+  Birden çok iş parçacığı aynı anda yayın yapıp abone olabilir. Bir abonenin işleyicisi hata
+  verirse diğer aboneler yine çağrılmalı; bir işleyici kendi içinden abonelikten çıkabilmeli.
+  k bir olay türüne abone sayısıdır.
+constraints:
+  - "Yayın, o türün abone sayısı k için O(k) olmalı"
+  - "Aboneliği iptal edilmemiş ama başka yerde kullanılmayan aboneler bellekte tutulmamalı"
+  - "Yayın sırasında abonelik değişirse 'koleksiyon değişti' hatası olmamalı"
+  - "Bir işleyicinin hatası diğer işleyicilerin çağrılmasını engellememeli"
+expected:
+  time: { subscribe: "1", publish: "k", unsubscribe: "k" }
+  space: "k"
+concept_tags: [events, memory-leak, concurrency]
+checklist_extra:
+  - "Aboneler güçlü referansla (doğrudan temsilci) mi tutuluyor?"
+  - "Liste kilit altında dolaşılırken mi işleyiciler çağrılıyor?"
+  - "Abonelik geri alınabilir bir belirteç döndürüyor mu?"
+reference_solution_path: private/solutions/cs-hard-event-bus.cs
+hint_ladder:
+  1: "Kapatılan bir pencere abonelikten çıkmayı unutursa onu bellekte kim tutuyor?"
+  2: "Bir işleyici çalışırken başka bir iş parçacığı aynı listeye abone eklerse foreach ne yapar?"
+  3: "Bu kavramlar 'olay aboneliği kaynaklı bellek sızıntısı', 'zayıf referans (WeakReference)' ve 'anlık görüntü üzerinde yayın' olarak bilinir."

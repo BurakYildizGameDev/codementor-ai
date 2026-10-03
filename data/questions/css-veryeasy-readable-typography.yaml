@@ -1,0 +1,25 @@
+id: css-veryeasy-readable-typography
+version: 1
+language: css
+engine: none
+difficulty: very_easy
+title: "Okunaklı makale yazı stili"
+prompt: |
+  Bir blog yazısının gövde metni ve başlıkları için CSS yazın. Görme güçlüğü olan bir kullanıcı
+  tarayıcısının yazı boyutu ayarını büyüttüğünde metin de büyümeli. Geniş ekranda satırlar göz
+  yoracak kadar uzun olmamalı ve satır aralığı rahat okunur olmalı. Başlıklar gövde metniyle
+  orantılı büyüklükte olmalı.
+constraints:
+  - "Yazı boyutları kullanıcının tarayıcı yazı boyutu ayarına uymalı"
+  - "Gövde metninde bir satır yaklaşık 60-80 karakteri geçmemeli"
+  - "Metin büyütüldüğünde sabit yükseklikler yüzünden taşma olmamalı"
+concept_tags: [typography, accessibility, responsive]
+checklist_extra:
+  - "Yazı boyutları piksel olarak mı verilmiş?"
+  - "Metin kapsayıcısının bir azami genişliği var mı?"
+  - "Satır yüksekliği birimli (px) mi verilmiş?"
+reference_solution_path: private/solutions/css-veryeasy-readable-typography.css
+hint_ladder:
+  1: "Tarayıcı ayarlarından yazı boyutunu 'çok büyük' yaptığında 16px olarak verdiğin metin ne kadar büyüyor?"
+  2: "27 inçlik bir ekranda tam genişlikte bir satırı okuyup bir sonrakinin başını bulmak ne kadar kolay?"
+  3: "Bu kavramlar 'göreli yazı birimleri (rem/em)' ve 'satır uzunluğu (ölçü)' olarak bilinir."

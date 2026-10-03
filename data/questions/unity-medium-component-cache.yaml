@@ -1,0 +1,28 @@
+id: unity-medium-component-cache
+version: 1
+language: csharp
+engine: unity
+difficulty: medium
+title: "Hedefe kilitlenen taret"
+prompt: |
+  Sahnedeki en yakın düşmana dönen ve düşman menzildeyse belirli aralıklarla ateş eden bir taret
+  betiği yazın. Sahnede yüzlerce taret ve n düşman olabilir; düşmanlar sürekli doğup yok
+  oluyor. Taret her karede hedefini yeniden değerlendirmeli ama bunu yaparken kare başına
+  bellek tahsisi yapmamalı. Yok edilen bir düşman hedef olarak kalmamalı.
+constraints:
+  - "Her karede sahnenin tamamında ad ya da tür araması yapılmamalı"
+  - "Kare başına bellek tahsisi olmamalı"
+  - "Yok edilen bir düşman hedef alınmamalı"
+expected:
+  time: { per_frame: "n" }
+  space: "n"
+concept_tags: [hot-path, gc, caching]
+checklist_extra:
+  - "Update içinde sahne genelinde nesne araması ya da GetComponent çağrısı var mı?"
+  - "Etiket gameObject.tag ile okunup karşılaştırılıyor mu (tag okuması her seferinde dizgi tahsis eder)?"
+  - "Mesafe karşılaştırmasında gereksiz karekök alınıyor mu?"
+reference_solution_path: private/solutions/unity-medium-component-cache.cs
+hint_ladder:
+  1: "Yüz taret her karede sahnedeki tüm nesneleri ararsa saniyede kaç arama yapılır?"
+  2: "Düşmanlar doğduğunda ve yok olduğunda bunu taretlere haber veren bir liste tutulabilir mi?"
+  3: "Bu kavramlar 'nesne referanslarını önbelleğe alma' ve 'kayıt listesi (registry) deseni' olarak bilinir."

@@ -1,0 +1,29 @@
+id: cs-easy-bank-account
+version: 1
+language: csharp
+engine: none
+difficulty: easy
+title: "Banka hesabı sınıfı"
+prompt: |
+  Para yatırma, para çekme, başka bir hesaba havale ve hareket geçmişi işlemleri olan bir
+  BankAccount sınıfı yazın. Bakiye sınıf dışından doğrudan değiştirilememeli. Sıfır ya da negatif
+  tutarlar ve yetersiz bakiye anlaşılır bir hatayla reddedilmeli. Tutarlar kuruş hassasiyetindedir:
+  0,10 TL ile 0,20 TL'nin toplamı tam olarak 0,30 TL olmalı. n hareket sayısı olmak üzere geçmiş
+  tüm hareketleri döndürmeli.
+constraints:
+  - "Bakiye sınıf dışından atanamamalı"
+  - "Başarısız bir havale iki hesaptan birini değiştirmiş halde bırakmamalı"
+  - "Kuruş hesaplarında yuvarlama hatası olmamalı"
+expected:
+  time: { deposit: "1", withdraw: "1", transfer: "1", history: "n" }
+  space: "n"
+concept_tags: [encapsulation, floating-point, input-validation]
+checklist_extra:
+  - "Bakiye public set erişimli bir özellik mi?"
+  - "Tutarlar double ile mi tutuluyor?"
+  - "Havalede önce karşı hesaba yatırılıp sonra çekme başarısız olabiliyor mu?"
+reference_solution_path: private/solutions/cs-easy-bank-account.cs
+hint_ladder:
+  1: "0.1 + 0.2 işleminin double sonucu tam olarak 0.3 mü? Bir milyon küçük işlemden sonra fark ne olur?"
+  2: "Başka bir sınıf hesap.Balance = 1000000 yazabiliyor mu? Bunu ne engelliyor?"
+  3: "Bu kavramlar 'kapsülleme' ve 'para için ondalık (decimal) sayı türü' olarak bilinir."

@@ -154,3 +154,11 @@ class ChecklistFile(StrictModel):
     version: int = Field(ge=1)
     applies_to: AppliesTo
     items: list[ChecklistItem] = Field(min_length=1)
+
+
+class BankReport(StrictModel):
+    """`codementor questions validate` sonucu (Faz 30): hatalar başarısızlık, uyarılar bilgi."""
+
+    question_count: int = Field(ge=0)
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)

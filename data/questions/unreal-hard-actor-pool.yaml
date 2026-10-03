@@ -1,0 +1,31 @@
+id: unreal-hard-actor-pool
+version: 1
+language: cpp
+engine: unreal
+difficulty: hard
+title: "Mermi havuzu"
+prompt: |
+  Saniyede yüzlerce mermi atan bir silah sistemi için mermi aktörlerini yöneten bir bileşen
+  yazın. Her atışta yeni aktör oluşturup her isabette yok etmek kare takılmalarına ve çöp
+  toplama duraklamalarına yol açıyor. Kullanılmayan mermiler görünmez ve etkisiz biçimde
+  saklanıp yeniden kullanılmalı. Seviye kapanırken ya da başka bir sistem bir mermiyi yok
+  ettiğinde havuz geçersiz bir mermiye erişmemeli. Mermi sayısı k bir üst sınırı geçmemeli;
+  sınırda en eski mermi geri alınmalı. Seviye kapanırken tüm mermiler temizlenmeli.
+constraints:
+  - "Atış ve isabet sırasında aktör oluşturma ya da yok etme yapılmamalı (ısınma hariç)"
+  - "Havuzun mermi referanslarını motorun çöp toplayıcısı izleyebilmeli; yok edilmiş bir mermiye erişilmemeli"
+  - "Mermi sayısı k sınırını geçmemeli"
+  - "Saklanan mermiler çarpışmaya ve kare güncellemesine katılmamalı"
+expected:
+  time: { acquire: "1", release: "1" }
+  space: "k"
+concept_tags: [object-pooling, gc-roots, tarray]
+checklist_extra:
+  - "Mermiler ham işaretçi dizisinde mi tutuluyor (yok edilince askıda kalır)?"
+  - "Geri alınan mermi gizlenip çarpışması ve Tick'i kapatılıyor mu?"
+  - "Havuz dizisi önceden ayrılmış mı, her eklemede yeniden mi büyüyor?"
+reference_solution_path: private/solutions/unreal-hard-actor-pool.cpp
+hint_ladder:
+  1: "Seviye kapanırken ya da başka bir sistem bir mermiyi yok ettiğinde, havuzundaki ham işaretçi neyi gösterir?"
+  2: "Gizlediğin bir mermi hâlâ çarpışma üretiyor ve her karede güncelleniyor mu?"
+  3: "Bu kavramlar 'nesne havuzu (object pooling)' ve 'çöp toplayıcının izlediği referanslar (UPROPERTY ile TObjectPtr)' olarak bilinir."

@@ -819,9 +819,9 @@ hint_ladder:
   3: "Bu kavram 'geçici pointer ile güvenli realloc' olarak bilinir."
 ```
 
-- `reference_solution_path` **asla** prompt'a girmez; yalnızca K5 sızıntı korumasında kullanılır. `private/` dizini `.gitignore`'dadır (açık kaynak repoda çözümler yayınlanmaz; CI'da fixture çözümler kullanılır).
+- `reference_solution_path` **asla** prompt'a girmez; yalnızca K5 sızıntı korumasında kullanılır. Yol kaynak köküne göre çözülür (çalışma dizinine göre değil); sembolik bağlantı dahil çözülmüş yol `private/` dışına çıkarsa okunmaz (Faz 30). `private/` dizini `.gitignore`'dadır (açık kaynak repoda çözümler yayınlanmaz; CI'da fixture çözümler kullanılır).
 
-### 7.2 Başlangıç matrisi (v1.0 — 14 soru)
+### 7.2 Soru matrisi (v1.0'da 14 soru; Faz 30 sonunda 64)
 
 | ID | Dil / Motor | Zorluk | Hedef kavram |
 |---|---|---|---|
@@ -839,6 +839,64 @@ hint_ladder:
 | unity-hard-inventory | Unity C# | Zor | ScriptableObject envanter + UI senkronizasyonu; GC optimizasyonu; çalışma zamanında SO değişikliğinin editörde kalıcı olması |
 | unreal-medium-actor-component | Unreal C++ | Orta | `UActorComponent`, `Tick` maliyeti, `PrimaryComponentTick.bCanEverTick` |
 | unreal-hard-tarray-gc | Unreal C++ | Zor | `TArray`/`TMap` bellek yönetimi (`Reserve`), `UPROPERTY` ile GC kökleri, `TObjectPtr` |
+
+**Genişleme (Faz 16: Python/HTML/CSS; Faz 30: dil/motor başına en az 8 soru, her zorlukta en
+az bir soru).** Kural: soru metni yöntemi söylemez (testte `METHOD_LEAKS`), her sorunun kavram
+etiketleri kontrol listesinde en az bir maddeyle kesişir, referans çözüm `private/solutions/`
+altındadır ve derleyiciden temiz geçer. Denetim: `codementor questions validate`.
+
+| ID | Dil / Motor | Zorluk | Başlık |
+|---|---|---|---|
+| c-veryeasy-max-of-array | C | Çok kolay | Dizideki en büyük ve en küçük değer |
+| c-easy-palindrome | C | Kolay | Cümlenin palindrom olup olmadığı |
+| c-medium-binary-search | C | Orta | Sıralı dizide arama ve ekleme konumu |
+| c-hard-hash-table | C | Zor | Dizgi anahtarlı sözlük |
+| cpp-veryeasy-vector-sum | C++ | Çok kolay | Notların toplamı ve ortalaması |
+| cpp-veryeasy-word-reverse | C++ | Çok kolay | Kelimeleri ters sırada yazdırma |
+| cpp-easy-matrix-class | C++ | Kolay | 2B matris sınıfı |
+| cpp-medium-erase-while-iterating | C++ | Orta | Süresi dolan oturumları temizleme |
+| cpp-hard-thread-safe-queue | C++ | Zor | İş parçacıkları arasında iş kuyruğu |
+| unreal-veryeasy-health-property | Unreal C++ | Çok kolay | Can değeri ve hasar alma |
+| unreal-veryeasy-rotating-actor | Unreal C++ | Çok kolay | Dönen platform aktörü |
+| unreal-easy-overlap-pickup | Unreal C++ | Kolay | Toplanabilir sağlık paketi |
+| unreal-easy-timer-spawner | Unreal C++ | Kolay | Cephane kutusunu yenileyen nokta |
+| unreal-medium-cached-actor-lookup | Unreal C++ | Orta | Yakındaki etkileşimli nesneleri vurgulayan bileşen |
+| unreal-hard-actor-pool | Unreal C++ | Zor | Mermi havuzu |
+| cs-veryeasy-list-max | C# | Çok kolay | En yüksek puanlı oyuncu |
+| cs-veryeasy-temperature-convert | C# | Çok kolay | Sıcaklık dönüştürücü |
+| cs-easy-bank-account | C# | Kolay | Banka hesabı sınıfı |
+| cs-medium-async-downloader | C# | Orta | Eşzamanlı sayfa indirici |
+| cs-medium-linq-report | C# | Orta | Müşteri harcama raporu |
+| cs-hard-event-bus | C# | Zor | Uygulama içi olay yolu |
+| unity-veryeasy-rigidbody-move | Unity C# | Çok kolay | Fizikle hareket eden oyuncu |
+| unity-veryeasy-rotate-object | Unity C# | Çok kolay | Dönen ve süzülen toplanabilir nesne |
+| unity-easy-coroutine-spawner | Unity C# | Kolay | Dalga dalga düşman çıkaran nokta |
+| unity-medium-component-cache | Unity C# | Orta | Hedefe kilitlenen taret |
+| unity-hard-save-system | Unity C# | Zor | Oyun kayıt sistemi |
+| py-veryeasy-grade-letter | Python | Çok kolay | Puanı harf notuna çevirme |
+| py-veryeasy-list-average | Python | Çok kolay | Günlük sıcaklık ortalaması |
+| py-easy-shopping-cart | Python | Kolay | Alışveriş sepeti |
+| py-easy-word-count | Python | Kolay | Kelime sıklığı sayacı |
+| py-medium-log-parser | Python | Orta | Web sunucusu günlük analizi |
+| py-medium-two-sum | Python | Orta | Toplamı hedefe eşit iki sayı |
+| py-hard-lru-cache | Python | Zor | Sabit kapasiteli önbellek |
+| py-hard-shortest-path | Python | Zor | Metro ağında en az duraklı rota |
+| html-veryeasy-link-list | HTML | Çok kolay | Ders kaynakları sayfası |
+| html-veryeasy-recipe-page | HTML | Çok kolay | Yemek tarifi sayfası |
+| html-easy-contact-form | HTML | Kolay | İletişim formu |
+| html-easy-profile-card | HTML | Kolay | Erişilebilir profil kartı |
+| html-medium-data-table | HTML | Orta | Haftalık ders programı tablosu |
+| html-medium-image-gallery | HTML | Orta | Gezi fotoğrafları galerisi |
+| html-hard-dialog-form | HTML | Zor | Hesap silme onay penceresi |
+| html-hard-site-navigation | HTML | Zor | Çok sayfalı site gezinme menüsü |
+| css-veryeasy-button-states | CSS | Çok kolay | Birincil ve ikincil düğme stilleri |
+| css-veryeasy-readable-typography | CSS | Çok kolay | Okunaklı makale yazı stili |
+| css-easy-card-grid | CSS | Kolay | Ürün kartları ızgarası |
+| css-easy-centered-layout | CSS | Kolay | Ortalanmış ve duyarlı kart düzeni |
+| css-medium-sticky-header | CSS | Orta | Kaydırınca üstte kalan site başlığı |
+| css-medium-theme-variables | CSS | Orta | Açık ve koyu tema |
+| css-hard-animation-performance | CSS | Zor | Akıcı kart animasyonları |
+| css-hard-specificity-refactor | CSS | Zor | Çakışan düğme stillerini düzenleme |
 
 ### 7.3 Serbest mod
 
@@ -1401,7 +1459,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 
 ## 22. Yol Haritası
 
-**v1.0 (bu doküman):** C, C++, C#, Unity, Unreal; Faz 16'da Python, HTML, CSS (ADR-0015, 13 ek kural, 4 ek soru); Tier 0/1; 23 madde (20 statik kural + 3 LLM kontrol maddesi); 14 soru; 4 sağlayıcı + Fake; iki geçiş; masaüstü (.exe), CLI, API, Web UI; eval (80 örnek); SARIF.
+**v1.0 (bu doküman):** C, C++, C#, Unity, Unreal; Faz 16'da Python, HTML, CSS (ADR-0015, 13 ek kural, 4 ek soru); Tier 0/1; 23 madde (20 statik kural + 3 LLM kontrol maddesi); 14 soru (Faz 30'da 64); 4 sağlayıcı + Fake; iki geçiş; masaüstü (.exe), CLI, API, Web UI; eval (80 örnek); SARIF.
 
 **v1.1:**
 - cppcheck ve clang-tidy entegrasyonu

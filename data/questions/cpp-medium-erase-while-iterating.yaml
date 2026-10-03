@@ -1,0 +1,28 @@
+id: cpp-medium-erase-while-iterating
+version: 1
+language: cpp
+engine: none
+difficulty: medium
+title: "Süresi dolan oturumları temizleme"
+prompt: |
+  Her biri kullanıcı adı ve son etkinlik zamanı içeren Session kayıtlarını bir std::vector'da
+  tutan bir oturum yöneticisi yazın. `remove_expired(now, timeout)` son etkinliğinden bu yana
+  timeout'tan uzun süre geçmiş oturumları silmeli ve kaç oturum silindiğini döndürmeli. Listede
+  n oturum olabilir ve yüz binlerce oturumun süresi aynı anda dolabilir. Kalan oturumların
+  sırası korunmalı.
+constraints:
+  - "Silme işlemi toplamda O(n) olmalı"
+  - "Silme sırasında geçersizleşmiş bir yineleyici ya da referans kullanılmamalı"
+  - "Kalan oturumların göreli sırası değişmemeli"
+expected:
+  time: { remove_expired: "n" }
+  space: "1"
+concept_tags: [iterator-invalidation, data-structures, performance]
+checklist_extra:
+  - "Döngü içinde erase çağrıldıktan sonra aynı yineleyici artırılıyor mu?"
+  - "Her silmede vector'ün geri kalanı kaydırılıyor mu (toplam O(n^2))?"
+reference_solution_path: private/solutions/cpp-medium-erase-while-iterating.cpp
+hint_ladder:
+  1: "Bir vector'den ortadaki bir elemanı sildiğinde elindeki yineleyiciye ve ondan sonraki elemanlara ne olur?"
+  2: "Yüz bin elemanı tek tek sildiğinde her silmede kaç eleman yer değiştiriyor? Silinecekleri tek geçişte ayırmak mümkün mü?"
+  3: "Bu kavramlar 'yineleyici geçersizleşmesi' ve 'erase-remove deyimi' olarak bilinir."

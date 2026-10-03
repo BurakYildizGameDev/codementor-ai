@@ -1,0 +1,28 @@
+id: c-veryeasy-max-of-array
+version: 1
+language: c
+engine: none
+difficulty: very_easy
+title: "Dizideki en büyük ve en küçük değer"
+prompt: |
+  Kullanıcıdan önce kaç sayı gireceğini, sonra o kadar tam sayıyı okuyan ve girilen sayıların
+  en büyüğünü ve en küçüğünü yazdıran bir program yazın. En fazla 100 sayı kabul edilmeli;
+  kullanıcı 1'den küçük ya da 100'den büyük bir adet girerse program anlaşılır bir mesaj
+  vermeli. Girilen sayıların hepsi negatif olabilir.
+constraints:
+  - "Dizinin sınırları dışına hiçbir koşulda yazılmamalı veya okunmamalı"
+  - "Tüm sayılar negatif olduğunda da doğru sonuç verilmeli"
+  - "Sayı olmayan bir giriş tanımsız davranışa yol açmamalı"
+expected:
+  time: { read: "n", find_min_max: "n" }
+  space: "n"
+concept_tags: [arrays, edge-cases, input-validation]
+checklist_extra:
+  - "En büyük ve en küçük değişkenleri 0 ile mi başlatılmış (tüm sayılar negatifse yanlış sonuç)?"
+  - "Döngü sınırı <= ile yazılıp dizinin bir fazlasına erişiliyor mu?"
+  - "Adet kontrolü diziye yazmadan önce mi yapılıyor?"
+reference_solution_path: private/solutions/c-veryeasy-max-of-array.c
+hint_ladder:
+  1: "Girilen sayıların hepsi -5 ile -1 arasındaysa en büyük değer değişkeni hangi değerle başlıyor ve sonunda ne yazdırıyor?"
+  2: "Döngünün son turunda hangi indekse erişiyorsun; dizinin son geçerli indeksi hangisi?"
+  3: "Bu kavramlar 'hatalı başlangıç değeri' ve 'bir fazla hata (off-by-one)' olarak bilinir."

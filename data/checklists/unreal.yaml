@@ -29,3 +29,12 @@ items:
   - id: UE-CL-007
     text: "Kare hızına bağlı hesaplamalar DeltaTime ile ölçekleniyor mu?"
     tags: [tick, actor-component]
+  - id: UE-CL-008
+    text: "Zamanlayıcılar EndPlay'de temizleniyor mu; bekleyen bir iş, yok edilmiş aktöre ya da geçersiz bir işaretçiye erişebilir mi?"
+    tags: [timers]
+  - id: UE-CL-009
+    text: "Dinamik delegelere bağlanan fonksiyonlar UFUNCTION ile işaretli mi; yok edilme sürecindeki nesnenin üyelerine bağlı işleyicilerden erişiliyor mu?"
+    tags: [delegates, events]
+  - id: UE-CL-010
+    text: "Sık oluşturulup yok edilen aktörler yerine havuz kullanılıyor mu; havuzdaki aktörler gizlenip çarpışma ve Tick'leri kapatılıyor mu?"
+    tags: [object-pooling]

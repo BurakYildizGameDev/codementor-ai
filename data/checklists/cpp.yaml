@@ -35,3 +35,15 @@ items:
   - id: CPP-CL-009
     text: "Büyük nesneler gereksiz yere değerle kopyalanıyor mu (parametre, dönüş, aralık tabanlı for)?"
     tags: [performance, move-semantics]
+  - id: CPP-CL-010
+    text: "İşaretli ve işaretsiz tamsayılar karşılaştırılıyor ya da tam sayı bölmesi ondalıklı sonucu kesiyor mu?"
+    tags: [signed-unsigned, integer-division]
+  - id: CPP-CL-011
+    text: "Döngü değişkenleri, parametreler ya da dizgi birleştirmeleri büyük nesneleri (string, vector) gereksiz yere kopyalıyor mu?"
+    tags: [copies, strings]
+  - id: CPP-CL-012
+    text: "Okuma amaçlı üye fonksiyonlar ve referans parametreleri const mu; const bir nesne üzerinden değiştirici erişim mümkün mü?"
+    tags: [const-correctness, operator-overloading]
+  - id: CPP-CL-013
+    text: "Paylaşılan veri her erişimde aynı kilitle korunuyor mu; bekleme koşulu sahte uyanmaya karşı döngüyle denetleniyor mu; kapatmada tüm bekleyenler uyanıyor mu?"
+    tags: [concurrency, data-race]

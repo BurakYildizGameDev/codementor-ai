@@ -1,0 +1,24 @@
+id: html-veryeasy-link-list
+version: 1
+language: html
+engine: none
+difficulty: very_easy
+title: "Ders kaynakları sayfası"
+prompt: |
+  Bir dersin kaynaklarını listeleyen bir sayfa yazın: ders kitabının sitesi, iki video kanalı,
+  bir alıştırma sitesi ve indirilecek bir ders notu (PDF, 2 MB). Dış sitelere giden bağlantılar
+  yeni sekmede açılmalı. Ekran okuyucu kullanıcıları sayfadaki bağlantıların listesine baktığında
+  her bağlantının nereye gittiğini çevresindeki metni okumadan anlayabilmeli.
+constraints:
+  - "Hiçbir bağlantı metni 'buraya tıklayın' ya da 'bağlantı' gibi bağlamsız olmamalı"
+  - "Yeni sekmede açılan dış siteler, eski tarayıcılarda da, açan sayfaya erişim kazanmamalı"
+  - "Dosya indiren bağlantı, dosyanın türünü ve boyutunu belirtmeli"
+concept_tags: [links, accessibility, security]
+checklist_extra:
+  - "Birden çok bağlantının metni aynı mı ('buraya tıklayın')?"
+  - "Yeni sekmede açılan bağlantılarda açan sayfayla ilişki kesiliyor mu?"
+reference_solution_path: private/solutions/html-veryeasy-link-list.html
+hint_ladder:
+  1: "Ekran okuyucu sayfadaki tüm bağlantıları bir liste olarak okursa, beş kez 'buraya tıklayın' duyan biri neyi seçeceğini nasıl bilir?"
+  2: "Yeni sekmede açılan bir site, açılan pencere üzerinden seni açan sayfaya ne yapabilir?"
+  3: "Bu kavramlar 'anlamlı bağlantı metni' ve 'rel=noopener ile sekme ilişkisini açıkça kesme' (güncel tarayıcılar bunu varsayılan yapar) olarak bilinir."

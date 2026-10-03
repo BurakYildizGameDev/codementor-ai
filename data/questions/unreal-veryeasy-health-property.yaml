@@ -1,0 +1,29 @@
+id: unreal-veryeasy-health-property
+version: 1
+language: cpp
+engine: unreal
+difficulty: very_easy
+title: "Can değeri ve hasar alma"
+prompt: |
+  Bir düşman aktörüne can sistemi ekleyin: azami can her düşman türü için editörden
+  ayarlanabilmeli, mevcut can Blueprint'ten okunabilmeli ama değiştirilememeli. Hasar alındığında
+  can azalmalı, iyileşmede artmalı; can hiçbir zaman 0'ın altına inmemeli ve azami canı
+  geçmemeli. Can 0'a indiğinde 'öldü' olayı yalnızca bir kez tetiklenmeli; ölü düşmana gelen
+  yeni hasar bir şey değiştirmemeli.
+constraints:
+  - "Can 0 ile azami can arasında kalmalı"
+  - "Ölüm olayı yalnızca bir kez tetiklenmeli"
+  - "Negatif hasar ya da iyileşme miktarı kabul edilmemeli"
+expected:
+  time: { apply_damage: "1", heal: "1" }
+  space: "1"
+concept_tags: [uproperty, edge-cases, events]
+checklist_extra:
+  - "Can, sınırlanmadan mı azaltılıyor (negatif can)?"
+  - "Ölü düşmana gelen hasar ölüm olayını yeniden tetikliyor mu?"
+  - "Mevcut can Blueprint'ten yazılabilir halde mi açılmış?"
+reference_solution_path: private/solutions/unreal-veryeasy-health-property.cpp
+hint_ladder:
+  1: "Canı 10 olan düşmana 25 hasar verilirse can kaç olur? Sonra 5 iyileşme gelirse düşman diriliyor mu?"
+  2: "Aynı karede iki mermi ölü düşmana çarparsa ölüm olayın kaç kez tetikleniyor?"
+  3: "Bu kavramlar 'değeri sınırlama (clamp)' ve 'tek seferlik durum geçişi' olarak bilinir."

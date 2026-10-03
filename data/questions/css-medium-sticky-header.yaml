@@ -1,0 +1,25 @@
+id: css-medium-sticky-header
+version: 1
+language: css
+engine: none
+difficulty: medium
+title: "Kaydırınca üstte kalan site başlığı"
+prompt: |
+  Bir dokümantasyon sitesinin başlığı için CSS yazın: sayfa kaydırıldığında başlık ekranın
+  üstünde kalmalı. Başlıktaki açılır dil menüsü, altındaki kod blokları ve görsellerin üstünde
+  görünmeli. Sayfa içi bir bağlantıyla bir bölüme gidildiğinde bölüm başlığı üstteki başlığın
+  altında gizli kalmamalı.
+constraints:
+  - "Başlık JavaScript olmadan üstte kalmalı"
+  - "Sayfa içi bağlantıyla gidilen bölümün başlığı örtülmemeli"
+  - "Açılır menü, z-index değerleri rastgele büyütülmeden diğer içeriklerin üstünde görünmeli"
+concept_tags: [positioning, stacking-context, layout]
+checklist_extra:
+  - "Başlık position: fixed ile mi sabitlenip içerik elle mi aşağı itilmiş?"
+  - "z-index değerleri 9999 gibi tahminle mi verilmiş?"
+  - "Sayfa içi hedeflerde başlık yüksekliği hesaba katılıyor mu?"
+reference_solution_path: private/solutions/css-medium-sticky-header.css
+hint_ladder:
+  1: "Bir bölüme bağlantıyla gittiğinde tarayıcı o bölümü ekranın en üstüne kaydırıyor; orada şu an ne var?"
+  2: "Menünün z-index'i 1000 olduğu halde neden bir kod bloğunun altında kalıyor olabilir? Değerler hangi bağlam içinde karşılaştırılıyor?"
+  3: "Bu kavramlar 'yapışkan konumlandırma', 'kaydırma kenar payı (scroll-margin)' ve 'yığın bağlamı (stacking context)' olarak bilinir."

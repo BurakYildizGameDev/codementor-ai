@@ -1,7 +1,14 @@
 import { ENGINE_LABELS, LANGUAGES, enginesFor } from "../lib/samples";
 import type { ProviderStatus } from "../types/provider_status";
-import type { QuestionPublic } from "../types/question_public";
+import type { Difficulty, QuestionPublic } from "../types/question_public";
 import type { Engine, Language, PipelineMode } from "../types/request";
+
+export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+  very_easy: "Çok kolay",
+  easy: "Kolay",
+  medium: "Orta",
+  hard: "Zor",
+};
 
 export const MODE_LABELS: Record<PipelineMode, string> = {
   two_pass: "İki geçiş (denetim + mentor)",
@@ -13,6 +20,8 @@ interface Props {
   engine: Engine;
   questionId: string;
   questions: QuestionPublic[];
+  /** Boş: tüm zorluklar (Faz 30). */
+  difficulty: Difficulty | "";
   providers: ProviderStatus[];
   /** Boş: yapılandırmadaki varsayılan sağlayıcı. */
   provider: string;
@@ -22,13 +31,17 @@ interface Props {
   onLanguage: (language: Language) => void;
   onEngine: (engine: Engine) => void;
   onQuestion: (id: string) => void;
+  onDifficulty: (difficulty: Difficulty | "") => void;
   onProvider: (name: string) => void;
   onMode: (mode: PipelineMode | "") => void;
   onAnalyze: () => void;
 }
 
-/** Dil, motor, soru, sağlayıcı ve mod seçimi + analiz düğmesi. */
+/** Dil, motor, zorluk, soru, sağlayıcı ve mod seçimi + analiz düğmesi. */
 export function Controls(props: Props) {
+  const visible = props.difficulty
+    ? props.questions.filter((q) => q.difficulty === props.difficulty)
+    : props.questions;
   return (
     <div className="controls">
       <label>
@@ -59,6 +72,21 @@ export function Controls(props: Props) {
           ))}
         </select>
       </label>
+      <label>
+        Zorluk
+        <select
+          value={props.difficulty}
+          onChange={(e) => props.onDifficulty(e.target.value as Difficulty | "")}
+          disabled={props.busy}
+        >
+          <option value="">Tümü</option>
+          {(Object.keys(DIFFICULTY_LABELS) as Difficulty[]).map((d) => (
+            <option key={d} value={d}>
+              {DIFFICULTY_LABELS[d]}
+            </option>
+          ))}
+        </select>
+      </label>
       <label className="grow">
         Soru
         <select
@@ -67,9 +95,9 @@ export function Controls(props: Props) {
           disabled={props.busy}
         >
           <option value="">Serbest mod (soru yok)</option>
-          {props.questions.map((q) => (
+          {visible.map((q) => (
             <option key={q.id} value={q.id}>
-              {q.title}
+              {q.title} ({DIFFICULTY_LABELS[q.difficulty]})
             </option>
           ))}
         </select>

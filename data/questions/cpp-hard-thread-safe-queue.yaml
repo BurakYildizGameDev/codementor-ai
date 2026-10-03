@@ -1,0 +1,29 @@
+id: cpp-hard-thread-safe-queue
+version: 1
+language: cpp
+engine: none
+difficulty: hard
+title: "İş parçacıkları arasında iş kuyruğu"
+prompt: |
+  Birden çok üretici iş parçacığının iş eklediği, birden çok tüketicinin iş aldığı sınırsız
+  bir iş kuyruğu sınıfı yazın: `push(job)`, kuyruk boşsa iş gelene kadar bekleyen `pop()` ve
+  `close()` olsun. Kuyruk kapatıldığında kalan işler yine alınabilmeli; kuyruk boşaldığında
+  bekleyen tüm tüketiciler uyanıp boş sonuç almalı. Tüketiciler beklerken işlemci tüketmemeli.
+constraints:
+  - "Veri yarışı olmamalı"
+  - "Bekleyen tüketiciler meşgul beklemeyle (busy-wait, uyumadan sürekli denetleyerek) beklememeli"
+  - "close() sonrasında hiçbir iş parçacığı sonsuza kadar beklememeli"
+  - "Kuyruğun korunduğu sırada iş çalıştırılmamalı"
+expected:
+  time: { push: "1", pop: "1" }
+  space: "n"
+concept_tags: [concurrency, data-race, raii]
+checklist_extra:
+  - "Bekleme koşulu if ile mi, döngüyle ya da yüklemle mi denetleniyor?"
+  - "Kapatmada yalnızca bir tüketici mi uyandırılıyor?"
+  - "Kilit elle lock/unlock ile mi yönetiliyor (istisnada açık kalabilir)?"
+reference_solution_path: private/solutions/cpp-hard-thread-safe-queue.cpp
+hint_ladder:
+  1: "Tüketici uyandığında kuyruğun hâlâ boş olmadığından nasıl emin oluyorsun? Onu başka bir tüketici boşaltmış olabilir mi?"
+  2: "Kuyruk kapatılırken uykuda bekleyen beş tüketiciden kaçı uyanıyor?"
+  3: "Bu kavramlar 'koşul değişkeniyle bekleme', 'sahte uyanma (spurious wakeup)' ve 'kayıp bildirim' olarak bilinir."

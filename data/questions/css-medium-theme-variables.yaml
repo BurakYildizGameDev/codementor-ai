@@ -1,0 +1,26 @@
+id: css-medium-theme-variables
+version: 1
+language: css
+engine: none
+difficulty: medium
+title: "Açık ve koyu tema"
+prompt: |
+  Bir web uygulamasının renklerini açık ve koyu temayı destekleyecek biçimde yeniden yazın.
+  Şu an marka rengi, zemin, metin ve kenarlık renkleri yirmiden fazla bileşende ayrı ayrı yazılı.
+  Kullanıcının işletim sistemi koyu temadaysa uygulama koyu açılmalı. Kullanıcı ayrıca bir
+  düğmeyle temayı elle seçebilmeli; düğme kök öğeye data-theme özniteliği ekler ve bu seçim
+  işletim sistemi tercihinden önce gelmeli. Bir rengin değiştirilmesi tek bir yerden
+  yapılabilmeli.
+constraints:
+  - "Her renk değeri tek bir yerde tanımlanmalı"
+  - "İşletim sistemi tercihine uyulmalı; kullanıcının elle seçimi bunu geçersiz kılmalı"
+  - "Koyu temada da metin kontrastı yeterli olmalı"
+concept_tags: [variables, maintainability, color]
+checklist_extra:
+  - "Koyu tema için her bileşenin kuralı ayrı ayrı mı tekrarlanmış?"
+  - "Elle seçilen tema, işletim sistemi tercihi koyuyken açık temaya geçebiliyor mu?"
+reference_solution_path: private/solutions/css-medium-theme-variables.css
+hint_ladder:
+  1: "Marka rengini değiştirmek istesen kaç dosyada kaç satırı düzenlemen gerekiyor?"
+  2: "Kullanıcı açık temayı seçmiş ama işletim sistemi koyu temada; hangi kuralın kazanacağını ne belirliyor?"
+  3: "Bu kavramlar 'CSS özel özellikleri (değişkenler)' ve 'prefers-color-scheme medya sorgusu' olarak bilinir."

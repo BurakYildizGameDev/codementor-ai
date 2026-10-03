@@ -1,0 +1,29 @@
+id: py-hard-shortest-path
+version: 1
+language: python
+engine: none
+difficulty: hard
+title: "Metro ağında en az duraklı rota"
+prompt: |
+  Bir metro ağında iki istasyon arasındaki en az duraklı rotayı istasyon adlarının listesi
+  olarak döndüren `shortest_route(graph: dict[str, list[str]], start: str, goal: str)
+  -> list[str] | None` fonksiyonunu yazın. Ağ n istasyon ve m bağlantı içerir; büyük şehirlerin
+  birleşik ağında yüz binlerce istasyon olabilir. Hedefe ulaşılamıyorsa None, başlangıç hedefe
+  eşitse yalnızca başlangıç istasyonu dönmeli. Grafikte döngüler vardır.
+constraints:
+  - "Çalışma süresi n istasyon ve m bağlantı için doğrusal olmalı"
+  - "Döngüler sonsuz döngüye yol açmamalı"
+  - "Bilinmeyen başlangıç ya da hedef istasyonda program hata vermemeli"
+expected:
+  time: { shortest_route: "n + m" }
+  space: "n"
+concept_tags: [graphs, data-structures, performance]
+checklist_extra:
+  - "Kuyruktan baştan eleman alma list.pop(0) ile mi yapılıyor (her seferinde O(n))?"
+  - "Ziyaret edilen istasyonlar listede 'in' ile mi aranıyor?"
+  - "Rota, her adımda yolun tamamı kopyalanarak mı kuruluyor?"
+reference_solution_path: private/solutions/py-hard-shortest-path.py
+hint_ladder:
+  1: "Yüz bin elemanlı bir listenin başından eleman çıkarmak kaç elemanın kaymasına yol açar?"
+  2: "Bir istasyona ilk ulaştığında oraya nereden geldiğini kaydedersen, rotayı sonunda nasıl kurarsın?"
+  3: "Bu kavramlar 'genişlik öncelikli arama (BFS)' ve 'çift uçlu kuyruk (deque)' olarak bilinir."

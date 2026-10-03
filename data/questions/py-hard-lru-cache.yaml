@@ -1,0 +1,29 @@
+id: py-hard-lru-cache
+version: 1
+language: python
+engine: none
+difficulty: hard
+title: "Sabit kapasiteli önbellek"
+prompt: |
+  Belirli bir kapasitesi olan bir anahtar-değer önbelleği sınıfı yazın: `get(key)` değeri ya da
+  None döndürsün, `put(key, value)` değeri eklesin ya da güncellesin. Önbellek doluyken yeni bir
+  anahtar eklenirse en uzun süredir kullanılmayan (okunmayan ya da yazılmayan) anahtar
+  çıkarılmalı. Önbellek n anahtar tutarken bile her işlem sabit sürede tamamlanmalı. Kapasite 0
+  olabilir; bu durumda hiçbir şey saklanmamalı.
+constraints:
+  - "get ve put işlemleri sabit sürede tamamlanmalı"
+  - "Okuma da bir anahtarı 'yakın zamanda kullanılmış' yapmalı"
+  - "Var olan bir anahtarın güncellenmesi başka bir anahtarı çıkarmamalı"
+expected:
+  time: { get: "1", put: "1" }
+  space: "n"
+concept_tags: [hashing, data-structures, performance]
+checklist_extra:
+  - "Kullanım sırası bir listede tutulup her işlemde list.remove() ile mi güncelleniyor?"
+  - "Güncellenen anahtar kapasite kontrolünde yeni anahtar sayılıyor mu?"
+  - "Kapasite 0 iken put bir şey saklıyor mu?"
+reference_solution_path: private/solutions/py-hard-lru-cache.py
+hint_ladder:
+  1: "Kullanım sırasını bir listede tutup her get'te anahtarı listede arayıp taşırsan, n anahtarda bu kaç adım sürer?"
+  2: "Hem anahtarla doğrudan erişim hem de sıralı ekleme/çıkarma veren bir yapı nasıl kurulabilir?"
+  3: "Bu kavram 'LRU önbelleği (karma tablo + çift yönlü bağlı liste)' olarak bilinir."

@@ -1385,24 +1385,28 @@ o durumda Tier 1 `skipped` kalıyor: derleme hataları ve uyarılar kaçıyor. D
 
 **Commit:** `feat(faz-29): derleyicisiz kullanıcı için gömülü/indirilebilir araç zinciri`
 
-### Faz 30 — Soru bankası genişletme (YAPILACAK)
+### Faz 30 — Soru bankası genişletme (YAPILDI)
 
 **Dal:** `faz/30-soru-bankasi` · **Mimari:** §9 (soru bankası), §12 · **ADR:** —
 
 **Sorun:** 18 soru var (C 4, C++ 3, C# 2, Unity 3, Unreal 2, Python 2, HTML 1, CSS 1). Bu, dil
 başına bir öğrencinin birkaç saatlik çalışmasına bile yetmiyor; zorluk dağılımı da dengesiz.
 
-- [ ] Hedef: dil/motor başına en az 8 soru (toplam ~64), her dilde veryeasy/easy/medium/hard
-      dağılımı; konu haritası (diziler, dizgiler, bağlı yapılar, özyineleme, sıralama/arama,
+- [x] Hedef: dil/motor başına en az 8 soru (toplam ~64), her dilde veryeasy/easy/medium/hard
+      dağılımı (64 soru; her grupta 4 zorluğun hepsi); konu haritası (diziler, dizgiler, bağlı yapılar, özyineleme, sıralama/arama,
       bellek, nesne yaşam döngüsü; motorlarda Update/Tick, GC, bileşen)
-- [ ] Her soruda: gereksinimler, beklenen Big-O, kontrol listesi, yasak çözüm işaretleri
-      (sızıntı), ipucu seviyeleri; `codementor questions validate` geçer
-- [ ] **Kaynak:** kullanıcı bir soru havuzu hazırlayıp verecek; Claude havuzu soru bankası
+- [x] Her soruda: gereksinimler, beklenen Big-O, kontrol listesi, yasak çözüm işaretleri
+      (sızıntı), ipucu seviyeleri; `codementor questions validate` geçer (komut bu fazda eklendi;
+      yöntem işaretleri veride değil test tablosunda, bu yüzden `validate` değil
+      `test_question_data.py` denetler)
+- [x] **Kaynak:** 2026-10-03 kararıyla havuz beklenmedi; sorular konu haritasından Claude
+      tarafından yazıldı. Deny kuralı yalnız okumayı engellediği için 64 çözüm doğrudan
+      `private/solutions/`'a yazıldı. (Önceki plan metni:) kullanıcı bir soru havuzu hazırlayıp verecek; Claude havuzu soru bankası
       biçimine dönüştürür ve soruları **ve referans çözümleri** kendisi yazar (kullanıcı kararı,
       2026-10-02). `private/solutions/` şu an erişim dışı (deny kuralı): faz başında kural bu faz
       için kullanıcı onayıyla açılır ya da çözümler başka bir özel dizine yazılır (planda karar)
-- [ ] Masaüstü/web soru seçiciye dil ve zorluk filtresi (soru sayısı artınca gerekli)
-- [ ] Testler: tüm soruların şema doğrulaması (mevcut), kimlik benzersizliği, dil başına
+- [x] Masaüstü/web soru seçiciye dil ve zorluk filtresi (soru sayısı artınca gerekli)
+- [x] Testler: tüm soruların şema doğrulaması (mevcut), kimlik benzersizliği, dil başına
       asgari sayı, her zorlukta en az bir soru, sızıntı işaretlerinin referans çözümde geçmesi
       (çözüm varsa)
 

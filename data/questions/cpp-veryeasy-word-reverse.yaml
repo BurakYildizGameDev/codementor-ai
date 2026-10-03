@@ -1,0 +1,27 @@
+id: cpp-veryeasy-word-reverse
+version: 1
+language: cpp
+engine: none
+difficulty: very_easy
+title: "Kelimeleri ters sırada yazdırma"
+prompt: |
+  Standart girişten bir satır okuyup kelimelerini ters sırada yazdıran bir program yazın
+  (ör. "bir iki üç" girişi için "üç iki bir"). Kelimeler birden çok boşluk ya da sekme ile
+  ayrılmış olabilir; çıktıda kelimeler tek boşlukla ayrılmalı. Satır birkaç megabayt
+  uzunluğunda olabilir.
+constraints:
+  - "Her kelime sonuca yalnızca bir kez kopyalanmalı; satır uzunluğu n için toplam iş O(n) olmalı"
+  - "Baştaki ve sondaki boşluklar çıktıya taşınmamalı"
+  - "Boş satırda boş çıktı üretilmeli"
+expected:
+  time: { reverse_words: "n" }
+  space: "n"
+concept_tags: [strings, copies, edge-cases]
+checklist_extra:
+  - "Kelimeler for (auto w : words) ile değer olarak mı dolaşılıyor?"
+  - "Sonuç her kelimede 'kelime + boşluk + eski sonuç' biçiminde baştan mı kuruluyor?"
+reference_solution_path: private/solutions/cpp-veryeasy-word-reverse.cpp
+hint_ladder:
+  1: "Bir milyon kelimede sonucu her adımda 'yeni kelime + eski sonuç' diye kurarsan toplam kaç karakter kopyalanır?"
+  2: "Döngüde bir kelimeyi dolaşırken o kelimenin kendisini mi, bir kopyasını mı kullanıyorsun?"
+  3: "Bu kavramlar 'gereksiz kopyalar' ve 'başa ekleyerek dizgi kurmanın karesel maliyeti' olarak bilinir."

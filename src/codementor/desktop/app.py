@@ -31,7 +31,7 @@ from codementor.desktop.views.connections_view import ConnectionsView
 from codementor.desktop.views.history_view import HistoryView
 from codementor.desktop.views.questions_view import QuestionsView
 from codementor.desktop.widgets.sidebar import Sidebar
-from codementor.models.enums import Engine, Language
+from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.pipeline import StageEvent
 from codementor.models.questions import QuestionPublic
 from codementor.models.report import AnalysisReport
@@ -125,7 +125,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.analyze_view.select(self.prefs.language, self.prefs.engine, None)
         self.analyze_view.editor.set(SAMPLES[self.prefs.language], self.prefs.language)
         self.files.enable_drop(self.analyze_view.editor.text)
-        self.questions_view = QuestionsView(stage, self._questions_by_language, self.start_question)
+        self.questions_view = QuestionsView(stage, self._filtered_questions, self.start_question)
         self.history_view = HistoryView(stage, self._history_rows, self.open_history)
         self.settings_view = ConnectionsView(
             stage,
@@ -306,11 +306,14 @@ class App(ctk.CTk):  # type: ignore[misc]
         except Exception:
             return []
 
-    def _questions_by_language(self, language: Language | None) -> list[QuestionPublic]:
+    def _filtered_questions(
+        self, language: Language | None, difficulty: Difficulty | None
+    ) -> list[QuestionPublic] | None:
+        """Filtrelenmiş sorular; banka okunamazsa None (görünüm 'okunamadı' der)."""
         try:
-            return self.core.questions().filter(language)
+            return self.core.questions().filter(language, None, difficulty)
         except Exception:
-            return []
+            return None
 
     def start_question(self, question: QuestionPublic) -> None:
         view = self.analyze_view

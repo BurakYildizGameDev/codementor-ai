@@ -1,0 +1,28 @@
+id: cs-veryeasy-list-max
+version: 1
+language: csharp
+engine: none
+difficulty: very_easy
+title: "En yüksek puanlı oyuncu"
+prompt: |
+  Ad ve puandan oluşan Player kayıtlarının listesinde en yüksek puanlı oyuncuyu döndüren
+  `Player? FindBest(List<Player>? players)` metodunu yazın. Liste boş olabilir ya da hiç
+  verilmeyebilir (null); bu durumda metot null döndürmeli. Birden çok oyuncu aynı en yüksek
+  puana sahipse listede önce geleni döndürülmeli. Puanlar negatif olabilir.
+constraints:
+  - "Boş ya da null liste istisna fırlatmamalı"
+  - "Liste yalnızca bir kez taranmalı"
+  - "Tüm puanlar negatif olduğunda da doğru oyuncu bulunmalı"
+expected:
+  time: { find_best: "n" }
+  space: "1"
+concept_tags: [edge-cases, input-validation]
+checklist_extra:
+  - "Boş listede Max(), First() ya da players[0] istisna fırlatıyor mu?"
+  - "En iyi puan değişkeni 0 ile mi başlatılmış?"
+  - "Eşit puanlarda sonraki oyuncu öncekinin yerine geçiyor mu (>= kullanımı)?"
+reference_solution_path: private/solutions/cs-veryeasy-list-max.cs
+hint_ladder:
+  1: "Liste boşken metodunun ilk satırı ne yapıyor?"
+  2: "Tüm puanlar negatifken 'şimdiye kadarki en iyi' değişkeni hangi değerle başlıyor?"
+  3: "Bu kavramlar 'boş koleksiyon durumu' ve 'yanlış nöbetçi başlangıç değeri' olarak bilinir."

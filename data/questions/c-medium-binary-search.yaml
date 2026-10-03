@@ -1,0 +1,29 @@
+id: c-medium-binary-search
+version: 1
+language: c
+engine: none
+difficulty: medium
+title: "Sıralı dizide arama ve ekleme konumu"
+prompt: |
+  Artan sırada sıralı, n elemanlı bir int dizisinde bir değeri arayan
+  `ptrdiff_t find_position(const int *values, size_t n, int key)` fonksiyonunu yazın. Değer
+  dizide varsa ilk geçtiği indeksi döndürsün; yoksa sıralamayı bozmadan ekleneceği indeks i
+  için -(i + 1) döndürsün. Dizi iki milyardan fazla eleman içerebilir ve aynı değer birden çok
+  kez geçebilir.
+constraints:
+  - "Çalışma süresi O(log n) olmalı"
+  - "Çok büyük dizilerde indeks hesapları taşmamalı"
+  - "Boş dizi (n = 0) ve aranan değerin tüm elemanlardan küçük ya da büyük olması doğru ele alınmalı"
+expected:
+  time: { find_position: "log n" }
+  space: "1"
+concept_tags: [binary-search, integer-overflow, edge-cases]
+checklist_extra:
+  - "Orta nokta (alt + üst) / 2 ile mi hesaplanıyor?"
+  - "İşaretsiz bir indeks 0'dayken 1 çıkarılıp sarıyor mu?"
+  - "Yinelenen değerlerde ilk geçiş mi döndürülüyor?"
+reference_solution_path: private/solutions/c-medium-binary-search.c
+hint_ladder:
+  1: "Alt ve üst sınır iki milyara yakınken toplamları kullandığın türe sığıyor mu?"
+  2: "Aralığı daraltırken üst sınırı 'orta - 1' yaptığında, orta 0 ise işaretsiz bir sayıya ne olur?"
+  3: "Bu kavramlar 'orta nokta hesabında tamsayı taşması' ve 'işaretsiz sayının alttan sarması' olarak bilinir."

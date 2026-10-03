@@ -1,0 +1,26 @@
+id: css-easy-card-grid
+version: 1
+language: css
+engine: none
+difficulty: easy
+title: "Ürün kartları ızgarası"
+prompt: |
+  Bir mağazanın ürün listeleme sayfası için kart ızgarasının CSS'ini yazın. Kart sayısı
+  sayfadan sayfaya değişir. Sütun sayısı ekran genişliğine göre kendiliğinden ayarlanmalı; her
+  ekran boyutu için ayrı kural yazmak gerekmemeli. Bazı ürün adları çok uzun, tek kelimelik ve
+  boşluksuz olabilir; ürün görsellerinin en-boy oranları farklıdır. Aynı satırdaki kartlar eşit
+  yükseklikte görünmeli.
+constraints:
+  - "Hiçbir ekran genişliğinde yatay kaydırma çıkmamalı"
+  - "Uzun kelimeler ve görseller kartın dışına taşmamalı"
+  - "Sütun genişlikleri sabit piksel olarak verilmemeli"
+concept_tags: [layout, responsive, edge-cases]
+checklist_extra:
+  - "Her kırılım noktası için ayrı sütun sayısı mı yazılmış?"
+  - "Boşluksuz uzun ürün adı kartı genişletiyor mu?"
+  - "Farklı oranlardaki görseller kart yüksekliğini bozuyor mu?"
+reference_solution_path: private/solutions/css-easy-card-grid.css
+hint_ladder:
+  1: "Ekran 1000 pikselden 999 piksele inerken kaç kural değişiyor? 7 kart ya da 13 kart olunca ne oluyor?"
+  2: "'Süperkalifragilistikekspialidozus' gibi tek kelimelik bir ürün adı dar bir kartta nereye sığar?"
+  3: "Bu kavramlar 'kendiliğinden sığan ızgara (auto-fill ve minmax)' ve 'uzun kelimeleri kırma' olarak bilinir."

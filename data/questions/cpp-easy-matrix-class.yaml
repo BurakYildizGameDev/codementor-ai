@@ -1,0 +1,29 @@
+id: cpp-easy-matrix-class
+version: 1
+language: cpp
+engine: none
+difficulty: easy
+title: "2B matris sınıfı"
+prompt: |
+  double değerler tutan ve satır/sütun sayısı çalışma zamanında belirlenen bir Matrix sınıfı
+  yazın: eleman erişimi, toplama, çarpma ve yazdırma olsun. Sabit (const) bir matrisin
+  elemanları okunabilmeli ama değiştirilememeli. A matrisi n satır ve m sütun, B matrisi m satır
+  ve p sütun olduğunda çarpım n satır ve p sütundur. Boyutları uyumsuz matrisler toplanmaya ya
+  da çarpılmaya çalışılırsa ve sınır dışı bir elemana erişilirse anlaşılır bir hata bildirilmeli.
+constraints:
+  - "Elemanlar tek bir bitişik bellek bloğunda tutulmalı"
+  - "const bir matris üzerinde okuma derlenmeli, yazma derlenmemeli"
+  - "Ham new/delete kullanılmamalı"
+expected:
+  time: { at: "1", add: "n*m", multiply: "n*m*p" }
+  space: "n*m"
+concept_tags: [const-correctness, operator-overloading, raii]
+checklist_extra:
+  - "Erişim fonksiyonunun const ve const olmayan iki sürümü var mı?"
+  - "Operatörler parametrelerini gereksiz yere değer olarak mı alıyor?"
+  - "Boyut uyumsuzluğu ve sınır dışı erişim denetleniyor mu?"
+reference_solution_path: private/solutions/cpp-easy-matrix-class.cpp
+hint_ladder:
+  1: "const Matrix& alan bir fonksiyon içinde m(0, 0) değerini okuyabiliyor musun? Derleyici ne diyor?"
+  2: "Aynı erişim fonksiyonunun hem okuma hem yazma için iki sürümü nasıl ayırt edilir?"
+  3: "Bu kavramlar 'const doğruluğu' ve 'const aşırı yükleme' olarak bilinir."

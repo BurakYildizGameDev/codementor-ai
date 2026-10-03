@@ -1,0 +1,26 @@
+id: html-medium-data-table
+version: 1
+language: html
+engine: none
+difficulty: medium
+title: "Haftalık ders programı tablosu"
+prompt: |
+  Bir öğrencinin haftalık ders programını tablo olarak gösteren HTML'i yazın: sütunlarda
+  Pazartesi'den Cuma'ya günler, satırlarda 09.00-12.00 arası saat dilimleri olsun. Bazı dersler
+  iki saat dilimi boyunca sürer. Ekran okuyucu bir ders hücresine geldiğinde o dersin hangi gün
+  ve hangi saatte olduğunu söyleyebilmeli. Tablonun ne olduğunu anlatan kısa bir başlığı
+  olmalı.
+constraints:
+  - "Başlık hücreleri veri hücrelerinden ayrılmalı ve hangi satıra ya da sütuna ait oldukları belirtilmeli"
+  - "Tablonun kendisine ait kısa bir başlığı olmalı"
+  - "İki saat süren dersler hücre ilişkilerini bozmamalı"
+  - "Tablo sayfa düzeni için kullanılmamalı"
+concept_tags: [tables, accessibility, semantics]
+checklist_extra:
+  - "Gün ve saat başlıkları sıradan veri hücresi olarak mı yazılmış?"
+  - "Tablonun başlığı tablonun dışında bir paragraf olarak mı verilmiş?"
+reference_solution_path: private/solutions/html-medium-data-table.html
+hint_ladder:
+  1: "Ekran okuyucu Çarşamba 10.00 hücresine geldiğinde 'Fizik' dışında ne söylemeli? Bu bilgiyi nereden alır?"
+  2: "Başlık hücresinin satıra mı sütuna mı ait olduğunu tarayıcıya nasıl söylersin?"
+  3: "Bu kavramlar 'erişilebilir veri tablosu (th, scope, caption)' olarak bilinir."

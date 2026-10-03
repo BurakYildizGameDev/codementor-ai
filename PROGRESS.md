@@ -721,7 +721,60 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 2. Exe boyutunun gömülü Roslyn'le yaklaşık +15 MB büyümesi CI artefaktında ölçülecek.
 **Bu fazda öğrendiğim:** Bir aracın "stdin'den okur" demesi kodu diske yazmadığı anlamına gelmiyor; sözleşmeyi `-###` çıktısıyla doğrulamak gerekiyordu. Aynı aracın sürücüsü (`cc`) ile alt komutu (`clang`) arasında hem güvenlik hem 150 kat performans farkı çıkabiliyor.
 
+## Faz 30 — Notlar (soru bankası genişletme: 18 → 64)
+**Kararlar (kullanıcı, 2026-10-03):** Soru havuzu verilmedi; 46 soru konu haritasından Claude tarafından yazıldı. Referans çözümler `private/solutions/`'a yazıldı. Proje ayarındaki deny kuralı yalnız `Read(./private/**)` olduğu için kural değişmedi; dosyalar Write ile yazıldı, testler Python üzerinden okudu. Dizinde önceden dosya yoktu: 64 dosyanın hepsinin oluşturma zamanı bu oturum, yani kimsenin çözümünün üzerine yazılmadı.
+
+**Yapılanlar:**
+- **Sorular:** 46 yeni soru (`data/questions/`). Her dil/motorda 8 soru, 4 zorluğun hepsinden en az bir; C 4, C++ 5, C# 6, Unity 5, Unreal 6, Python 6, HTML 7, CSS 7 yeni. Konular:
+  - C/C++/C#: diziler, sınır/başlangıç hataları, ctype UB, ikili aramada taşma, karma tablo, işaretli/işaretsiz karşılaştırma, kopyalar, const doğruluğu, yineleyici geçersizleşmesi, eşzamanlı kuyruk, tamsayı bölmesi, decimal, ertelenmiş yürütme, async/await, olay sızıntısı.
+  - Unity/Unreal: deltaTime, FixedUpdate, eşyordam yaşam döngüsü, önbellek ve kayıt listesi, atomik kayıt, UPROPERTY/clamp, AddDynamic + UFUNCTION, zamanlayıcı ve EndPlay, TWeakObjectPtr, aktör havuzu.
+  - Python: sınır değerler, boş liste, değiştirilebilir varsayılan argüman, akış halinde dosya okuma, LRU, BFS + deque.
+  - HTML: başlık hiyerarşisi, bağlantı metni ve noopener, form etiketleri, erişilebilir tablo, görsel CLS/lazy/srcset, `<dialog>`, gezinme ve atlama bağlantısı.
+  - CSS: odak durumları, göreli tipografi, auto-fill ızgara, sticky ve yığın bağlamı, tema değişkenleri, animasyon performansı, `@layer` ile özgüllük.
+- **Referans çözümler:** 64 çözüm (46 yeni + Faz 2/16'dan eksik kalan 18). Hepsi Tier 0'dan, C/C++'ta zig ile `-Wall -Wextra` uyarısız, C#'ta self-contained Roslyn'den, Python'da ayrıştırıcıdan temiz geçiyor. Unreal'da stub kaynaklı tavsiye uyarıları var (ADR-0007).
+- **Kontrol listesi:** 29 yeni madde. Bazıları eski etiketleri de taşıyor (`edge-cases`, `strings` …), ama mevcut 18 sorunun madde seçimi değişmedi; denetçi HEAD'e karşı karşılaştırarak doğruladı, golden prompt'lar aynı.
+- **`codementor questions validate`:** `questions/validate.py` ve `BankReport`. Denetledikleri: dil/motor başına asgari soru (`--min-per-group`, varsayılan 8), her zorlukta soru, kontrol listesi kesişimi; çözüm dosyası yoksa uyarı verir (`--solutions-root`). Çıkış kodu: hata 1, sistem hatası 3.
+- **Düzeltme (`pipeline/stages.load_reference`):** Referans çözüm yolu çalışma dizinine göre çözülüyordu (exe'de ya da başka dizinden çalışınca çözüm hiç bulunmazdı). Mimari §7.1'in istediği sembolik bağlantı denetimi de yoktu. Çözümler bugüne kadar olmadığı için fark edilmemişti. Artık yol `resource_root()`'a göre çözülüyor; dosya ve `private/` dizini çözülüp karşılaştırılıyor, yani başka diske bağlanmış `private/` kabul ediliyor. Döngülü bağlantıda Python 3.12'nin fırlattığı `RuntimeError` dahil hiçbir istisna dışarı çıkmıyor.
+- **Filtreler:**
+  - Masaüstü: soru ekranında dil filtresinin altında zorluk filtresi ve "N soru" sayacı; boş sonuçta "eşleşen soru yok" mesajı.
+  - Web: Zorluk seçici eklendi; soru seçeneklerine "(Kolay)" gibi etiket geliyor. Zorluk değişince uyuşmayan seçili soru temizleniyor.
+- **Testler:**
+  - Python: `test_question_data.py` (MATRIX/METHOD_LEAKS 64; boyut, dağılım, benzersiz kimlik/başlık; çözümde yöntem işareti), `test_question_validate.py` (5), `test_cli_questions.py` (+3), `test_load_reference.py` (3, sembolik bağlantı dahil), `tests/compiler/test_reference_solutions.py` (64; `private/` yoksa atlanır), `test_app.py` (+1), `test_routes.py` (güncel veri).
+  - Web: `App.test.tsx` (+1). Web 28/28 ve e2e 3/3 geçti.
+- **Test yalıtımı:** Önceki pencere testinin Tk font nesneleri, sonraki testin işçi iş parçacığında çöp toplanırken `Font.__del__` ana döngüsü çalışmayan Tcl'i bekliyordu ve `test_bridge` kilitleniyordu. Büyüyen YAML verisi çöp toplamayı tam o noktada tetikledi. Pencere fikstürü artık yok ettikten sonra `gc.collect()` yapıyor. Gerçek uygulamada ana döngü çalıştığı için bu kilitlenme oluşmaz.
+
+**Denetim (kod-denetci):** Kritik ve Yüksek bulgu yok.
+- Orta, düzeltilip testlenenler:
+  1. Döngülü sembolik bağlantıda `load_reference` `RuntimeError` fırlatıyordu.
+  2. `load_reference` testleri yetersizdi; `private/` içi bağlantı, başka diske bağlanmış `private/`, döngü, boyut aşımı, UTF-8 olmayan dosya, log ve varsayılan kök testleri eklendi.
+  3. `validate` boş bankayı geçerli sayıyordu.
+  4. `unreal-hard-actor-pool` yanlış bir GC öncülüne dayanıyordu: sahnedeki aktörü seviye tutar. UPROPERTY'nin asıl gerekçesi askıda işaretçiyi önlemek; prompt, kısıt ve ipuçları buna göre yeniden yazıldı.
+- Orta, belgelenen: (5) `validate` yöntem işaretlerini denetlemiyor, çünkü işaretler veride değil test tablosunda; plana not düşüldü.
+- Düşük, düzeltilenler:
+  - Masaüstünde banka okunamadığında "eşleşen soru yok" denmesi (testli).
+  - Unity kontrol listesindeki numara boşluğu.
+  - `UE-CL-008`'in `UE-CL-007` ile tekrarı (artık yalnız zamanlayıcılar).
+  - noopener iddiası yumuşatıldı (güncel tarayıcılarda örtük).
+  - Taret sorusunda "kalıcı tahsis" ifadesi ve `tag` getter açıklaması.
+  - Sticky sorusunda yazdırma kısıtı kaldırıldı (haksız bulgu üretebilirdi).
+  - C++ kuyrukta "meşgul bekleme" ifadesi.
+  - Plan maddesindeki bozuk cümle.
+  - 400 satıra yaklaşan test dosyası bölündü (`tests/unit/question_tables.py`).
+- Kalan Düşük bulgular "Sonraya"da.
+
+**Mimariden sapmalar (ADR linki):** yok. §7.2 matrisi genişletildi, §7.1'e yol çözümü notu eklendi.
+**Açık sorular:**
+1. Sızıntı koruması (K5) artık gerçek referans çözümleri okuyor. Soru bağlamlı eval örneklerinde koruma müdahalesi ve sonuçlar değişebilir; Faz 34/eval'de ölçülmeli.
+2. Unreal stub'ı `Super`, `FMath`, `EEndPlayReason`, `FHitResult`, `UPrimitiveComponent`, `DECLARE_DYNAMIC_MULTICAST_DELEGATE` gibi çok sık türleri tanımıyor; Unreal kodunda Tier 1 neredeyse her zaman uyarı üretiyor (bkz. Sonraya).
+3. Yeni soruların içerik kalitesi bir öğretmen gözüyle gözden geçirilmeli (özellikle Unity/Unreal API ayrıntıları).
+**Bu fazda öğrendiğim:** Çözüm dosyası olmayan bir özellik (K5) kendi yol hatasını gizler; veri gelince ilk iş o verinin tüketildiği kodu yeniden doğrulamak gerekiyor. Testlerdeki Tk nesneleri, başka iş parçacığında çalışan kodun çöp toplama zamanlamasına bağlı kilitlenmeler üretebiliyor.
+
 ## Sonraya (kapsam dışı fikirler)
+- Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).
+- Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.
+- Faz 30: yöntem işaretlerini (`METHOD_LEAKS`) soru verisine taşıyıp `validate`'e eklemek; eski soruların kontrol listesi seçimini kilitleyen bir anlık görüntü testi.
+- Faz 30: Unreal stub'ına sık türler (`Super` için sınıf içi typedef deseni, `FMath`, `EEndPlayReason`, `FHitResult`, `UPrimitiveComponent`, `USphereComponent`, dinamik delege makroları, `GetWorldTimerManager`); şu an referans çözümler bile yalnız tavsiye uyarılarıyla geçiyor.
+- Faz 30: soru bankası için öğretmen/kullanıcı içerik incelemesi ve sorulara örnek giriş/çıkış alanı.
 - Faz 29: kurulu zig sürümünü `codementor.toml` ile karşılaştırıp masaüstünde "güncelle" önermek (işaret dosyasında sürüm/sha var, okunmuyor).
 - Faz 29: indirilen zig'den yerel hedef dışındaki libc başlıklarını budamak (382 MB → tahminen <150 MB).
 - Faz 29: tek dosya exe gömülü RoslynCheck.exe'yi %TEMP%'e açıyor; AppLocker/antivirüs engellerse `/health/ready`'de araç hatası. Gerekirse onedir dağıtımı ya da kullanıcı dizinine kopyalama.
@@ -818,8 +871,8 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 2. **Faz 28 — Sağlayıcılar:** Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
 3. ~~**Faz 29 — Derleyicisiz kullanıcı.**~~ Yapıldı (ADR-0018): indirilebilir zig (`zig clang`),
    gömülü self-contained Roslyn, "Derleyiciyi indir". Sıradaki: Faz 30.
-4. **Faz 30 — Soru bankası:** 18 soru → dil/motor başına ≥ 8 (~64), zorluk dağılımı, filtreler.
-   Kullanıcı soru havuzu verecek; soruları ve referans çözümleri Claude yazar.
+4. ~~**Faz 30 — Soru bankası.**~~ Yapıldı: 64 soru (dil/motor başına 8), 64 referans çözüm,
+   `questions validate`, zorluk filtreleri. Sıradaki: Faz 35.
 5. **Faz 35 — Bulgu doğrulama geçişi (önemli):** her LLM bulgusu için ayrı bir "kanıtla"
    adımı; kanıtlanamayan düşer. Modelin kendi güveni şemaya (bugünkü `confidence` sistemden
    sabit 0,7 geliyor, ayırt etmiyor). ADR; dev'de doğrulamalı/doğrulamasız ölçüm.

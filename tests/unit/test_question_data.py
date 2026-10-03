@@ -11,54 +11,9 @@ from codementor.models.bigo import parse_bigo
 from codementor.models.enums import Difficulty, Engine, Language, has_complexity
 from codementor.questions.bank import QuestionBank
 from codementor.questions.checklists import CORE_TAG, Checklists
+from tests.unit.question_tables import MATRIX, METHOD_LEAKS
 
 DATA = Path(__file__).resolve().parents[2] / "data"
-
-# Mimari §7.2 başlangıç matrisi
-MATRIX: dict[str, tuple[Language, Engine, Difficulty]] = {
-    "c-veryeasy-calculator": (Language.C, Engine.NONE, Difficulty.VERY_EASY),
-    "c-easy-reverse-string": (Language.C, Engine.NONE, Difficulty.EASY),
-    "c-medium-linked-list": (Language.C, Engine.NONE, Difficulty.MEDIUM),
-    "c-hard-stack": (Language.C, Engine.NONE, Difficulty.HARD),
-    "cpp-easy-rule-of-zero": (Language.CPP, Engine.NONE, Difficulty.EASY),
-    "cpp-medium-tree-smartptr": (Language.CPP, Engine.NONE, Difficulty.MEDIUM),
-    "cpp-hard-lru-cache": (Language.CPP, Engine.NONE, Difficulty.HARD),
-    "cs-easy-fizzbuzz-alloc": (Language.CSHARP, Engine.NONE, Difficulty.EASY),
-    "cs-hard-span-parser": (Language.CSHARP, Engine.NONE, Difficulty.HARD),
-    "unity-easy-trigger-events": (Language.CSHARP, Engine.UNITY, Difficulty.EASY),
-    "unity-medium-object-pool": (Language.CSHARP, Engine.UNITY, Difficulty.MEDIUM),
-    "unity-hard-inventory": (Language.CSHARP, Engine.UNITY, Difficulty.HARD),
-    "unreal-medium-actor-component": (Language.CPP, Engine.UNREAL, Difficulty.MEDIUM),
-    "unreal-hard-tarray-gc": (Language.CPP, Engine.UNREAL, Difficulty.HARD),
-    # Faz 16 (ADR-0015)
-    "py-easy-word-count": (Language.PYTHON, Engine.NONE, Difficulty.EASY),
-    "py-medium-two-sum": (Language.PYTHON, Engine.NONE, Difficulty.MEDIUM),
-    "html-easy-profile-card": (Language.HTML, Engine.NONE, Difficulty.EASY),
-    "css-easy-centered-layout": (Language.CSS, Engine.NONE, Difficulty.EASY),
-}
-
-# Soru metni (başlık + prompt + kısıtlar) problemi tanımlar, yöntemi söylemez.
-# Hedef kavramın çözümünü ele veren terimler metinde geçmemeli (büyük/küçük harf duyarsız).
-METHOD_LEAKS: dict[str, list[str]] = {
-    "c-veryeasy-calculator": ["fflush", "getchar", "while ((c"],
-    "c-easy-reverse-string": ["strlen"],
-    "c-medium-linked-list": ["**", "pointer to pointer", "çift pointer"],
-    "c-hard-stack": ["tmp", "geçici pointer"],
-    "cpp-easy-rule-of-zero": ["rule of", "unique_ptr", "std::vector<double>"],
-    "cpp-medium-tree-smartptr": ["weak_ptr", "shared_ptr", "unique_ptr"],
-    "cpp-hard-lru-cache": ["unordered_map", "std::list", "splice", "bağlı liste"],
-    "cs-easy-fizzbuzz-alloc": ["stringbuilder", "string.join", "string.concat"],
-    "cs-hard-span-parser": ["span", "memory<", "stackalloc", "readonlyspan", "tryparse"],
-    "unity-easy-trigger-events": ["ondisable", "ondestroy", "-=", "action", "unityevent"],
-    "unity-medium-object-pool": ["havuz", "pool", "setactive", "yeniden kullan"],
-    "unity-hard-inventory": ["hashset", "dictionary", "instantiate(", "event"],
-    "unreal-medium-actor-component": ["bcanevertick", "setcomponenttickenabled", "timer"],
-    "unreal-hard-tarray-gc": ["uproperty", "reserve", "tweakobjectptr", "tobjectptr", "isvalid"],
-    "py-easy-word-count": ["counter", "defaultdict", "karma", "hash"],
-    "py-medium-two-sum": ["dict", "sözlük", "set(", "karma", "hash", "tamamlayıcı"],
-    "html-easy-profile-card": ["alt=", "<main", "<header", "aria", "lang=", "<img"],
-    "css-easy-centered-layout": ["flex", "grid", "@media", "focus-visible", "minmax"],
-}
 
 
 @pytest.fixture(scope="module")
@@ -71,8 +26,50 @@ def checklists() -> Checklists:
     return Checklists.load(DATA / "checklists")
 
 
-def test_all_18_questions_load(bank: QuestionBank) -> None:
-    assert len(bank) == 18
+MIN_PER_GROUP = 8  # Faz 30: dil/motor başına asgari soru
+
+
+def _groups(bank: QuestionBank) -> dict[tuple[Language, Engine], list[Difficulty]]:
+    groups: dict[tuple[Language, Engine], list[Difficulty]] = {}
+    for q in bank:
+        groups.setdefault((q.language, q.engine), []).append(q.difficulty)
+    return groups
+
+
+def test_bank_size(bank: QuestionBank) -> None:
+    assert len(bank) == len(MATRIX) == 64
+
+
+def test_every_language_engine_has_enough_questions_at_every_difficulty(
+    bank: QuestionBank,
+) -> None:
+    groups = _groups(bank)
+    expected = {
+        (Language.C, Engine.NONE),
+        (Language.CPP, Engine.NONE),
+        (Language.CPP, Engine.UNREAL),
+        (Language.CSHARP, Engine.NONE),
+        (Language.CSHARP, Engine.UNITY),
+        (Language.PYTHON, Engine.NONE),
+        (Language.HTML, Engine.NONE),
+        (Language.CSS, Engine.NONE),
+    }
+    assert set(groups) == expected
+    for group, difficulties in groups.items():
+        assert len(difficulties) >= MIN_PER_GROUP, group
+        assert set(difficulties) == set(Difficulty), f"{group}: eksik zorluk"
+
+
+def test_ids_unique_and_prefixed_by_difficulty(bank: QuestionBank) -> None:
+    ids = [q.id for q in bank]
+    assert len(ids) == len(set(ids))
+    for q in bank:
+        assert f"-{q.difficulty.value.replace('_', '')}-" in q.id, q.id
+
+
+def test_titles_unique(bank: QuestionBank) -> None:
+    titles = [q.title.casefold() for q in bank]
+    assert len(titles) == len(set(titles))
 
 
 def test_ids_match_matrix_7_2(bank: QuestionBank) -> None:
@@ -121,6 +118,25 @@ def test_prompts_do_not_reveal_method(bank: QuestionBank, question_id: str) -> N
 
 def test_leak_table_covers_all_questions() -> None:
     assert set(METHOD_LEAKS) == set(MATRIX)
+
+
+def test_reference_solution_uses_hidden_method(bank: QuestionBank) -> None:
+    """Yöntem işaretleri gerçekten çözümün yöntemini izliyor: en az biri çözümde geçer.
+
+    `private/` depoda yok (CI); çözüm dosyası yoksa test atlanır.
+    """
+    root = DATA.parent
+    checked = 0
+    for q in bank:
+        assert q.reference_solution_path is not None, q.id
+        path = root / q.reference_solution_path
+        if not path.is_file():
+            continue
+        solution = path.read_text(encoding="utf-8").lower()
+        assert any(term.lower() in solution for term in METHOD_LEAKS[q.id]), q.id
+        checked += 1
+    if checked == 0:
+        pytest.skip("private/solutions yok (CI)")
 
 
 def test_complexity_variables_are_defined(bank: QuestionBank) -> None:

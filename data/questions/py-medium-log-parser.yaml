@@ -1,0 +1,29 @@
+id: py-medium-log-parser
+version: 1
+language: python
+engine: none
+difficulty: medium
+title: "Web sunucusu günlük analizi"
+prompt: |
+  Bir web sunucusunun erişim günlüğünü (her satırda IP, zaman, istek, durum kodu) okuyup durum
+  kodlarına göre istek sayılarını ve en çok istek yapan 10 IP adresini döndüren
+  `analyze(path: str) -> Report` fonksiyonunu yazın. Dosya n satırlık ve birkaç gigabayt
+  büyüklüğünde olabilir; içinde m farklı IP vardır. Bazı satırlar bozuktur, bazıları UTF-8
+  olmayan baytlar içerir. Raporda atlanan bozuk satır sayısı da yer almalı.
+constraints:
+  - "Bellek kullanımı dosya boyutuyla değil, yalnız farklı IP sayısı m ile büyümeli"
+  - "Dosya, okuma yarıda hata verse de kapatılmalı"
+  - "Bozuk satırlar ve geçersiz baytlar analizi durdurmamalı"
+expected:
+  time: { analyze: "n" }
+  space: "m"
+concept_tags: [resources, files, parsing]
+checklist_extra:
+  - "Dosyanın tamamı read() ya da readlines() ile belleğe mi alınıyor?"
+  - "Dosya open() ile açılıp elle mi kapatılıyor (hata yolunda açık kalır)?"
+  - "Geçersiz bayt içeren satır UnicodeDecodeError ile tüm analizi mi durduruyor?"
+reference_solution_path: private/solutions/py-medium-log-parser.py
+hint_ladder:
+  1: "Dört gigabaytlık bir dosyayı readlines() ile okursan program ne kadar bellek kullanır?"
+  2: "Okuma 3 milyonuncu satırda hata verirse, açtığın dosyayı hangi satır kapatıyor?"
+  3: "Bu kavramlar 'akış halinde (satır satır) okuma' ve 'bağlam yöneticisi (with) ile kaynak yönetimi' olarak bilinir."

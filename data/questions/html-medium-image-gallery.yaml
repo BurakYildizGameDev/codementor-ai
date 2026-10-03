@@ -1,0 +1,26 @@
+id: html-medium-image-gallery
+version: 1
+language: html
+engine: none
+difficulty: medium
+title: "Gezi fotoğrafları galerisi"
+prompt: |
+  40 fotoğraftan oluşan bir gezi galerisi sayfası yazın; her fotoğrafın altında kısa bir
+  açıklaması olsun. Bölümler arasında yalnızca süs amaçlı ayraç görselleri var. Sayfa yavaş bir
+  mobil bağlantıda açıldığında görseller yüklendikçe metin yerinden zıplamamalı; ekranda
+  görünmeyen fotoğraflar sayfa açılırken hemen indirilmemeli. Dar ekranlı telefonlara büyük
+  masaüstü dosyaları gönderilmemeli.
+constraints:
+  - "Görseller yüklenirken sayfa düzeni kaymamalı"
+  - "Görünür alanın dışındaki görseller sayfa açılışında indirilmemeli"
+  - "Her içerik görselinin metin karşılığı olmalı; süs görselleri ekran okuyucuda okunmamalı"
+concept_tags: [images, performance, accessibility]
+checklist_extra:
+  - "Görsellerin genişlik ve yükseklik bilgisi verilmiş mi?"
+  - "Süs görsellerinin metin karşılığı boş mu bırakılmış, yoksa dosya adı mı okunuyor?"
+  - "Fotoğraf ve açıklaması birbirine bağlı bir yapıda mı?"
+reference_solution_path: private/solutions/html-medium-image-gallery.html
+hint_ladder:
+  1: "Tarayıcı bir görselin boyutunu dosya inmeden önce bilmiyorsa, altındaki metni nereye yerleştirir? Dosya inince ne olur?"
+  2: "Ekran okuyucu bir süs ayracına geldiğinde ne okumalı? Hiçbir şey belirtmezsen ne okur?"
+  3: "Bu kavramlar 'düzen kayması (CLS) önleme', 'tembel yükleme' ve 'duyarlı görseller (srcset)' olarak bilinir."

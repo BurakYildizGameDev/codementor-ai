@@ -1,0 +1,29 @@
+id: css-hard-specificity-refactor
+version: 1
+language: css
+engine: none
+difficulty: hard
+title: "Çakışan düğme stillerini düzenleme"
+prompt: |
+  Üç ekibin yıllardır üzerine eklediği bir stil dosyasında aynı düğme beş farklı yerde
+  biçimlenmiş; her yeni kural öncekini ezmek için daha uzun seçiciler ve önemlilik işaretleri
+  kullanmış. Artık 'küçük' bir tehlike düğmesi eklemek isteyen ekip yeni bir ezme kuralı yazmak
+  zorunda kalıyor. Düğme stillerini yeniden yazın: temel düğme, birincil, tehlike ve küçük
+  varyantları olsun; varyantlar birleştirilebilmeli (ör. küçük + tehlike) ve yeni bir varyant
+  mevcut kuralları ezme yarışına girmeden eklenebilmeli. Sayfadaki üçüncü taraf bileşen
+  stilleri bu düğmeleri bozmamalı.
+constraints:
+  - "Önemlilik işareti (!important) kullanılmamalı"
+  - "Kimlik (id) seçicisi kullanılmamalı"
+  - "Varyantlar birbirini ezmeden birleştirilebilmeli"
+  - "Kurallar arasında yalnızca kaynak sırasına dayanan, öngörülebilir bir öncelik olmalı"
+concept_tags: [specificity, maintainability, variables]
+checklist_extra:
+  - "Varyant kuralları farklı özgüllükte seçicilerle mi yazılmış?"
+  - "Bir varyant başka bir varyantın özelliklerini yeniden tanımlıyor mu?"
+  - "Üçüncü taraf stilleriyle öncelik nasıl ayrılmış?"
+reference_solution_path: private/solutions/css-hard-specificity-refactor.css
+hint_ladder:
+  1: "'#app .toolbar button.btn' ile '.btn-small' çakışırsa hangisi kazanır? Kazananı değiştirmek için ne yapmak zorunda kalırsın?"
+  2: "Varyantlar aynı özellikleri farklı değerlerle yeniden yazmak yerine yalnızca birkaç değişkeni değiştirse ne olur?"
+  3: "Bu kavramlar 'özgüllük (specificity) yönetimi', 'kaskad katmanları (@layer)' ve 'düşük özgüllüklü bileşen sınıfları' olarak bilinir."

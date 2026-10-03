@@ -1,0 +1,27 @@
+id: py-veryeasy-grade-letter
+version: 1
+language: python
+engine: none
+difficulty: very_easy
+title: "Puanı harf notuna çevirme"
+prompt: |
+  0 ile 100 arasındaki bir sınav puanını harf notuna çeviren `letter_grade(score: float) -> str`
+  fonksiyonunu yazın: 90 ve üstü AA, 80 ve üstü BB, 70 ve üstü CC, 60 ve üstü DD, daha azı FF.
+  Sınır değerler üst harfi almalı (tam 80 puan BB). 0'dan küçük ya da 100'den büyük puanlar ve
+  sayı olmayan değerler anlaşılır bir hatayla reddedilmeli.
+constraints:
+  - "Sınır değerlerin (60, 70, 80, 90) her biri doğru harfi almalı"
+  - "Aralık dışı ve sayı olmayan girişler sessizce bir harfe dönüştürülmemeli"
+  - "Her koşul yalnızca bir kez denetlenmeli; çakışan aralıklar olmamalı"
+expected:
+  time: { letter_grade: "1" }
+  space: "1"
+concept_tags: [boundary-conditions, input-validation]
+checklist_extra:
+  - "Sınırlar > ile mi yazılmış (tam 80 puan CC alıyor)?"
+  - "Aralık dışı puan (ör. 105) AA olarak mı dönüyor?"
+reference_solution_path: private/solutions/py-veryeasy-grade-letter.py
+hint_ladder:
+  1: "Tam 80 puanla fonksiyonun hangi harfi döndürüyor? Tam 90 ile?"
+  2: "Fonksiyona 105 ya da 'seksen' verildiğinde ne oluyor?"
+  3: "Bu kavramlar 'sınır değer hatası' ve 'girdi doğrulama' olarak bilinir."

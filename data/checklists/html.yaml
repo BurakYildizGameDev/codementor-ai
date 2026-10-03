@@ -26,3 +26,18 @@ items:
   - id: HTML-CL-008
     text: "Form girdileri için uygun type (email, number) ve zorunluluk (required) kullanılmış mı?"
     tags: [forms, input-validation]
+  - id: HTML-CL-009
+    text: "Görsellerin boyutları belirtilmiş mi; ekran dışındaki görseller tembel yükleniyor mu; süs görselleri boş alternatif metinle gizleniyor mu?"
+    tags: [images, performance]
+  - id: HTML-CL-010
+    text: "Listeler ve tablolar anlamlarına uygun etiketlerle mi kurulmuş (sıralı/sırasız liste, başlık hücresi, kapsam, tablo başlığı)?"
+    tags: [lists, tables]
+  - id: HTML-CL-011
+    text: "Gezinme bölgesi işaretlenmiş mi; içeriğe atla bağlantısı ve bulunulan sayfa göstergesi var mı?"
+    tags: [navigation]
+  - id: HTML-CL-012
+    text: "Kalıcı (modal) pencerede odak pencereye geçiyor, arka plan etkisizleşiyor ve kapanınca odak geri dönüyor mu?"
+    tags: [dialogs, focus]
+  - id: HTML-CL-013
+    text: "Yeni sekmede açılan dış bağlantılarda açan sayfayla ilişki açıkça kesiliyor mu (güncel tarayıcılar bunu varsayılan yapar; eksikliği düşük önemdedir)?"
+    tags: [security]

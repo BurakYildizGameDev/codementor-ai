@@ -1,0 +1,28 @@
+id: cpp-veryeasy-vector-sum
+version: 1
+language: cpp
+engine: none
+difficulty: very_easy
+title: "Notların toplamı ve ortalaması"
+prompt: |
+  Kullanıcının girdiği sınav notlarını (0 ile 100 arası tam sayılar) bir diziye toplayan ve
+  toplamı, ondalıklı ortalamayı ve ortalamanın üstündeki not sayısını yazdıran bir program
+  yazın. Not sayısı önceden bilinmiyor; giriş bittiğinde (dosya sonu) program sonuçları
+  yazmalı. Aralık dışındaki notlar uyarıyla atlanmalı, hiç not girilmezse anlamlı bir mesaj
+  verilmeli.
+constraints:
+  - "Ortalama, ondalık kısmı kesilmeden hesaplanmalı"
+  - "Derleyici -Wall -Wextra ile uyarı vermemeli (işaretli/işaretsiz karşılaştırma dahil)"
+  - "Hiç not girilmediğinde sıfıra bölme olmamalı"
+expected:
+  time: { read: "n", average: "n", count_above: "n" }
+  space: "n"
+concept_tags: [integer-division, signed-unsigned, edge-cases]
+checklist_extra:
+  - "Döngü sayacı int iken size() ile mi karşılaştırılıyor?"
+  - "Ortalama iki tam sayının bölümüyle mi hesaplanıyor?"
+reference_solution_path: private/solutions/cpp-veryeasy-vector-sum.cpp
+hint_ladder:
+  1: "Notlar 70 ve 75 olduğunda programın yazdığı ortalama tam olarak kaç?"
+  2: "İki tam sayıyı böldüğünde sonucun türünü ne belirler; döngüdeki sayaçla size() aynı türde mi?"
+  3: "Bu kavramlar 'tam sayı bölmesi' ve 'işaretli/işaretsiz karşılaştırma' olarak bilinir."

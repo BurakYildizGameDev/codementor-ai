@@ -1,0 +1,28 @@
+id: html-hard-dialog-form
+version: 1
+language: html
+engine: none
+difficulty: hard
+title: "Hesap silme onay penceresi"
+prompt: |
+  Hesap ayarları sayfasında 'Hesabımı sil' düğmesine basıldığında açılan bir onay penceresi
+  yazın. Pencerede bir uyarı metni, onay için kullanıcı adını yazma alanı, 'Vazgeç' ve 'Kalıcı
+  olarak sil' düğmeleri olsun. Pencere açıkken arka plandaki sayfa ile etkileşim kurulamamalı;
+  Esc tuşu pencereyi kapatmalı. Pencere açılınca klavye odağı pencerenin içine geçmeli, kapanınca
+  açan düğmeye dönmeli. Ekran okuyucu pencere açıldığında başlığını okumalı. Yalnızca pencereyi
+  açmak için birkaç satır betik kullanılabilir.
+constraints:
+  - "Pencere açıkken arka plandaki öğelere klavyeyle ulaşılamamalı"
+  - "Pencere kapanınca odak açan düğmeye dönmeli"
+  - "Pencerenin ekran okuyucunun okuyacağı bir adı olmalı"
+  - "Odak hapsetmek için elle yazılmış klavye kodu kullanılmamalı"
+concept_tags: [dialogs, focus, accessibility]
+checklist_extra:
+  - "Pencere div ve görünürlük sınıfıyla mı yapılmış (arka plan erişilebilir kalır)?"
+  - "Pencere başlığı pencereyle ilişkilendirilmiş mi?"
+  - "Vazgeç düğmesi formu göndermeden mi kapatıyor?"
+reference_solution_path: private/solutions/html-hard-dialog-form.html
+hint_ladder:
+  1: "Pencere açıkken Tab tuşuna art arda basan bir kullanıcı sonunda nereye ulaşıyor?"
+  2: "Tarayıcının pencere davranışını (odak, Esc, arka planı etkisizleştirme) hazır veren bir öğesi var mı?"
+  3: "Bu kavramlar 'kalıcı (modal) diyalog' ve 'odak yönetimi' olarak bilinir."

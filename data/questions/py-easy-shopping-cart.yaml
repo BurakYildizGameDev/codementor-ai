@@ -1,0 +1,30 @@
+id: py-easy-shopping-cart
+version: 1
+language: python
+engine: none
+difficulty: easy
+title: "Alışveriş sepeti"
+prompt: |
+  Bir e-ticaret sitesi için `Cart` sınıfı yazın: isteğe bağlı olarak başlangıç ürünleriyle
+  oluşturulabilsin, ürün ekleme (ad, birim fiyat, adet), ürün çıkarma ve toplam tutar işlemleri
+  olsun. Sunucu aynı süreçte binlerce kullanıcının sepetini tutuyor; bir kullanıcının sepetine
+  eklenen ürün başka bir kullanıcının sepetinde asla görünmemeli. Sepeti oluştururken verilen
+  liste, çağıran sonradan değiştirse de sepeti etkilememeli. Fiyatlar kuruş hassasiyetindedir.
+  n sepetteki ürün çeşidi sayısıdır.
+constraints:
+  - "Farklı sepetler hiçbir koşulda ortak ürün listesi paylaşmamalı"
+  - "Çağıranın verdiği liste sonradan değişirse sepet etkilenmemeli"
+  - "Toplam tutarda kuruş yuvarlama hatası olmamalı"
+expected:
+  time: { add_item: "1", remove_item: "1", total: "n" }
+  space: "n"
+concept_tags: [mutable-default, design, floating-point]
+checklist_extra:
+  - "Yapıcıda varsayılan değer olarak boş bir liste mi verilmiş?"
+  - "Çağıranın verdiği liste kopyalanmadan mı saklanıyor?"
+  - "Fiyatlar float olarak mı toplanıyor?"
+reference_solution_path: private/solutions/py-easy-shopping-cart.py
+hint_ladder:
+  1: "İki kullanıcı başlangıç ürünü vermeden sepet oluşturup birine ürün eklerse, diğerinin sepetinde ne görünür?"
+  2: "Varsayılan argüman değeri fonksiyon tanımlandığında mı, her çağrıda mı oluşturulur?"
+  3: "Bu kavram 'değiştirilebilir varsayılan argüman (mutable default argument)' olarak bilinir."

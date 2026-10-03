@@ -1,0 +1,32 @@
+id: unity-hard-save-system
+version: 1
+language: csharp
+engine: unity
+difficulty: hard
+title: "Oyun kayıt sistemi"
+prompt: |
+  Oyuncunun ilerlemesini (seviye, envanter, ayarlar) diske kaydedip yükleyen bir kayıt sistemi
+  yazın. Kayıt sırasında oyun kapanırsa ya da elektrik kesilirse önceki kayıt bozulmamalı. Kayıt
+  dosyası elle bozulmuşsa ya da eski bir oyun sürümünden kalmışsa oyun çökmemeli; varsayılan
+  değerlerle ya da dönüştürülmüş veriyle açılmalı. Kayıt n öğe içerebilir ve büyüyebilir;
+  kaydederken oyun takılmamalı. Kayıt Windows, macOS, Android ve iOS'ta yazılabilir bir yere
+  yapılmalı.
+constraints:
+  - "Yarıda kalan bir yazma önceki kaydı bozmamalı"
+  - "Bozuk ya da eski sürüm kayıt dosyası oyunu çökertmemeli"
+  - "Diske yazma ana iş parçacığını bir kare süresinden uzun bloklamamalı"
+  - "Kayıt konumu her platformda yazılabilir olmalı"
+expected:
+  time: { save: "n", load: "n" }
+  space: "n"
+concept_tags: [serialization, files, error-handling]
+checklist_extra:
+  - "Dosya doğrudan hedef adının üzerine mi yazılıyor?"
+  - "Ayrıştırma hatası yakalanıp varsayılana dönülüyor mu?"
+  - "Oyunun kurulum dizinine mi yazılıyor?"
+  - "Kayıt verisinde sürüm alanı var mı?"
+reference_solution_path: private/solutions/unity-hard-save-system.cs
+hint_ladder:
+  1: "Oyun dosyanın yarısını yazmışken kapanırsa diskte ne kalır? Bir sonraki açılışta ne olur?"
+  2: "Unity API'lerinin hangileri ana iş parçacığı dışından çağrılamaz; veriyi hazırlamakla diske yazmayı ayırabilir misin?"
+  3: "Bu kavramlar 'atomik dosya değiştirme (geçici dosyaya yazıp yeniden adlandırma)' ve 'sürümlü, savunmacı serileştirme' olarak bilinir."

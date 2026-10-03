@@ -1,0 +1,24 @@
+id: html-veryeasy-recipe-page
+version: 1
+language: html
+engine: none
+difficulty: very_easy
+title: "Yemek tarifi sayfası"
+prompt: |
+  Bir yemek tarifini gösteren sayfanın HTML'ini yazın: tarifin adı, kısa bir açıklama, hazırlık
+  ve pişirme süresi, malzeme listesi ve yapılış adımları olsun. Ekran okuyucu kullanan biri
+  sayfadaki bölümler arasında başlıklarla gezinebilmeli. Yapılış adımlarının sırası anlamlıdır;
+  malzemelerin sırası önemli değildir.
+constraints:
+  - "Sayfada tek bir ana başlık olmalı ve başlık düzeyleri atlanmamalı"
+  - "Sıralı ve sırasız bilgiler anlamlarına uygun yapılarla verilmeli"
+  - "Görsel düzen için satır sonu etiketleri ya da boşluk karakterleri kullanılmamalı"
+concept_tags: [semantics, accessibility, lists]
+checklist_extra:
+  - "Adımlar satır sonu etiketiyle mi ayrılmış?"
+  - "Başlık düzeyleri birden fazla atlıyor mu (h1'den h4'e)?"
+reference_solution_path: private/solutions/html-veryeasy-recipe-page.html
+hint_ladder:
+  1: "Ekran okuyucu kullanan biri sayfadaki başlıklar listesini açtığında hangi yapıyı görür?"
+  2: "Malzemelerin sırası önemli mi? Peki yapılış adımlarının? Bu farkı HTML'de nasıl anlatırsın?"
+  3: "Bu kavramlar 'başlık hiyerarşisi' ve 'sıralı/sırasız liste anlamı' olarak bilinir."

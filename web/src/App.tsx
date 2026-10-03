@@ -11,7 +11,7 @@ import { initialProgress, progressReducer } from "./lib/progress";
 import { SAMPLES, enginesFor, monacoLanguage } from "./lib/samples";
 import { getSessionId } from "./lib/session";
 import type { ProviderStatus } from "./types/provider_status";
-import type { QuestionPublic } from "./types/question_public";
+import type { Difficulty, QuestionPublic } from "./types/question_public";
 import type { AnalysisReport } from "./types/report";
 import type { Engine, Language, PipelineMode } from "./types/request";
 import type { StageEvent } from "./types/stage_event";
@@ -30,6 +30,7 @@ export default function App() {
   const [engine, setEngine] = useState<Engine>("none");
   const [questionId, setQuestionId] = useState("");
   const [questions, setQuestions] = useState<QuestionPublic[]>([]);
+  const [difficulty, setDifficulty] = useState<Difficulty | "">("");
   const [providers, setProviders] = useState<ProviderStatus[]>([]);
   const [provider, setProvider] = useState("");
   const [mode, setMode] = useState<PipelineMode | "">("");
@@ -71,6 +72,12 @@ export default function App() {
     // işaretler analiz edilen koda aittir; yalnızca yeni raporla güncellenir
     [report],
   );
+
+  function changeDifficulty(next: Difficulty | "") {
+    setDifficulty(next);
+    const selected = questions.find((q) => q.id === questionId);
+    if (next && selected && selected.difficulty !== next) setQuestionId("");
+  }
 
   function changeLanguage(next: Language) {
     if (code === SAMPLES[language]) setCode(SAMPLES[next]);
@@ -129,6 +136,7 @@ export default function App() {
         engine={engine}
         questionId={questionId}
         questions={questions}
+        difficulty={difficulty}
         providers={providers}
         provider={provider}
         mode={mode}
@@ -136,6 +144,7 @@ export default function App() {
         onLanguage={changeLanguage}
         onEngine={changeEngine}
         onQuestion={setQuestionId}
+        onDifficulty={changeDifficulty}
         onProvider={setProvider}
         onMode={setMode}
         onAnalyze={() => void run()}

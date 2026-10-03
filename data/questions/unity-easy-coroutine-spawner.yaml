@@ -1,0 +1,28 @@
+id: unity-easy-coroutine-spawner
+version: 1
+language: csharp
+engine: unity
+difficulty: easy
+title: "Dalga dalga düşman çıkaran nokta"
+prompt: |
+  Her dalgada k düşmanı belirli aralıklarla çıkaran ve dalgalar arasında bekleyen bir doğma
+  noktası betiği yazın. Düşman şablonu, k, çıkarma aralığı ve dalga arası bekleme Inspector'dan
+  ayarlanabilmeli. Doğma noktası devre dışı bırakıldığında ya da sahne değiştiğinde çıkarma
+  durmalı. Nesne yeniden etkinleştirildiğinde çıkarma kaldığı yerden değil baştan başlamalı ve
+  iki kat hızda çıkarma olmamalı.
+constraints:
+  - "Bekleme süreleri için her turda yeni nesne oluşturulmamalı"
+  - "Devre dışı kalınca çıkarma durmalı; yeniden etkinleştirilince yalnızca bir çıkarma döngüsü çalışmalı"
+  - "Dalga başına iş, düşman sayısı k ile orantılı olmalı"
+expected:
+  time: { spawn_wave: "k" }
+  space: "1"
+concept_tags: [coroutine, lifecycle, gc]
+checklist_extra:
+  - "Bekleme nesnesi döngünün içinde mi oluşturuluyor?"
+  - "Etkinleştirmede yeni bir döngü başlatılırken eskisi durduruluyor mu?"
+reference_solution_path: private/solutions/unity-easy-coroutine-spawner.cs
+hint_ladder:
+  1: "Nesne devre dışı bırakılıp yeniden etkinleştirildiğinde kaç tane çıkarma döngün çalışıyor?"
+  2: "Döngünün her turunda bekleme için oluşturduğun nesne çöp toplayıcıya ne kadar iş bırakıyor?"
+  3: "Bu kavramlar 'eşyordam (coroutine) yaşam döngüsü' ve 'bekleme nesnesini önbelleğe alma' olarak bilinir."

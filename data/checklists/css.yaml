@@ -23,3 +23,12 @@ items:
   - id: CSS-CL-007
     text: "Ortalama ve hizalama için flex/grid yerine kırılgan konumlandırma (position: absolute, margin hileleri) mı kullanılmış?"
     tags: [layout, centering]
+  - id: CSS-CL-008
+    text: "Yazı boyutları göreli birimlerle mi verilmiş; satır uzunluğu ve satır aralığı okunabilir mi?"
+    tags: [typography]
+  - id: CSS-CL-009
+    text: "Animasyonlar yalnızca bileştirici dostu özellikleri (transform, opacity) mi değiştiriyor; hareketi azaltma tercihine uyuluyor mu?"
+    tags: [animation, performance]
+  - id: CSS-CL-010
+    text: "Sabit ya da yapışkan konumlu öğeler ve z-index değerleri öngörülebilir bir yığın bağlamında mı; sayfa içi hedefler örtülüyor mu?"
+    tags: [positioning, stacking-context]

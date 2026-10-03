@@ -25,7 +25,7 @@ from codementor.models.llm_output import (
 )
 from codementor.models.pipeline import MentorTemplates
 from codementor.models.prompts import AnalysisPromptInput, QuestionContext
-from codementor.models.questions import ChecklistItem, Question
+from codementor.models.questions import REFERENCE_ROOT, ChecklistItem, Question
 from codementor.models.report import ComplexityResult
 from codementor.models.request import NormalizedCode
 from codementor.models.verification import (
@@ -33,6 +33,7 @@ from codementor.models.verification import (
     LeakCheck,
     SocraticVerification,
 )
+from codementor.paths import resource_root
 from codementor.pipeline.events import StageTimer
 from codementor.pipeline.templates import fallback_description
 from codementor.questions.checklists import Checklists
@@ -109,16 +110,29 @@ def run_static(
     )
 
 
-def load_reference(question: Question | None) -> tuple[str | None, list[str]]:
-    """Sorunun referans çözümü (yalnızca sızıntı kontrolü için; prompt'a hiç girmez, §12)."""
+def load_reference(
+    question: Question | None, root: Path | None = None
+) -> tuple[str | None, list[str]]:
+    """Sorunun referans çözümü (yalnızca sızıntı kontrolü için; prompt'a hiç girmez, §12).
+
+    Yol kaynak köküne (`root`, varsayılan `resource_root()`) göre çözülür, çalışma dizinine
+    göre değil. Sembolik bağlantılar çözüldükten sonra dosya `private/` dizininin (o da
+    çözülmüş haliyle; başka diske bağlanmış olabilir) dışına çıkıyorsa okunmaz (§7.1).
+    Hiçbir durumda istisna fırlatmaz.
+    """
     if question is None or not question.reference_solution_path:
         return None, []
-    path = Path(question.reference_solution_path)
     try:
+        base = (root if root is not None else resource_root()).resolve()
+        allowed = (base / REFERENCE_ROOT).resolve(strict=True)
+        path = (base / question.reference_solution_path).resolve(strict=True)
+        if not path.is_relative_to(allowed):
+            raise OSError("referans çözüm private/ dışını gösteriyor")
         if path.stat().st_size > MAX_REFERENCE_BYTES:
             raise OSError("çok büyük")
         return path.read_text(encoding="utf-8"), []
-    except (OSError, UnicodeDecodeError) as exc:
+    # RuntimeError: Python 3.12'de döngülü sembolik bağlantı resolve(strict=True)'da
+    except (OSError, UnicodeDecodeError, RuntimeError) as exc:
         # öğrenciye iç yapı (referans çözümün varlığı) söylenmez; operatör log'dan görür
         log.warning("reference_solution_unreadable", question=question.id, error=type(exc).__name__)
         return None, []

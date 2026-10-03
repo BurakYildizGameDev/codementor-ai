@@ -1,0 +1,26 @@
+id: css-hard-animation-performance
+version: 1
+language: css
+engine: none
+difficulty: hard
+title: "Akıcı kart animasyonları"
+prompt: |
+  Bir ana sayfadaki kartların animasyonlarını yazın: kartlar sayfa açılırken aşağıdan kayarak
+  ve belirerek gelmeli, fare üzerine geldiğinde hafifçe büyüyüp gölgesi koyulaşmalı. Mevcut
+  sürüm düşük güçlü telefonlarda takılıyor; kartların konumu ve boyutu değiştirilerek yapılmış.
+  Hareket hassasiyeti olan kullanıcılar işletim sisteminde 'hareketi azalt' seçeneğini açtıysa
+  kayma ve büyüme animasyonları kapanmalı.
+constraints:
+  - "Animasyon sırasında sayfa düzeni yeniden hesaplanmamalı"
+  - "İşletim sistemindeki hareketi azaltma tercihine uyulmalı"
+  - "Tarayıcıya verilen katman ipuçları kalıcı ve sınırsız bırakılmamalı"
+concept_tags: [animation, performance, accessibility]
+checklist_extra:
+  - "Animasyonda top, left, width ya da margin gibi düzen özellikleri mi değişiyor?"
+  - "Gölge animasyonu her karede yeniden boyama gerektiriyor mu?"
+  - "Hareketi azaltma tercihi denetleniyor mu?"
+reference_solution_path: private/solutions/css-hard-animation-performance.css
+hint_ladder:
+  1: "Bir kartın genişliğini her karede değiştirdiğinde tarayıcı yanındaki kartlar için ne yapmak zorunda kalıyor?"
+  2: "Hangi özellikler değiştiğinde tarayıcı yalnızca hazır katmanı taşıyıp bileştirebilir?"
+  3: "Bu kavramlar 'bileştirici (compositor) dostu animasyon (transform, opacity)' ve 'prefers-reduced-motion' olarak bilinir."

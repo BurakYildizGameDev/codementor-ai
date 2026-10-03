@@ -118,11 +118,11 @@ it("sonraki ipucu aynı oturum ve soruyla yeniden gönderir, seviye artar", asyn
 it("dil değişince soru listesi ve motor seçenekleri süzülür", async () => {
   const user = userEvent.setup();
   render(<App />);
-  expect(await screen.findByRole("option", { name: "Dizi toplamı" })).toBeInTheDocument();
+  expect(await screen.findByRole("option", { name: "Dizi toplamı (Kolay)" })).toBeInTheDocument();
 
   await user.selectOptions(screen.getByLabelText("Dil"), "csharp");
   await waitFor(() =>
-    expect(screen.queryByRole("option", { name: "Dizi toplamı" })).not.toBeInTheDocument(),
+    expect(screen.queryByRole("option", { name: "Dizi toplamı (Kolay)" })).not.toBeInTheDocument(),
   );
   const engines = within(screen.getByLabelText("Motor")).getAllByRole("option");
   expect(engines.map((o) => o.getAttribute("value"))).toEqual(["none", "unity"]);
@@ -200,4 +200,32 @@ it("rapor JSON ve sunucudan Markdown/SARIF olarak indirilir", async () => {
   expect(exportRequests).toEqual([`/v1/analyses/${reports[0]!.analysis_id}/markdown`]);
   expect(await created[1]!.text()).toBe("# Rapor");
   expect(clicks).toHaveBeenCalledTimes(2);
+});
+
+it("zorluk filtresi soru listesini süzer ve uyuşmayan seçimi temizler (Faz 30)", async () => {
+  const hard = {
+    ...QUESTIONS[0]!,
+    id: "c-hard-heap",
+    difficulty: "hard" as const,
+    title: "Öncelik kuyruğu",
+  };
+  const base = vi.mocked(globalThis.fetch).getMockImplementation()!;
+  vi.mocked(globalThis.fetch).mockImplementation(async (input, init) =>
+    String(input).startsWith("/v1/questions")
+      ? new Response(JSON.stringify([...QUESTIONS, hard]))
+      : base(input, init),
+  );
+  const user = userEvent.setup();
+  render(<App />);
+  const questionSelect = await screen.findByLabelText("Soru");
+  await screen.findByRole("option", { name: "Öncelik kuyruğu (Zor)" });
+  await user.selectOptions(questionSelect, "c-easy-sum");
+
+  await user.selectOptions(screen.getByLabelText("Zorluk"), "hard");
+  const options = within(questionSelect).getAllByRole("option").map((o) => o.textContent);
+  expect(options).toEqual(["Serbest mod (soru yok)", "Öncelik kuyruğu (Zor)"]);
+  expect(questionSelect).toHaveValue(""); // kolay soru seçiliydi: temizlendi
+
+  await user.selectOptions(screen.getByLabelText("Zorluk"), "");
+  expect(within(questionSelect).getAllByRole("option")).toHaveLength(3);
 });

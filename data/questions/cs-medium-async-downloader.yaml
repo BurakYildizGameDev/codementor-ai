@@ -1,0 +1,30 @@
+id: cs-medium-async-downloader
+version: 1
+language: csharp
+engine: none
+difficulty: medium
+title: "Eşzamanlı sayfa indirici"
+prompt: |
+  Verilen n adresteki sayfaları indirip her birinin boyutunu raporlayan asenkron bir indirici
+  sınıf yazın. Aynı anda en fazla dört indirme yapılmalı. Metot bir masaüstü uygulamasının
+  düğme olayından çağrılacak; indirme sürerken arayüz donmamalı. Bir indirme başarısız olursa
+  diğerleri sürmeli ve sonuçta hangi adresin neden başarısız olduğu görülmeli. Kullanıcı tüm
+  işlemi iptal edebilmeli.
+constraints:
+  - "Hiçbir yerde görevin sonucu bloklanarak beklenmemeli"
+  - "Her indirme için yeni bir bağlantı nesnesi oluşturulmamalı"
+  - "Kullanıcının iptal isteği devam eden indirmelere iletilmeli"
+  - "Aynı anda en fazla dört indirme yapılmalı"
+expected:
+  time: { download_all: "n" }
+  space: "n"
+concept_tags: [async-await, resource-management, error-handling]
+checklist_extra:
+  - "Olay işleyicisi dışında async void metot var mı?"
+  - ".Result ya da .Wait() ile bloklayarak bekleniyor mu?"
+  - "HttpClient her istekte using içinde mi oluşturuluyor?"
+reference_solution_path: private/solutions/cs-medium-async-downloader.cs
+hint_ladder:
+  1: "Arayüz iş parçacığında .Result ile bir görevi beklerken, görevin devamı hangi iş parçacığında çalışmak istiyor?"
+  2: "Yüz adres için yüz bağlantı nesnesi oluşturup atarsan işletim sistemindeki soketlere ne olur?"
+  3: "Bu kavramlar 'senkron üzerinden asenkron kilitlenmesi (sync-over-async deadlock)' ve 'HttpClient yeniden kullanımı' olarak bilinir."

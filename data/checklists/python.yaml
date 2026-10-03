@@ -26,3 +26,12 @@ items:
   - id: PY-CL-008
     text: "Sözlükte olmayan bir anahtara erişim (d[k]) KeyError fırlatabilir mi?"
     tags: [hashing, edge-cases]
+  - id: PY-CL-009
+    text: "Sınır değerler (eşitlik durumları) doğru tarafa düşüyor mu; > ile >= kullanımı tutarlı mı?"
+    tags: [boundary-conditions]
+  - id: PY-CL-010
+    text: "Kuyruk ve grafik işlemlerinde list.pop(0) ya da listede 'in' araması gibi doğrusal maliyetli işlemler döngü içinde kullanılıyor mu?"
+    tags: [graphs, data-structures]
+  - id: PY-CL-011
+    text: "Para gibi tam ondalık gerektiren değerler float ile mi hesaplanıyor?"
+    tags: [floating-point]

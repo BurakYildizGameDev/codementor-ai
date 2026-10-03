@@ -1,0 +1,28 @@
+id: unity-veryeasy-rotate-object
+version: 1
+language: csharp
+engine: unity
+difficulty: very_easy
+title: "Dönen ve süzülen toplanabilir nesne"
+prompt: |
+  Sahnede kendi dikey ekseni etrafında dönen ve yerleştirildiği noktanın çevresinde hafifçe
+  aşağı yukarı süzülen bir toplanabilir nesne betiği yazın. Dönüş hızı (derece/saniye), süzülme
+  yüksekliği ve süzülme hızı Inspector'dan ayarlanabilmeli. Oyun 30 FPS'te de 144 FPS'te de
+  çalışsa nesne aynı hızda dönmeli; saatlerce açık kalan bir sahnede nesne yavaş yavaş
+  kaymamalı.
+constraints:
+  - "Hareket kare hızından bağımsız olmalı"
+  - "Her karede bellek tahsisi yapılmamalı"
+  - "Süzülme, sahnede yerleştirilen konumun çevresinde kalmalı"
+expected:
+  time: { update: "1" }
+  space: "1"
+concept_tags: [frame-rate, hot-path, lifecycle]
+checklist_extra:
+  - "Dönüş miktarı geçen süreyle ölçekleniyor mu?"
+  - "Süzülme her karede başlangıç konumuna göre mi hesaplanıyor, yoksa üst üste mi ekleniyor?"
+reference_solution_path: private/solutions/unity-veryeasy-rotate-object.cs
+hint_ladder:
+  1: "Oyun 144 FPS'te çalışırken Update saniyede kaç kez çağrılıyor ve nesne o bir saniyede kaç derece dönüyor?"
+  2: "Konuma her karede küçük bir değer eklersen, kayan nokta hataları saatler sonra ne yapar?"
+  3: "Bu kavram 'kare hızından bağımsız hareket (deltaTime ile ölçekleme)' olarak bilinir."

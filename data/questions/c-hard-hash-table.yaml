@@ -1,0 +1,28 @@
+id: c-hard-hash-table
+version: 1
+language: c
+engine: none
+difficulty: hard
+title: "Dizgi anahtarlı sözlük"
+prompt: |
+  Anahtarı dizgi, değeri int olan bir sözlük yazın: oluşturma, ekleme/güncelleme, arama, silme
+  ve tüm belleği bırakma işlemleri olsun. Anahtarlar çağıranın tamponlarından gelir ve çağrıdan
+  sonra çağıran bu tamponları değiştirebilir. Sözlük milyonlarca anahtara kadar büyüyebilmeli ve
+  eleman sayısı arttıkça ortalama arama süresi uzamamalı.
+constraints:
+  - "Ortalama ekleme, arama ve silme sabit zamanlı olmalı"
+  - "Program sonunda bellek sızıntısı olmamalı; büyütme sırasında tahsis hatası mevcut veriyi kaybettirmemeli"
+  - "Çağıranın anahtar tamponu sonradan değişse de sözlük doğru çalışmalı"
+expected:
+  time: { put: "1*", get: "1", remove: "1", destroy: "n" }
+  space: "n"
+concept_tags: [hashing, dynamic-memory, memory-safety, ownership]
+checklist_extra:
+  - "Anahtar işaretçisi kopyalanmadan mı saklanıyor?"
+  - "Büyütmede eski kovalardaki düğümler yeni tabloya taşınıyor mu, yoksa sızıyor mu?"
+  - "Silinen düğümün anahtar belleği de serbest bırakılıyor mu?"
+reference_solution_path: private/solutions/c-hard-hash-table.c
+hint_ladder:
+  1: "Çağıran anahtarı tuttuğu tamponu bir sonraki satırı okumak için yeniden kullanırsa sözlükteki anahtar neyi gösterir?"
+  2: "Eleman sayısı tablo boyutunu geçtikçe bir kovadaki ortalama eleman sayısına ne oluyor; tablo ne zaman büyümeli?"
+  3: "Bu kavramlar 'anahtarın sahipliği (kopyalanması)' ve 'yük faktörüne göre yeniden karma (rehash)' olarak bilinir."

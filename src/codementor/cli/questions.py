@@ -1,9 +1,10 @@
-"""`codementor questions list|show` komutları (mimari §10).
+"""`codementor questions list|show|validate` komutları (mimari §10).
 
 CLI yalnızca `QuestionPublic` görür: ipucu merdiveni, soruya özgü kontrol maddeleri,
 kavram etiketleri ve referans çözüm yolu bu modelde hiç bulunmaz.
 
-Çıkış kodları: 0 başarı · 1 soru bulunamadı · 2 geçersiz komut satırı (Typer) ·
+Çıkış kodları: 0 başarı · 1 soru bulunamadı ya da bütünlük hatası (validate) · 2 geçersiz komut
+satırı (Typer) ·
 3 sistem hatası (bozuk yapılandırma veya veri dosyası; mimari §10).
 """
 
@@ -22,10 +23,14 @@ from rich.table import Table
 from codementor.config import load_settings
 from codementor.models.bigo import parse_cost
 from codementor.models.enums import Difficulty, Engine, Language
+from codementor.paths import resource_root
 from codementor.questions._loader import DataFileError
 from codementor.questions.bank import QuestionBank, QuestionNotFoundError
+from codementor.questions.checklists import Checklists
+from codementor.questions.validate import DEFAULT_MIN_PER_GROUP, validate_bank
 
 EXIT_NOT_FOUND = 1
+EXIT_INVALID = 1
 EXIT_SYSTEM_ERROR = 3
 
 questions_app = typer.Typer(name="questions", no_args_is_help=True, help="Soru bankası.")
@@ -113,3 +118,40 @@ def questions_show(
         for operation, complexity in q.expected.time.items():
             console.print(f"  {escape(operation)}: {_display_bigo(complexity)}")
         console.print(f"  bellek: {_display_bigo(q.expected.space)}")
+
+
+@questions_app.command("validate")
+def questions_validate(
+    directory: DirOption = None,
+    min_per_group: Annotated[
+        int, typer.Option("--min-per-group", min=1, help="Dil/motor başına asgari soru.")
+    ] = DEFAULT_MIN_PER_GROUP,
+    solutions: Annotated[
+        Path | None,
+        typer.Option(
+            "--solutions-root",
+            help="Referans çözüm yollarının (private/...) çözüldüğü kök (varsayılan: kaynak kökü).",
+        ),
+    ] = None,
+) -> None:
+    """Soru bankasını denetler: şema, dil/zorluk dağılımı, kontrol listesi kapsamı, çözümler."""
+    bank = _load_bank(directory)
+    try:
+        checklists = Checklists.load(load_settings().data.checklists_dir)
+    except (DataFileError, ValidationError, tomllib.TOMLDecodeError, OSError) as exc:
+        _fail(f"kontrol listeleri okunamadı: {exc}")
+    report = validate_bank(
+        bank,
+        checklists,
+        min_per_group=min_per_group,
+        solutions_root=solutions if solutions is not None else resource_root(),
+    )
+    console = Console()
+    for warning in report.warnings:
+        console.print(f"[yellow]uyarı[/yellow] {escape(warning)}")
+    for error in report.errors:
+        console.print(f"[red]hata[/red] {escape(error)}")
+    if report.errors:
+        console.print(f"{report.question_count} soru denetlendi: {len(report.errors)} hata.")
+        raise typer.Exit(EXIT_INVALID)
+    console.print(f"{report.question_count} soru geçerli ({len(report.warnings)} uyarı).")

@@ -1,0 +1,27 @@
+id: unreal-veryeasy-rotating-actor
+version: 1
+language: cpp
+engine: unreal
+difficulty: very_easy
+title: "Dönen platform aktörü"
+prompt: |
+  Kendi dikey ekseni etrafında sabit hızla dönen bir platform aktörü (AActor türevi) yazın.
+  Dönüş hızı derece/saniye cinsinden editörden ayarlanabilmeli ve her platform örneği için
+  farklı olabilmeli. Oyun 30 FPS'te de 120 FPS'te de çalışsa platform bir saniyede aynı açıyı
+  dönmeli. Hızı 0 olan platformlar kare başına iş yapmamalı.
+constraints:
+  - "Dönüş kare hızından bağımsız olmalı"
+  - "Dönüş hızı editörden örnek başına ayarlanabilmeli"
+  - "Hızı 0 olan platformlar her karede güncellenmemeli"
+expected:
+  time: { per_frame: "1" }
+  space: "1"
+concept_tags: [tick, frame-rate, uproperty]
+checklist_extra:
+  - "Dönüş miktarı DeltaTime ile çarpılıyor mu?"
+  - "Hız 0 iken aktörün Tick'i yine de çalışıyor mu?"
+reference_solution_path: private/solutions/unreal-veryeasy-rotating-actor.cpp
+hint_ladder:
+  1: "Oyun 120 FPS'te çalışırken her karede 1 derece dönen platform bir saniyede kaç derece döner? 30 FPS'te?"
+  2: "Hızı 0 olan yüz platformun her karede çağrılan bir fonksiyonu var mı? Bunu açıp kapatan ayar hangisi?"
+  3: "Bu kavram 'kare hızından bağımsız hareket (DeltaTime ile ölçekleme)' olarak bilinir."

@@ -103,7 +103,7 @@ async def test_questions_list_and_filters(client_for: ClientFactory) -> None:
     assert unity
     assert all(q["engine"] == "unity" for q in unity)
     hard_c = await client.get("/v1/questions", params={"language": "c", "difficulty": "hard"})
-    assert [q["id"] for q in hard_c.json()] == ["c-hard-stack"]
+    assert [q["id"] for q in hard_c.json()] == ["c-hard-hash-table", "c-hard-stack"]
     bad = await client.get("/v1/questions", params={"difficulty": "imkansiz"})
     assert bad.status_code == 422
     assert bad.headers["content-type"] == PROBLEM

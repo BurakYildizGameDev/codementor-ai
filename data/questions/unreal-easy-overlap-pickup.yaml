@@ -1,0 +1,29 @@
+id: unreal-easy-overlap-pickup
+version: 1
+language: cpp
+engine: unreal
+difficulty: easy
+title: "Toplanabilir sağlık paketi"
+prompt: |
+  Oyuncu karakteri üzerinden geçtiğinde onun canını artırıp kendini sahneden kaldıran bir sağlık
+  paketi aktörü yazın. Paket yalnızca oyuncu karakterine tepki vermeli; mermiler ya da düşmanlar
+  onu toplamamalı. Oyuncu aynı karede paketin iki çarpışma bileşenine birden değerse ya da iki
+  oyuncu aynı anda gelirse paket yalnızca bir kez toplanmalı. İyileşme miktarı editörden
+  ayarlanabilmeli.
+constraints:
+  - "Paket yalnızca bir kez toplanmalı"
+  - "Yok edilme sürecindeki pakete ait üyelere erişilmemeli"
+  - "Çarpışma bildirimine bağlanan fonksiyon motorun yansıma sistemine kayıtlı olmalı"
+expected:
+  time: { on_overlap: "1" }
+  space: "1"
+concept_tags: [delegates, lifecycle, uproperty]
+checklist_extra:
+  - "Çarpışma bildirimine bağlanan fonksiyon yansıma makrosuyla işaretli mi?"
+  - "Destroy çağrıldıktan sonra aynı fonksiyonda üyelere erişiliyor mu?"
+  - "Çarpan aktörün oyuncu olup olmadığı denetleniyor mu?"
+reference_solution_path: private/solutions/unreal-easy-overlap-pickup.cpp
+hint_ladder:
+  1: "Bağladığın fonksiyon hiç çağrılmıyorsa, motor o fonksiyonun adını nereden öğreniyor?"
+  2: "Oyuncu aynı karede iki kez çarpışma bildirimi üretirse paketin canı kaç kez veriliyor?"
+  3: "Bu kavramlar 'dinamik delege bağlama (AddDynamic + UFUNCTION)' ve 'tek seferlik etkileşim koruması' olarak bilinir."

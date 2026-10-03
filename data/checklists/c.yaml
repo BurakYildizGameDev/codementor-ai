@@ -41,3 +41,12 @@ items:
   - id: C-CL-013
     text: "Büyüme stratejisi amortize sabit maliyet sağlıyor mu, yoksa her eklemede yeniden tahsis mi yapılıyor?"
     tags: [amortized-analysis, dynamic-memory]
+  - id: C-CL-014
+    text: "Birikimli değerler (en büyük, en küçük) verinin kendisinden mi başlatılıyor; döngü son geçerli indeksi aşıyor mu?"
+    tags: [arrays]
+  - id: C-CL-015
+    text: "İndeks ve orta nokta hesaplarında (alt + üst) tamsayı taşması ya da işaretsiz bir sayının sıfırın altına inip sarması mümkün mü?"
+    tags: [integer-overflow, binary-search]
+  - id: C-CL-016
+    text: "Karma tablo büyüdükçe kayıtlar yeniden dağıtılıyor mu; saklanan anahtarlar çağıranın tamponuna mı işaret ediyor, yoksa yapının kendi kopyası mı?"
+    tags: [hashing, ownership]

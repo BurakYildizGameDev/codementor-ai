@@ -1,0 +1,26 @@
+id: html-easy-contact-form
+version: 1
+language: html
+engine: none
+difficulty: easy
+title: "İletişim formu"
+prompt: |
+  Bir sitenin iletişim formunu yazın: ad soyad, e-posta, telefon (isteğe bağlı), konu seçimi
+  (öneri, şikâyet, diğer) ve mesaj alanları ile bir gönder düğmesi olsun. Telefonla doldurulurken
+  her alan için uygun klavye açılmalı ve tarayıcı daha önce girilen bilgileri önerebilmeli.
+  Zorunlu alanlar boş bırakılırsa form gönderilmemeli. Ekran okuyucu her alanın ne olduğunu
+  söylemeli.
+constraints:
+  - "Her alanın ekran okuyucunun okuyacağı kalıcı bir adı olmalı; yer tutucu metin ad yerine kullanılmamalı"
+  - "Alan türleri mobil klavyeye ve tarayıcı otomatik doldurmasına uygun olmalı"
+  - "Zorunlu alanlar JavaScript olmadan denetlenmeli"
+concept_tags: [forms, accessibility, input-validation]
+checklist_extra:
+  - "Alan adları yalnızca yer tutucu metinle mi verilmiş?"
+  - "E-posta ve telefon alanları düz metin türünde mi?"
+  - "İsteğe bağlı ve zorunlu alanlar kullanıcıya belli ediliyor mu?"
+reference_solution_path: private/solutions/html-easy-contact-form.html
+hint_ladder:
+  1: "Kullanıcı e-posta alanına yazmaya başladığında yer tutucu metin kayboluyor; alanın ne olduğunu artık nereden hatırlıyor?"
+  2: "Telefonda e-posta alanına dokunulduğunda '@' tuşu olan klavye açılıyor mu? Bunu ne belirliyor?"
+  3: "Bu kavramlar 'form etiketi (label) ilişkisi' ve 'girdi türleri ile yerleşik doğrulama' olarak bilinir."
