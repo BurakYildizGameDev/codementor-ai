@@ -136,3 +136,24 @@ async def test_server_overload_retried(router: respx.MockRouter, sleep: SleepRec
     exc, calls = await _fail(router, sleep, 503, {"error": {"message": "overloaded"}})
     assert isinstance(exc, ProviderServerError)
     assert calls == 3
+
+
+async def test_gemini_invalid_key_400_is_key_error(
+    router: respx.MockRouter, sleep: SleepRecorder
+) -> None:
+    """Gemini OpenAI uyumlu uç geçersiz anahtara 401 değil 400 döndürür (2026-10-03, gerçek
+    uçtan sahte anahtarla alınan gövde)."""
+    body = [
+        {
+            "error": {
+                "code": 400,
+                "message": "Please pass a valid API key",
+                "status": "INVALID_ARGUMENT",
+            }
+        }
+    ]
+    exc, calls = await _fail(router, sleep, 400, body)
+    assert isinstance(exc, ProviderRequestError)
+    assert calls == 1
+    assert "API anahtarı geçersiz" in str(exc)
+    assert "(400)" in str(exc)

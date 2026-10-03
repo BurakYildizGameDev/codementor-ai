@@ -181,6 +181,8 @@ def _status_error(provider: str, status: int, body: bytes, headers: httpx.Header
     if status >= 500:
         return ProviderServerError(provider, f"sunucu hatası ({status}): {detail}", status=status)
     hint = _STATUS_HINTS.get(status)
+    if status == 400 and "api key" in raw.lower():  # Gemini geçersiz anahtara 400 döndürür
+        hint = _STATUS_HINTS[401]
     if hint is not None:
         return ProviderRequestError(provider, f"{hint} ({status}): {detail}", status=status)
     return ProviderRequestError(provider, f"istek reddedildi ({status}): {detail}", status=status)
