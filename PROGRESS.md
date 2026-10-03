@@ -873,6 +873,8 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    gömülü self-contained Roslyn, "Derleyiciyi indir". Sıradaki: Faz 30.
 4. ~~**Faz 30 — Soru bankası.**~~ Yapıldı: 64 soru (dil/motor başına 8), 64 referans çözüm,
    `questions validate`, zorluk filtreleri. Sıradaki: Faz 35.
+   Ek (2026-10-03): Antigravity'nin 1200 aday sorusu `docs/soru-havuzu/` altında, analizi
+   `docs/soru-havuzu/README.md`'de (şemadan geçiyor; çözüm/tablo yok, C++/C# ipuçları Sokratik değil).
 5. **Faz 35 — Bulgu doğrulama geçişi (önemli):** her LLM bulgusu için ayrı bir "kanıtla"
    adımı; kanıtlanamayan düşer. Modelin kendi güveni şemaya (bugünkü `confidence` sistemden
    sabit 0,7 geliyor, ayırt etmiyor). ADR; dev'de doğrulamalı/doğrulamasız ölçüm.
