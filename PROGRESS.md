@@ -933,8 +933,15 @@ kaldırmak için ortak katmanın (uyumlu uç) ayrı tutulmuş olması işi küç
   yinelenen çıktı yanlış sonuç; Sokratik sorusu da ona dayanıyor).
 **Doğrulama:** ruff, ruff format, mypy --strict, pytest (2620 geçti), web vitest (33) + build.
 Statik dev koşusu değişmedi (96 örnek, P/R/F1 100/58/73; şema 1.1).
-**Açık sorular:** Canlı dev koşusu (precision artışı ve recall'un düşmediği) onay bekliyor
-(~1-1,4M token). Kural bazında öneri (`cpp-105` CPP-OWN-001, `unreal-107`, `python-105`).
+**Canlı ölçüm planı:** dev 96 örnek `eval run --part k/4` ile 4 dengeli parçaya bölündü
+(`eval/parts.py`; her parça 24 örnek, dil/motor ve tür orantılı, belirleyici). Parçalar sırayla
+koşulur (`uv run codementor eval run --split dev --provider claude_cli --part k/4`, ~0,3M token):
+- [ ] Parça 1/4 (koşuluyor)
+- [ ] Parça 2/4
+- [ ] Parça 3/4
+- [ ] Parça 4/4
+- [ ] Dört parçayı birleştirip 96 örneklik tabloyu üretmek (README, eval-findings §11)
+**Açık sorular:** Canlı dev koşusu (precision artışı ve recall'un düşmediği) parça parça yapılıyor. Kural bazında öneri (`cpp-105` CPP-OWN-001, `unreal-107`, `python-105`).
 **Bu fazda öğrendiğim:** Şemaya giren her metin dar bağlamda bütçe demektir; geliştirici
 docstring'leri LLM şemasına sızıyordu. Öneriyi ayrı sınıf yapmak, "bulgu yazma" yasağından daha
 az bilgi kaybettiren bir precision aracıdır.

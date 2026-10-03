@@ -159,6 +159,7 @@ async def run_eval(
     provider_factory: ProviderFactory | None = None,
     progress: Progress | None = None,
     languages: list[str] | None = None,
+    part: str | None = None,
 ) -> RunResult:
     """Örnekleri sırayla çalıştırır (sağlayıcı kotasını zorlamamak için eşzamansız değil).
 
@@ -197,6 +198,7 @@ async def run_eval(
         sample_ids=[s.label.id for s in samples],
         reviewed_only=all(s.label.reviewed for s in samples),
         languages=wanted,
+        part=part,
     )
     results: list[SampleResult] = []
     for index, sample in enumerate(samples, start=1):
@@ -218,7 +220,7 @@ def _default_factory(settings: Settings) -> ProviderFactory:
 
 
 def result_filename(config: RunConfig) -> str:
-    """`{zaman}_{sağlayıcı}_{model}_{mod}[_{ablasyon}][_{diller}]_{bölüm}.json` (§14.3)."""
+    """`{zaman}_{sağlayıcı}_{model}_{mod}[_{ablasyon}][_{diller}][_part{k-n}]_{bölüm}.json`."""
     parts = [
         config.started_at.strftime("%Y%m%dT%H%M%S"),
         config.provider or "static",
@@ -226,6 +228,7 @@ def result_filename(config: RunConfig) -> str:
         config.mode,
         *config.ablations,
         *(["-".join(config.languages)] if config.languages else []),
+        *([f"part{config.part.replace('/', '-')}"] if config.part else []),
         config.split,
     ]
     return "_".join(_UNSAFE.sub("-", p) for p in parts) + ".json"

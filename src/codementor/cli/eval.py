@@ -32,6 +32,7 @@ from codementor.eval.dataset import (
     load_split,
     promote,
 )
+from codementor.eval.parts import parse_part, select_part
 from codementor.eval.review import DraftCheck, check_draft
 from codementor.eval.runner import ABLATIONS, run_eval, save_result
 from codementor.models.enums import PipelineMode
@@ -76,6 +77,13 @@ def run(
             "(csharp Unity'yi, cpp Unreal'ı da kapsar)."
         ),
     ] = None,
+    part: Annotated[
+        str | None,
+        typer.Option(
+            help="Dengeli parça, ör. 1/4: bölüm dil/motor ve örnek türüne göre orantılı "
+            "n parçaya ayrılır, yalnız k. parça koşulur (canlı koşu bütçesi)."
+        ),
+    ] = None,
     final: Annotated[
         bool, typer.Option("--final", help="test bölümünü çalıştırmaya izin ver.")
     ] = False,
@@ -83,6 +91,14 @@ def run(
     out_dir: Annotated[Path, typer.Option(help="Sonuç dizini.")] = RESULTS_DIR,
 ) -> None:
     """Bir bölümü çalıştırır; önbellek kapalı, sonuç tüm metrikler ve sürümlerle yazılır."""
+    if part is not None and limit:
+        Console(stderr=True).print("[red]Hata:[/red] --part ile --limit birlikte kullanılamaz.")
+        raise typer.Exit(EXIT_USAGE)
+    try:
+        part_spec = parse_part(part) if part is not None else None
+    except ValueError as exc:
+        Console(stderr=True).print(f"[red]Hata:[/red] {escape(str(exc))}")
+        raise typer.Exit(EXIT_USAGE) from exc
     console = Console(stderr=True)
     if split not in ("dev", "test"):
         console.print("[red]Hata:[/red] --split dev ya da test olmalı.")
@@ -103,6 +119,8 @@ def run(
     if language:
         samples = [s for s in samples if s.label.language.value in set(language)]
     samples = samples[:limit] if limit else samples
+    if part_spec is not None:
+        samples = select_part(samples, *part_spec)
     if language and not samples:
         console.print("[red]Hata:[/red] Seçilen dillerde bu bölümde örnek yok.")
         raise typer.Exit(EXIT_USAGE)
@@ -126,6 +144,7 @@ def run(
                 ablations=list(ablate or []),
                 progress=progress,
                 languages=list(language or []),
+                part=part,
             )
         )
     except ValueError as exc:

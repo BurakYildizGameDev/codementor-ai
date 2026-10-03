@@ -103,6 +103,9 @@ class RunConfig(StrictModel):
     languages: list[Language] = Field(
         default_factory=list, description="Dil filtresi (boş: hepsi; Faz 18)"
     )
+    part: str | None = Field(
+        default=None, description='Dengeli parça, ör. "1/4" (`eval run --part`); yoksa tümü'
+    )
 
 
 class Metrics(StrictModel):
