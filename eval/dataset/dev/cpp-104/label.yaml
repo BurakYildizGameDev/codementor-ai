@@ -1,0 +1,17 @@
+# Hatalı: std::vector const referans yerine değerle geçirilerek kopyalanıyor
+id: cpp-104
+language: cpp
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: performance, line: 5, rule_id: CPP-PERF-001, note: "Büyük kapsayıcı const referans yerine değerle geçiriliyor" }
+  must_not_contain: ["const std::vector<std::string>&"]
+tags: [performance]
+split: dev
+reviewed: true
+notes: null

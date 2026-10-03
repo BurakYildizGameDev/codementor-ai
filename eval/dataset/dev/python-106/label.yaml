@@ -1,0 +1,17 @@
+# Hatalı: döngü içinde list.insert(0, ...) ile O(n^2) işlem
+id: python-106
+language: python
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "n"
+  findings:
+    - { category: performance, line: 4, rule_id: PY-PERF-001, note: "Döngü içinde list.insert(0) her turda tüm elemanları kaydırır" }
+  must_not_contain: ["collections.deque", "appendleft"]
+tags: [performance]
+split: dev
+reviewed: true
+notes: null

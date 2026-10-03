@@ -1,0 +1,16 @@
+# Temiz: yerinde iki işaretçi ile dizi tersine çevirme
+id: python-104
+language: python
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: ["arr[::-1]"]
+tags: [clean]
+split: dev
+reviewed: true
+notes: null

@@ -1,0 +1,14 @@
+# Temiz: erişilebilir ve anlamsal HTML5 belgesi
+id: html-102
+language: html
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings: []
+  must_not_contain: ["aria-hidden"]
+tags: [clean]
+split: dev
+reviewed: true
+notes: null

@@ -175,7 +175,7 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 
 > Not: `c-016` etiketine 2026-10-01'de ikinci beklenen bulgu (`memory_safety`, C-MEM-003) eklendi; LLM satırları eski etiketle puanlandı.
 
-**Dev (31 örnek) ve ablasyonlar:**
+**Dev ve ablasyonlar (31 → 46 → 96 örnek):**
 
 <!-- eval-table:dev:start -->
 | Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
@@ -192,11 +192,14 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 | claude_cli / claude-opus-5-5 | two_pass | verify | 46 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 79% / 89% / 84% | 98% | 0% | 100% | 22.1 / 38.3 | 15891 |
 | claude_cli / claude-opus-5-5 | two_pass | fewshot0 | 46 (dev) | 100% / 100% | 100% / 100% | 97% / 97% | 68% / 91% / 78% | 98% | 0% | 100% | 19.3 / 33.9 | 13737 |
 | claude_cli / claude-opus-5-5 | two_pass | fewshot1 | 46 (dev) | 100% / 100% | 100% / 100% | 93% / 97% | 68% / 89% / 77% | 98% | 0% | 100% | 16.9 / 28.3 | 12641 |
+| Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 58% / 73% | 100% | 0% | — | 0.1 / 0.5 | — |
 
 Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 <!-- eval-table:dev:end -->
+
+> Dev genişletmesi (2026-10-04): dev 46 → 96 örnek (50 yeni; Unity/Unreal 8'er, diğerleri 4-6). Son statik satır 96 örneklik güncel settir; LLM satırları henüz bu setle koşulmadı. Yeni örneklerin statik Big-O'su etiketle birebir. Ayrıntı: `docs/eval-findings.md` §10.
 
 > Faz 34/35B (2026-10-03): 46 örneklik satırlar güncel dev setidir (C ailesi + Python/HTML/CSS). `verify` = bulgu doğrulama geçişi (artık varsayılan açık, ADR-0019): precision 69 → 79, recall aynı. İkinci model Claude Haiku 4.5 (düşünme kapalı). Few-shot 0/1/2 arasında fark yok. Ayrıntı: `docs/eval-findings.md` §9.
 

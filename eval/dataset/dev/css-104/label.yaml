@@ -1,0 +1,15 @@
+# Hatalı: hiçbir bildirimi olmayan boş kural bloğu
+id: css-104
+language: css
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: maintainability, line: 6, rule_id: CSS-MAINT-002, note: "empty-widget için boş kural bloğu tanımlanmış" }
+  must_not_contain: [".empty-widget { display: block; }"]
+tags: [maintainability]
+split: dev
+reviewed: true
+notes: null

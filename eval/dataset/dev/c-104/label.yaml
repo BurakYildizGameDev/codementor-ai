@@ -1,0 +1,16 @@
+# Temiz: iki işaretçi ile dizi/metin palindrom kontrolü
+id: c-104
+language: c
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: ["malloc", "tolower"]
+tags: [clean]
+split: dev
+reviewed: true
+notes: null

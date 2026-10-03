@@ -1,0 +1,14 @@
+# Sözdizimi: def başlığında eksik iki nokta
+id: python-101
+language: python
+engine: none
+question_id: null
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: ["def calculate_average(numbers):"]
+tags: [syntax]
+split: dev
+reviewed: true
+notes: null

@@ -1,0 +1,16 @@
+# Temiz: saf ikili arama algoritması
+id: csharp-103
+language: csharp
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "log n"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: ["Array.BinarySearch"]
+tags: [clean]
+split: dev
+reviewed: true
+notes: null

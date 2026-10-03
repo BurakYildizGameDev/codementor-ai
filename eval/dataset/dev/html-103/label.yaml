@@ -1,0 +1,15 @@
+# Hatalı: img etiketinde alt özniteliği eksik
+id: html-103
+language: html
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: accessibility, line: 9, rule_id: HTML-ACC-001, note: "Görsel için alternatif metin (alt) belirtilmemiş" }
+  must_not_contain: ["alt=\""]
+tags: [accessibility]
+split: dev
+reviewed: true
+notes: null

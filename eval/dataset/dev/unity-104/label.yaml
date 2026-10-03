@@ -1,0 +1,16 @@
+# Temiz: önbellekli Rigidbody, FixedUpdate içinde fizik, CompareTag kullanımı
+id: unity-104
+language: csharp
+engine: unity
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: ["other.tag =="]
+tags: [clean]
+split: dev
+reviewed: true
+notes: null

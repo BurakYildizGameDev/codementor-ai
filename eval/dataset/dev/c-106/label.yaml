@@ -1,0 +1,17 @@
+# Hatalı: malloc ile ayrılan bellek serbest bırakılmadan çıkılıyor
+id: c-106
+language: c
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: resource_leak, line: 5, rule_id: C-MEM-001, note: "Ayrılan buffer fonksiyondan çıkışta free edilmiyor" }
+  must_not_contain: ["free(buffer);"]
+tags: [leak]
+split: dev
+reviewed: true
+notes: null

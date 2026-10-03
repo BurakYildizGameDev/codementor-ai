@@ -1,0 +1,17 @@
+# Hatalı: boyutu bilinen döngüde Reserve çağrılmadan TArray::Add yapılıyor
+id: unreal-107
+language: cpp
+engine: unreal
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: performance, line: 6, rule_id: UE-MEM-001, note: "Döngüde Reserve çağrılmadan TArray::Add ile sürekli yeniden tahsis yapılıyor" }
+  must_not_contain: ["OutIndices.Reserve(Count);", "OutIndices.SetNum(Count);"]
+tags: [performance]
+split: dev
+reviewed: true
+notes: null

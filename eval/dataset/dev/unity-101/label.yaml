@@ -1,0 +1,14 @@
+# Sözdizimi: Update içinde eksik kapanış parantezi
+id: unity-101
+language: csharp
+engine: unity
+question_id: null
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: ["Time.deltaTime);"]
+tags: [syntax]
+split: dev
+reviewed: true
+notes: null

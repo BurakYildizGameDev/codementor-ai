@@ -1,0 +1,14 @@
+# Sözdizimi: kapanmamış öznitelik tırnağı
+id: html-101
+language: html
+engine: none
+question_id: null
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: ["login\">Giriş"]
+tags: [syntax]
+split: dev
+reviewed: true
+notes: null

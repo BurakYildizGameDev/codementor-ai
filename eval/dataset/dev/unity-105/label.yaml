@@ -1,0 +1,16 @@
+# Temiz: OnEnable ve OnDisable içinde simetrik olay yönetimi
+id: unity-105
+language: csharp
+engine: unity
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: ["RemoveAllListeners"]
+tags: [clean]
+split: dev
+reviewed: true
+notes: null

@@ -1,0 +1,17 @@
+# Hatalı: döngü koşulu i <= numbers.Length IndexOutOfRangeException üretir
+id: csharp-106
+language: csharp
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: memory_safety, line: 6, note: "i <= numbers.Length sebebiyle son turda dizi sınır dışına çıkılır" }
+  must_not_contain: ["i < numbers.Length"]
+tags: [memory-safety, off-by-one]
+split: dev
+reviewed: true
+notes: null

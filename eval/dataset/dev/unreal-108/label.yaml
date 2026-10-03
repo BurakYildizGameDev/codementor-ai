@@ -1,0 +1,17 @@
+# Hatalı: BeginPlay metodunda Super::BeginPlay() çağrısı eksik
+id: unreal-108
+language: cpp
+engine: unreal
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: engine_best_practice, line: 13, note: "BeginPlay içinde Super::BeginPlay() çağrısı eksik" }
+  must_not_contain: ["Super::BeginPlay();"]
+tags: [engine]
+split: dev
+reviewed: true
+notes: null

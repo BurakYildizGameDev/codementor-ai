@@ -1,0 +1,15 @@
+# Hatalı: aynı id (card) birden fazla öğede kullanılmış
+id: html-105
+language: html
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: design, line: 11, rule_id: HTML-STD-001, note: "id='card' belgede daha önce 8. satırda kullanılmış" }
+  must_not_contain: ["id=\"card-2\""]
+tags: [design]
+split: dev
+reviewed: true
+notes: null

@@ -1,0 +1,17 @@
+# Hatalı: Tick içinde GetAllActorsOfClass ile tüm aktörlerin taranması
+id: unreal-106
+language: cpp
+engine: unreal
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: performance, line: 22, rule_id: UE-PERF-001, note: "Tick içinde GetAllActorsOfClass gibi ağır arama yapılıyor" }
+  must_not_contain: ["TActorIterator<AActor>"]
+tags: [performance, tick]
+split: dev
+reviewed: true
+notes: null

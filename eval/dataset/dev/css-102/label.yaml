@@ -1,0 +1,17 @@
+# Hatalı: kural bloğunda aşırı sayıda !important kullanımı
+id: css-102
+language: css
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: maintainability, line: 2, rule_id: CSS-MAINT-001, note: "Aşırı !important kullanımı" }
+    - { category: maintainability, line: 3, rule_id: CSS-MAINT-001, note: "Aşırı !important kullanımı" }
+    - { category: maintainability, line: 4, rule_id: CSS-MAINT-001, note: "Aşırı !important kullanımı" }
+  must_not_contain: ["color: #fff;", "background-color: #007bff;"]
+tags: [maintainability]
+split: dev
+reviewed: true
+notes: null

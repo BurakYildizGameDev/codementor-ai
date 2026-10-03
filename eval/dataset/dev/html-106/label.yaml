@@ -1,0 +1,16 @@
+# Hatalı: dengesiz ve yanlış sırada kapatılan etiketler
+id: html-106
+language: html
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: design, line: 9, rule_id: HTML-STD-003, note: "section etiketi div kapanışıyla dengesiz kalıyor" }
+    - { category: design, line: 12, rule_id: HTML-STD-003, note: "section, içindeki div 11. satırda erken kapatıldığı için yanlış sırada kapanıyor" }
+  must_not_contain: ["</section>\n    </div>"]
+tags: [design]
+split: dev
+reviewed: true
+notes: null

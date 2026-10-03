@@ -1,0 +1,17 @@
+# Hatalı: with bloğu dışında open() kullanımı
+id: python-105
+language: python
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "1"
+  findings:
+    - { category: resource_leak, line: 2, rule_id: PY-RES-001, note: "Dosya with bloğu dışında açılıyor, hata durumunda açık kalabilir" }
+  must_not_contain: ["with open(filename"]
+tags: [leak]
+split: dev
+reviewed: true
+notes: null

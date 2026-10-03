@@ -1,0 +1,16 @@
+# Temiz: UPROPERTY ile işaretli bileşen ve Super::BeginPlay çağıran Actor
+id: unreal-104
+language: cpp
+engine: unreal
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: ["TObjectPtr"]
+tags: [clean]
+split: dev
+reviewed: true
+notes: null

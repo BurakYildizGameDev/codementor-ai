@@ -1,0 +1,18 @@
+# Hatalı: modern C++'ta çıplak new/delete ile bellek yönetimi
+id: cpp-105
+language: cpp
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n"
+  space_complexity: "n"
+  findings:
+    - { category: memory_safety, line: 4, rule_id: CPP-OWN-001, note: "Çıplak new[] ile dinamik bellek ayrılıyor" }
+    - { category: memory_safety, line: 8, rule_id: CPP-OWN-001, note: "Çıplak delete[] ile bellek serbest bırakılıyor" }
+  must_not_contain: ["std::vector<int>", "std::make_unique"]
+tags: [memory-safety, raw-new]
+split: dev
+reviewed: true
+notes: null

@@ -1,0 +1,18 @@
+# Hatalı: malloc NULL denetimi yok ve döngü koşulunda strlen
+id: c-105
+language: c
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "n"
+  findings:
+    - { category: memory_safety, line: 7, rule_id: C-MEM-003, note: "malloc dönüşünde NULL denetimi yapılmıyor" }
+    - { category: performance, line: 8, rule_id: C-PERF-001, note: "Döngü koşulunda her turda strlen çağrılıyor" }
+  must_not_contain: ["if (copy == NULL)", "if (!copy)"]
+tags: [performance, memory-safety]
+split: dev
+reviewed: true
+notes: null

@@ -1,0 +1,14 @@
+# Sözdizimi: döngü içinde eksik noktalı virgül
+id: c-101
+language: c
+engine: none
+question_id: null
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: ["total += arr[i];"]
+tags: [syntax]
+split: dev
+reviewed: true
+notes: null

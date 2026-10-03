@@ -1,0 +1,15 @@
+# Hatalı: aynı kural bloğunda yinelenen özellik
+id: css-103
+language: css
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: maintainability, line: 5, rule_id: CSS-STD-001, note: "width özelliği aynı blokta iki kez tanımlanmış" }
+  must_not_contain: ["min-width:"]
+tags: [maintainability]
+split: dev
+reviewed: true
+notes: null

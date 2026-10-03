@@ -1,0 +1,17 @@
+# Hatalı: StreamReader using bloğu olmadan açılıyor ve kapatılmıyor
+id: csharp-105
+language: csharp
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: resource_leak, line: 6, note: "StreamReader nesnesi using bloğu olmadan oluşturuluyor ve Dispose edilmiyor" }
+  must_not_contain: ["using (var reader", "using (StreamReader", "using var reader"]
+tags: [leak]
+split: dev
+reviewed: true
+notes: null

@@ -353,3 +353,27 @@ katkısı yok; çıktı biçimini ve "statik bulguyu tekrar etme" davranışın�
 
 **Sınır.** Dev 46 örnek; bir örnek yaklaşık 2 puan eder. Dev setini yeni sorulardan büyütmek
 etiket incelemesi gerektirdiği için yapılmadı (PROGRESS "Sonraya").
+
+## 10. Dev genişletmesi: 46 → 96 örnek (2026-10-04, statik)
+
+50 yeni örnek `docs/EVAL_ORNEK_REHBERI.md` ile dış yazara yazdırıldı, `check-drafts` ve elle
+incelemeden sonra `eval promote` ile dev'e taşındı (C/C++/C#/Python 6'şar, Unity/Unreal 8'er,
+HTML 6, CSS 4; 12 sözdizimi hatalı, 6 injection, 9 temiz, 23 hatalı).
+
+**İnceleme düzeltmeleri.** `check-drafts` başta hepsine "uyumlu" diyordu ama ±2 satır toleransı
+yüzünden 6 örnekte 1 satırlık kaymayı göstermedi (statik kural satırıyla birebir karşılaştırılıp
+düzeltildi). İki "temiz" örnek aslında hatalıydı: `cpp-103` son turdaki gereksiz kare alma
+yüzünden sonuç sığsa da işaretli taşma yapıyordu (`base=2, exp=32`); `unreal-106`'da kurucu
+olmadığından `bCanEverTick` kapalıydı ve etiketlenen `Tick` sorunu hiç oluşmazdı. `unity-103`'e
+`Update` içinde `AddForce` (kare hızına bağlı kuvvet) bulgusu eklendi. Her yanıtta geçebilecek
+`must_not_contain` parçaları (`"}"`, `");"`, `"UPROPERTY()"`) ayırt edici parçalarla değiştirildi.
+
+**Statik koşu (96 örnek).** Big-O %97 (tek ıska eski `unreal-014`; yeni örneklerin hepsi
+birebir), P / R / F1 100 / 58 / 73 (46 örnekte yok; 31 örnekte 100 / 37 / 54), satır doğruluğu
+%100. Recall artışı yeni örneklerde statik kuralların yakaladığı türlerin oranının yüksek
+olmasından; LLM satırları bu setle henüz koşulmadı, karşılaştırma için yeniden koşulmalı.
+
+**Açık konular.** `cpp-105` (doğru eşleşmiş `new[]`/`delete[]`, `cpp-009` emsaline uyularak
+CPP-OWN-001 ile `memory_safety`), `unreal-107` (`Reserve` yok) ve `python-105` (`with` dışında
+`open`) kural kaynaklı, "öneri" sınırında bulgular; Faz 36'da hata/öneri ayrımında yeniden ele
+alınmalı.

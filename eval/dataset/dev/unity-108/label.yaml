@@ -1,0 +1,17 @@
+# Hatalı: OnTriggerStay içinde tag == karşılaştırması yapılıyor
+id: unity-108
+language: csharp
+engine: unity
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: performance, line: 5, rule_id: UNITY-PERF-002, note: "Sıcak yolda CompareTag yerine tag == string karşılaştırması yapılıyor" }
+  must_not_contain: ["other.CompareTag(\"Player\")"]
+tags: [performance, hot-path]
+split: dev
+reviewed: true
+notes: null

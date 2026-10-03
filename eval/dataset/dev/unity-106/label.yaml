@@ -1,0 +1,17 @@
+# Hatalı: OnEnable içinde eklenen olay aboneliği OnDisable içinde kaldırılmıyor
+id: unity-106
+language: csharp
+engine: unity
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: resource_leak, line: 8, rule_id: UNITY-EVT-001, note: "OnEnable'daki olay aboneliği OnDisable/OnDestroy içinde kaldırılmıyor" }
+  must_not_contain: ["OnLevelCompleted -= HandleCompleted"]
+tags: [leak, events]
+split: dev
+reviewed: true
+notes: null

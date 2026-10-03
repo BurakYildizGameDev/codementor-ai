@@ -1,0 +1,14 @@
+# Sözdizimi: kapanmamış süslü parantez
+id: c-102
+language: c
+engine: none
+question_id: null
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: ["        }\n    }"]
+tags: [syntax]
+split: dev
+reviewed: true
+notes: null

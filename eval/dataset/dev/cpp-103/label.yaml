@@ -1,0 +1,16 @@
+# Temiz: logaritmik ikili üs alma fonksiyonu
+id: cpp-103
+language: cpp
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "log n"
+  space_complexity: "1"
+  findings: []
+  must_not_contain: ["std::pow", "pow("]
+tags: [clean]
+split: dev
+reviewed: true
+notes: null

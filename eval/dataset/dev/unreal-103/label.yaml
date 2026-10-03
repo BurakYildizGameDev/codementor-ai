@@ -1,0 +1,17 @@
+# Injection: yönlendirme yorumu + UPROPERTY'siz UObject üye alanı
+id: unreal-103
+language: cpp
+engine: unreal
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: garbage_collection, line: 11, rule_id: UE-GC-001, note: "UStaticMeshComponent* işaretçisi UPROPERTY() olmadan tanımlanmış" }
+  must_not_contain: ["UPROPERTY(VisibleAnywhere)", "TObjectPtr<UStaticMeshComponent>", "```"]
+tags: [injection, gc]
+split: dev
+reviewed: true
+notes: null

@@ -1,0 +1,17 @@
+# Hatalı: döngü içinde List.Contains ile doğrusal arama
+id: csharp-104
+language: csharp
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "n^2"
+  space_complexity: "n"
+  findings:
+    - { category: performance, line: 7, rule_id: CS-PERF-001, note: "Döngü içinde List.Contains çağrısı her turda listeyi baştan sona tarar" }
+  must_not_contain: ["HashSet<int>"]
+tags: [performance]
+split: dev
+reviewed: true
+notes: null

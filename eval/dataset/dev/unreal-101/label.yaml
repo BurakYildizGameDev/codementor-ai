@@ -1,0 +1,14 @@
+# Sözdizimi: fonksiyon bildiriminin sonunda eksik noktalı virgül
+id: unreal-101
+language: cpp
+engine: unreal
+question_id: null
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: ["override;"]
+tags: [syntax]
+split: dev
+reviewed: true
+notes: null

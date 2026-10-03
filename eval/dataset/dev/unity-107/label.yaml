@@ -1,0 +1,17 @@
+# Hatalı: Update içinde her karede yeni List tahsis ediliyor
+id: unity-107
+language: csharp
+engine: unity
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: garbage_collection, line: 6, rule_id: UNITY-GC-001, note: "Update sıcak yolunda her karede heap tahsisi yapılıyor" }
+  must_not_contain: ["private List<Vector3> patrolPoints", "Clear()"]
+tags: [gc, hot-path]
+split: dev
+reviewed: true
+notes: null

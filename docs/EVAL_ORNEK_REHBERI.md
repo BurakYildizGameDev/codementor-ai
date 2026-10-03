@@ -154,7 +154,7 @@ expected:
   findings:
     - { category: performance, line: 14, rule_id: UNITY-PERF-001, note: "Update içinde her karede GetComponent" }
     - { category: resource_leak, line: 9, note: "OnEnable'da += var, OnDisable'da -= yok" }
-  must_not_contain: ["GetComponent<Rigidbody>() in Awake", "```"]
+  must_not_contain: ["private Rigidbody rb;", "```"]
 tags: [hot-path, events]
 split: dev
 reviewed: false

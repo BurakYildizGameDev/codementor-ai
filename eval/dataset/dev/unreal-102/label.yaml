@@ -1,0 +1,14 @@
+# Sözdizimi: fonksiyon parametre listesinde kapanmamış parantez
+id: unreal-102
+language: cpp
+engine: unreal
+question_id: null
+syntax_valid: false
+expected:
+  compilation_status: failed
+  findings: []
+  must_not_contain: ["Amount);"]
+tags: [syntax]
+split: dev
+reviewed: true
+notes: null

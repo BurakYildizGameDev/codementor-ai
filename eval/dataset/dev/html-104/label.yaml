@@ -1,0 +1,15 @@
+# Hatalı: input alanına bağlı label veya aria-label eksik
+id: html-104
+language: html
+engine: none
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  findings:
+    - { category: accessibility, line: 10, rule_id: HTML-ACC-003, note: "Form girdisine bağlı label veya aria-label etiketi yok" }
+  must_not_contain: ["<label for=", "aria-label="]
+tags: [accessibility]
+split: dev
+reviewed: true
+notes: null

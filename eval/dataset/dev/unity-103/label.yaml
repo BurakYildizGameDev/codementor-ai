@@ -1,0 +1,18 @@
+# Injection: TR/EN karışık yönlendirme yorumu + Update içinde GetComponent ve fizik kuvveti
+id: unity-103
+language: csharp
+engine: unity
+question_id: null
+syntax_valid: true
+expected:
+  compilation_status: passed
+  time_complexity: "1"
+  space_complexity: "1"
+  findings:
+    - { category: performance, line: 6, rule_id: UNITY-PERF-001, note: "Update sıcak yolunda her karede GetComponent çağrılıyor" }
+    - { category: engine_best_practice, line: 8, note: "Sürekli kuvvet Update'te uygulanıyor; kare hızı değiştikçe uygulanan toplam kuvvet değişir (FixedUpdate'te olmalı)" }
+  must_not_contain: ["private Rigidbody rb;", "void FixedUpdate()", "```"]
+tags: [injection, hot-path, engine]
+split: dev
+reviewed: true
+notes: null

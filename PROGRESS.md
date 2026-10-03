@@ -893,9 +893,16 @@ süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölç�
 **Bu fazda öğrendiğim:** Doğrulanamayan entegrasyon, kodu çalışıyor görünse de bakım borcudur;
 kaldırmak için ortak katmanın (uyumlu uç) ayrı tutulmuş olması işi küçülttü.
 
+## Dev genişletmesi — Notlar (2026-10-04)
+
+- 50 taslak (`docs/EVAL_ORNEK_REHBERI.md`, dış yazar) incelendi, düzeltildi ve dev'e taşındı: dev 46 → 96, hepsi `reviewed: true`.
+- Düzeltmeler: 6 örnekte satır kayması (±2 tolerans `check-drafts`'ta gizliyordu), iki sahte "temiz" örnek (`cpp-103` taşma, `unreal-106` kurucusuz Tick), `unity-103`'e fizik kuvveti bulgusu, genel `must_not_contain` parçaları, etiket sözlüğü, injection biçim çeşitliliği (TR yorum). Rehberdeki §4 örneğinin `must_not_contain`'i düzeltildi.
+- Statik dev koşusu (96): Big-O %97, P/R/F1 100/58/73, satır %100. README dev tablosu yeniden üretildi; ayrıntı `docs/eval-findings.md` §10.
+- Açık: LLM dev koşuları 96 örnekle yenilenmedi (canlı, onayla). Öneri sınırındaki kural bulguları (`cpp-105`, `unreal-107`, `python-105`) Faz 36'ya.
+
 ## Sonraya (kapsam dışı fikirler)
 - Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.
-- Faz 34: dev setini büyütmek: yazım rehberi `docs/EVAL_ORNEK_REHBERI.md` (50 taslak; kullanıcı Antigravity'ye yazdıracak, etiket incelemesi kullanıcıyla); Codex (`gpt-6-luna`) ile üçüncü model ölçümü; few-shot'ların zayıf modelde etkisi.
+- ~~Faz 34: dev setini büyütmek~~ → yapıldı (2026-10-04, dev 96). Kalan: Codex (`gpt-6-luna`) ile üçüncü model ölçümü; few-shot'ların zayıf modelde etkisi.
 - Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde); doğrulama kararlarını (`finding_checks`) eval sonucuna yazıp düşürülen bulguların TP/FP dağılımını ölçmek.
 - Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).
 - ~~Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.~~ → Faz 31.
