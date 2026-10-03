@@ -115,18 +115,36 @@ class HttpTransport:
         log.debug(event, provider=self.provider, latency_ms=elapsed, **fields)
 
 
-def _error_text(body: bytes) -> str:
-    """Hata gövdesinden kısa, maskelenmiş açıklama (`error.message` ya da ham metin)."""
+# Kalıcı kota/bakiye bitişi: 429 olsa da yeniden denemek düzeltmez (OpenAI `insufficient_quota`,
+# Gemini `quota_exceeded`); hemen bildirilir, fallback zinciri sıradakine geçer.
+_QUOTA_CODES = frozenset({"insufficient_quota", "quota_exceeded", "billing_hard_limit_reached"})
+
+
+def _error_object(body: bytes) -> tuple[str, set[str]]:
+    """Hata gövdesinden (açıklama, kodlar). OpenAI/DeepSeek `{"error": {...}}`, Gemini OpenAI
+    uyumlu uç bazen `[{"error": {...}}]` döndürür; JSON değilse ham metin."""
     try:
         data = json.loads(body)
     except (ValueError, UnicodeDecodeError, RecursionError):
-        text = body[:_ERROR_SCAN_BYTES].decode("utf-8", errors="replace")
-    else:
-        error = data.get("error") if isinstance(data, dict) else None
-        message = error.get("message") if isinstance(error, dict) else error
-        text = str(message if message is not None else data)[:_ERROR_SCAN_BYTES]
-    # önce maskele, sonra kırp: kırpılmış bir anahtar öneki maskeleyiciden kaçmasın
-    return " ".join(str(scrub(text)).split())[:_MAX_ERROR_TEXT]
+        return body[:_ERROR_SCAN_BYTES].decode("utf-8", errors="replace"), set()
+    if isinstance(data, list) and len(data) == 1:
+        data = data[0]
+    error = data.get("error") if isinstance(data, dict) else None
+    if not isinstance(error, dict):
+        return str(error if error is not None else data)[:_ERROR_SCAN_BYTES], set()
+    codes = {
+        str(value).lower()
+        for key in ("code", "type", "status")
+        if isinstance(value := error.get(key), str)
+    }
+    message = error.get("message")
+    return str(message if message is not None else error)[:_ERROR_SCAN_BYTES], codes
+
+
+def _error_text(raw: str) -> str:
+    """Kısa, maskelenmiş açıklama: önce maskele, sonra kırp (kırpılmış bir anahtar öneki
+    maskeleyiciden kaçmasın)."""
+    return " ".join(str(scrub(raw)).split())[:_MAX_ERROR_TEXT]
 
 
 def _retry_after(headers: httpx.Headers) -> float | None:
@@ -140,18 +158,31 @@ def _retry_after(headers: httpx.Headers) -> float | None:
     return seconds
 
 
+# Kullanıcıya dönük, eyleme dönük açıklamalar (Faz 28); sağlayıcının kendi metni ardından gelir
+_STATUS_HINTS = {
+    401: "API anahtarı geçersiz ya da süresi dolmuş; anahtarı yenile",
+    402: "hesap bakiyesi/kredisi tükendi; sağlayıcı panelinden bakiye yükle",
+    403: "anahtarın bu model ya da kaynağa yetkisi yok (proje/bölge izni)",
+    404: "model ya da adres bulunamadı; model adını sağlayıcının güncel listesinden denetle",
+}
+
+
 def _status_error(provider: str, status: int, body: bytes, headers: httpx.Headers) -> ProviderError:
-    detail = _error_text(body)
+    raw, codes = _error_object(body)
+    detail = _error_text(raw)
+    if status == 429 and codes & _QUOTA_CODES:
+        return ProviderRequestError(
+            provider, f"kota doldu; plan ve faturalandırmayı denetle (429): {detail}", status=429
+        )
     if status == 429:
         return ProviderRateLimitError(
             provider, f"hız sınırı (429): {detail}", retry_after=_retry_after(headers)
         )
     if status >= 500:
         return ProviderServerError(provider, f"sunucu hatası ({status}): {detail}", status=status)
-    if status in (401, 403):
-        return ProviderRequestError(
-            provider, f"kimlik doğrulama/yetki hatası ({status})", status=status
-        )
+    hint = _STATUS_HINTS.get(status)
+    if hint is not None:
+        return ProviderRequestError(provider, f"{hint} ({status}): {detail}", status=status)
     return ProviderRequestError(provider, f"istek reddedildi ({status}): {detail}", status=status)
 
 

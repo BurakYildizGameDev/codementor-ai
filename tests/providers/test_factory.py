@@ -55,7 +55,7 @@ def test_build_uses_config_retries() -> None:
 
 def test_unknown_provider() -> None:
     with pytest.raises(ProviderConfigError, match="bilinmeyen"):
-        build_provider("gemini", ProvidersSettings())
+        build_provider("mistral", ProvidersSettings())
 
 
 def test_chain_names_dedup_and_primary() -> None:

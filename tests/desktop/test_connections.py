@@ -28,6 +28,7 @@ from codementor.desktop.connections import (
     try_connection,
 )
 from codementor.models.desktop import DesktopPrefs, ProviderOverride
+from codementor.models.provider import GenerationOptions
 from codementor.providers.base import RetryPolicy
 from codementor.providers.fake import FakeProvider, FakeReply
 from codementor.validation.runner import ProcessResult
@@ -318,3 +319,41 @@ def test_codex_login_command(settings: Settings) -> None:
     command = login_command("codex", cli_settings(settings).providers)
     assert command[1:] == ["login"]
     assert Path(command[0]).is_absolute()
+
+
+@pytest.mark.anyio
+async def test_try_connection_sends_no_temperature_and_room_for_reasoning(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz 28: akıl yürüten modeller (OpenAI gpt-5+/o, DeepSeek düşünme modu) `temperature=0`'ı
+    reddeder ve küçük çıktı bütçesini düşünmeye harcar; deneme isteği ikisini de yapmamalı."""
+    seen: list[GenerationOptions] = []
+
+    class Spy(FakeProvider):
+        async def generate_structured(
+            self, messages: Any, output_model: Any, options: GenerationOptions
+        ) -> Any:
+            seen.append(options)
+            return await super().generate_structured(messages, output_model, options)
+
+    spy = Spy(script=[FakeReply(data={"ok": True})], retry=RetryPolicy(max_retries=0))
+    monkeypatch.setattr(connections, "build_provider", lambda *_a, **_k: spy)
+    await try_connection("openai", settings)
+    (options,) = seen
+    assert options.temperature is None
+    assert options.max_tokens is not None
+    assert options.max_tokens >= 1024
+
+
+@pytest.mark.anyio
+async def test_try_connection_unparsed_reply_is_failure(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Yanıt geldi ama JSON değil (ör. çıktı sınırı düşünmede bitti): 'çalışıyor' denmez."""
+    empty = FakeProvider(
+        script=[FakeReply(raw="", finish_reason="length")], retry=RetryPolicy(max_retries=0)
+    )
+    monkeypatch.setattr(connections, "build_provider", lambda *_a, **_k: empty)
+    message = await try_connection("deepseek", settings)
+    assert message.startswith("Başarısız")
+    assert "length" in message

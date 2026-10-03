@@ -769,6 +769,26 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 3. Yeni soruların içerik kalitesi bir öğretmen gözüyle gözden geçirilmeli (özellikle Unity/Unreal API ayrıntıları).
 **Bu fazda öğrendiğim:** Çözüm dosyası olmayan bir özellik (K5) kendi yol hatasını gizler; veri gelince ilk iş o verinin tüketildiği kodu yeniden doğrulamak gerekiyor. Testlerdeki Tk nesneleri, başka iş parçacığında çalışan kodun çöp toplama zamanlamasına bağlı kilitlenmeler üretebiliyor.
 
+## Faz 28 — Notlar (API sağlayıcıları, anahtarsız denetim; ADR-0020)
+- Kullanıcının API anahtarı yok: OpenAI, DeepSeek ve Gemini adaptörleri resmî belgelere karşı
+  (2026-10-03) satır satır denetlendi, bulunan kusurlar respx sözleşme testleriyle düzeltildi.
+- DeepSeek `deepseek-chat`/`deepseek-reasoner` 24.07.2026'da kapatıldı (önerilerimiz bunlardı);
+  güncel `deepseek-flash`, `deepseek-v4-pro`. `data/retired_models.yaml` + sağlık denetimi
+  (Bağlantılar, `providers check`) kaldırılan adı ağa çıkmadan bildirir. DeepSeek düşünme modu
+  varsayılan açık; `temperature` yok sayılır.
+- "Bağlantıyı sına": `temperature=0` artık gönderilmiyor (OpenAI gpt-5+/o 400 verir), çıktı
+  sınırı 64 → 2048 (düşünme token'ları), JSON çözülemeyen yanıt "Başarısız" (bitiş nedeniyle).
+- HTTP hataları: 429 `insufficient_quota`/`quota_exceeded`/`billing_hard_limit_reached`
+  yeniden denenmez; 401/402/403/404 Türkçe eylem önerisi + sağlayıcı metni (maskeli);
+  `[{"error": ...}]` liste gövdesi okunur.
+- Katı şema (`openai_strict`) `minItems` dahil zorlanmayan kısıtları açıklamaya taşır; tüm LLM
+  şemaları (analiz, markup, sokratik, tek geçiş, doğrulama, bağlantı) katı mod kurallarına
+  karşı testte.
+- Gemini: `OpenAICompatProvider` katı modu, `max_tokens` alanı, `seed` yok; Bağlantılar kartı,
+  `GEMINI_API_KEY`, sözleşme düzeneğinde 7. adaptör, canlı duman testi parametresi.
+- Açık: canlı doğrulama (anahtar gelince `providers check`, "Bağlantıyı sına",
+  `pytest tests/live -m live`); agy hesabında tur yanıtsız (kullanıcı tarafı).
+
 ## Faz 35 — Notlar (bulgu doğrulama geçişi; ADR-0019)
 - Yeni aşamalar `prompt_v` / `llm_v` / `verify_v` (Geçiş A ile B arasında). Yalnız LLM kaynaklı
   bulgular sınanır; `proven` için girdi+beklenen+gerçekleşen ya da gereksinim zorunlu (sistem
@@ -887,7 +907,7 @@ Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 **Kaldığımız yer (2026-10-02):** Faz 0-27 ve Faz 22 Aşama A `main`'de, push'lu, CI yeşil (93a9cc1).
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
-2. **Faz 28 — Sağlayıcılar:** Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
+2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
 3. ~~**Faz 29 — Derleyicisiz kullanıcı.**~~ Yapıldı (ADR-0018): indirilebilir zig (`zig clang`),
    gömülü self-contained Roslyn, "Derleyiciyi indir". Sıradaki: Faz 30.
 4. ~~**Faz 30 — Soru bankası.**~~ Yapıldı: 64 soru (dil/motor başına 8), 64 referans çözüm,

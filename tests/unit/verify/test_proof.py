@@ -4,11 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from codementor.verify.proof import apply_verdicts, redact_reasons, verify_targets
-
 from codementor.models.enums import AuditCategory, FindingSource, Severity
 from codementor.models.findings import Finding
 from codementor.models.llm_output import LLMVerifyOutput
+from codementor.verify.proof import apply_verdicts, redact_reasons, verify_targets
 
 
 def _finding(line: int, source: FindingSource = FindingSource.LLM) -> Finding:

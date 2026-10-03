@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from typing import Any, Literal
 
 import pytest
 from pydantic import BaseModel, Field, ValidationError
 
-from codementor.models.llm_output import LLMAnalysisOutput, LLMSocraticOutput
+from codementor.models.desktop import ConnectionPing
+from codementor.models.llm_output import (
+    LLMAnalysisOutput,
+    LLMMarkupAnalysisOutput,
+    LLMSinglePassOutput,
+    LLMSocraticOutput,
+    LLMVerifyOutput,
+)
 from codementor.providers import ProviderConfigError
 from codementor.providers.schema_adapter import SchemaAdapter
 
@@ -119,7 +127,18 @@ def test_unsupported_keywords_removed(variant: str) -> None:
     assert not (UNSUPPORTED & _keys(schema))
     assert "default" not in repr(schema)
     items = schema["properties"]["items"]
-    assert items.get("minItems") == 1  # 0/1 desteklenir ve korunur
+    if variant == "anthropic":
+        assert items.get("minItems") == 1  # Anthropic 0/1'i destekler, korunur
+
+
+def test_openai_strict_drops_min_items_into_description() -> None:
+    """Faz 28: OpenAI katı modu (ve Gemini uyumlu uç) `minItems`'ı garanti etmiyor; şemada
+    bırakmak 400 riski. Kısıt açıklamaya not olur, K5 Pydantic ile yine doğrular."""
+    schema = SchemaAdapter(Nested).openai_strict()
+    assert "minItems" not in _keys(schema)
+    assert "en az 1 öğe" in schema["properties"]["items"]["description"]
+    socratic = SchemaAdapter(LLMSocraticOutput).openai_strict()
+    assert "minItems" not in _keys(socratic)
 
 
 def test_property_named_like_keyword_is_kept() -> None:
@@ -175,3 +194,53 @@ def test_dropped_constraints_become_description_notes() -> None:
     assert "en fazla 4 öğe" in props["guiding_questions"]["description"]
     hint = props["next_step_hint"]["anyOf"][0]
     assert hint["description"] == "(en fazla 300 karakter)"
+
+
+# Faz 28: OpenAI katı modunda (Gemini uyumlu uç da aynı biçimi alır) belgelenen anahtar sözcükler
+_STRICT_ALLOWED = {
+    "type",
+    "properties",
+    "required",
+    "additionalProperties",
+    "items",
+    "enum",
+    "anyOf",
+    "description",
+    "const",
+}
+LLM_MODELS = [
+    LLMAnalysisOutput,
+    LLMMarkupAnalysisOutput,
+    LLMSocraticOutput,
+    LLMSinglePassOutput,
+    LLMVerifyOutput,
+    ConnectionPing,
+]
+
+
+@pytest.mark.parametrize("model", LLM_MODELS, ids=lambda m: m.__name__)
+def test_every_llm_schema_is_valid_strict_schema(model: type[BaseModel]) -> None:
+    """Sağlayıcıya giden her gerçek şema: kök nesne, yalnız izinli anahtar sözcükler, her
+    nesne kapalı ve tüm alanları zorunlu, `anyOf` yalnız `[T, null]`, şema adı geçerli."""
+    schema = SchemaAdapter(model).openai_strict()
+    assert schema["type"] == "object"
+    assert "anyOf" not in schema
+    assert _keys(schema) <= _STRICT_ALLOWED, _keys(schema) - _STRICT_ALLOWED
+    for obj in _objects(schema):
+        assert obj["additionalProperties"] is False
+        assert obj["required"] == list(obj["properties"])
+    for union in _unions(schema):
+        assert len(union) == 2
+        assert {"type": "null"} in union
+    assert re.fullmatch(r"[A-Za-z0-9_-]{1,64}", model.__name__)
+
+
+def _unions(node: Any) -> Iterator[list[Any]]:
+    if isinstance(node, dict):
+        if isinstance(node.get("anyOf"), list):
+            yield node["anyOf"]
+        for value in node.values():
+            yield from _unions(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _unions(item)

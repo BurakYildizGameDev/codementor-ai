@@ -192,6 +192,13 @@ class DeepSeekConfig(ProviderConfig):
     api_key_env: str | None = "DEEPSEEK_API_KEY"
 
 
+class GeminiConfig(ProviderConfig):
+    """Google Gemini, OpenAI uyumlu uç noktası üzerinden (ADR-0020)."""
+
+    base_url: str | None = "https://generativelanguage.googleapis.com/v1beta/openai"
+    api_key_env: str | None = "GEMINI_API_KEY"
+
+
 class AnthropicConfig(ProviderConfig):
     base_url: str | None = "https://api.anthropic.com"
     api_key_env: str | None = "ANTHROPIC_API_KEY"
@@ -235,6 +242,7 @@ class ProvidersSettings(BaseModel):
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
     openai: OpenAIConfig = Field(default_factory=OpenAIConfig)
     deepseek: DeepSeekConfig = Field(default_factory=DeepSeekConfig)
+    gemini: GeminiConfig = Field(default_factory=GeminiConfig)
     anthropic: AnthropicConfig = Field(default_factory=AnthropicConfig)
     claude_cli: ClaudeCliConfig = Field(default_factory=ClaudeCliConfig)
     agy: AgyConfig = Field(default_factory=AgyConfig)

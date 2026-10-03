@@ -11,7 +11,12 @@ anthropic:
   - claude-sonnet-5-5
   - claude-haiku-4-5-20251001
 openai: []
+# DeepSeek: deepseek-chat / deepseek-reasoner 24 Temmuz 2026'da kaldırıldı (retired_models.yaml)
 deepseek:
-  - deepseek-chat
-  - deepseek-reasoner
+  - deepseek-flash
+  - deepseek-v4-pro
+# Gemini (ADR-0020): kararlı sürümler, https://ai.google.dev/gemini-api/docs/models (2026-10-03)
+gemini:
+  - gemini-3.8-flash
+  - gemini-3.5-flash-lite
 codex: []

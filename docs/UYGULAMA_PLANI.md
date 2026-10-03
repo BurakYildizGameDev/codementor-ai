@@ -1309,7 +1309,7 @@ dokunulmaz ("yalnız dev" kuralı). İki aşama; arada kullanıcı onayı.
 Kullanıcı kararıyla (2026-10-02) önce Faz 22 Aşama B; ardından kullanıcıdan gelen üç sorun
 (sağlayıcılar, derleyici bağımlılığı, soru bankası) ve teknik borç. Her faz kendi dalında, dar kapsamlı; plan onayı → uygula.
 
-### Faz 28 — Sağlayıcılar: Gemini, Codex, OpenAI, DeepSeek (Codex yapıldı; kalanlar bekliyor)
+### Faz 28 — Sağlayıcılar: Gemini, Codex, OpenAI, DeepSeek (çevrimdışı tamamlandı; canlı doğrulama anahtar bekliyor)
 
 **Dal:** `faz/28-api-saglayicilar` · **Mimari:** §7, §13 · **ADR:** 0012, 0014 (+ yeni ADR: Gemini)
 
@@ -1324,9 +1324,9 @@ doğrulanmadı ve kullanıcıda çalışmıyor.
       `json_schema` katı mod kısıtları (Sonraya: OpenAI katı mod), keyring anahtarı süreç
       ortamına aktarılmıyor (`desktop/connections.py`), zaman aşımı, 4xx gövdesi
       kullanıcıya gösterilmiyor
-- [ ] (ertelendi) Bulunan kusurların düzeltilmesi; her biri için respx sözleşme testi (gerçek hata gövdesi
+- [x] (Faz 28 çevrimdışı, belgelere karşı) Bulunan kusurların düzeltilmesi; her biri için respx sözleşme testi (gerçek hata gövdesi
       örnekleriyle: 400 şema reddi, 401, 404 model, 429)
-- [ ] (API anahtarı yok, ertelendi) `gemini` sağlayıcısı: Google'ın OpenAI uyumlu uç noktası
+- [x] (ADR-0020, OpenAI uyumlu uç; canlı doğrulanmadı) `gemini` sağlayıcısı: Google'ın OpenAI uyumlu uç noktası
       (`openai_compat`, base_url config'den) ya da yerel `generateContent` + `responseSchema`.
       Karar ADR'de verilir. `GEMINI_API_KEY`, keyring, Bağlantılar kartı, model listesi
       config'den
@@ -1339,7 +1339,7 @@ doğrulanmadı ve kullanıcıda çalışmıyor.
       …", "kota doldu")
 - [x] (Codex) Canlı duman testleri `@pytest.mark.live` (anahtar yoksa atlanır); sağlayıcı başına tek
       analiz, golden örnek
-- [ ] Testler: `tests/providers/test_gemini.py`, sözleşme testlerine Gemini;
+- [x] Testler: `tests/providers/test_gemini.py`, sözleşme testlerine Gemini;
       `test_connections.py` (anahtar → ortam aktarımı)
 
 - [ ] **agy (Gemini) düzeltmesi — kullanıcı denemesi bekliyor.** Bulgu: `agy` 1.2.14'te `-p`
@@ -1348,6 +1348,17 @@ doğrulanmadı ve kullanıcıda çalışmıyor.
       --output-format stream-json` ile prompt stdin'den (NDJSON). `agy` en basit prompt'ta bile
       2 dk yanıtsız kalıyor (izin/oturum için konsol bekliyor olabilir); NDJSON mesaj biçimi
       `agy` çalışınca canlı doğrulanacak.
+
+**Çevrimdışı denetim sonucu (2026-10-03, resmî belgelere karşı):**
+- DeepSeek `deepseek-chat`/`deepseek-reasoner` 24.07.2026'da kapatıldı; önerilerimiz bunlardı →
+  `deepseek-flash`/`deepseek-v4-pro`, kaldırılan adlar `data/retired_models.yaml` ile uyarı.
+- "Bağlantıyı sına" `temperature=0` gönderiyordu: OpenAI akıl yürüten modelleri 400 verir;
+  `max_tokens=64` düşünme modunda boş yanıt üretir ve yine de "çalışıyor" deniyordu. Düzeltildi.
+- 429 `insufficient_quota` / `quota_exceeded` boşuna yeniden deneniyordu; 401/402/403/404 Türkçe
+  ve eyleme dönük; Gemini'nin liste sarmalı hata gövdesi okunuyor.
+- Katı şemadan `minItems` çıkarıldı (garanti edilmiyor, 400 riski); tüm LLM şemaları katı mod
+  kurallarına karşı testte.
+- Kalan (anahtar gelince): teşhis maddesi (canlı) ve `tests/live` duman testleri; agy hesap tarafı.
 
 **Commit:** `feat(faz-28): Gemini sağlayıcısı, OpenAI/DeepSeek canlı düzeltmeleri`
 

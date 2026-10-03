@@ -28,7 +28,16 @@ from codementor.providers.codex_cli import CodexCliProvider
 from codementor.providers.ollama import OllamaProvider
 from codementor.providers.openai_compat import OpenAICompatProvider
 
-PROVIDER_NAMES = ("ollama", "openai", "deepseek", "anthropic", "claude_cli", "agy", "codex")
+PROVIDER_NAMES = (
+    "ollama",
+    "openai",
+    "deepseek",
+    "gemini",
+    "anthropic",
+    "claude_cli",
+    "agy",
+    "codex",
+)
 FALLBACK_WARNING = "{failed} sağlayıcısı kullanılamadı ({reason}); {next} ile devam edildi."
 
 
@@ -62,6 +71,16 @@ def build_provider(
         deepseek = providers.deepseek
         return OpenAICompatProvider(
             name, deepseek, mode="json_object", transport=transport(name, deepseek.timeout_s)
+        )
+    if name == "gemini":  # ADR-0020: OpenAI uyumlu uç, katı şema
+        gemini = providers.gemini
+        return OpenAICompatProvider(
+            name,
+            gemini,
+            mode="strict_schema",
+            token_field="max_tokens",
+            seed=False,
+            transport=transport(name, gemini.timeout_s),
         )
     if name == "anthropic":
         anthropic = providers.anthropic

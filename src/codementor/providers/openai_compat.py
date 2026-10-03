@@ -1,10 +1,13 @@
-"""OpenAI uyumlu Chat Completions adaptörü: OpenAI (katı şema) ve DeepSeek (JSON modu).
+"""OpenAI uyumlu Chat Completions adaptörü: OpenAI ve Gemini (katı şema), DeepSeek (JSON modu).
 
 - OpenAI: `response_format: {type: "json_schema", json_schema: {name, schema, strict: true}}`.
   Katı modda tüm alanlar zorunlu, `additionalProperties: false`, opsiyonel = `anyOf[T, null]`.
   Kaynak: https://developers.openai.com/api/docs/guides/structured-outputs
 - DeepSeek: yalnızca `response_format: {type: "json_object"}`; şema ve "json" sözcüğü prompt'ta
   olmalı, doğrulama tamamen Pydantic'e düşer. Kaynak: https://api-docs.deepseek.com/guides/json_mode
+- Gemini (ADR-0020): `.../v1beta/openai` ucu OpenAI SDK'nın `parse()` biçimini (katı
+  `json_schema`) kabul eder; çıktı sınırı `max_tokens` ile verilir, `seed` gönderilmez.
+  Kaynak: https://ai.google.dev/gemini-api/docs/openai
 """
 
 from __future__ import annotations
@@ -37,10 +40,15 @@ from codementor.providers.base import RetryPolicy
 from codementor.providers.schema_adapter import SchemaAdapter
 
 Mode = Literal["strict_schema", "json_object"]
+TokenField = Literal["max_completion_tokens", "max_tokens"]
 
 
 class OpenAICompatProvider:
-    """OpenAI (`strict_schema`) ya da DeepSeek (`json_object`) modu."""
+    """OpenAI / Gemini (`strict_schema`) ya da DeepSeek (`json_object`) modu.
+
+    `token_field`: çıktı sınırının alan adı (OpenAI `max_completion_tokens`, diğerleri
+    `max_tokens`); `seed`: sağlayıcı belgeliyorsa ve yapılandırmada verildiyse gönderilir.
+    """
 
     def __init__(
         self,
@@ -48,6 +56,8 @@ class OpenAICompatProvider:
         config: ProviderConfig,
         *,
         mode: Mode,
+        token_field: TokenField | None = None,
+        seed: bool | None = None,
         retry: RetryPolicy | None = None,
         transport: HttpTransport | None = None,
     ) -> None:
@@ -55,8 +65,14 @@ class OpenAICompatProvider:
         self.config = config
         self.mode = mode
         strict = mode == "strict_schema"
+        self.token_field: TokenField = token_field or (
+            "max_completion_tokens" if strict else "max_tokens"
+        )
         self.capabilities = ProviderCapabilities(
-            native_schema=strict, strict_schema=strict, seed=strict, local=False
+            native_schema=strict,
+            strict_schema=strict,
+            seed=strict if seed is None else seed,
+            local=False,
         )
         self.transport = transport or HttpTransport(name, config.timeout_s, retry or RetryPolicy())
 
@@ -77,16 +93,14 @@ class OpenAICompatProvider:
                     "strict": True,
                 },
             }
-            if opts.max_tokens is not None:
-                payload["max_completion_tokens"] = opts.max_tokens
         else:
             # "json" sözcüğü + şema + örnek biçim prompt'ta olmalı (DeepSeek JSON modu)
             wire.append(
                 {"role": "system", "content": f"Output json only.\n{adapter.prompt_text()}"}
             )
             payload["response_format"] = {"type": "json_object"}
-            if opts.max_tokens is not None:
-                payload["max_tokens"] = opts.max_tokens
+        if opts.max_tokens is not None:
+            payload[self.token_field] = opts.max_tokens
         payload["messages"] = wire
         if opts.temperature is not None:
             payload["temperature"] = opts.temperature

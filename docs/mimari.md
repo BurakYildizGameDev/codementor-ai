@@ -470,7 +470,8 @@ class ProviderResult(BaseModel):
 |---|---|---|
 | Ollama | `format` parametresine JSON Schema | **`num_ctx` mutlaka ayarlanmalı**; varsayılan bağlam küçüktür ve uzun prompt sessizce kırpılır |
 | OpenAI | `response_format: json_schema` + `strict: true` | Katı mod şema kısıtları getirir (tüm alanlar zorunlu, `additionalProperties: false`); `SchemaAdapter` bu varyantı üretir |
-| DeepSeek | OpenAI uyumlu uç nokta, JSON modu + şema prompt içinde | Doğrulama tamamen Pydantic'e düşer |
+| DeepSeek | OpenAI uyumlu uç nokta, JSON modu + şema prompt içinde | Doğrulama tamamen Pydantic'e düşer. `deepseek-chat`/`deepseek-reasoner` adları 24.07.2026'da kaldırıldı; güncel ad `deepseek-flash` (düşünme modu varsayılan). Kaldırılan adlar `data/retired_models.yaml` ile ağa çıkmadan bildirilir (Faz 28) |
+| Gemini | OpenAI uyumlu uç (`/v1beta/openai`), `openai_strict` şeması; çıktı sınırı `max_tokens`, `seed` yok | ADR-0020; canlı doğrulanmadı |
 | Anthropic | Yerel JSON çıktısı: `output_config.format = {type: json_schema, schema}` (araç / `tool_choice` yok) | Güncel modeller zorunlu `tool_choice`'u ve `temperature`'ı reddeder; `temperature` yalnızca yapılandırmada verilirse gönderilir (ADR-0011) |
 | Claude Code CLI (`claude_cli`) | `claude -p --output-format json --json-schema`; araçlar kapalı (`--tools ""`), prompt stdin'den | API anahtarı yerine CLI oturumu; Faz 4 süreç çalıştırıcısı ile yalıtılır (ADR-0012) |
 | Antigravity CLI (`agy`) | `agy -p --output-format json --json-schema --sandbox` | Deneysel: araç kapatma bayrağı yok; paylaşılan sunucuda kapalı tutulmalı (ADR-0012) |
@@ -1352,6 +1353,11 @@ base_url = "https://api.deepseek.com"
 model = "..."
 api_key_env = "DEEPSEEK_API_KEY"
 
+[providers.gemini]             # ADR-0020
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+model = "..."
+api_key_env = "GEMINI_API_KEY"
+
 [providers.claude_cli]         # ADR-0012; `claude` oturumu kullanılır
 command = "claude"
 context_tokens = 200000        # prompt bütçesi (§5.4.5); her sağlayıcıda tanımlanabilir
@@ -1461,6 +1467,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0016 | Yapılandırma yollarının çözümü ve paket verisi | Çalışma dizininden bağımsız çalışma; wheel `data/` ve `prompts/`'u içerir ([docs/adr/0016](adr/0016-yol-cozumu.md)) |
 | ADR-0017 | OpenAI Codex CLI sağlayıcı olarak | ChatGPT aboneliğiyle API anahtarsız; salt okunur sandbox, kullanıcı ayarları yok sayılır, açık onay ([docs/adr/0017](adr/0017-codex-cli-saglayici.md)) |
 | ADR-0019 | LLM bulguları için doğrulama geçişi (varsayılan kapalı) | Kanıtlanamayan bulgu düşer; precision prompt'tan bağımsız artar, bedeli ek çağrı ([docs/adr/0019](adr/0019-bulgu-dogrulama-gecisi.md)) |
+| ADR-0020 | Gemini, OpenAI uyumlu uç nokta üzerinden | Belgelenmiş katı şema biçimi bizimkiyle aynı; ayrı adaptör yok ([docs/adr/0020](adr/0020-gemini-openai-uyumlu-uc.md)) |
 
 ---
 

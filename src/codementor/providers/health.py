@@ -2,23 +2,29 @@
 
 Ollama gerçekten sorgulanır (`GET /api/tags`): sunucu erişilebilir mi, yapılandırılan model
 çekilmiş mi. Bulut sağlayıcılar için ağa çıkılmaz: model tanımlı mı ve anahtar ortam değişkeni
-dolu mu denetlenir; anahtarın değeri asla yazdırılmaz.
+dolu mu denetlenir; anahtarın değeri asla yazdırılmaz. Sağlayıcının kapattığı model adları
+(`data/retired_models.yaml`) anahtardan önce yakalanır (Faz 28).
 """
 
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import yaml
+
 from codementor.config import ProvidersSettings
 from codementor.models.provider import ProviderStatus
+from codementor.paths import resource_path
 from codementor.providers._http import HttpTransport
 from codementor.providers.base import ProviderError, RetryPolicy
 from codementor.providers.cli_agent import resolve_executable
 from codementor.providers.ollama import DEFAULT_NUM_CTX, OllamaProvider
 
 CLI_AGENTS = ("claude_cli", "agy", "codex")
+RETIRED_MODELS_FILE = resource_path("data/retired_models.yaml")
 HEALTH_TIMEOUT_S = 5  # erişilemeyen adres 2 dakika askıda tutmasın
 
 
@@ -61,6 +67,26 @@ def origin(url: str | None) -> str:
     return f"{parts.scheme}://{parts.hostname}{port}"
 
 
+def load_retired_models(path: Path | None = None) -> dict[str, dict[str, str]]:
+    """Kaldırılmış model adları (sağlayıcı → {ad: açıklama}); dosya yoksa ya da bozuksa boş."""
+    return dict(_load_retired(path or RETIRED_MODELS_FILE))
+
+
+@lru_cache(maxsize=4)
+def _load_retired(path: Path) -> dict[str, dict[str, str]]:
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {
+        str(provider): {str(k): str(v) for k, v in models.items()}
+        for provider, models in data.items()
+        if isinstance(models, dict)
+    }
+
+
 def _check_cloud(name: str, providers: ProvidersSettings) -> ProviderStatus:
     cfg = getattr(providers, name)
     model = cfg.model.strip()
@@ -68,6 +94,9 @@ def _check_cloud(name: str, providers: ProvidersSettings) -> ProviderStatus:
         return ProviderStatus(
             name=name, model="—", ready=False, detail=f"model tanımlı değil ([providers.{name}])"
         )
+    retired = load_retired_models().get(name, {}).get(model)
+    if retired is not None:
+        return ProviderStatus(name=name, model=model, ready=False, detail=retired)
     env = cfg.api_key_env or "—"
     if not cfg.api_key_env or not os.environ.get(cfg.api_key_env, "").strip():
         return ProviderStatus(

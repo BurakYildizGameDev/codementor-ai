@@ -38,6 +38,9 @@ from codementor.validation.runner import ProcessLimits, ProcessResult, run_proce
 KEYRING_SERVICE = "CodeMentor AI"
 MODELS_FILE = resource_path("data/desktop_models.yaml")
 PROBE_TIMEOUT_S = 20
+# "Bağlantıyı sına" çıktı bütçesi: akıl yürüten modeller (OpenAI gpt-5+/o serisi, DeepSeek
+# düşünme modu) düşünme token'larını da buradan harcar; 64 gibi küçük bir sınır boş yanıt verir
+TRY_MAX_TOKENS = 2048
 NO_MODEL_DETAIL = "Önce bir model seç (listeden ya da yazarak)"
 _PROBE_LIMITS = ProcessLimits(
     timeout_s=PROBE_TIMEOUT_S, memory_mb=2048, limit_address_space=False, max_processes=64
@@ -62,6 +65,7 @@ PROVIDERS: tuple[ProviderInfo, ...] = (
     ProviderInfo("anthropic", "Anthropic API", "api", "Claude, API anahtarıyla"),
     ProviderInfo("openai", "OpenAI API", "api", "GPT modelleri, API anahtarıyla"),
     ProviderInfo("deepseek", "DeepSeek API", "api", "DeepSeek modelleri, API anahtarıyla"),
+    ProviderInfo("gemini", "Gemini API", "api", "Google Gemini, API anahtarıyla (ADR-0020)"),
 )
 INFO: dict[str, ProviderInfo] = {p.name: p for p in PROVIDERS}
 API_PROVIDERS = tuple(p.name for p in PROVIDERS if p.kind == "api")
@@ -314,7 +318,11 @@ def _probe_cli(
 
 
 async def try_connection(name: str, settings: Settings) -> str:
-    """Küçük gerçek bir istek gönderir; başarı ya da Türkçe hata metni döner (birkaç token)."""
+    """Küçük gerçek bir istek gönderir; başarı ya da Türkçe hata metni döner.
+
+    `temperature` gönderilmez: akıl yürüten modeller (OpenAI gpt-5+/o serisi) 0'ı 400 ile
+    reddeder. Yanıt geldi ama beklenen JSON değilse bağlantı "çalışıyor" sayılmaz.
+    """
     provider = build_provider(name, settings.providers, retry=RetryPolicy(max_retries=0))
     messages = [
         ChatMessage(role="system", content="Yalnızca istenen JSON nesnesini döndür."),
@@ -322,10 +330,16 @@ async def try_connection(name: str, settings: Settings) -> str:
     ]
     try:
         result = await provider.generate_structured(
-            messages, ConnectionPing, GenerationOptions(max_tokens=64, temperature=0)
+            messages, ConnectionPing, GenerationOptions(max_tokens=TRY_MAX_TOKENS)
         )
     except ProviderError as exc:
         return f"Başarısız: {str(exc).removeprefix(f'{name}: ')}"
+    if result.parsed is None:
+        reason = result.finish_reason or "bilinmiyor"
+        return (
+            f"Başarısız: {result.model} yanıt verdi ama beklenen JSON değildi "
+            f"(bitiş nedeni: {reason}); model yapılandırılmış çıktıyı desteklemiyor olabilir."
+        )
     return f"Bağlantı çalışıyor ({result.model}, {result.latency_ms} ms)"
 
 

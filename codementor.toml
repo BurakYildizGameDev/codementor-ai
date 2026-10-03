@@ -77,8 +77,13 @@ api_key_env = "OPENAI_API_KEY"
 [providers.deepseek]
 base_url = "https://api.deepseek.com"
 timeout_s = 60
-model = ""
+model = ""                   # ör. deepseek-flash (deepseek-chat/-reasoner kaldırıldı)
 api_key_env = "DEEPSEEK_API_KEY"
+
+[providers.gemini]             # Google Gemini, OpenAI uyumlu uç (ADR-0020)
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+model = ""                   # ör. gemini-3.8-flash
+api_key_env = "GEMINI_API_KEY"
 
 [providers.claude_cli]         # Claude Code CLI; `claude` ile oturum açılmış olmalı (ADR-0012)
 command = "claude"

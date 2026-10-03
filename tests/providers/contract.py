@@ -14,7 +14,13 @@ from typing import Any, Protocol
 import httpx
 import respx
 
-from codementor.config import AnthropicConfig, DeepSeekConfig, OllamaConfig, OpenAIConfig
+from codementor.config import (
+    AnthropicConfig,
+    DeepSeekConfig,
+    GeminiConfig,
+    OllamaConfig,
+    OpenAIConfig,
+)
 from codementor.providers import FakeProvider, FakeReply, RetryPolicy
 from codementor.providers._http import HttpTransport
 from codementor.providers.anthropic import AnthropicProvider
@@ -26,6 +32,7 @@ API_KEYS = {
     "OPENAI_API_KEY": "sk-test-openai-SECRET-0123456789",
     "DEEPSEEK_API_KEY": "sk-test-deepseek-SECRET-0123456789",
     "ANTHROPIC_API_KEY": "sk-ant-test-SECRET-0123456789",
+    "GEMINI_API_KEY": "gm-test-gemini-SECRET-0123456789",
 }
 
 
@@ -201,6 +208,22 @@ def http_harness(name: str, router: respx.MockRouter, sleep: SleepRecorder) -> H
             router,
             sleep,
         )
+    if name == "gemini":
+        return HttpHarness(
+            name,
+            "https://gemini.test/v1beta/openai/chat/completions",
+            openai_body,
+            lambda model, retry: OpenAICompatProvider(
+                name,
+                GeminiConfig(base_url="https://gemini.test/v1beta/openai", model=model),
+                mode="strict_schema",
+                token_field="max_tokens",
+                seed=False,
+                transport=transport(name, 60, retry),
+            ),
+            router,
+            sleep,
+        )
     assert name == "anthropic"
     return HttpHarness(
         name,
@@ -260,7 +283,7 @@ class FakeHarness:
         return self.provider.model
 
 
-HARNESS_NAMES = ["fake", "ollama", "openai", "deepseek", "anthropic", "claude_cli"]
+HARNESS_NAMES = ["fake", "ollama", "openai", "deepseek", "gemini", "anthropic", "claude_cli"]
 
 
 def _seconds(value: str | None) -> float | None:

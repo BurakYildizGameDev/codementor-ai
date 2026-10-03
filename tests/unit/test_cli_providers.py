@@ -95,7 +95,7 @@ def test_cloud_ready_without_network(router: respx.MockRouter) -> None:
 
 @pytest.mark.usefixtures("config")
 def test_unknown_provider() -> None:
-    result = _invoke("--provider", "gemini")
+    result = _invoke("--provider", "mistral")
     assert result.exit_code == 2
     assert "bilinmeyen sağlayıcı" in result.output
 

@@ -1,4 +1,5 @@
-"""Ortak sözleşme: beş adaptör (Fake, Ollama, OpenAI, DeepSeek, Anthropic) aynı testleri geçer."""
+"""Ortak sözleşme: tüm adaptörler (Fake, Ollama, OpenAI, DeepSeek, Gemini, Anthropic, CLI)
+aynı testleri geçer."""
 
 from __future__ import annotations
 

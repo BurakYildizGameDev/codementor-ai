@@ -38,6 +38,8 @@ _UNSUPPORTED = frozenset(
     }
 )
 _DOCUMENTATION_ONLY = frozenset({"title", "default", "examples"})
+# OpenAI katı modu ve Gemini uyumlu uç `minItems`'ı garanti etmiyor (Faz 28): tamamen not olur
+_STRICT_UNSUPPORTED = _UNSUPPORTED | {"minItems"}
 _CONSTRAINT_NOTES = {
     "minLength": "en az {} karakter",
     "maxLength": "en fazla {} karakter",
@@ -63,6 +65,7 @@ class SchemaAdapter:
         definitions = raw.pop("$defs", {})
         inlined = _inline(raw, definitions, ())
         self._base = _clean(inlined, depth=0, drop=_UNSUPPORTED)
+        self._strict_base = _clean(inlined, depth=0, drop=_STRICT_UNSUPPORTED)
         self._annotated = _clean(inlined, depth=0, drop=_DOCUMENTATION_ONLY)
 
     def base(self) -> Schema:
@@ -82,8 +85,9 @@ class SchemaAdapter:
         return self.base()
 
     def openai_strict(self) -> Schema:
-        """OpenAI katı mod: her nesnede tüm alanlar `required`; opsiyonel alan `anyOf[T, null]`."""
-        schema: Schema = _strict(self.base())
+        """OpenAI katı mod (Gemini uyumlu uç da): her nesnede tüm alanlar `required`; opsiyonel
+        alan `anyOf[T, null]`; `minItems` dahil zorlanmayan kısıtlar açıklamaya not olur."""
+        schema: Schema = _strict(copy.deepcopy(self._strict_base))
         return schema
 
     def prompt_text(self) -> str:
@@ -127,7 +131,9 @@ def _clean(node: Any, depth: int, drop: frozenset[str]) -> Any:
     cleaned: Schema = {}
     notes: list[str] = []
     for key, value in node.items():
-        if key in drop or (key == "minItems" and value not in (0, 1) and drop is _UNSUPPORTED):
+        if key in drop or (
+            key == "minItems" and value not in (0, 1) and drop is not _DOCUMENTATION_ONLY
+        ):
             # zorlanamayan kısıt kaybolmasın: modele açıklamada söylenir (K5 yine doğrular)
             if key in _CONSTRAINT_NOTES:
                 notes.append(_CONSTRAINT_NOTES[key].format(value))
