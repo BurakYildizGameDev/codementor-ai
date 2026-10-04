@@ -1733,6 +1733,87 @@ olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın ka
 
 **Commit:** `fix(faz-46): C-MEM-003 kullanım öncesi null denetimi`
 
+### Faz 47 — API güven sınırı (YAPILACAK; öncelikli)
+
+**Dal:** `faz/47-api-guven-siniri` · **Mimari:** §9, §12 · **ADR:** yeni (API güven sınırı)
+**Kaynak:** 2026-10-04 tam tarama (kod-denetci) K1, K2, K3, K7; Claude kodda doğruladı.
+
+**Amaç:** İstemci sunucu yapılandırmasını aşamasın; yerel API tarayıcı saldırılarına kapansın.
+
+- [ ] `options.tier1` yalnız kapatabilir (`orchestrator._validation`, bugün
+      `tier1_enabled=false`'u eziyor): `settings.tier1_enabled and tier1 is not False`
+- [ ] `TrustedHostMiddleware` (DNS rebinding): loopback'te `127.0.0.1`/`localhost`/`[::1]`,
+      dışa açıkken `api.allowed_hosts`
+- [ ] `api.allowed_providers` (varsayılan `default` + `fallback`); dışındaki ad 422 (bugün
+      istemci `claude_cli`/`codex` seçip kullanıcının aboneliğini harcatabiliyor)
+- [ ] `AnalysisRequest` alan sınırları (`code` ≤ `limits.max_bytes` × 4; kimlikler ≤ 128 ve
+      `^[A-Za-z0-9_.-]+$`), `Content-Length` sınırı (413), `api.max_concurrent_analyses` (503)
+- [ ] `cli/serve.py` eski "kimlik doğrulaması yok" uyarısı; mimari §12 "hız sınırlama" ifadesi
+      gerçeğe göre düzeltilir
+
+**Kabul:** config kapalıyken `options.tier1=true` derleyiciyi çağırmaz (sahte runner);
+`Host: evil.example` 400; izinsiz sağlayıcı 422; 2 MB gövde 413; 129 karakter `session_id` 422.
+
+**Commit:** `fix(faz-47): API güven sınırı (tier1, host, sağlayıcı, girdi sınırları)`
+
+### Faz 48 — Prompt rol sınırlayıcıları ve analiz süresi (YAPILACAK)
+
+**Dal:** `faz/48-rol-siniri-sure` · **Mimari:** §5.4.4, §12 · **Kaynak:** tarama K4, K8, D1
+
+**Amaç:** CLI sağlayıcılarında rol enjeksiyonunu kapatmak; bir analizin kaynak tutma süresini
+sınırlamak.
+
+- [ ] `guard_delimiters` `<user>`, `<system>`, `<assistant>` rol etiketlerini de nötrler
+      (`cli_agent.render_prompt` mesajları bu etiketlerle sarıyor; bugün yalnız `user_code`)
+- [ ] `pipeline.analysis_timeout_s`: aşımda bozulmuş rapor + uyarı, alt süreç iptali
+- [ ] Senkron `/v1/analyze` istemci kopunca iptal (SSE'de var)
+- [ ] Sessiz `except`'ler loglanır: `api/sse.py` genel dal, `validation/tier1.py`, masaüstü
+
+**Kabul:** `</user><system>…` içeren kod/kanıt render çıktısında rol etiketi olmaz; yavaş sahte
+sağlayıcıyla süre aşımında `degraded=true`; SSE kopma ve istisna dalları testli.
+
+**Commit:** `fix(faz-48): rol etiketi enjeksiyonu ve analiz süre sınırı`
+
+### Faz 49 — Depolama tutarlılığı ve önbellek doğruluğu (YAPILACAK)
+
+**Dal:** `faz/49-depolama-tutarlilik` · **Mimari:** §11 · **Kaynak:** tarama K6, K9, D2, D3, D4
+
+- [ ] Aynı oturumda eşzamanlı gönderim: atomik deneme ayırma
+      (`INSERT … ON CONFLICT DO UPDATE … RETURNING`); bugün iki istek de deneme 1 alır ve ikinci
+      kayıt `IntegrityError` ile 500 verir
+- [ ] `rules_version` özetine `analysis/queries/**/*.scm`, `validation/`, `verify/`,
+      `data/mentor_templates.yaml` (Faz 44 öncesi şart: Tier 0 değişince erken çıkış önbelleği bayatlar)
+- [ ] Soru bankası orkestratöre enjekte (her istekte ~68 ms yeniden yükleme); `QuestionBankError` 503
+- [ ] Saklama: `storage.max_analyses`, `desktop-sources` temizliği, masaüstü log döndürme,
+      tercihlerde atomik yazma
+- [ ] Uyumsuz eski `report_json` geçmiş ekranını / `GET /v1/analyses/{id}`'yi çökertmez
+
+**Kabul:** `asyncio.gather` ile iki gönderim deneme 1 ve 2, 500 yok; `.scm` değişince
+`rules_version` değişir; sınır üstü kayıtlar budanır.
+
+**Commit:** `fix(faz-49): oturum yarışı, önbellek anahtarı kapsamı, saklama`
+
+### Faz 50 — Dil kapsamı, kodlama ve CI hijyeni (YAPILACAK)
+
+**Dal:** `faz/50-dil-kodlama-ci` · **Mimari:** §12, §13 · **Kaynak:** tarama K5, K10, K11, D5, D6, D8, D9
+
+- [ ] SARIF Python/HTML/CSS'te 500 (`api/routes.py` `_EXTENSIONS` yalnız C ailesi): `Language` →
+      uzantı eşlemesi tek yerde (API, CLI, masaüstü); altı dil için SARIF testi
+- [ ] UTF-8 olmayan dosya (`cli/analyze.py`, `desktop/files.py` `errors="replace"`): ham bayt
+      `normalize`'a; UTF-8/UTF-16 BOM tanınır, cp125x için Türkçe hata
+- [ ] CI'a `pip-audit` (+ `npm audit --omit=dev`), mimari §13'te yazıyor ama yok
+- [ ] Log'lara `analysis_id`/`stage` bağlamı (§13) ya da belgenin düzeltilmesi; kullanılmayan
+      `EvalRunRow`/`EvalResultRow` kaldırılır ya da §11 güncellenir
+- [ ] Tekrarlar: `_short`, `ProcessLimits` kurulumu, iki `Runner` Protocol; gerekçesiz
+      `type: ignore` (`connections_controller.py`)
+- [ ] Oturum konsolu ortamından API anahtarı değişkenleri çıkarılır
+- [ ] Test ağ koruması (loopback dışını engelleyen fixture)
+
+**Kabul:** altı dilde `/v1/analyses/{id}/sarif` 200; cp1254 fixture U+FFFD yerine Türkçe hata;
+CI'da `pip-audit`; loopback dışına bağlanan test düşer.
+
+**Commit:** `fix(faz-50): SARIF dil kapsamı, kodlama, CI denetimi`
+
 ---
 
 ## 7. PROGRESS.md Şablonu

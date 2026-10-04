@@ -1113,6 +1113,11 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 17. **Faz 44 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.
 18. **Faz 45 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.
 19. **Faz 46 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.
+20. **Faz 47 — API güven sınırı (öncelikli):** istek Tier 1'i açamaz, Host doğrulaması, izinli
+   sağlayıcılar, girdi/gövde sınırları (2026-10-04 tam tarama).
+21. **Faz 48 — Rol sınırlayıcıları ve analiz süresi:** `<system>`/`<user>` enjeksiyonu, toplam süre sınırı.
+22. **Faz 49 — Depolama ve önbellek:** oturum yarışı (500), `rules_version` kapsamı (Faz 44 öncesi), saklama.
+23. **Faz 50 — Dil kapsamı, kodlama, CI:** SARIF Python/HTML/CSS 500, UTF-8 dışı dosya, `pip-audit`.
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
