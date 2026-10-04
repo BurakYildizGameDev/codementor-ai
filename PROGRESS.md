@@ -941,15 +941,21 @@ koşulur (`uv run codementor eval run --split dev --provider claude_cli --part k
 - [ ] Parça 3/4 → Faz 38 (Codex; `docs/EVAL_PARCA_REHBERI.md`)
 - [ ] Parça 4/4 → Faz 38
 - [ ] Dört parçayı birleştirip 96 örneklik tabloyu üretmek (README, eval-findings §11) → Faz 38
-**Açık sorular:** Canlı dev koşusu (precision artışı ve recall'un düşmediği) parça parça yapılıyor. Kural bazında öneri (`cpp-105` CPP-OWN-001, `unreal-107`, `python-105`).
+**Alternatif ölçüm (2026-10-04, kullanıcı talimatıyla):** Claude yerine Codex `gpt-6-luna` ile
+aynı prompt/doğrulama ayarında dört parça da koşuldu (sonuçlar rehber ve eval-findings §11'de).
+P/R/F1: 71/65/68, 84/80/82, 79/79/79, 81/85/83; birleşik 96: **79/77/78**, bir öneri.
+Hata/uyarı yok. 35B Opus ile ortak 46 örnekte 75/73/74 (Opus tabanı 79/89/84); model farklı
+olduğundan precision artışı ve "kaçırma oranı düşmez" hedefi hakkında nedensel sonuç çıkarılamaz.
+Öneri `unity-104`'te etiketli hatadan ayrı; otomatik yakın-satır eşleşmesi elle incelendi.
+**Açık sorular:** Claude Opus canlı dev ölçümünün parçaları 3/4 ve 4/4; Codex alternatifi tek başına Faz 36'nın precision/recall etkisini kanıtlamaz. Kural bazında öneri (`cpp-105` CPP-OWN-001, `unreal-107`, `python-105`).
 **Bu fazda öğrendiğim:** Şemaya giren her metin dar bağlamda bütçe demektir; geliştirici
 docstring'leri LLM şemasına sızıyordu. Öneriyi ayrı sınıf yapmak, "bulgu yazma" yasağından daha
 az bilgi kaybettiren bir precision aracıdır.
 
 ## Sonraya (kapsam dışı fikirler)
-- Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001); canlı dev koşusu ile precision/recall ve `suggestions_total` ölçümü.
+- Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001); Claude Opus canlı dev koşusuyla precision/recall ve `suggestions_total` ölçümü.
 - Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.
-- ~~Faz 34: dev setini büyütmek~~ → yapıldı (2026-10-04, dev 96). Kalan: Codex (`gpt-6-luna`) ile üçüncü model ölçümü; few-shot'ların zayıf modelde etkisi.
+- ~~Faz 34: dev setini büyütmek~~ → yapıldı (2026-10-04, dev 96). Kalan: few-shot'ların zayıf modelde etkisi.
 - Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde); doğrulama kararlarını (`finding_checks`) eval sonucuna yazıp düşürülen bulguların TP/FP dağılımını ölçmek.
 - Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).
 - ~~Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.~~ → Faz 31.
@@ -969,14 +975,14 @@ az bilgi kaybettiren bir precision aracıdır.
 - ~~Faz 23: `reference_solution_path` (`private/solutions/`) hâlâ çalışma dizinine göre; soru dosyasının ya da kaynak kökünün dizinine göre çözülmeli (sızıntı testi buna göre güncellenmeli).~~ → Faz 31.
 - ~~Faz 23: mimari §20 ADR tablosunda ADR-0013/0014/0015 satırları eksik.~~ → Faz 31.
 - ~~Faz 23: CI exe işi Roslyn denetleyicisini derlemiyor~~ → Faz 27.
-- Faz 21 denetimi O3: kurallar sıcak yolu fonksiyon **adıyla** eşliyor (`RuleContext.hot_functions`, `CallFact.function`); aynı dosyada tabansız sınıfta ve MonoBehaviour'da aynı adlı `Update` varsa UNITY-PERF-001/UE-PERF-001 düz sınıfta da bulgu verir (UNITY-GC-001 `in_hot_path` kullandığı için doğru). Olgulara fonksiyon kimliği (satır) eklenmeli.
+- ~~Faz 21 denetimi O3: kurallar sıcak yolu fonksiyon adıyla eşliyordu.~~ → Faz 32'de fonksiyon kimliğiyle eşleştirme yapıldı.
 - ~~Faz 21: `rules_version` yalnız `rules/*.py` hash'i; `analysis/` ve `data/call_costs.yaml` değişiklikleri önbellek anahtarına yansımıyor (bayat önbellek riski).~~ → Faz 31.
 - ~~Faz 21: `log.exception` izi sınırsız ve CLI'da WARNING düzeyinde stderr'e basılır; kural istisna mesajı kullanıcı kodu parçası içerebilir (§12) — iz DEBUG'a ya da kısaltılmış mesaja alınabilir. `captured_logs` teardown'u önceki yapılandırmayı değil varsayılanı geri yükler.~~ → Faz 31.
 - Faz 21: `file_value_types` ad çakışması (`struct Hit` + başka ad alanında `class Hit`) nadir yanlış negatif; yalnız arayüzden türeyen `class A : IFoo` sıcak sayılır (muhafazakâr).
-- Faz 21'den kalan (yol haritası Faz 21 geniş kapsamı): C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray<AActor*>`/`TMap` alanları ve `FPlain` önerisi, C-MEM-003 akış duyarlılığı, döngüde `std::string +`/C# `string +=` karesel ipucu.
+- Faz 21'den kalan işler Faz 32'de kısmen kapandı: C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray` alanları ve CS-PERF-001 `IList` çözüldü. Açık: C-MEM-003 akış duyarlılığı (Faz 46), döngüde `std::string +`/C# `string +=` karesel ipucu (Sonraya).
 - ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
 - ~~Faz 18: Tier 0 `</div>` kör noktası~~ → Faz 20'de HTML-STD-003 ile bulgu olarak.
-- Faz 20: HTML-STD-003 kaçırmaları: dosya sonunda bitmemiş `<div`, `<p><span>a<div>` (örtük kapanış yalnız yığın tepesine bakıyor), DOCTYPE'sız (quirks) belgede `table` `p`'yi kapatmaz; aynı satırda kapanmayan + eşsiz bulgu varsa motor ilkini tutar (eşsiz sorusu görünmez); katalogda yalnız ana açıklama var.
+- Faz 20: HTML-STD-003 kaçırmaları (Faz 45): dosya sonunda bitmemiş `<div`, `<p><span>a<div>` (örtük kapanış yalnız yığın tepesine bakıyor), DOCTYPE'sız belgede `table`/`p` kapanış davranışı, aynı satırdaki farklı ihlallerin birleştirilmesi ve katalog açıklaması.
 - ~~Kural motoru: bulgu sayısına üst sınır yok (600 satırlık kötü niyetli girdi 600 bulgu üretip prompt'a gidebilir).~~ → Faz 31.
 - ~~Faz 18: `codementor eval check-drafts` Windows konsolunda (cp1254) çöküyor~~ → Faz 27 (konsol UTF-8).
 - Faz 18: eski veri seti etiketlerine Faz 17 bulguları (`c-008` 4. satır `memory_safety` C-MEM-003, `csharp-009` 11. satır `garbage_collection` CS-ALLOC-002) eklenmeli mi? (test etiketleri de etkilenebilir; kullanıcı kararı)
@@ -992,9 +998,9 @@ az bilgi kaybettiren bir precision aracıdır.
 - ~~Faz 19: Tier 1 derleyici/çalıştırma sürecine iptal olayı iletilmiyor~~ → Faz 24 (durdurulan analizde Tier 1 kendi zaman aşımına kadar sürebilir; arayüz bu sırada yeni analizi bildirimle reddeder).
 - ~~Faz 14: editörde arama (Ctrl+F), son dosyalar menüsü, sürükle-bırak ile dosya açma (tkinterdnd2).~~ → Faz 24
 - Faz 14: onefile açılışı arşiv çözme nedeniyle birkaç saniye; hızlı açılış için onedir zip önerilir.
-- Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı (`progress_callback` ile iptal). Kötü niyetli C++ girdisi (`"a<" * 20000`) Tier 0'da ~240 ms sürüyor; gerçekçi girdide 1–4 ms.
-- Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özet mesajla değiştiriliyor; son satırdaki ayrı bir gerçek hata bu durumda ayrıca raporlanmayabilir (denetim D2, etkisi sınırlı).
-- `mask_non_code` C++ ham metinlerini (`R"(...)"`) tanımıyor; içlerinde `"` geçerse maskeleme erken biter (öğrenci kodunda nadir).
+- ~~Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı; 40 KB girdide yüzlerce ms ölçülmüştü.~~ → Faz 44'e taşındı: güvenli sınır/iptal, sınır testi.
+- Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özete dönüşüyor; bağımsız gerçek hata ayrıca raporlanmayabilir (D2; Faz 44).
+- `mask_non_code` C++ raw string (`R"(...)"`) içindeki tırnak/yorum/ayraçları doğru maskelemiyor (Faz 44).
 - ~~`data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.~~ → Faz 23
 - ~~Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.~~ → Faz 23
 - ~~`.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.~~ → Faz 23
@@ -1046,7 +1052,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-02):** Faz 0-27 ve Faz 22 Aşama A `main`'de, push'lu, CI yeşil (93a9cc1).
+**Kaldığımız yer (2026-10-04):** Faz 0-37 tamamlandı; Faz 38 Codex alternatifi belgelendi, Claude karşılaştırması açık. Sonraki planlı işler Faz 39–46; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1081,6 +1087,9 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 15. **Faz 42 — Ölçüm altyapısı ve belge tazeleme:** `pytest-cov` + CI kapsama raporu, README eval
    girişi, statik koşuların güncel etiketle yenilenmesi, `faz/36` dalının main'e birleştirilmesi.
 16. **Faz 43 — Büyük dosyaların bölünmesi:** 400 satırı aşan 4 modül (davranış değişmeden).
+17. **Faz 44 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.
+18. **Faz 45 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.
+19. **Faz 46 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,

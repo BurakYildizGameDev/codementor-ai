@@ -1566,17 +1566,25 @@ Kullanıcı kararı: canlı doğrulanamayan OpenAI ve DeepSeek kaldırılır; Ge
 
 **Commit:** `feat(faz-34): ikinci model ve ablasyon ölçümleri`
 
-### Faz 38 — Faz 36 canlı dev ölçümünün tamamlanması (YAPILACAK; Codex'e verilecek)
+### Faz 38 — Faz 36 canlı dev ölçümünün tamamlanması (Codex alternatifi yapıldı; Claude karşılaştırması açık)
 
 **Dal:** `faz/36-hata-oneri` · **Mimari:** §14 · **Rehber:** `docs/EVAL_PARCA_REHBERI.md`
 
-**Amaç:** Dev 96 örneğin kalan iki parçasını aynı prompt ve modelle koşup Faz 36'nın etkisini
-(precision, "kaçırma oranı düşmez", önerilerin gerçek hata yutup yutmadığı) tüm dev üzerinde ölçmek.
+**Amaç:** Dev 96 örneği aynı prompt ve modelle koşup Faz 36'nın etkisini (precision, "kaçırma
+oranı düşmez", önerilerin gerçek hata yutup yutmadığı) tüm dev üzerinde ölçmek. Claude CLI
+erişilemedi; kullanıcı talimatıyla Codex `gpt-6-luna` dört parçanın tamamında kullanıldı. Sonuçlar
+ayrı model ölçümüdür ve Claude parçalarıyla birleştirilmez.
 
-- [ ] `eval run --part 3/4` ve `--part 4/4` (Opus, `claude_cli`, two_pass, doğrulama açık)
-- [ ] Dört parçanın güncel etiketle birleşik P/R/F1'i, öneri toplamı, Faz 35B ile ortak örneklerde kıyas
-- [ ] README dev tablosu, `docs/eval-findings.md` §11, PROGRESS; rehberin "Bulunan sorunlar" tablosu
-- [ ] Ölçüm sırasında prompt/kural/doğrulama koduna dokunulmaz (rehber §2)
+- [x] Aynı `gpt-6-luna` ölçümünde dev parçaları 1/4–4/4, two_pass, doğrulama açık
+- [x] Güncel etiketle birleşik P/R/F1: 79/77/78; 1 öneri. Faz 35B ile ortak 46 örnekte
+      75/73/74 (Faz 35B: 79/89/84); sağlayıcı/model farklı olduğundan nedensel kıyas değil
+- [x] README dev tablosu, `docs/eval-findings.md` §11, PROGRESS ve rehberin "Bulunan sorunlar" tablosu
+- [x] Ölçüm sırasında prompt/kural/doğrulama koduna dokunulmadı (rehber §2)
+- [ ] Özgün Claude Opus 5.5 karşılaştırması (parça 3/4 ve 4/4); CLI erişilebilir olduğunda ayrı ölçüm
+
+Karar (Codex alternatifi): 96 örnekte 19 FP ve 21 FN; tek öneri elle incelendiğinde gerçek bir
+etiketli hatayı yutmuyor. Bu ölçüm Faz 36'nın precision artışı veya recall hedefi için kanıt
+oluşturmaz; karşılaştırma modeli farklıdır.
 
 **Commit:** `eval(faz-36): canlı dev parça 3/4 ve 4/4, 96 örneklik sonuç`
 
@@ -1587,7 +1595,7 @@ Kullanıcı kararı: canlı doğrulanamayan OpenAI ve DeepSeek kaldırılır; Ge
 **Amaç:** Faz 35 doğrulama geçişi "girdi / beklenen / gerçekleşen" kanıtı istiyor. Performans
 sorunlarında çıktı doğrudur, yanlış olan büyüme hızıdır. Bu yüzden gerçek performans bulguları
 düşüyor. Örnek: `cpp-007` (döngüde `erase`, O(n²)); model buldu, doğrulama "kanıtlanamadı" diye attı
-(Faz 36 parça 2).
+(Faz 36 Claude parça 2; Codex `gpt-6-luna` alternatif ölçümünde de parça 2'de FN).
 
 - [ ] `LLMFindingVerdict`'e ölçek kanıtı: girdi büyüklüğü + beklenen ve gerçekleşen işlem sayısı ya da
       karmaşıklık (ör. "n = 10⁵: beklenen O(n) ≈ 10⁵, gerçekleşen O(n²) ≈ 10¹⁰"). `ProofBasis`'e `scaling`.
@@ -1609,7 +1617,11 @@ düşüyor. Örnek: `cpp-007` (döngüde `erase`, O(n²)); model buldu, doğrula
 **Amaç:** Faz 36 parça 1-2'de FP/FN'lerin önemli kısmı doğru satırda yanlış kategoriden geliyor:
 performance↔garbage_collection (`unity-009`), undefined_behavior↔memory_safety (`cpp-106`),
 resource_leak↔garbage_collection (`csharp-014`), design↔engine_best_practice (`unity-104`).
-Etiket sınırları da tutarsız (Faz 22: `unreal-009` vs `unreal-014`).
+Etiket sınırları da tutarsız (Faz 22: `unreal-009` vs `unreal-014`). Codex'in ayrı 96 örneklik
+ölçümünde ek karışıklıklar: performance↔edge_case (`csharp-009`), memory_safety↔edge_case
+(`csharp-106`), undefined_behavior↔memory_safety (`cpp-005`, `cpp-102`), edge_case↔input_handling
+(`python-008`), memory_safety↔design (`unreal-009`) ve design↔edge_case (`css-004`). Bu etiketler
+Opus sonuçlarıyla karıştırılmadan denetlenmeli.
 
 - [ ] Kategori sınırlarını tek yerde tanımla: `docs/EVAL_ORNEK_REHBERI.md` §3.1 ile `_core_rules.j2`
       kural 8 aynı metni kullansın (sıcak yolda tahsis → garbage_collection; dizi sınırı → memory_safety;
@@ -1643,7 +1655,8 @@ Etiket sınırları da tutarsız (Faz 22: `unreal-009` vs `unreal-014`).
 
 **Amaç:** Tarama (2026-10-04) bulguları: mimari §15'teki kapsama hedefleri (%95 / %90) ölçülmüyor,
 çünkü `pytest-cov` yok; README eval girişi eskimiş ("80 örnek, dev 31 / test 49"); statik dev satırı
-eski etiketle kayıtlı (`unity-104` düzeltmesi).
+eski etiketle kayıtlı (`unity-104` düzeltmesi). README sağlayıcı notu ve Faz 36 metni de Claude'un
+kısmi koşularıyla Codex'in ayrı 96 örneklik alternatifini açıkça ayırmalı.
 
 - [ ] `pytest-cov` geliştirme bağımlılığı; CI'da kapsama raporu (eşik önce yalnız raporla, sonra modül
       bazında §15 hedefleri)
@@ -1665,6 +1678,57 @@ eski etiketle kayıtlı (`unity-104` düzeltmesi).
 - [ ] Testler değişmeden geçer; golden'lar aynı kalır
 
 **Commit:** `refactor(faz-43): 400 satırı aşan modüllerin bölünmesi`
+
+### Faz 44 — Tier 0 ayrıştırma ve maskeleme sağlamlığı (YAPILACAK)
+
+**Dal:** `faz/44-tier0-saglamlik` · **Mimari:** §4.3, §12
+
+**Amaç:** Kullanıcı kodu güvenilmeyen girdidir. PROGRESS "Sonraya"da hâlâ kaydı olan iki girdi
+sınırı riski: 40 KB'a yakın kötü niyetli C++ girdisinde Tier 0 ayrıştırmanın yüzlerce ms sürmesi
+ve `mask_non_code`'un C++ raw string literal (`R"(...)"`) içeriğini doğru maskelememesi.
+
+- [ ] Pinned tree-sitter sürümünde parse işini güvenli biçimde sınırlama/iptal etme yöntemini doğrula;
+      mevcut 40 KB / 600 satır üst sınırını gevşetme. Zaman sınırı aşılırsa kısmi olgu üretme.
+- [ ] Pathological fixture ile süre sınırı ve normal sınıra yakın geçerli kod için gerileme testi
+- [ ] Kapanmamış blok özeti ile dosya sonundaki bağımsız gerçek ERROR düğümü birlikteyken
+      ikisini de doğru raporla (Tier 0 denetim D2)
+- [ ] C++ raw string literal maskelemesini delimiter biçimleriyle doğru yap; string içindeki sahte
+      `"`, yorum ve ayraçlar kod olarak algılanmasın; pozitif/negatif fixture ekle
+- [ ] İptal/zaman aşımı sonucu mimari §4.3/§12 ile çelişiyorsa uygulamadan önce ADR taslağı hazırla
+
+**Commit:** `fix(faz-44): Tier 0 ayrıştırma ve C++ raw string sınırları`
+
+### Faz 45 — HTML-STD-003 kenar durumları (YAPILACAK)
+
+**Dal:** `faz/45-html-std003-kenarlar` · **Mimari:** §4.3, §12
+
+**Amaç:** Faz 20'de eklenen HTML etiket dengesi kuralının bilinen parser ve bulgu birleştirme
+boşluklarını kapatmak. Bunlar PROGRESS "Sonraya"da somut kaçırma örnekleri olarak kayıtlı.
+
+- [ ] Dosya sonunda bitmemiş açılış etiketi (`<div`) ve örtük kapanışta yığının üstünden
+      aşağıdaki uygun elemanların aranması (`<p><span>a<div>`) için pozitif/negatif fixture
+- [ ] DOCTYPE'sız belge bağlamında `table`/`p` kapanış kurallarını doğrulayan fixture
+- [ ] Aynı satırdaki tekrarlı bulgular birleştirilirken farklı hata türlerinin ikisinin de
+      korunmasını sağla; tek satır için unique filtresi bağımsız ihlali gizlemesin
+- [ ] Katalog açıklamalarını kuralın gerçek kapsamı ve bilinen sınırlarıyla güncelle
+
+**Commit:** `fix(faz-45): HTML-STD-003 kenar durumlarını kapsa`
+
+### Faz 46 — C-MEM-003 akış sıralı null denetimi (YAPILACAK)
+
+**Dal:** `faz/46-c-mem003-akis` · **Mimari:** §4.3, §12
+
+**Amaç:** C-MEM-003, işaretçinin dereference edilmesinden sonra yapılan null kontrolünü bugün
+ayırt etmiyor. Kuralı fonksiyon içi ve muhafazakâr tutarak denetimin kullanım öncesi olup
+olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın kapsamında değildir.
+
+- [ ] Aynı blokta ve ilgili kontrol akışında kullanım öncesi null guard bulguyu bastırır
+- [ ] Dereference öncesi olmayan, yalnız başka bir yolda bulunan veya alakasız değişkeni
+      denetleyen guard bulguyu bastırmaz
+- [ ] Pointer alias ve helper fonksiyon sınırları belirsizse mevcut muhafazakâr davranışı
+      koru; her davranış pozitif/negatif fixture ile sabitlenir
+
+**Commit:** `fix(faz-46): C-MEM-003 kullanım öncesi null denetimi`
 
 ---
 

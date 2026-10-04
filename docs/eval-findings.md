@@ -415,3 +415,30 @@ kaldırıldı (kategori rehberdeki tanıma göre seçildi, modelin yanıtına g�
 dosyaları eski etiketle puanlanmıştır; güncel etiketle yeniden puanlama: parça 2 78 / 86 / 82,
 parça 1 + 2 75 / 81 / 78 (model bulguyu `design` kategorisinde verdiği için hâlâ FP + FN). Statik
 dev satırı da eski etiketle kayıtlı (yeni bulguyu statik kural yakalamaz).
+
+### Codex alternatifi: dört parça, 96 örnek (2026-10-04)
+
+Claude CLI kapalı olduğundan kullanıcı talimatıyla tüm parçalar Codex CLI / `gpt-6-luna`,
+two_pass ve doğrulama açık ayarıyla yeniden koşuldu. Böylece model tutarlı kaldı; bu sonuçlar
+üstteki Claude Opus parçalarıyla birleştirilmez. Dört dosyada hata veya `Model kullanılamadı`
+uyarısı yok, şema ilk denemede %100.
+
+| Parça | P / R / F1 | FP / FN | Öneri | p50 (sn) | Token ort. |
+|---|---:|---:|---:|---:|---:|
+| 1/4 | 71 / 65 / 68 | 7 / 9 | 0 | 20,2 | 38 687 |
+| 2/4 | 84 / 80 / 82 | 3 / 4 | 1 | 19,0 | 37 761 |
+| 3/4 | 79 / 79 / 79 | 4 / 4 | 0 | 19,8 | 39 501 |
+| 4/4 | 81 / 85 / 83 | 5 / 4 | 0 | 18,2 | 41 074 |
+| **Birleşik 96** | **79 / 77 / 78** | — | **1** | — | — |
+
+Güncel etiketle birleşik ölçümde 70 doğru hata tahmini, 89 hata tahmini (19 FP) ve 91 etiketli
+hata (21 FN) var. Tek öneri
+`unity-104` satır 13'te FixedUpdate içinde girdi örnekleme tavsiyesi. Otomatik eşleştirici bunu
+aynı kategori ve yakın satır nedeniyle satır 14'teki etiketle aday çakışma gösterdi; kod ve
+açıklama elle incelendiğinde konular farklı, etiketli yerçekimi hatası öneri sınıfına düşmemiş.
+Dolayısıyla gerçek öneri-hata yutma sayısı 0/1.
+
+Faz 35B Opus doğrulama koşusuyla ortak 46 örnekte eski sonuç 79 / 89 / 84, Codex sonucu
+75 / 73 / 74. Model değiştiği için bu yalnız betimleyici bir kıyastır; Faz 36'nın precision veya
+recall üzerindeki nedensel etkisini ölçmez. Bu koşu, Claude ile yapılması planlanan canlı ölçümün
+yerine geçmez ve "kaçırma oranı düşmez" hedefini doğrulamaz.
