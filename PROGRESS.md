@@ -36,7 +36,7 @@
 | 37 | ✅ | faz/37-saglayici-sadelestirme | 2026-10-03 | Claude Code / — |
 | 36 | ✅ | faz/36-hata-oneri | 2026-10-04 | Claude Code / — |
 | 38 | 🟡 Codex alternatifi; Claude 3/4–4/4 açık | faz/36-hata-oneri | 2026-10-04 | Codex / Claude Code |
-| 39 | ✅ (canlı ölçüm açık) | faz/39-dogrulama-performans | 2026-10-04 | Claude Code / — |
+| 39 | ✅ (canlı ölçüm açık) | faz/39-dogrulama-performans | 2026-10-04 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
