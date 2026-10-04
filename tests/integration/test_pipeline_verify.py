@@ -220,3 +220,63 @@ async def test_cache_not_shared_between_verify_settings(
     report = await orchestrator(_enabled(settings), db, provider).analyze(_request())
     assert not report.meta.cache_hit
     assert len(provider.calls) == 3
+
+
+# --- Faz 39 ----------------------------------------------------------------------------------
+
+
+def _scaling_verdict() -> dict[str, Any]:
+    return _verdict(input="n = 100000", expected="O(n)", actual="O(n^2)")
+
+
+def _performance_reply() -> dict[str, Any]:
+    reply = analysis_reply()
+    reply["additional_findings"][0] |= {"category": "performance", "severity": "medium"}
+    return reply
+
+
+async def test_analyze_traced_returns_checks(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    provider = fake(analysis_reply(), _verify(_verdict("unproven")), socratic_reply())
+    trace = await orchestrator(_enabled(settings), None, provider).analyze_traced(_request())
+    assert _llm_lines(trace.report.findings) == []
+    assert [(c.line_start, c.category.value, c.kept, c.basis) for c in trace.finding_checks] == [
+        (31, "memory_safety", False, "unproven")
+    ]
+
+
+async def test_analyze_traced_without_verify_has_no_checks(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    provider = fake(analysis_reply(), socratic_reply())
+    trace = await orchestrator(settings, None, provider).analyze_traced(_request())
+    assert trace.finding_checks == []
+
+
+async def test_scaling_verdict_keeps_performance_finding(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    provider = fake(_performance_reply(), _verify(_scaling_verdict()), socratic_reply())
+    trace = await orchestrator(_enabled(settings), None, provider).analyze_traced(_request())
+    assert _llm_lines(trace.report.findings) == [31]
+    assert trace.finding_checks[0].basis == "scaling"
+
+
+async def test_scaling_verdict_drops_memory_finding(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    provider = fake(analysis_reply(), _verify(_scaling_verdict()), socratic_reply())
+    trace = await orchestrator(_enabled(settings), None, provider).analyze_traced(_request())
+    assert _llm_lines(trace.report.findings) == []
+    assert trace.finding_checks[0].basis == "no_demonstration"
+
+
+async def test_verify_prompt_mentions_scaling_proof(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    provider = fake(analysis_reply(), _verify(_verdict()), socratic_reply())
+    await orchestrator(_enabled(settings), None, provider).analyze(_request())
+    prompt = _text(provider.calls[1])
+    assert "O(n^2)" in prompt
+    assert "işlem dizisi" in prompt

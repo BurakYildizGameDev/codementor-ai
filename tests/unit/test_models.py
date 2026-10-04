@@ -621,3 +621,26 @@ def test_guiding_question_length_limited_in_schema() -> None:
         LLMSocraticOutput.model_validate({**ok, "guiding_questions": ["a" * 1001]})
     items = LLMSocraticOutput.model_json_schema()["properties"]["guiding_questions"]["items"]
     assert items["maxLength"] == 1000
+
+
+def test_proof_basis_accepts_scaling() -> None:
+    """Faz 39: performans/GC bulgusu ölçek kanıtıyla korunabilir."""
+    from codementor.models.enums import AuditCategory
+    from codementor.models.verification import FindingCheck
+
+    check = FindingCheck(
+        finding_id="F-001",
+        line_start=6,
+        category=AuditCategory.PERFORMANCE,
+        kept=True,
+        basis="scaling",
+    )
+    assert check.basis == "scaling"
+
+
+def test_sample_result_reads_old_files_without_checks() -> None:
+    """Faz 39 öncesi sonuç dosyalarında `finding_checks` yok; boş liste okunur."""
+    from codementor.models.eval import SampleResult
+
+    old = SampleResult.model_validate({"id": "c-001", "latency_ms": 5})
+    assert old.finding_checks == []

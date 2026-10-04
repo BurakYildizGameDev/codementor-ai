@@ -342,3 +342,32 @@ def test_compare_static_row_has_no_injection_score() -> None:
     cells = dict(zip(HEADERS, row(result), strict=True))
     injection = next(k for k in cells if "njection" in k)
     assert cells[injection] == "—"
+
+
+async def test_run_sample_records_finding_checks(dataset: Path, settings: Settings) -> None:
+    """Faz 39: doğrulamanın düşürdüğü bulgu sonuç dosyasına yazılır (TP/FP analizi için)."""
+    provider = FakeProvider(
+        script=[
+            FakeReply(data=analysis_reply()),
+            FakeReply(
+                data={"verdicts": [{"finding": 1, "verdict": "unproven", "reason": "Kanıt yok."}]}
+            ),
+            FakeReply(data=socratic_reply()),
+        ],
+        retry=RetryPolicy(max_retries=0),
+    )
+    pipeline = settings.pipeline.model_copy(update={"verify_findings": True})
+    result = await run_eval(
+        load_split(dataset, "_draft")[:1],
+        settings.model_copy(update={"pipeline": pipeline}),
+        split="dev",
+        provider="fake",
+        mode=PipelineMode.TWO_PASS,
+        provider_factory=lambda _n: provider,
+    )
+    (sample,) = result.samples
+    assert [(c.line_start, c.kept, c.basis) for c in sample.finding_checks] == [
+        (31, False, "unproven")
+    ]
+    restored = RunResult.model_validate_json(result.model_dump_json())
+    assert restored.samples[0].finding_checks == sample.finding_checks

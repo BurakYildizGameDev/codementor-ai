@@ -28,6 +28,7 @@ from codementor.models.provider import (
     ProviderResult,
 )
 from codementor.models.request import AnalysisOptions, AnalysisRequest
+from codementor.models.verification import FindingCheck
 from codementor.pipeline.cost import load_pricing
 from codementor.pipeline.events import EventBus
 from codementor.pipeline.orchestrator import Orchestrator, PipelineError, ProviderFactory
@@ -128,9 +129,10 @@ async def run_sample(
         options=AnalysisOptions(mode=mode, use_cache=False),
     )
     start = time.perf_counter()
+    checks: list[FindingCheck] = []
     try:
-        report = await orchestrator.analyze(request)
-        error = None
+        trace = await orchestrator.analyze_traced(request)
+        report, checks, error = trace.report, trace.finding_checks, None
     except PipelineError as exc:
         report, error = None, str(exc)
     latency = int((time.perf_counter() - start) * 1000)
@@ -144,6 +146,7 @@ async def run_sample(
         llm_called=called,
         schema_first_try=first,
         schema_final=final,
+        finding_checks=checks,
     )
 
 

@@ -35,6 +35,8 @@
 | 34 + 35B | ✅ | faz/34-eval-genisletme | 2026-10-03 | Claude Code / — |
 | 37 | ✅ | faz/37-saglayici-sadelestirme | 2026-10-03 | Claude Code / — |
 | 36 | ✅ | faz/36-hata-oneri | 2026-10-04 | Claude Code / — |
+| 38 | 🟡 Codex alternatifi; Claude 3/4–4/4 açık | faz/36-hata-oneri | 2026-10-04 | Codex / Claude Code |
+| 39 | ✅ (canlı ölçüm açık) | faz/39-dogrulama-performans | 2026-10-04 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -875,6 +877,27 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 39 — Notlar (doğrulamada ölçek kanıtı; ADR-0019 eki)
+**Yapılanlar:**
+- `verify/proof.py`: `expected`/`actual` `O(` ile başlıyorsa ölçek iddiası. Yalnız
+  performance/GC'de, ikisi de ayrışıp gerçekleşen daha hızlı büyüyorsa `scaling` (korunur);
+  aksi halde `no_demonstration`. `O(` yoksa davranış Faz 35 ile aynı.
+- `models/bigo.py::collapse_variables` (eski `eval/metrics._single_variable` taşındı).
+- `verify.system.j2` kural 3 (a) işlem dizisi / motor olayı, (c) ölçek kanıtı; kural 4.
+- `FindingCheck.category`; `Orchestrator.analyze_traced` → `AnalysisTrace(report, finding_checks)`
+  (`analyze` buna delege eder); `SampleResult.finding_checks` (eski dosyalar boş okunur).
+- `match_findings` genel (`Located` protokolü); `eval analyze` "Doğrulamanın attığı bulgular".
+- ADR-0019 eki, mimari §5.4.2 ve §6 notu.
+**Kararlar:** Yeni LLM şema alanı eklenmedi: şema sürümü ve dar bağlam bütçesi sabit kalsın.
+Prompt'a "işlem dizisi / motor olayı" cümlesi plan dışı küçük bir genişleme; gerekçe Codex
+ölçümünde düşürülen 5+ gerçek hatanın çoğunun performans dışı olması.
+**Açık sorular:** Canlı etki ölçülmedi (token yok). Faz 36'nın açık Claude 3/4–4/4 ölçümüyle
+birlikte tüm dev Claude ile koşulacak (`docs/FAZ36_OLCUM_DURUMU.md` §6). Yeni sonuç dosyalarında
+`eval analyze` düşürmelerin TP/FP dağılımını doğrudan verir. Prompt sürümü değişti (önbellek
+anahtarı da değişir).
+**Bu fazda öğrendiğim:** Şemaya alan eklemek yerine mevcut alanların biçimini sistem tarafında
+yorumlamak, dar bağlamlı sağlayıcılarda bütçe riskini sıfırlıyor.
+
 ## Faz 37 — Notlar (sağlayıcı sadeleştirme; ADR-0021)
 **Yapılanlar:**
 - `openai` ve `deepseek` kaldırıldı: `PROVIDER_NAMES`, `OpenAIConfig`/`DeepSeekConfig`,
@@ -956,7 +979,7 @@ az bilgi kaybettiren bir precision aracıdır.
 - Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001); Claude Opus canlı dev koşusuyla precision/recall ve `suggestions_total` ölçümü.
 - Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.
 - ~~Faz 34: dev setini büyütmek~~ → yapıldı (2026-10-04, dev 96). Kalan: few-shot'ların zayıf modelde etkisi.
-- Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde); doğrulama kararlarını (`finding_checks`) eval sonucuna yazıp düşürülen bulguların TP/FP dağılımını ölçmek.
+- Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde). ~~Doğrulama kararlarını eval sonucuna yazıp düşürülenlerin TP/FP dağılımını ölçmek~~ → Faz 39.
 - Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).
 - ~~Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.~~ → Faz 31.
 - Faz 30: yöntem işaretlerini (`METHOD_LEAKS`) soru verisine taşıyıp `validate`'e eklemek; eski soruların kontrol listesi seçimini kilitleyen bir anlık görüntü testi.
@@ -1052,7 +1075,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-04):** Faz 0-37 tamamlandı; Faz 38 Codex alternatifi belgelendi, Claude karşılaştırması açık. Sonraki planlı işler Faz 39–46; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-04):** Faz 0-37 ve 39 (çevrimdışı, `faz/39-dogrulama-performans`) tamamlandı; Faz 38 Codex alternatifi belgelendi, Claude ölçümü (Faz 36+39 birlikte) açık. Sıradaki Faz 40; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.

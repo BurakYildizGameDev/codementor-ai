@@ -10,19 +10,18 @@ import math
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Protocol
 
-from codementor.models.bigo import BigO, BigOError, parse_bigo
-from codementor.models.enums import FindingKind
+from codementor.models.bigo import BigOError, collapse_variables, parse_bigo
+from codementor.models.enums import AuditCategory, FindingKind
 from codementor.models.eval import ExpectedFinding, Label, Metrics, PricingFile, SampleResult
-from codementor.models.findings import Finding, issues_only
+from codementor.models.findings import issues_only
 from codementor.models.report import AnalysisReport
 from codementor.pipeline.cost import estimate_cost
 from codementor.pipeline.stages import SCRUB_WARNING_COMPLEXITY, SCRUB_WARNING_FINDINGS
 
 MATCH_LINE_DISTANCE = 2
 _WHITESPACE = re.compile(r"\s+")
-_VARIABLE = re.compile(r"[a-z]\w*")
-_LOG = "log"
 _GUARD_ACTIONS = frozenset({"regenerated", "dropped_questions"})
 _SCRUB_WARNINGS = frozenset({SCRUB_WARNING_COMPLEXITY, SCRUB_WARNING_FINDINGS})
 
@@ -46,12 +45,21 @@ def percentile(values: Sequence[float], q: float) -> float | None:
 # --- eşleşme ----------------------------------------------------------------------------------
 
 
-def match_findings(
+class Located(Protocol):
+    """Satırı ve kategorisi olan tahmin: `Finding` ya da doğrulama kararı (`FindingCheck`)."""
+
+    @property
+    def line_start(self) -> int: ...
+    @property
+    def category(self) -> AuditCategory: ...
+
+
+def match_findings[LocatedT: Located](
     expected: Sequence[ExpectedFinding],
-    predicted: Sequence[Finding],
+    predicted: Sequence[LocatedT],
     *,
     ignore_category: bool = False,
-) -> list[tuple[ExpectedFinding, Finding]]:
+) -> list[tuple[ExpectedFinding, LocatedT]]:
     """Aynı kategori + satır farkı ≤ 2, bire bir; en küçük satır farkları önce eşleşir.
     `ignore_category`: yalnız satıra bakılır (Faz 22 analizi; §14.2 metriği değil)."""
     candidates = sorted(
@@ -63,7 +71,7 @@ def match_findings(
     )
     used_e: set[int] = set()
     used_p: set[int] = set()
-    pairs: list[tuple[ExpectedFinding, Finding]] = []
+    pairs: list[tuple[ExpectedFinding, LocatedT]] = []
     for _, i, j in candidates:
         if i not in used_e and j not in used_p:
             used_e.add(i)
@@ -72,17 +80,11 @@ def match_findings(
     return pairs
 
 
-def _single_variable(value: BigO) -> BigO:
-    """Tüm değişkenleri `n`'ye indirger: `m*n` ile `n^2` aynı büyüme sınıfı sayılır."""
-    text = _VARIABLE.sub(lambda m: m.group(0) if m.group(0) == _LOG else "n", value.canonical)
-    return parse_bigo(text)
-
-
 def same_growth_class(expected: str, predicted: str) -> bool:
     """`complexity_time_class_acc` eşleşmesi: tek değişkene indirgenmiş aynı sınıf."""
     try:
-        return _single_variable(parse_bigo(expected)).same_class(
-            _single_variable(parse_bigo(predicted))
+        return collapse_variables(parse_bigo(expected)).same_class(
+            collapse_variables(parse_bigo(predicted))
         )
     except BigOError:
         return False

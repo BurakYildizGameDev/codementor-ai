@@ -394,7 +394,7 @@ class UnityAllocInUpdate(Rule):
 | A — Analiz | Karmaşıklık + gerekçe adımları, ek bulgular | `LLMAnalysisOutput` | Teknik doğruluk; düşük sıcaklık |
 | B — Mentorluk | Doğrulanmış analizden Sokratik sorular üret | `LLMSocraticOutput` | Doğrulanmamış bulgular soruya dönüşmez; sızıntı kontrolü ayrı yapılır; ton ayarı bağımsız |
 
-**Doğrulama geçişi (Faz 35, ADR-0019):** `pipeline.verify_findings = true` ise A ile B arasında her LLM bulgusu ayrı bir çağrıda (`LLMVerifyOutput`) sınanır; model somut bir girdi (girdi/beklenen/gerçekleşen) ya da ihlal edilen gereksinim gösteremezse bulgu düşer. Statik ve `confirmed` bulgular girmez; hata/bozuk şemada bulgular olduğu gibi kalır. `single_pass`'ta bulgu düşerse Sokratik çıktı ayrı Geçiş B ile yeniden üretilir. Varsayılan açık: dev ölçümünde precision 69 → 79, recall değişmedi; bedeli ~%24 gecikme, ~%13 token (Faz 35B).
+**Doğrulama geçişi (Faz 35, ADR-0019):** `pipeline.verify_findings = true` ise A ile B arasında her LLM bulgusu ayrı bir çağrıda (`LLMVerifyOutput`) sınanır; model somut bir girdi (girdi/beklenen/gerçekleşen) ya da ihlal edilen gereksinim gösteremezse bulgu düşer. Statik ve `confirmed` bulgular girmez; hata/bozuk şemada bulgular olduğu gibi kalır. `single_pass`'ta bulgu düşerse Sokratik çıktı ayrı Geçiş B ile yeniden üretilir. Varsayılan açık: dev ölçümünde precision 69 → 79, recall değişmedi; bedeli ~%24 gecikme, ~%13 token (Faz 35B). Performans/GC bulgusunda ölçek kanıtı da geçerlidir: `expected`/`actual` Big-O (`O(n)` → `O(n^2)`) ve gerçekleşen beklenenden hızlı büyümeli; başka kategoride Big-O kanıt sayılmaz (Faz 39, ADR-0019 eki). Kararlar (`FindingCheck`) eval sonucuna yazılır.
 
 **Hatalar ve öneriler (Faz 36, ADR-0022):** her bulgu `kind` taşır: `issue` (gerçek hata) ya da `suggestion` (hataya yol açmayan öneri; yalnız `low`, aksi halde sistem `issue` yapar). Statik bulgular hep `issue`'dur. Öneriler doğrulama geçişine girmez; Geçiş B'ye ve şablon sorulara yalnız hatalar gider.
 
@@ -643,7 +643,8 @@ class LLMSinglePassOutput(BaseModel):  # pipeline.mode = "single_pass" (§5.4.2)
 class LLMFindingVerdict(BaseModel):  # doğrulama geçişi (Faz 35, ADR-0019)
     finding: int = Field(ge=1)  # LLM bulgusunun listedeki numarası
     verdict: Literal["proven", "unproven"]
-    input: str | None = None  # proven: input + expected + actual ya da requirement zorunlu
+    input: str | None = None  # proven: input + expected + actual ya da requirement zorunlu;
+    # performance/GC'de expected/actual Big-O olabilir (ölçek kanıtı, Faz 39)
     expected: str | None = None
     actual: str | None = None
     requirement: str | None = None

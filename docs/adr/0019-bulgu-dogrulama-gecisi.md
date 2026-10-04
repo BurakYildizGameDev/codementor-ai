@@ -65,3 +65,29 @@ edilebilir. Güven eşiği uygulanmaz (F1'i artırmıyor; `certainty` rapordaki 
 değerini belirlemeye devam eder). Doğrulamasız ölçüm için `eval run --ablate noverify`.
 Testlerde doğrulama kapalı başlar (betikli FakeProvider yanıtları; `tests/conftest.py`).
 Ayrıntı: `docs/eval-findings.md` §9.
+
+## Ek (Faz 39, 2026-10-04): ölçek kanıtı ve düşürülenlerin kaydı
+
+**Sorun:** Performans sorununda çıktı doğrudur, yanlış olan büyüme hızıdır. Model "girdi /
+beklenen / gerçekleşen" gösteremeyince doğru bulguyu düşürüyordu (Claude dev parça 2: `cpp-007`).
+Codex `gpt-6-luna` 96 örnek ölçümünde 10 düşürmenin en az 5'i gerçek hataydı. Bunların çoğu
+performans dışıydı: sığ kopya → çift silme, gezilirken dizi değişmesi, `Super::BeginPlay` eksik.
+
+**Karar:**
+- Ölçek kanıtı **mevcut alanlarla** verilir: `input = "n = 100000"`, `expected = "O(n)"`,
+  `actual = "O(n^2)"`. LLM şeması, şema sürümü ve dar bağlam bütçesi değişmez. Plandaki yeni alan
+  önerisinden bu yüzden vazgeçildi.
+- Sistem denetimi (`verify/proof.py`): `expected` ya da `actual` `O(` ile başlıyorsa iddia ölçek
+  kanıtıdır. Yalnız `performance` / `garbage_collection` kategorisinde geçerlidir. İki ifade de
+  `parse_bigo` ile ayrışmalı ve gerçekleşen beklenenden hızlı büyümelidir (çok değişkenliler
+  `collapse_variables` ile tek değişkene indirgenir). Aksi halde taban `no_demonstration`, bulgu
+  düşer. Yeni taban `ProofBasis = "scaling"`.
+- Prompt (`verify.system.j2` kural 3–4): ölçek kanıtı (c) maddesi; girdi bir işlem dizisi ya da
+  motor olayı da olabilir; büyümesi gösterilen performans sorunu "kuramsal" değildir.
+- Doğrulama kararları (`FindingCheck`, artık `category` taşır) `Orchestrator.analyze_traced` ile
+  eval sonucuna (`SampleResult.finding_checks`) yazılır. `eval analyze` "Doğrulamanın attığı
+  bulgular" bölümünde düşürmeleri gerçek hata / yanlış alarm diye ayırır.
+
+**Bedeli / risk:** Daha az bulgu düşeceği için precision biraz düşebilir. Etki canlı dev
+ölçümüyle (Claude, 96 örnek) görülecek; Faz 39 çevrimdışı yapıldı.
+

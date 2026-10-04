@@ -10,11 +10,15 @@ from codementor.models.llm_output import LLMVerifyOutput
 from codementor.verify.proof import apply_verdicts, redact_reasons, verify_targets
 
 
-def _finding(line: int, source: FindingSource = FindingSource.LLM) -> Finding:
+def _finding(
+    line: int,
+    source: FindingSource = FindingSource.LLM,
+    category: AuditCategory = AuditCategory.EDGE_CASE,
+) -> Finding:
     return Finding(
         id=f"F-{line:03d}",
         rule_id="C-MEM-001" if source is not FindingSource.LLM else None,
-        category=AuditCategory.EDGE_CASE,
+        category=category,
         severity=Severity.MEDIUM,
         line_start=line,
         line_end=None,
@@ -125,3 +129,74 @@ def test_suggestions_not_verify_targets() -> None:
     result = apply_verdicts(findings, _output(_unproven(1)))
     assert [f.line_start for f in result.findings] == [4]
     assert result.findings[0].kind == "suggestion"
+
+
+# --- Faz 39: ölçek kanıtı ------------------------------------------------------------------------
+
+
+def _scaling(index: int, expected: str = "O(n)", actual: str = "O(n^2)") -> dict[str, Any]:
+    return {
+        "finding": index,
+        "verdict": "proven",
+        "input": "n = 100000",
+        "expected": expected,
+        "actual": actual,
+        "reason": "Her erase sonraki elemanları kaydırır: ~10^10 işlem.",
+    }
+
+
+def _single(category: AuditCategory, verdict: dict[str, Any]) -> tuple[Finding, Any]:
+    finding = _finding(6, category=category)
+    result = apply_verdicts([finding], _output(verdict))
+    return finding, result
+
+
+def test_scaling_proof_kept_for_performance() -> None:
+    _, result = _single(AuditCategory.PERFORMANCE, _scaling(1))
+    assert result.dropped == 0
+    assert result.checks[0].basis == "scaling"
+    assert result.checks[0].kept
+
+
+def test_scaling_proof_kept_for_garbage_collection() -> None:
+    _, result = _single(AuditCategory.GARBAGE_COLLECTION, _scaling(1, "O(1)", "O(n)"))
+    assert result.checks[0].basis == "scaling"
+    assert result.dropped == 0
+
+
+def test_scaling_proof_rejected_for_memory_safety() -> None:
+    """Karmaşıklık bir bellek hatasının kanıtı değildir."""
+    _, result = _single(AuditCategory.MEMORY_SAFETY, _scaling(1))
+    assert result.checks[0].basis == "no_demonstration"
+    assert result.dropped == 1
+    assert result.findings == []
+
+
+def test_unparseable_scaling_dropped() -> None:
+    _, result = _single(AuditCategory.PERFORMANCE, _scaling(1, actual="O(n kare)"))
+    assert result.checks[0].basis == "no_demonstration"
+    assert result.dropped == 1
+
+
+def test_scaling_without_growth_dropped() -> None:
+    _, result = _single(AuditCategory.PERFORMANCE, _scaling(1, "O(n)", "O(n)"))
+    assert result.checks[0].basis == "no_demonstration"
+    assert result.dropped == 1
+
+
+def test_multivariable_scaling_collapsed() -> None:
+    """`O(n*m)` tek değişkene indirgenince `O(n^2)`; `O(n)`'den büyük, korunur."""
+    _, result = _single(AuditCategory.PERFORMANCE, _scaling(1, "O(n)", "O(n*m)"))
+    assert result.checks[0].basis == "scaling"
+
+
+def test_plain_input_proof_unchanged_for_performance() -> None:
+    """`O(` yoksa davranış Faz 35 ile aynı: somut girdi kanıtı."""
+    verdict = _scaling(1, "10^5 işlem", "10^10 işlem")
+    _, result = _single(AuditCategory.PERFORMANCE, verdict)
+    assert result.checks[0].basis == "input"
+
+
+def test_check_records_category() -> None:
+    _, result = _single(AuditCategory.PERFORMANCE, _unproven(1))
+    assert result.checks[0].category is AuditCategory.PERFORMANCE

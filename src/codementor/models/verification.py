@@ -11,6 +11,7 @@ from typing import Literal
 from pydantic import Field
 
 from codementor.models._base import StrictModel
+from codementor.models.enums import AuditCategory
 from codementor.models.findings import Finding
 from codementor.models.report import ComplexityResult, SocraticResult
 
@@ -97,7 +98,10 @@ class LeakDecision(StrictModel):
         return self.action == "dropped_questions" and not self.guiding_questions
 
 
-ProofBasis = Literal["input", "requirement", "unproven", "no_demonstration", "no_verdict"]
+# `scaling`: performans/GC bulgusu için büyüme kanıtı, ör. O(n) yerine O(n^2) (Faz 39)
+ProofBasis = Literal[
+    "input", "requirement", "scaling", "unproven", "no_demonstration", "no_verdict"
+]
 
 
 class FindingCheck(StrictModel):
@@ -105,6 +109,7 @@ class FindingCheck(StrictModel):
 
     finding_id: str
     line_start: int = Field(ge=1)
+    category: AuditCategory
     kept: bool
     basis: ProofBasis
     reason: str = Field(default="", description="Modelin gerekçesi; sızıntı varsa boş")

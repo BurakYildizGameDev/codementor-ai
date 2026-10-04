@@ -17,6 +17,7 @@ başka bir terim tarafından asimptotik olarak baskılanan terimler silinir.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from codementor.models._bigo_algebra import (
@@ -35,11 +36,14 @@ __all__ = [
     "BigOComparisonError",
     "BigOError",
     "BigOParseError",
+    "collapse_variables",
     "parse_bigo",
     "parse_cost",
 ]
 
 MAX_INPUT_LENGTH = 200
+_VARIABLE = re.compile(r"[a-z]\w*")
+_LOG = "log"
 
 
 class BigOError(ValueError):
@@ -165,3 +169,9 @@ def parse_cost(text: str) -> tuple[BigO, bool]:
     stripped = text.strip()
     amortized = stripped.endswith("*")
     return parse_bigo(stripped.removesuffix("*")), amortized
+
+
+def collapse_variables(value: BigO) -> BigO:
+    """Tüm değişkenleri `n`'ye indirger: `m*n` ile `n^2` aynı büyüme sınıfı sayılır."""
+    text = _VARIABLE.sub(lambda m: m.group(0) if m.group(0) == _LOG else "n", value.canonical)
+    return parse_bigo(text)

@@ -5,7 +5,9 @@ satır farkı ≤ 2) ek olarak:
 - kategorisiz eşleşme (yalnız satır): FP'lerin ne kadarı aslında "doğru yer, yanlış kategori";
 - `low` önemli tahminler hariç ölçüm: FP'ler düşük önemli önerilerden mi geliyor;
 - kategori karışıklığı: katı eşleşmede kalan beklenen/tahmin çiftlerinin satırla eşleşmesi;
-- örnek bazında FP/FN listesi.
+- örnek bazında FP/FN listesi;
+- doğrulama geçişinin attığı bulgular: gerçek hata mı, yanlış alarm mı (Faz 39; yalnız
+  `finding_checks` kaydı olan sonuç dosyalarında).
 
 Sınır: etiketler koşu anındaki değil güncel veri setinden gelir (bkz. `breakdown`).
 """
@@ -13,7 +15,7 @@ Sınır: etiketler koşu anındaki değil güncel veri setinden gelir (bkz. `bre
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from codementor.eval.compare import pct
@@ -27,6 +29,7 @@ from codementor.eval.metrics import (
 from codementor.models.enums import AuditCategory, FindingSource, Severity
 from codementor.models.eval import ExpectedFinding, Label, RunResult
 from codementor.models.findings import Finding, issues_only
+from codementor.models.verification import FindingCheck, ProofBasis
 
 TEXT_LIMIT = 80
 # Faz 35: LLM bulgularının güven eşikleri (verify/confidence.py değerleriyle hizalı)
@@ -45,6 +48,19 @@ class FindingRow:
     source: FindingSource | None = None
     text: str = ""
     confused_with: AuditCategory | None = None
+
+
+@dataclass(frozen=True)
+class DropRow:
+    """Doğrulama geçişinin attığı bulgu; `true_issue` etiketli (ve başka tahminle eşleşmemiş)
+    bir hatayla eşleşiyorsa True, yani doğrulama yüzünden kaybedilen doğru bulgu."""
+
+    sample_id: str
+    line: int
+    category: AuditCategory
+    basis: ProofBasis
+    true_issue: bool
+    reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -69,6 +85,7 @@ class PrecisionAnalysis:
     missing: list[str]
     thresholds: list[ThresholdRow]
     suggestions_total: int = 0  # Faz 36: puana ve FP listesine girmez
+    verify_drops: list[DropRow] = field(default_factory=list)  # Faz 39
 
     def fp_by(self, dimension: FpDimension) -> dict[str, int]:
         """FP sayısı, verilen boyuta göre (çoktan aza)."""
@@ -95,6 +112,17 @@ def _unmatched(
         [e for e in label.expected.findings if id(e) not in used_e],
         [p for p in findings if id(p) not in used_p],
     )
+
+
+def _drops(
+    sample_id: str, lost: list[ExpectedFinding], checks: list[FindingCheck]
+) -> list[DropRow]:
+    dropped = [c for c in checks if not c.kept]
+    true_ids = {id(c) for _, c in match_findings(lost, dropped)}
+    return [
+        DropRow(sample_id, c.line_start, c.category, c.basis, id(c) in true_ids, _short(c.reason))
+        for c in dropped
+    ]
 
 
 def _without_low(pairs: list[Pair]) -> list[Pair]:
@@ -147,12 +175,14 @@ def analyze(result: RunResult, labels: dict[str, Label]) -> PrecisionAnalysis:
     confusion: Counter[tuple[AuditCategory, AuditCategory]] = Counter()
     fps: list[FindingRow] = []
     fns: list[FindingRow] = []
+    drops: list[DropRow] = []
     predicted_total = expected_total = 0
     for label, sample in pairs:
         findings = issues_only(sample.report.findings) if sample.report is not None else []
         predicted_total += len(findings)
         expected_total += len(label.expected.findings)
         lost_e, lost_p = _unmatched(label, findings)
+        drops += _drops(sample.id, lost_e, sample.finding_checks)
         # Katı eşleşmede kalanlar arasında aynı satır = kategori karışıklığı
         crossed = match_findings(lost_e, lost_p, ignore_category=True)
         partner_of_p = {id(p): e.category for e, p in crossed}
@@ -193,6 +223,7 @@ def analyze(result: RunResult, labels: dict[str, Label]) -> PrecisionAnalysis:
         missing=missing,
         thresholds=_thresholds(pairs),
         suggestions_total=suggestions_total(pairs),
+        verify_drops=drops,
     )
 
 
@@ -212,6 +243,35 @@ def _table(headers: list[str], rows: list[list[object]]) -> list[str]:
 
 def _scores(name: str, scores: AuditScores) -> list[object]:
     return [name, pct(scores.precision), pct(scores.recall), pct(scores.f1)]
+
+
+def _drop_section(drops: list[DropRow]) -> list[str]:
+    lines = ["## Doğrulamanın attığı bulgular", ""]
+    if not drops:
+        return [
+            *lines,
+            "Düşürülen bulgu yok ya da doğrulama kaydı yok (Faz 39 öncesi sonuç dosyası).",
+        ]
+    true_n = sum(d.true_issue for d in drops)
+    lines += [
+        f"Toplam {len(drops)}: gerçek hata {true_n} (doğrulama yüzünden FN) · "
+        f"yanlış alarm {len(drops) - true_n} (doğru düşürme)",
+        "",
+    ]
+    return lines + _table(
+        ["Örnek", "Satır", "Kategori", "Taban", "Gerçek hata", "Gerekçe"],
+        [
+            [
+                d.sample_id,
+                d.line,
+                d.category,
+                d.basis,
+                "evet" if d.true_issue else "hayır",
+                d.reason,
+            ]
+            for d in drops
+        ],
+    )
 
 
 def analysis_markdown(analysis: PrecisionAnalysis) -> str:
@@ -258,6 +318,7 @@ def analysis_markdown(analysis: PrecisionAnalysis) -> str:
         ["Beklenen → tahmin", "n"],
         [[f"{e} → {p}", n] for (e, p), n in a.confusion.items()],
     )
+    lines += ["", *_drop_section(a.verify_drops)]
     lines += ["", "## Yanlış pozitifler", ""]
     lines += _table(
         ["Örnek", "Satır", "Kategori", "Önem", "Kaynak", "Beklenen (aynı satır)", "Açıklama"],

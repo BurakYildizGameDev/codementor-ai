@@ -12,6 +12,7 @@ from codementor.models.bigo import (
     BigO,
     BigOComparisonError,
     BigOParseError,
+    collapse_variables,
     parse_bigo,
 )
 
@@ -426,3 +427,12 @@ def test_parse_cost_rejects_garbage() -> None:
 
     with pytest.raises(BigOParseError):
         parse_cost("**")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [("n*m", "n^2"), ("n + m", "n"), ("m log m", "n log n"), ("1", "1"), ("k^3", "n^3")],
+)
+def test_collapse_variables(text: str, expected: str) -> None:
+    """Faz 39: tüm değişkenler `n`'ye indirgenir; `log` korunur."""
+    assert collapse_variables(parse_bigo(text)) == parse_bigo(expected)

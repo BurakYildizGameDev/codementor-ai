@@ -1588,25 +1588,28 @@ oluşturmaz; karşılaştırma modeli farklıdır.
 
 **Commit:** `eval(faz-36): canlı dev parça 3/4 ve 4/4, 96 örneklik sonuç`
 
-### Faz 39 — Doğrulama geçişinde performans bulguları (YAPILACAK)
+### Faz 39 — Doğrulama geçişinde performans bulguları (YAPILDI; canlı ölçüm bekliyor)
 
-**Dal:** `faz/39-dogrulama-performans` · **Mimari:** §5.4.2 · **ADR:** 0019 eki
+**Dal:** `faz/39-dogrulama-performans` (`faz/36-hata-oneri` üstünde) · **Mimari:** §5.4.2 · **ADR:** 0019 eki
 
 **Amaç:** Faz 35 doğrulama geçişi "girdi / beklenen / gerçekleşen" kanıtı istiyor. Performans
 sorunlarında çıktı doğrudur, yanlış olan büyüme hızıdır. Bu yüzden gerçek performans bulguları
 düşüyor. Örnek: `cpp-007` (döngüde `erase`, O(n²)); model buldu, doğrulama "kanıtlanamadı" diye attı
 (Faz 36 Claude parça 2; Codex `gpt-6-luna` alternatif ölçümünde de parça 2'de FN).
 
-- [ ] `LLMFindingVerdict`'e ölçek kanıtı: girdi büyüklüğü + beklenen ve gerçekleşen işlem sayısı ya da
-      karmaşıklık (ör. "n = 10⁵: beklenen O(n) ≈ 10⁵, gerçekleşen O(n²) ≈ 10¹⁰"). `ProofBasis`'e `scaling`.
-      Şema bütçesi: 2048 testi (LLM şema modellerine docstring koyma, Faz 36 notu)
-- [ ] Sistem denetimi: `scaling` yalnız `performance` / `garbage_collection` kategorisinde geçerli ve
-      karmaşıklık ifadeleri `parse_bigo` ile ayrışmalı; aksi halde `no_demonstration`
-- [ ] `verify.system.j2` kural 3'e ölçek kanıtı; golden'lar
-- [ ] Testler: `tests/unit/verify/test_proof.py` (`test_scaling_proof_kept_for_performance`,
-      `test_scaling_proof_rejected_for_memory_safety`, `test_unparseable_scaling_dropped`), şema/bütçe
-- [ ] Eval: `eval analyze`'a doğrulamanın düşürdüğü bulguların TP/FP dağılımı (Faz 35 Sonraya maddesi;
-      `finding_checks` sonuç dosyasına yazılır). Canlı ölçüm onayla, yalnız dev
+- [x] Ölçek kanıtı: yeni şema alanı yerine mevcut `input/expected/actual` (`"n = 100000"`, `"O(n)"`,
+      `"O(n^2)"`); `ProofBasis`'e `scaling`. LLM şeması ve 2048 bütçesi değişmedi (ADR-0019 eki)
+- [x] Sistem denetimi: `scaling` yalnız `performance` / `garbage_collection` kategorisinde geçerli,
+      iki ifade `parse_bigo` ile ayrışmalı ve gerçekleşen beklenenden hızlı büyümeli
+      (`collapse_variables`); aksi halde `no_demonstration`
+- [x] `verify.system.j2` kural 3 (c) ölçek kanıtı, kural 4 "kuramsal değil"; ek olarak girdi bir
+      işlem dizisi / motor olayı olabilir (Codex ölçümündeki performans dışı düşürmeler)
+- [x] Testler: `test_proof.py` (ölçek kanıtı 8 test), `test_bigo.py::test_collapse_variables`,
+      `test_models.py`, `test_analyze.py` (düşürme analizi), `test_infrastructure.py`
+      (`finding_checks` sonuç dosyasında), `test_pipeline_verify.py` (`analyze_traced`, ölçek uçtan uca)
+- [x] Eval: `FindingCheck.category`, `Orchestrator.analyze_traced`, `SampleResult.finding_checks`;
+      `eval analyze` "Doğrulamanın attığı bulgular" (gerçek hata / yanlış alarm)
+- [ ] Canlı ölçüm (yalnız dev, onayla): Faz 36'nın açık Claude ölçümüyle birlikte tüm dev
 
 **Commit:** `feat(faz-39): doğrulama geçişinde performans bulguları için ölçek kanıtı`
 

@@ -14,6 +14,7 @@ from codementor.eval.metrics import audit_metrics, match_findings
 from codementor.models.enums import AuditCategory, FindingSource, Severity
 from codementor.models.eval import ExpectedFinding, Label, RunConfig, RunResult, SampleResult
 from codementor.models.findings import Finding
+from codementor.models.verification import FindingCheck
 from tests.unit.eval.helpers import MEM, PERF, finding, label, report, result
 
 DESIGN = AuditCategory.DESIGN
@@ -207,3 +208,64 @@ def test_suggestions_excluded_from_fp_and_counted() -> None:
     assert analysis.predicted_total == 1
     assert analysis.suggestions_total == 1
     assert "öneri 1" in analysis_markdown(analysis)
+
+
+# --- Faz 39: doğrulamanın attığı bulgular -------------------------------------------------------
+
+
+def _check(line: int, category: AuditCategory, *, kept: bool = False) -> FindingCheck:
+    return FindingCheck(
+        finding_id=f"F-{line:03d}",
+        line_start=line,
+        category=category,
+        kept=kept,
+        basis="input" if kept else "unproven",
+    )
+
+
+def _dropping_run() -> tuple[RunResult, dict[str, Label]]:
+    """c-001: 6. satırdaki gerçek hata düştü (FN), 9. satırdaki yanlış alarm düştü."""
+    lb = label(findings=[(PERF, 6), (MEM, 3)])
+    sample = result(report(findings=[finding(MEM, 3)])).model_copy(
+        update={
+            "finding_checks": [
+                _check(3, MEM, kept=True),
+                _check(6, PERF),
+                _check(9, DESIGN),
+            ]
+        }
+    )
+    return _run([sample]), _labels(lb)
+
+
+def test_match_findings_accepts_checks() -> None:
+    expected = [ExpectedFinding(category=PERF, line=6)]
+    pairs = match_findings(expected, [_check(7, PERF)])
+    assert [(e.line, p.line_start) for e, p in pairs] == [(6, 7)]
+
+
+def test_analyze_counts_dropped_true_and_false() -> None:
+    run, labels = _dropping_run()
+    analysis = analyze(run, labels)
+    drops = analysis.verify_drops
+    assert [(d.line, d.category, d.true_issue) for d in drops] == [
+        (6, PERF, True),
+        (9, DESIGN, False),
+    ]
+    assert all(d.basis == "unproven" for d in drops)
+
+
+def test_analyze_without_checks_has_no_drops() -> None:
+    """Faz 39 öncesi sonuç dosyaları: bölüm veri yok der."""
+    lb = label(findings=[(MEM, 3)])
+    analysis = analyze(_run([result(report(findings=[finding(MEM, 3)]))]), _labels(lb))
+    assert analysis.verify_drops == []
+    assert "kaydı yok" in analysis_markdown(analysis)
+
+
+def test_analysis_markdown_has_verify_drop_section() -> None:
+    run, labels = _dropping_run()
+    text = analysis_markdown(analyze(run, labels))
+    assert "## Doğrulamanın attığı bulgular" in text
+    assert "gerçek hata 1" in text
+    assert "yanlış alarm 1" in text

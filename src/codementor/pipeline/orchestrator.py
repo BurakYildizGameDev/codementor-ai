@@ -18,6 +18,7 @@ from codementor.models.questions import Question
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest, LanguageHint, NormalizedCode
 from codementor.models.validation import Tier1Result, Toolchain
+from codementor.models.verification import FindingCheck
 from codementor.pipeline import stages
 from codementor.pipeline.assemble import ReportParts, assemble_report, from_cache
 from codementor.pipeline.cost import estimate_cost, load_pricing
@@ -65,10 +66,19 @@ class _Run:
     question: Question | None = None
     context: QuestionContext | None = None
     warnings: list[str] = field(default_factory=list)
+    finding_checks: list[FindingCheck] = field(default_factory=list)
 
     @property
     def analysis_id(self) -> str:
         return self.timer.analysis_id
+
+
+@dataclass(frozen=True)
+class AnalysisTrace:
+    """Rapor ve öğrenciye gösterilmeyen iç kayıtlar (eval için; Faz 39)."""
+
+    report: AnalysisReport
+    finding_checks: list[FindingCheck]
 
 
 @dataclass
@@ -84,6 +94,11 @@ class Orchestrator:
 
     async def analyze(self, request: AnalysisRequest) -> AnalysisReport:
         """§4 yaşam döngüsü. Kullanıcı hatasında `PipelineError`; sağlayıcı hatası bozulmadır."""
+        return (await self.analyze_traced(request)).report
+
+    async def analyze_traced(self, request: AnalysisRequest) -> AnalysisTrace:
+        """`analyze` ile aynı; ek olarak doğrulama geçişi kararlarını döndürür (önbellekten
+        gelen raporda boştur)."""
         name = request.provider or self.settings.providers.default
         run = _Run(request, StageTimer(new_ulid(), self.bus), name)
         code = self._ingest(run)
@@ -121,7 +136,7 @@ class Orchestrator:
                 attempt=run.attempt,
                 hint_level=profile.hint_level,
             )
-        return report
+        return AnalysisTrace(report, run.finding_checks)
 
     def _build_provider(self, name: str) -> LLMProvider:
         return build_chain(self.settings, primary=name)
@@ -258,6 +273,7 @@ class Orchestrator:
         if outcome.verification is not None:
             verification, notes = stages.scrub_analysis(outcome.verification, verify, templates)
             run.warnings += [*verification.warnings, *notes]
+            run.finding_checks = verification.finding_checks
             parts.findings, parts.complexity = verification.findings, verification.complexity
         else:
             parts.findings = static.findings

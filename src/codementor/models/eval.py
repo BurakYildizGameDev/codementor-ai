@@ -11,6 +11,7 @@ from codementor.models._base import StrictModel
 from codementor.models.bigo import parse_bigo
 from codementor.models.enums import AuditCategory, CompilationStatus, Engine, Language
 from codementor.models.report import AnalysisReport
+from codementor.models.verification import FindingCheck
 
 SAMPLE_ID_PATTERN = r"^(c|cpp|csharp|unity|unreal|python|html|css)-[0-9]{3}$"
 Split = Literal["dev", "test"]
@@ -85,6 +86,9 @@ class SampleResult(StrictModel):
     llm_called: bool = False
     schema_first_try: bool | None = Field(default=None, description="Geçiş A ilk yanıt şemaya uydu")
     schema_final: bool | None = Field(default=None, description="Onarım dahil şemaya uydu")
+    finding_checks: list[FindingCheck] = Field(
+        default_factory=list, description="Doğrulama geçişi kararları (Faz 39); eski dosyada boş"
+    )
 
 
 class RunConfig(StrictModel):

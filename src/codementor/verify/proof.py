@@ -3,6 +3,10 @@
 Saf fonksiyonlar; LLM çağırmaz. Model her LLM bulgusu için ya somut bir girdi (girdi,
 beklenen, gerçekleşen) ya da ihlal edilen bir gereksinim göstermek zorundadır; gösteremediği
 bulgu düşer. Statik ve `confirmed` bulgular deterministik olduğu için doğrulamaya girmez.
+
+Faz 39 (ADR-0019 eki): performans/GC sorununda çıktı doğrudur, yanlış olan büyüme hızıdır. Bu
+yüzden `expected`/`actual` Big-O ise (`O(n)` → `O(n^2)`) ölçek kanıtı sayılır; yalnız bu iki
+kategoride ve gerçekleşen büyüme beklenenden hızlıysa geçerlidir.
 """
 
 from __future__ import annotations
@@ -10,11 +14,14 @@ from __future__ import annotations
 from collections.abc import Collection
 from dataclasses import dataclass, field
 
-from codementor.models.enums import FindingKind, FindingSource
+from codementor.models.bigo import BigOError, collapse_variables, parse_bigo
+from codementor.models.enums import AuditCategory, FindingKind, FindingSource
 from codementor.models.findings import Finding
 from codementor.models.llm_output import LLMFindingVerdict, LLMVerifyOutput
 from codementor.models.verification import FindingCheck, ProofBasis
 from codementor.verify.merge import number_findings
+
+SCALING_CATEGORIES = frozenset({AuditCategory.PERFORMANCE, AuditCategory.GARBAGE_COLLECTION})
 
 
 @dataclass(frozen=True)
@@ -39,13 +46,30 @@ def _filled(*values: str | None) -> bool:
     return all(v is not None and v.strip() for v in values)
 
 
-def _basis(verdict: LLMFindingVerdict | None) -> ProofBasis:
+def _is_bigo_claim(*values: str | None) -> bool:
+    return any(v is not None and v.strip().upper().startswith("O(") for v in values)
+
+
+def _grows(expected: str, actual: str) -> bool:
+    """Gerçekleşen büyüme beklenenden hızlı mı? Ayrışmayan ifade kanıt değildir."""
+    try:
+        return collapse_variables(parse_bigo(actual)) > collapse_variables(parse_bigo(expected))
+    except BigOError:
+        return False
+
+
+def _basis(verdict: LLMFindingVerdict | None, finding: Finding) -> ProofBasis:
     if verdict is None:
         return "no_verdict"
     if verdict.verdict == "unproven":
         return "unproven"
     if _filled(verdict.input, verdict.expected, verdict.actual):
-        return "input"
+        if not _is_bigo_claim(verdict.expected, verdict.actual):
+            return "input"
+        expected, actual = verdict.expected or "", verdict.actual or ""
+        if finding.category in SCALING_CATEGORIES and _grows(expected, actual):
+            return "scaling"
+        return "no_demonstration"
     if _filled(verdict.requirement):
         return "requirement"
     return "no_demonstration"
@@ -63,12 +87,13 @@ def apply_verdicts(findings: list[Finding], output: LLMVerifyOutput) -> ProofRes
     dropped_ids: set[str] = set()
     for index, finding in enumerate(targets, start=1):
         verdict = verdicts.get(index)
-        basis = _basis(verdict)
-        kept = basis in ("input", "requirement", "no_verdict")
+        basis = _basis(verdict, finding)
+        kept = basis in ("input", "requirement", "scaling", "no_verdict")
         checks.append(
             FindingCheck(
                 finding_id=finding.id,
                 line_start=finding.line_start,
+                category=finding.category,
                 kept=kept,
                 basis=basis,
                 reason=verdict.reason if verdict is not None else "",
