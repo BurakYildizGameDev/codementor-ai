@@ -1,0 +1,152 @@
+{
+  "config": {
+    "split": "dev",
+    "provider": "claude_cli",
+    "model": "claude-opus-5-5",
+    "mode": "two_pass",
+    "static_only": false,
+    "ablations": [],
+    "prompt_version": "v1+a4c5ebfc",
+    "rules_version": "r1+d1852061",
+    "schema_version": "1.1",
+    "started_at": "2026-10-04T22:50:20.422096Z",
+    "sample_ids": [
+      "cpp-007"
+    ],
+    "reviewed_only": true,
+    "languages": [],
+    "part": null
+  },
+  "metrics": {
+    "samples": 1,
+    "schema_valid_first_try": 1.0,
+    "schema_valid_after_repair": 1.0,
+    "early_exit_precision": null,
+    "early_exit_recall": null,
+    "complexity_time_exact_acc": 1.0,
+    "complexity_time_class_acc": 1.0,
+    "audit_precision": 1.0,
+    "audit_recall": 1.0,
+    "audit_f1": 1.0,
+    "line_accuracy": 1.0,
+    "leak_rate": 0.0,
+    "injection_resistance": null,
+    "latency_p50_ms": 19820.0,
+    "latency_p95_ms": 19820.0,
+    "tokens_mean": 13589.0,
+    "cost_est": null,
+    "errors": 0,
+    "guard_interventions": 0,
+    "suggestions_total": 0
+  },
+  "samples": [
+    {
+      "id": "cpp-007",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M44HRVC6QPXHQ92HNF48GDGJ",
+        "created_at": "2026-10-04T22:50:40.239731Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "1",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "4. satırdaki döngü en fazla n tur döner; i ya artar ya da eleman silinerek v.size() bir azalır, yani toplam tur sayısı n'dir.",
+            "6. satırdaki erase, silinen konumdan sonraki tüm elemanları bir sola kaydırır: her silmede O(n) iş yapılır.",
+            "En kötü durumda (örneğin tüm elemanlar negatifse ya da negatifler başta toplanmışsa) yaklaşık n silme × O(n) kaydırma yapılır, bu da O(n^2) eder.",
+            "Statik ipucu (O(n^2)) bu analizle örtüşüyor.",
+            "Yerinde çalışıyor, ek kap kullanılmıyor: ek bellek O(1).",
+            "Elemanları tek geçişte sola sıkıştırıp sonra bir kez kırpan bir yaklaşımla O(n) süreye inilebilir."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n",
+          "static_hint": "n^2",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "performance",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "v.erase(v.begin() + i);",
+            "description": "Her negatif eleman için ayrı bir erase çağrılıyor ve her çağrı arkadaki tüm elemanları kaydırıyor. Negatif eleman çoksa büyük vektörlerde toplam iş karesel büyür; oysa aynı sonuç tek geçişte doğrusal sürede elde edilebilir.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Döngü içinde tekrarlı silme: her silmede kaydırma, toplamda karesel süre",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bir vektörün ortasından tek bir eleman çıkardığında, ondan sonra gelen elemanların hepsine ne oluyor ve bu iş, vektörün boyutuna göre nasıl büyüyor?",
+            "Vektördeki elemanların çoğu negatif olsaydı, yaptığın toplam taşıma sayısı eleman sayısıyla nasıl ilişkili olurdu; aynı elemanı defalarca yerinden oynatmadan tutulacak elemanları yerleştirmenin bir yolu olabilir mi?"
+          ],
+          "next_step_hint": "Kağıt üzerinde, hepsi negatif 6 elemanlı küçük bir vektör için her adımda kaç elemanın yer değiştirdiğini say. Sonra her elemanın en fazla bir kez taşındığı bir senaryo düşün.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+a4c5ebfc",
+          "rules_version": "r1+d1852061",
+          "schema_version": "1.1",
+          "tokens_in": 12106,
+          "tokens_out": 1483,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 1,
+            "tier1": 693,
+            "facts": 48,
+            "rules": 19,
+            "prompt_a": 39,
+            "llm_a": 9039,
+            "verify_a": 0,
+            "prompt_v": 5,
+            "llm_v": 4321,
+            "verify_v": 0,
+            "prompt_b": 5,
+            "llm_b": 5637,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 19820,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 6,
+          "category": "performance",
+          "kept": true,
+          "basis": "scaling",
+          "reason": "Her erase(begin()+i) çağrısı arkadaki tüm elemanları bir sola kaydırır. Bütün elemanlar negatifse i hep 0'da kalır ve kaydırma sayıları n-1, n-2, ... diye gider; toplamı yaklaşık n^2/2, yani yaklaşık 5*10^9 kaydırma eder. Tek geçişte elemanları sıkıştırıp sonra bir kez silmek O(n) sürer."
+        }
+      ]
+    }
+  ]
+}

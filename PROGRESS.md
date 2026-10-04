@@ -970,13 +970,15 @@ P/R/F1: 71/65/68, 84/80/82, 79/79/79, 81/85/83; birleşik 96: **79/77/78**, bir 
 Hata/uyarı yok. 35B Opus ile ortak 46 örnekte 75/73/74 (Opus tabanı 79/89/84); model farklı
 olduğundan precision artışı ve "kaçırma oranı düşmez" hedefi hakkında nedensel sonuç çıkarılamaz.
 Öneri `unity-104`'te etiketli hatadan ayrı; otomatik yakın-satır eşleşmesi elle incelendi.
-**Açık sorular:** Claude Opus canlı dev ölçümünün parçaları 3/4 ve 4/4; Codex alternatifi tek başına Faz 36'nın precision/recall etkisini kanıtlamaz. Kural bazında öneri (`cpp-105` CPP-OWN-001, `unreal-107`, `python-105`).
+**Ölçüm tamamlandı (2026-10-05, `docs/FAZ36_OLCUM_DURUMU.md` §7):** Claude Opus 96 örnek 77/88/82 (TP 80, FP 24, FN 11), 32 öneri; hiçbir etiketli hata öneriye düşmedi. Faz 35B ile ortak 46 örnekte 79/89/84 → 76/85/80 (2 TP, 2 FP fark): precision artmadı, recall korundu (FN farkı `cpp-007` doğrulama düşürmesi, Faz 39 sonrası canlı tekrarda korunuyor, ve `csharp-014`/`unreal-014` kategori karışıklığı, Faz 40). Parça kayması: `unity-104` etiket düzeltmesi `select_part` atamasını kaydırdı; eksik 3 örnek ayrıca koşuldu (rehber §6 satır 7).
+**Açık sorular:** Kural bazında öneri (`cpp-105` CPP-OWN-001, `unreal-107`, `python-105`).
 **Bu fazda öğrendiğim:** Şemaya giren her metin dar bağlamda bütçe demektir; geliştirici
 docstring'leri LLM şemasına sızıyordu. Öneriyi ayrı sınıf yapmak, "bulgu yazma" yasağından daha
 az bilgi kaybettiren bir precision aracıdır.
 
 ## Sonraya (kapsam dışı fikirler)
-- Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001); Claude Opus canlı dev koşusuyla precision/recall ve `suggestions_total` ölçümü.
+- Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001). ~~Claude Opus canlı dev ölçümü~~ → yapıldı (2026-10-05).
+- Eval: `select_part` etiket değişikliğine duyarlı; parça atamasını kimlik özetiyle sabitlemek ya da sonuç dosyasına parça kimliklerini yazıp birleştirmede eksik/çakışanı uyarmak.
 - Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.
 - ~~Faz 34: dev setini büyütmek~~ → yapıldı (2026-10-04, dev 96). Kalan: few-shot'ların zayıf modelde etkisi.
 - Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde). ~~Doğrulama kararlarını eval sonucuna yazıp düşürülenlerin TP/FP dağılımını ölçmek~~ → Faz 39.
@@ -1075,7 +1077,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-04):** Faz 0-37 ve 39 (çevrimdışı, `faz/39-dogrulama-performans`) tamamlandı; Faz 38 Codex alternatifi belgelendi, Claude ölçümü (Faz 36+39 birlikte) açık. Sıradaki Faz 40; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Sıradaki Faz 47 (API güven sınırı, öncelikli), sonra Faz 40; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1100,7 +1102,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 10. ~~**Faz 34 — Ölçümün genişletilmesi:**~~ Yapıldı (Faz 34 + 35B notları); dev setini
    büyütme Sonraya.
 
-11. **Faz 38 — Faz 36 canlı ölçümünün tamamlanması:** dev parça 3/4 ve 4/4, birleşik 96 örneklik sonuç.
+11. ~~**Faz 38 — Faz 36 canlı ölçümünün tamamlanması:**~~ Yapıldı (2026-10-05; Claude 96: 77/88/82). dev parça 3/4 ve 4/4, birleşik 96 örneklik sonuç.
    Codex'e verilecek; rehber `docs/EVAL_PARCA_REHBERI.md` (sorunlar oraya yazılır).
 12. **Faz 39 — Doğrulama geçişinde performans bulguları:** `cpp-007` gibi gerçek performans bulguları
    "somut girdi" kanıtı istenince düşüyor; ölçek kanıtı (`scaling`).

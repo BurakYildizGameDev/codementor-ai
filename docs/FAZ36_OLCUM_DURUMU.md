@@ -4,8 +4,9 @@
 **İlgili:** ADR-0022, `docs/EVAL_PARCA_REHBERI.md`, `docs/eval-findings.md` §11,
 `docs/CODEX_3_4_YAPILANLAR.md`
 
-Kısa cevap: **Faz 36'nın kodu bitti; etkisinin ölçümü yarım.** Claude Opus ile 96 örneklik dev
-setinin yalnız yarısı (parça 1/4 ve 2/4) koşuldu. Parça 3/4 ve 4/4 token yetmediği için bekliyor.
+Kısa cevap: **Faz 36'nın ölçümü tamamlandı (2026-10-05, §7).** Claude Opus 96 örnek:
+**77 / 88 / 82**. Öneri sınıfı precision'ı artırmadı, ama recall'u da düşürmedi: hiçbir gerçek
+hata öneriye düşmedi. §1-6 ölçüm yarımken yazıldı; güncel karar §7'de.
 
 ---
 
@@ -160,3 +161,50 @@ Faz 36'yı tek başına görmek istersek A seçeneği gerekir.
 - Precision Faz 35B'nin 79'unun üstündeyse ve recall 89'a yakınsa (±3): Faz 36 başarılı.
 - Recall belirgin düştüyse: önerilere düşen gerçek hataları rehber §4.2 eşleştiricisiyle bul,
   elle incele ve prompt'taki öneri tanımını daralt.
+
+---
+
+## 7. Sonuç (2026-10-05): ölçüm tamamlandı
+
+**Koşular:** Parça 3/4 (`20261004T223206`) ve 4/4 (`20261004T223841`), Claude Opus 5.5,
+`two_pass`, Faz 39 kodu (prompt `v1+a4c5ebfc`). Fark yalnız `verify.system.j2`: parça 1-2
+`v1+7205d091` ile koşulmuştu.
+
+**Parça kayması:** `select_part` bölmeyi etiketlere göre yapıyor. Parça 1-2 koşulduktan sonra
+`unity-104` etiketi değişti (`2f51cdc`), bu da atamayı kaydırdı. Sonuç: 3/4 ve 4/4, 1-2 ile
+3 örnekte çakıştı (`unity-009`, `unity-106`, `unreal-105`; skorlar her iki koşuda aynı) ve
+3 örnek hiç koşulmadı (`unity-014`, `unity-105`, `unreal-007`). Eksik 3 örnek ayrıca koşuldu
+(`20261004T224756_..._missing3_dev.json`). Birleşimde çakışan örneklerin parça 1-2 koşusu
+kullanıldı. Codex'in dört parçası düzeltmeden sonra koşulduğu için kendi içinde tutarlı.
+
+| | P / R / F1 | TP / FP / FN | Öneri |
+|---|---|---|---|
+| **Claude 96 (birleşik)** | **77 / 88 / 82** | 80 / 24 / 11 | 32 |
+| Claude parça 1+2 (48, Faz 39 öncesi) | 75 / 81 / 78 | | 14 |
+| Claude yeni koşular (51, Faz 39) | 76 / 94 / 84 | | 20 (çakışanlar dahil) |
+| Codex gpt-6-luna 96 | 79 / 77 / 78 | 70 / 19 / 21 | 1 |
+
+Dillere göre F1 (Claude 96): CSS 93, C 92, Python 86, Unreal 85, HTML 83, C++ 74, C# 74,
+**Unity 69**.
+
+**Faz 36 kararı (Faz 35B ile ortak 46 örnek):**
+
+| | P / R / F1 | TP / FP / FN |
+|---|---|---|
+| Faz 35 öncesi (doğrulama geçişi yok) | 69 / 89 / 78 | |
+| Faz 35B (doğrulama geçişi, Faz 36 öncesi) | 79 / 89 / 84 | 49 / 13 / 6 |
+| Faz 36 sonrası | 76 / 85 / 80 | 47 / 15 / 8 |
+
+- **Precision artmadı** (79 → 76, 2 FP fazla). §6 ölçütü karşılanmadı.
+- **Recall korundu sayılır.** Öneri↔etiket eşleştiricisi 32 önerinin hiçbirinde etiketli hata
+  bulmadı, yani gerçek hata öneriye düşmedi. 2 FN farkının kaynağı Faz 36 değil:
+  - `cpp-007`: doğrulama geçişi performans bulgusunu attı. Parça 2, Faz 39 öncesi koşulmuştu.
+    Güncel kodla tek örnek yeniden koşuldu (`20261004T225020_..._cpp007-faz39_dev.json`):
+    bulgu korundu, düşürme uyarısı yok (1 TP). Bu düzeltmeyle recall 87 olur (±3 içinde).
+  - `csharp-014` (resource_leak → garbage_collection) ve `unreal-014` (undefined_behavior →
+    memory_safety): doğru satır, farklı kategori → Faz 40.
+- Fark 46 örnekte 2 TP / 2 FP. Tek koşunun gürültüsü bu düzeyde (§4.3), yani etki "nötr".
+
+**Özet cümle:** Faz 36 öneri sınıfı gerçek hataları yutmadan 32 düşük önemli bulguyu ayırıyor.
+Ancak bunu precision artışına çeviremedi: kalan FP'ler önemsiz bulgu değil, kategori karışıklığı
+ve gerçek yanlış alarm. Sıradaki kazanç Faz 40'ta (kategori tutarlılığı).
