@@ -77,8 +77,8 @@ performans dışıydı: sığ kopya → çift silme, gezilirken dizi değişmesi
 - Ölçek kanıtı **mevcut alanlarla** verilir: `input = "n = 100000"`, `expected = "O(n)"`,
   `actual = "O(n^2)"`. LLM şeması, şema sürümü ve dar bağlam bütçesi değişmez. Plandaki yeni alan
   önerisinden bu yüzden vazgeçildi.
-- Sistem denetimi (`verify/proof.py`): `expected` ya da `actual` `O(` ile başlıyorsa iddia ölçek
-  kanıtıdır. Yalnız `performance` / `garbage_collection` kategorisinde geçerlidir. İki ifade de
+- Sistem denetimi (`verify/proof.py`): `expected` ya da `actual` Big-O ile başlıyorsa (`O(`, `o(`,
+  `O (`, `Θ(`; baştaki ayraç grubundan sonraki açıklama yok sayılır) iddia ölçek kanıtıdır. Yalnız `performance` / `garbage_collection` kategorisinde geçerlidir. İki ifade de
   `parse_bigo` ile ayrışmalı ve gerçekleşen beklenenden hızlı büyümelidir (çok değişkenliler
   `collapse_variables` ile tek değişkene indirgenir). Aksi halde taban `no_demonstration`, bulgu
   düşer. Yeni taban `ProofBasis = "scaling"`.
@@ -88,6 +88,10 @@ performans dışıydı: sığ kopya → çift silme, gezilirken dizi değişmesi
   eval sonucuna (`SampleResult.finding_checks`) yazılır. `eval analyze` "Doğrulamanın attığı
   bulgular" bölümünde düşürmeleri gerçek hata / yanlış alarm diye ayırır.
 
-**Bedeli / risk:** Daha az bulgu düşeceği için precision biraz düşebilir. Etki canlı dev
+**Bedeli / risk:** Daha az bulgu düşeceği için precision biraz düşebilir; "işlem dizisi / motor
+olayı" cümlesi performans dışı bulgularda da kanıt eşiğini düşürür. `FindingCheck.finding_id` karar
+anındaki kimliktir; düşürme sonrası yeniden numaralamada rapordaki kimlikle eşleşmeyebilir (eval
+satır + kategoriyle eşler). Eval sonucundaki `reason` sızıntı redaksiyonundan geçer ama kod alıntısı
+içerebilir; veri seti dışı gerçek kullanıcı koduyla eval koşulmamalı. Etki canlı dev
 ölçümüyle (Claude, 96 örnek) görülecek; Faz 39 çevrimdışı yapıldı.
 

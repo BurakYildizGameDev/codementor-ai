@@ -280,3 +280,32 @@ async def test_verify_prompt_mentions_scaling_proof(
     prompt = _text(provider.calls[1])
     assert "O(n^2)" in prompt
     assert "işlem dizisi" in prompt
+
+
+async def test_analyze_traced_single_pass_returns_checks(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    first = {"analysis": analysis_reply(), "socratic": socratic_reply("İlk soru burada mı?")}
+    provider = fake(first, _verify(_verdict("unproven")), socratic_reply())
+    trace = await orchestrator(_enabled(settings), None, provider).analyze_traced(_single())
+    assert [(c.line_start, c.kept) for c in trace.finding_checks] == [(31, False)]
+
+
+async def test_analyze_traced_provider_error_has_no_checks(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    provider = fake(analysis_reply(), FakeReply(error="timeout"), socratic_reply())
+    trace = await orchestrator(_enabled(settings), None, provider).analyze_traced(_request())
+    assert trace.finding_checks == []
+
+
+async def test_analyze_traced_cache_hit_has_no_checks(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    provider = fake(analysis_reply(), _verify(_verdict()), socratic_reply())
+    orch = orchestrator(_enabled(settings), db, provider)
+    first = await orch.analyze_traced(_request())
+    second = await orch.analyze_traced(_request())
+    assert len(first.finding_checks) == 1
+    assert second.report.meta.cache_hit
+    assert second.finding_checks == []

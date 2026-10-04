@@ -269,3 +269,13 @@ def test_analysis_markdown_has_verify_drop_section() -> None:
     assert "## Doğrulamanın attığı bulgular" in text
     assert "gerçek hata 1" in text
     assert "yanlış alarm 1" in text
+
+
+def test_two_drops_one_missed_issue_counts_once() -> None:
+    """Aynı satırda iki düşürme, tek FN: yalnız biri gerçek hata; eşleşmiş beklenen sayılmaz."""
+    lb = label(findings=[(PERF, 6), (MEM, 3)])
+    sample = result(report(findings=[finding(MEM, 3)])).model_copy(
+        update={"finding_checks": [_check(6, PERF), _check(6, PERF), _check(3, MEM)]}
+    )
+    drops = analyze(_run([sample]), _labels(lb)).verify_drops
+    assert [d.true_issue for d in drops] == [True, False, False]

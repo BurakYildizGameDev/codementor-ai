@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from codementor.models.enums import AuditCategory, FindingSource, Severity
 from codementor.models.findings import Finding
 from codementor.models.llm_output import LLMVerifyOutput
@@ -200,3 +202,48 @@ def test_plain_input_proof_unchanged_for_performance() -> None:
 def test_check_records_category() -> None:
     _, result = _single(AuditCategory.PERFORMANCE, _unproven(1))
     assert result.checks[0].category is AuditCategory.PERFORMANCE
+
+
+@pytest.mark.parametrize(
+    ("expected", "actual"),
+    [
+        ("o(n)", "o(n^2)"),
+        ("O (n)", "O (n^2)"),
+        ("Θ(n)", "Θ(n^2)"),
+        ("O(n)", "O(n^2) (iç içe döngü)"),
+        ("O(n^2)", "O(2^n)"),
+        ("O(n^3)", "O(n!)"),
+        ("O(1)", "O(log n)"),
+    ],
+)
+def test_scaling_forms_kept_for_performance(expected: str, actual: str) -> None:
+    """Denetim kaçağı: biçim farkları da ölçek iddiası sayılır, açıklama eki yok sayılır."""
+    _, result = _single(AuditCategory.PERFORMANCE, _scaling(1, expected, actual))
+    assert result.checks[0].basis == "scaling"
+
+
+@pytest.mark.parametrize(
+    ("expected", "actual"),
+    [
+        ("O (n)", "O (n^2)"),  # boşluklu biçim kategori kısıtını atlatamaz
+        ("o(n)", "o(n^2)"),
+        ("O(n)", "~10^10 işlem"),  # tek taraflı Big-O
+    ],
+)
+def test_scaling_forms_rejected_for_memory_safety(expected: str, actual: str) -> None:
+    _, result = _single(AuditCategory.MEMORY_SAFETY, _scaling(1, expected, actual))
+    assert result.checks[0].basis == "no_demonstration"
+
+
+@pytest.mark.parametrize(
+    ("expected", "actual"),
+    [
+        ("O(n^2)", "O(n)"),  # küçülen büyüme
+        ("O(n)", "~10^10 işlem, zaman aşımı"),  # tek taraflı
+        ("O(n)", "O(n^2"),  # kapanmayan ayraç
+    ],
+)
+def test_invalid_scaling_dropped_for_performance(expected: str, actual: str) -> None:
+    _, result = _single(AuditCategory.PERFORMANCE, _scaling(1, expected, actual))
+    assert result.checks[0].basis == "no_demonstration"
+    assert result.dropped == 1

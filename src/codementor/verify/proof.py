@@ -5,12 +5,13 @@ beklenen, gerçekleşen) ya da ihlal edilen bir gereksinim göstermek zorundadı
 bulgu düşer. Statik ve `confirmed` bulgular deterministik olduğu için doğrulamaya girmez.
 
 Faz 39 (ADR-0019 eki): performans/GC sorununda çıktı doğrudur, yanlış olan büyüme hızıdır. Bu
-yüzden `expected`/`actual` Big-O ise (`O(n)` → `O(n^2)`) ölçek kanıtı sayılır; yalnız bu iki
-kategoride ve gerçekleşen büyüme beklenenden hızlıysa geçerlidir.
+yüzden `expected`/`actual` Big-O ile başlıyorsa (`O(n)` → `O(n^2)`) ölçek kanıtı sayılır;
+yalnız bu iki kategoride ve gerçekleşen büyüme beklenenden hızlıysa geçerlidir.
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Collection
 from dataclasses import dataclass, field
 
@@ -46,12 +47,27 @@ def _filled(*values: str | None) -> bool:
     return all(v is not None and v.strip() for v in values)
 
 
-def _is_bigo_claim(*values: str | None) -> bool:
-    return any(v is not None and v.strip().upper().startswith("O(") for v in values)
+_BIGO_HEAD = re.compile(r"^\s*[oOΘθ]\s*\(")
 
 
-def _grows(expected: str, actual: str) -> bool:
-    """Gerçekleşen büyüme beklenenden hızlı mı? Ayrışmayan ifade kanıt değildir."""
+def _leading_bigo(text: str | None) -> str | None:
+    """Metnin başındaki `O(...)` grubu (`Θ`, küçük harf, `O (` da); sonrasındaki açıklama
+    yok sayılır: `O(n^2) (iç içe döngü)` → `O(n^2)`. Big-O ile başlamıyorsa None."""
+    if text is None or (head := _BIGO_HEAD.match(text)) is None:
+        return None
+    depth, start = 0, head.end() - 1
+    for i in range(start, len(text)):
+        depth += {"(": 1, ")": -1}.get(text[i], 0)
+        if depth == 0:
+            return "O" + text[start : i + 1]
+    return text  # kapanmayan ayraç: ayrışmaz, kanıt sayılmaz
+
+
+def _grows(expected: str | None, actual: str | None) -> bool:
+    """Gerçekleşen büyüme beklenenden hızlı mı? İki taraf da Big-O olmalı; ayrışmayan ifade
+    kanıt değildir."""
+    if expected is None or actual is None:
+        return False
     try:
         return collapse_variables(parse_bigo(actual)) > collapse_variables(parse_bigo(expected))
     except BigOError:
@@ -64,9 +80,9 @@ def _basis(verdict: LLMFindingVerdict | None, finding: Finding) -> ProofBasis:
     if verdict.verdict == "unproven":
         return "unproven"
     if _filled(verdict.input, verdict.expected, verdict.actual):
-        if not _is_bigo_claim(verdict.expected, verdict.actual):
+        expected, actual = _leading_bigo(verdict.expected), _leading_bigo(verdict.actual)
+        if expected is None and actual is None:
             return "input"
-        expected, actual = verdict.expected or "", verdict.actual or ""
         if finding.category in SCALING_CATEGORIES and _grows(expected, actual):
             return "scaling"
         return "no_demonstration"
