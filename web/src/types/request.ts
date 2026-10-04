@@ -11,6 +11,9 @@ export type Language = "c" | "cpp" | "csharp" | "python" | "html" | "css";
 export type PipelineMode = "two_pass" | "single_pass";
 export type Tier1 = boolean | null;
 export type UseCache = boolean | null;
+/**
+ * Boşsa varsayılan; API'de yalnız `api.allowed_providers`
+ */
 export type Provider = string | null;
 export type QuestionId = string | null;
 export type SessionId = string | null;

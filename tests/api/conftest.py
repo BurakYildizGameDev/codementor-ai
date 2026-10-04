@@ -33,7 +33,9 @@ async def client_for(
             db=db,
             provider_factory=(lambda _n: provider) if provider is not None else None,
         )
-        client = httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
+        client = httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://127.0.0.1"
+        )
         clients.append(client)
         return client
 

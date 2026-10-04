@@ -66,7 +66,9 @@ async def test_provider_config_missing_503(settings: Settings, db: Database) -> 
         raise ProviderConfigError("openai", "model tanımlı değil")
 
     app = create_app(settings, db=db, provider_factory=broken)
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://127.0.0.1"
+    ) as c:
         response = await c.post("/v1/analyze", json={"code": "int x;", "language": "c"})
     assert response.status_code == 503
     assert response.headers["content-type"] == PROBLEM

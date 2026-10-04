@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from codementor import __version__
 from codementor.api.auth import API_KEY_HEADER, install_api_key
 from codementor.api.errors import install_error_handlers
+from codementor.api.guard import GuardMiddleware, allowed_hosts
 from codementor.api.routes import router
 from codementor.api.state import ApiState
 from codementor.config import Settings, get_settings
@@ -47,6 +48,12 @@ def create_app(
         allow_origins=settings.api.cors_origins,
         allow_methods=["GET", "POST"],
         allow_headers=["content-type", API_KEY_HEADER],
+    )
+    # en son eklenen en dışta çalışır: Host ve gövde sınırı her şeyden önce (Faz 47)
+    app.add_middleware(
+        GuardMiddleware,
+        hosts=allowed_hosts(settings),
+        max_body_bytes=settings.api.max_body_bytes,
     )
     install_error_handlers(app)
     app.include_router(router)

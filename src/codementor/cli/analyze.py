@@ -119,6 +119,9 @@ def analyze(
         settings = load_settings()
     except (ValidationError, tomllib.TOMLDecodeError, OSError) as exc:
         raise _fail(console, f"Yapılandırma okunamadı: {exc}") from exc
+    if tier1:  # yerel kullanıcı kendi yapılandırmasını açabilir; istek yalnız kapatır (Faz 47)
+        validation = settings.validation.model_copy(update={"tier1_enabled": True})
+        settings = settings.model_copy(update={"validation": validation})
     try:
         if path.stat().st_size > MAX_FILE_BYTES:
             raise _fail(console, f"Dosya çok büyük: {path}")

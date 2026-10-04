@@ -1733,22 +1733,22 @@ olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın ka
 
 **Commit:** `fix(faz-46): C-MEM-003 kullanım öncesi null denetimi`
 
-### Faz 47 — API güven sınırı (YAPILACAK; öncelikli)
+### Faz 47 — API güven sınırı (YAPILDI 2026-10-05)
 
 **Dal:** `faz/47-api-guven-siniri` · **Mimari:** §9, §12 · **ADR:** yeni (API güven sınırı)
 **Kaynak:** 2026-10-04 tam tarama (kod-denetci) K1, K2, K3, K7; Claude kodda doğruladı.
 
 **Amaç:** İstemci sunucu yapılandırmasını aşamasın; yerel API tarayıcı saldırılarına kapansın.
 
-- [ ] `options.tier1` yalnız kapatabilir (`orchestrator._validation`, bugün
+- [x] `options.tier1` yalnız kapatabilir (`orchestrator._validation`, bugün
       `tier1_enabled=false`'u eziyor): `settings.tier1_enabled and tier1 is not False`
-- [ ] `TrustedHostMiddleware` (DNS rebinding): loopback'te `127.0.0.1`/`localhost`/`[::1]`,
+- [x] `TrustedHostMiddleware` (DNS rebinding): loopback'te `127.0.0.1`/`localhost`/`[::1]`,
       dışa açıkken `api.allowed_hosts`
-- [ ] `api.allowed_providers` (varsayılan `default` + `fallback`); dışındaki ad 422 (bugün
+- [x] `api.allowed_providers` (varsayılan `default` + `fallback`); dışındaki ad 422 (bugün
       istemci `claude_cli`/`codex` seçip kullanıcının aboneliğini harcatabiliyor)
-- [ ] `AnalysisRequest` alan sınırları (`code` ≤ `limits.max_bytes` × 4; kimlikler ≤ 128 ve
+- [x] `AnalysisRequest` alan sınırları (`code` ≤ `limits.max_bytes` × 4; kimlikler ≤ 128 ve
       `^[A-Za-z0-9_.-]+$`), `Content-Length` sınırı (413), `api.max_concurrent_analyses` (503)
-- [ ] `cli/serve.py` eski "kimlik doğrulaması yok" uyarısı; mimari §12 "hız sınırlama" ifadesi
+- [x] `cli/serve.py` eski "kimlik doğrulaması yok" uyarısı; mimari §12 "hız sınırlama" ifadesi
       gerçeğe göre düzeltilir
 
 **Kabul:** config kapalıyken `options.tier1=true` derleyiciyi çağırmaz (sahte runner);

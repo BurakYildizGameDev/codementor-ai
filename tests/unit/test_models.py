@@ -543,6 +543,16 @@ def test_request_rejects_empty_code_and_extras() -> None:
         AnalysisRequest.model_validate({"code": "x", "hint_level": 2})
 
 
+@pytest.mark.parametrize("field", ["question_id", "session_id", "provider"])
+def test_request_identifier_limits(field: str) -> None:
+    """Faz 47: kimlikler ≤ 128 karakter, `^[A-Za-z0-9_.-]+$`."""
+    assert getattr(AnalysisRequest.model_validate({"code": "x", field: "a" * 128}), field)
+    AnalysisRequest.model_validate({"code": "x", field: "desktop-1a2b.c_d"})
+    for bad in ("a" * 129, "a/b", "a b", "", "ı"):
+        with pytest.raises(ValidationError):
+            AnalysisRequest.model_validate({"code": "x", field: bad})
+
+
 # ---------------------------------------------------------------- olgular (§5.3.1)
 
 

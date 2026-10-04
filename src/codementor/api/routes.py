@@ -5,17 +5,20 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from collections.abc import AsyncIterator, Callable
 from functools import lru_cache
 from importlib.resources import files
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Query, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
+from starlette.background import BackgroundTask
 
 from codementor import __version__
 from codementor.api.errors import ApiProblemError
 from codementor.api.sse import SSE_HEADERS, stream_analysis
 from codementor.api.state import ApiState
+from codementor.config import Settings
 from codementor.models.api import PROBLEM_JSON, Health, Problem, Readiness
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.provider import ProviderStatus
@@ -35,6 +38,9 @@ from codementor.validation.toolchain import compiler_statuses, get_toolchain
 SARIF_MEDIA_TYPE = "application/sarif+json"
 MARKDOWN_MEDIA_TYPE = "text/markdown; charset=utf-8"
 _EXTENSIONS = {Language.C: "c", Language.CPP: "cpp", Language.CSHARP: "cs"}
+# Kaba ön sınır (karakter): asıl bayt/satır sınırı K0'da (`too_large`); bu, devasa girdiyi
+# normalizasyona hiç sokmaz (Faz 47)
+CODE_CHARS_FACTOR = 4
 
 router = APIRouter()
 
@@ -78,7 +84,12 @@ def _state(request: Request) -> ApiState:
 )
 async def analyze(request: Request, body: AnalyzeBody) -> AnalysisReport:
     """Senkron analiz. Sağlayıcıların hepsi düşse de rapor döner (`meta.degraded=true`)."""
-    return await _state(request).orchestrator().analyze(body)
+    state = _state(request)
+    _admit(state, body)
+    try:
+        return await state.orchestrator().analyze(body)
+    finally:
+        state.slots.release()
 
 
 @router.post(
@@ -92,15 +103,67 @@ async def analyze(request: Request, body: AnalyzeBody) -> AnalysisReport:
                     '"duration_ms":6}\n\nevent: report\ndata: {...AnalysisReport...}\n\n'
                 }
             }
-        }
+        },
+        **_problems(413, 422, 503),
     },
     tags=["analiz"],
 )
 async def analyze_stream(request: Request, body: AnalyzeBody) -> StreamingResponse:
     """SSE: `stage` olayları (`started`/`completed`/`skipped`), sonda `report` ya da `error`."""
     state = _state(request)
-    stream = stream_analysis(state.orchestrator, body, request.url.path)
-    return StreamingResponse(stream, media_type="text/event-stream", headers=SSE_HEADERS)
+    _admit(state, body)
+    release = _once(state.slots.release)
+
+    async def guarded() -> AsyncIterator[str]:
+        try:
+            async for chunk in stream_analysis(state.orchestrator, body, request.url.path):
+                yield chunk
+        finally:
+            release()
+
+    # akış hiç başlamadan kopan bağlantıda da yuva bırakılsın: arka plan görevi yedek
+    return StreamingResponse(
+        guarded(),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+        background=BackgroundTask(release),
+    )
+
+
+def allowed_providers(settings: Settings) -> list[str]:
+    """İstekte seçilebilen sağlayıcılar: `api.allowed_providers`, yoksa varsayılan + fallback."""
+    configured = settings.api.allowed_providers
+    return configured if configured is not None else chain_names(settings.providers)
+
+
+def _admit(state: ApiState, body: AnalysisRequest) -> None:
+    """Analiz kapısı (Faz 47): izinli sağlayıcı, kaba kod sınırı, eşzamanlılık yuvası.
+
+    Yuva en son alınır; reddedilen istek yuva tutmaz. Alınan yuvayı çağıran bırakır.
+    """
+    settings = state.settings
+    if body.provider is not None and body.provider not in allowed_providers(settings):
+        raise ApiProblemError(
+            422, f"'{body.provider}' sağlayıcısı bu sunucuda seçilemez (api.allowed_providers)."
+        )
+    if len(body.code) > settings.limits.max_bytes * CODE_CHARS_FACTOR:
+        raise ApiProblemError(413, "Kod çok büyük: sınırın çok üzerinde (limits.max_bytes).")
+    if not state.slots.try_acquire():
+        raise ApiProblemError(
+            503, "Sunucu meşgul: eşzamanlı analiz sınırına ulaşıldı; biraz sonra yeniden dene."
+        )
+
+
+def _once(action: Callable[[], None]) -> Callable[[], None]:
+    done = False
+
+    def run() -> None:
+        nonlocal done
+        if not done:
+            done = True
+            action()
+
+    return run
 
 
 def _stored(request: Request, analysis_id: str) -> AnalysisReport:
@@ -173,9 +236,9 @@ def get_question(request: Request, question_id: str) -> QuestionPublic:
 
 @router.get("/v1/providers", response_model=list[ProviderStatus], tags=["sistem"])
 async def list_providers(request: Request) -> list[ProviderStatus]:
-    """Etkin sağlayıcılar (varsayılan + fallback) ve erişilebilirlik; anahtar değeri dönmez."""
-    providers = _state(request).settings.providers
-    return await check_providers(chain_names(providers), providers)
+    """İstekte seçilebilen sağlayıcılar ve erişilebilirlik; anahtar değeri dönmez (Faz 47)."""
+    settings = _state(request).settings
+    return await check_providers(allowed_providers(settings), settings.providers)
 
 
 @router.get("/v1/rules", response_model=list[RuleInfo], tags=["sistem"])

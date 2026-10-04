@@ -131,6 +131,17 @@ class ApiSettings(BaseModel):
         default=None,
         description="Doluysa bu ortam değişkenindeki anahtar `/v1/*` için X-API-Key ister (Faz 26)",
     )
+    # Faz 47 (ADR-0023): istemci sunucu yapılandırmasını aşamaz
+    allowed_hosts: list[str] = Field(
+        default_factory=list,
+        description="Loopback'e ek kabul edilen Host adları (DNS rebinding); `*` denetimi kapatır",
+    )
+    allowed_providers: list[str] | None = Field(
+        default=None,
+        description="İstekte seçilebilen sağlayıcılar; boşsa `providers.default` + `fallback`",
+    )
+    max_body_bytes: int = Field(default=1024 * 1024, ge=1024)
+    max_concurrent_analyses: int = Field(default=4, ge=1)
 
 
 class StorageSettings(BaseModel):

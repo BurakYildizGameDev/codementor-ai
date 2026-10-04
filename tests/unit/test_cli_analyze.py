@@ -148,3 +148,20 @@ def test_no_cache_flag_calls_provider_again(run: Any) -> None:
     third = run(LINKED_LIST, *args, "--no-cache", replies=replies)
     assert json.loads(third.stdout)["meta"]["cache_hit"] is False
     assert len(run.calls[-1].calls) == 2
+
+
+@pytest.mark.parametrize(("flag", "expected"), [("--tier1", True), ("--no-tier1", False)])
+def test_cli_tier1_flag_controls_local_config(
+    run: Any, monkeypatch: pytest.MonkeyPatch, flag: str, expected: bool
+) -> None:
+    """Faz 47: istek Tier 1'i açamaz, ama yerel CLI kullanıcısı kendi yapılandırmasını açabilir."""
+    seen: list[bool] = []
+    validation = Orchestrator._validation
+
+    def capture(self: Orchestrator, request: Any) -> Any:
+        seen.append(self.settings.validation.tier1_enabled)
+        return validation(self, request)
+
+    monkeypatch.setattr(Orchestrator, "_validation", capture)
+    run(CLEAN_C, flag, "--format", "json")
+    assert seen == [expected]

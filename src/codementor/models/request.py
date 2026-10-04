@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import Field, model_validator
 
 from codementor.models._base import StrictModel
 from codementor.models.enums import Engine, Language, PipelineMode, check_engine_language
+
+# İstemciden gelen kimlik: kısa, yol/boşluk karakteri yok (Faz 47, ADR-0023)
+Identifier = Annotated[str, Field(max_length=128, pattern=r"^[A-Za-z0-9_.-]+$")]
 
 
 class AnalysisOptions(StrictModel):
@@ -24,9 +27,11 @@ class AnalysisRequest(StrictModel):
     code: str = Field(min_length=1)
     language: Language | None = Field(default=None, description="Boşsa sezgisel tespit")
     engine: Engine | None = Field(default=None, description="Boşsa sezgisel tespit")
-    question_id: str | None = None
-    session_id: str | None = None
-    provider: str | None = None
+    question_id: Identifier | None = None
+    session_id: Identifier | None = None
+    provider: Identifier | None = Field(
+        default=None, description="Boşsa varsayılan; API'de yalnız `api.allowed_providers`"
+    )
     options: AnalysisOptions = Field(default_factory=AnalysisOptions)
 
 

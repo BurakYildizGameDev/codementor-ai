@@ -35,8 +35,9 @@
 | 34 + 35B | ✅ | faz/34-eval-genisletme | 2026-10-03 | Claude Code / — |
 | 37 | ✅ | faz/37-saglayici-sadelestirme | 2026-10-03 | Claude Code / — |
 | 36 | ✅ | faz/36-hata-oneri | 2026-10-04 | Claude Code / — |
-| 38 | 🟡 Codex alternatifi; Claude 3/4–4/4 açık | faz/36-hata-oneri | 2026-10-04 | Codex / Claude Code |
-| 39 | ✅ (canlı ölçüm açık) | faz/39-dogrulama-performans | 2026-10-04 | Claude Code / kod-denetci |
+| 38 | ✅ Claude 96 ölçümü 2026-10-05 (77/88/82) | faz/36-hata-oneri | 2026-10-05 | Codex / Claude Code |
+| 39 | ✅ (`cpp-007` canlıda doğrulandı) | faz/39-dogrulama-performans | 2026-10-04 | Claude Code / kod-denetci |
+| 47 | ✅ | faz/47-api-guven-siniri | 2026-10-05 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -877,6 +878,18 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 47 — Notlar (API güven sınırı; ADR-0023)
+**Yapılanlar:** `orchestrator._validation`: istek Tier 1'i yalnız kapatır (`--tier1` CLI'de yerel yapılandırmayı açar). `api/guard.py`: saf ASGI `GuardMiddleware` (Host doğrulaması: loopback + `api.allowed_hosts`, `*` kapatır → 400 problem+json; `Content-Length` > `api.max_body_bytes` okunmadan, chunked gövde sınırda kesilerek 413), `AnalysisSlots` (`api.max_concurrent_analyses`, dolunca 503). `routes._admit`: izinsiz sağlayıcı 422 (`api.allowed_providers`, boşsa default + fallback), kod > `limits.max_bytes` × 4 karakter 413, yuva en son alınır; SSE yuvası akış bitince ya da arka plan görevinde bir kez bırakılır. `/v1/providers` izin listesini döndürür (web seçicisi tutarlı). `AnalysisRequest` kimlikleri `Identifier` (≤ 128, `^[A-Za-z0-9_.-]+$`). `serve` uyarısı anahtar/Host durumunu söyler. Mimari §9/§12/§17/§20, ADR-0023, şema + web tipleri yenilendi. Testler: `tests/api/test_trust_boundary.py`, `tests/integration/test_tier1_request_policy.py`, `test_models.py::test_request_identifier_limits`, `test_cli_analyze.py::test_cli_tier1_flag_controls_local_config`.
+**Alınan kararlar (ve neden):**
+- `TrustedHostMiddleware` yerine kendi ara katman: Starlette düz metin 400 veriyor, §9 problem+json ister; davranış aynı (IPv6 köşeli ayraç, port atılır, büyük/küçük harf duyarsız).
+- Kod ön sınırı 413 (422 değil): §9 "kod çok büyük" ile tutarlı; ayara bağlı olduğu için modelde değil rotada.
+- Sağlayıcı izin listesi yalnız API'de; CLI/masaüstü yerel kullanıcının kendi seçimi. Kimlik kalıbı ise modelde (tüm istemciler).
+- Gövde ≤ 1 MiB bellekte tamponlanır; akışlı gövde gerektiren uç nokta yok. İstek/dakika hız sınırı eklenmedi (§12 düzeltildi).
+- API test taban adresi `http://127.0.0.1` (`http://test` artık 400).
+- Ek düzeltme: Faz 36 commit'iyle eklenen dev sonuçları README dev tablosuna girmemişti (`test_readme_table` düşüyordu); tablo `eval compare` çıktısıyla yenilendi.
+**Açık sorular:** Yok.
+**Bu fazda öğrendiğim:** CORS yanıtın okunmasını engeller, isteğin gitmesini engellemez; yerel servisin asıl kapısı Host başlığı ve sunucu tarafı izin listeleridir.
+
 ## Faz 39 — Notlar (doğrulamada ölçek kanıtı; ADR-0019 eki)
 **Yapılanlar:**
 - `verify/proof.py`: `expected`/`actual` `O(` ile başlıyorsa ölçek iddiası. Yalnız
@@ -1077,7 +1090,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Sıradaki Faz 47 (API güven sınırı, öncelikli), sonra Faz 40; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`). Sıradaki Faz 48 (rol etiketi enjeksiyonu, süre sınırı), sonra Faz 40; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1115,7 +1128,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 17. **Faz 44 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.
 18. **Faz 45 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.
 19. **Faz 46 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.
-20. **Faz 47 — API güven sınırı (öncelikli):** istek Tier 1'i açamaz, Host doğrulaması, izinli
+20. ~~**Faz 47 — API güven sınırı (öncelikli):**~~ Yapıldı (2026-10-05, ADR-0023). istek Tier 1'i açamaz, Host doğrulaması, izinli
    sağlayıcılar, girdi/gövde sınırları (2026-10-04 tam tarama).
 21. **Faz 48 — Rol sınırlayıcıları ve analiz süresi:** `<system>`/`<user>` enjeksiyonu, toplam süre sınırı.
 22. **Faz 49 — Depolama ve önbellek:** oturum yarışı (500), `rules_version` kapsamı (Faz 44 öncesi), saklama.

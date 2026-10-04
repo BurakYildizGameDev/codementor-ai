@@ -216,10 +216,10 @@ class Orchestrator:
             raise
 
     def _validation(self, request: AnalysisRequest) -> ValidationSettings:
-        tier1 = request.options.tier1
-        if tier1 is None:
+        # İstek Tier 1'i yalnız kapatabilir; yapılandırmada kapalıysa açamaz (Faz 47, ADR-0023)
+        if request.options.tier1 is not False:
             return self.settings.validation
-        return self.settings.validation.model_copy(update={"tier1_enabled": tier1})
+        return self.settings.validation.model_copy(update={"tier1_enabled": False})
 
     async def _analyze(
         self,

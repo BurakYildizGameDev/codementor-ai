@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from codementor.api.guard import AnalysisSlots
 from codementor.config import Settings
 from codementor.pipeline.events import EventBus
 from codementor.pipeline.orchestrator import Orchestrator, ProviderFactory
@@ -19,6 +20,10 @@ class ApiState:
     db: Database | None = None
     provider_factory: ProviderFactory | None = None
     _bank: QuestionBank | None = field(default=None, repr=False)
+    slots: AnalysisSlots = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.slots = AnalysisSlots(self.settings.api.max_concurrent_analyses)
 
     def database(self) -> Database:
         if self.db is None:

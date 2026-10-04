@@ -114,6 +114,8 @@
     "provider": {
       "anyOf": [
         {
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.-]+$",
           "type": "string"
         },
         {
@@ -121,11 +123,14 @@
         }
       ],
       "default": null,
+      "description": "Boşsa varsayılan; API'de yalnız `api.allowed_providers`",
       "title": "Provider"
     },
     "question_id": {
       "anyOf": [
         {
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.-]+$",
           "type": "string"
         },
         {
@@ -138,6 +143,8 @@
     "session_id": {
       "anyOf": [
         {
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.-]+$",
           "type": "string"
         },
         {
