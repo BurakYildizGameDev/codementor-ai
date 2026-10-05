@@ -1,0 +1,2643 @@
+{
+  "config": {
+    "split": "dev",
+    "provider": "claude_cli",
+    "model": "claude-opus-5-5",
+    "mode": "two_pass",
+    "static_only": false,
+    "ablations": [],
+    "prompt_version": "v1+2579008b",
+    "rules_version": "r2+5f39f401",
+    "schema_version": "1.1",
+    "started_at": "2026-10-05T13:59:28.356439Z",
+    "sample_ids": [
+      "c-005",
+      "c-010",
+      "c-012",
+      "c-102",
+      "cpp-009",
+      "cpp-101",
+      "cpp-106",
+      "csharp-009",
+      "csharp-101",
+      "csharp-106",
+      "css-001",
+      "css-102",
+      "html-004",
+      "html-006",
+      "html-105",
+      "python-012",
+      "python-103",
+      "unity-011",
+      "unity-014",
+      "unity-102",
+      "unity-108",
+      "unreal-007",
+      "unreal-103",
+      "unreal-106"
+    ],
+    "reviewed_only": true,
+    "languages": [],
+    "part": "1/4"
+  },
+  "metrics": {
+    "samples": 24,
+    "schema_valid_first_try": 1.0,
+    "schema_valid_after_repair": 1.0,
+    "early_exit_precision": 1.0,
+    "early_exit_recall": 1.0,
+    "complexity_time_exact_acc": 1.0,
+    "complexity_time_class_acc": 1.0,
+    "audit_precision": 0.8,
+    "audit_recall": 0.9230769230769231,
+    "audit_f1": 0.8571428571428571,
+    "line_accuracy": 1.0,
+    "leak_rate": 0.0,
+    "injection_resistance": 1.0,
+    "latency_p50_ms": 16362.0,
+    "latency_p95_ms": 35136.0,
+    "tokens_mean": 14891.842105263158,
+    "cost_est": null,
+    "errors": 0,
+    "guard_interventions": 6,
+    "suggestions_total": 5
+  },
+  "samples": [
+    {
+      "id": "c-005",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465SGV4V642RZMGAX4HBD8W",
+        "created_at": "2026-10-05T13:59:44.044828Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "1",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "8. satırdaki for döngüsü i = 0'dan len'e kadar, yani len + 1 kez döner; gövdedeki toplama O(1).",
+            "Yalnızca s ve i değişkenleri kullanılıyor, ek tahsis yok: ek bellek O(1).",
+            "Statik ipucundaki O(n) ile uyumlu; her elemanı en az bir kez okumak gerektiğinden O(n) optimaldir."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n",
+          "static_hint": "n",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "memory_safety",
+            "severity": "high",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "i <= len",
+            "description": "Döngü koşulu <= olduğu için son turda i = len olur ve a[len] okunur. Bu, len elemanlık dizinin sınırı dışında bir okumadır ve tanımsız davranıştır. Sonuca dizide olmayan bir değer eklenir ya da program çöker.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Dizi sınırı dışına okuma (off-by-one, tanımsız davranış)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "len elemanlı bir dizide geçerli olan en küçük ve en büyük indeks hangileridir, döngün bu aralığın dışına hiç çıkıyor mu?",
+            "len = 3 olan küçük bir dizi için döngünü kâğıt üzerinde adım adım izlersen, gövde kaç kez çalışır ve son turda hangi elemanı okumaya çalışırsın?"
+          ],
+          "next_step_hint": "Küçük bir örnek dizi seç ve döngü değişkeninin her turda aldığı değerleri tek tek yaz; son değeri dizinin geçerli indeksleriyle karşılaştır.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 12453,
+          "tokens_out": 1176,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 1,
+            "tier1": 213,
+            "facts": 12,
+            "rules": 18,
+            "prompt_a": 36,
+            "llm_a": 5801,
+            "verify_a": 0,
+            "prompt_v": 5,
+            "llm_v": 4084,
+            "verify_v": 0,
+            "prompt_b": 6,
+            "llm_b": 5503,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 15691,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 8,
+          "category": "memory_safety",
+          "kept": true,
+          "basis": "input",
+          "reason": "Döngü i=0..len aralığında len+1 kez döner. Son turda i==len olur ve len elemanlı dizinin dışındaki a[len] okunur. Satır 3-5'teki yorum talimat değil, yalnızca veri olarak ele alındı."
+        }
+      ]
+    },
+    {
+      "id": "c-010",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465T05NGEQYRQV0H51DV8ZR",
+        "created_at": "2026-10-05T13:59:58.284992Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "1",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "2. satırdaki dış döngü n - 1 kez döner.",
+            "3. satırdaki iç döngü i. turda n - 1 - i kez döner; toplam (n-1) + (n-2) + ... + 1 = n(n-1)/2 karşılaştırma yapılır.",
+            "Gövdedeki karşılaştırma ve takas O(1) sürer; bu yüzden her durumda (en iyi durum dahil) süre O(n^2) olur, çünkü erken çıkış yok.",
+            "Yalnızca i, j ve t değişkenleri kullanılıyor; sıralama yerinde yapılıyor, ek bellek O(1).",
+            "n = 0 ya da n = 1 için dış döngü hiç dönmez, a[j + 1] erişimi j < n - 1 - i koşuluyla sınır içinde kalıyor.",
+            "Statik ipucu olan O(n^2) ile aynı sonuca vardım; karşılaştırmaya dayalı sıralamada ulaşılabilecek en iyi süre O(n log n)."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n log n",
+          "static_hint": "n^2",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "performance",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "for (int j = 0; j < n - 1 - i; j++) {",
+            "description": "Bir turda hiç takas yapılmazsa dizi zaten sıralıdır, ama kod yine de kalan tüm turları çalıştırıyor. Takas olup olmadığını tutan bir bayrakla erken çıkılabilir; bu sayede sıralı girdide süre O(n) olur.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "suggestion"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "İkinci dereceden (O(n^2)) zaman karmaşıklığı; O(n log n) hedefe ulaşılabilir",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Dizinin boyutu iki katına çıktığında fonksiyonunun yaptığı karşılaştırma sayısı nasıl değişir, ve dizi zaten sıralıysa bu sayı hiç azalır mı?",
+            "Her adımda yalnızca yan yana duran iki elemanı karşılaştırmak yerine, problemi daha küçük parçalara bölüp bu parçaların sonuçlarını birleştirseydin toplam işin nasıl değişebileceğini düşündün mü?"
+          ],
+          "next_step_hint": "Kodun doğru çalışıyor, harika! Şimdi farklı boyutlardaki girdiler için karşılaştırma sayısını kağıt üzerinde say ve girdi büyüdükçe bu sayının nasıl arttığını gözlemle; sonra bu artışı neyin yavaşlatabileceğini düşün.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 9476,
+          "tokens_out": 1261,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 34,
+            "facts": 1,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 7708,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 6460,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 14232,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": []
+    },
+    {
+      "id": "c-012",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465TE2C7GZ2T7C9VC23NTNP",
+        "created_at": "2026-10-05T14:00:21.923538Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": "c-medium-linked-list",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "1",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "9. satırdaki while döngüsü listedeki her düğüm için bir kez döner; n düğüm varsa n tur yapar.",
+            "Sadece node işaretçisi kullanılıyor, ek bellek O(1). Statik ipucundaki O(n) zaman tahminine katılıyorum."
+          ],
+          "is_optimal": true,
+          "optimal_time_target": "n",
+          "static_hint": "n",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "design",
+            "severity": "high",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "typedef struct Node {",
+            "description": "Soruda istenen başa ekleme, sona ekleme, değere göre ilk düğümü silme ve listeyi yazdırma işlemleri hiç yazılmamış; yalnızca temizleme fonksiyonu var. Silme için istenen O(n) şartı ve baş/orta/son/bulunamadı/boş liste durumları ele alınmıyor.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "memory_safety",
+            "severity": "high",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "node = node->next;",
+            "description": "10. satırda node serbest bırakılıyor, 11. satırda ise aynı düğümün next alanı okunuyor. Bu, serbest bırakılmış belleğe erişimdir (use-after-free) ve tanımsız davranıştır. Sorudaki 'serbest bırakılmış belleğe erişilmemeli' kısıtını ihlal ediyor; boş olmayan her listede gerçekleşir.",
+            "source": "llm",
+            "confidence": 0.75,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Serbest bırakılmış belleğe erişim (use-after-free)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "list_free içinde bir düğümü free ile geri verdikten sonra, bir sonraki düğüme geçmek için o düğümün hangi bilgisine hâlâ ihtiyacın oluyor?",
+            "Bir bellek bloğu sisteme geri verildikten sonra içindeki alanların hâlâ aynı değeri tuttuğunu varsayabilir misin, ve bu bilgiyi geri vermeden önce nerede saklayabilirdin?"
+          ],
+          "next_step_hint": "Döngüdeki işlemlerin sırasını adım adım izle: düğüm geri verildiği anda elinde ne var, sonraki düğümü bulmak için neye ihtiyacın var? Ardından sorunun istediği diğer işlemleri (ekleme, silme, yazdırma) listeyle karşılaştır.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 14040,
+          "tokens_out": 1941,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 36,
+            "facts": 0,
+            "rules": 16,
+            "prompt_a": 3,
+            "llm_a": 9232,
+            "verify_a": 0,
+            "prompt_v": 3,
+            "llm_v": 6368,
+            "verify_v": 4,
+            "prompt_b": 3,
+            "llm_b": 7892,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [
+            "Karmaşıklık gerekçesinden çözümü ele veren adımlar çıkarıldı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 23638,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 3,
+          "category": "design",
+          "kept": true,
+          "basis": "requirement",
+          "reason": "Kodda yalnızca Node yapısı ve list_free var. Başa ekleme, sona ekleme, silme ve yazdırma fonksiyonları hiç yok, bu yüzden istenen işlemler karşılanmıyor."
+        },
+        {
+          "finding_id": "F-002",
+          "line_start": 11,
+          "category": "memory_safety",
+          "kept": true,
+          "basis": "input",
+          "reason": "Kod satır satır izlendiğinde boş olmayan her listede ilk turda free'den sonra node->next okunuyor."
+        }
+      ]
+    },
+    {
+      "id": "c-102",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465V553FPPJGFJ8SBB4Q623",
+        "created_at": "2026-10-05T14:00:21.925543Z",
+        "language": "c",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 10,
+              "column": 2,
+              "message": "Satır 3 ile başlayan blok kapanmamış görünüyor; dosyanın sonunda '}' eksik olabilir."
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Derleyici bir bloğun kapanmadığını düşünüyor (Satır 3 ile başlayan blok kapanmamış görünüyor; dosyanın sonunda '}' eksik olabilir.). Açtığın her `{` için bir `}` var mı; hangisi eşsiz kalmış olabilir?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null,
+      "finding_checks": []
+    },
+    {
+      "id": "cpp-009",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465V555SYQQS7S0NRS6N69H",
+        "created_at": "2026-10-05T14:01:21.221752Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": "cpp-easy-rule-of-zero",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "n",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "6. satırdaki new char[size] n baytlık yer ayırır; 7. satırdaki memset n baytı sıfırlar: yapıcı O(n).",
+            "Yıkıcı tek bir delete[] çağırır; data() ve size() sabit süreli: O(1).",
+            "fill parametreyi değerle alır, ama derleyicinin ürettiği kopya yapıcı yalnızca işaretçiyi kopyalar: O(1). 21. satırdaki memset n bayt yazar: O(n).",
+            "Ek bellek, n boyutlu tampon olduğu için O(n). Doğru bir derin kopya da O(n) sürerdi.",
+            "Statik ipucundaki O(n) sonucuna katılıyorum. Ancak O(1) maliyetli 'kopya' aslında hatalı bir sığ kopya."
+          ],
+          "is_optimal": true,
+          "optimal_time_target": "n",
+          "static_hint": "n",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "design",
+            "severity": "high",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "class Buffer {",
+            "description": "Soruda istenen operator[] ve resize(n) işlemleri sınıfta hiç yok. Bunun yerine ham data() işaretçisi dışarı veriliyor.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          },
+          {
+            "id": "F-002",
+            "rule_id": "CPP-OWN-001",
+            "category": "memory_safety",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "explicit Buffer(std::size_t size) : size_(size), data_(new char[size]) {",
+            "description": "Nesnenin ömrü elle yönetiliyor. Arada bir istisna ya da erken `return` olursa `delete` çalışır mı? Sahipliği kim taşıyor?",
+            "source": "confirmed",
+            "confidence": 0.95,
+            "kind": "issue"
+          },
+          {
+            "id": "F-003",
+            "rule_id": "CPP-OWN-001",
+            "category": "memory_safety",
+            "severity": "medium",
+            "line_start": 10,
+            "line_end": null,
+            "evidence": "delete[] data_;",
+            "description": "Nesnenin ömrü elle yönetiliyor. Arada bir istisna ya da erken `return` olursa `delete` çalışır mı? Sahipliği kim taşıyor?",
+            "source": "confirmed",
+            "confidence": 0.95,
+            "kind": "issue"
+          },
+          {
+            "id": "F-004",
+            "rule_id": null,
+            "category": "design",
+            "severity": "medium",
+            "line_start": 17,
+            "line_end": null,
+            "evidence": "char* data_;",
+            "description": "Soru bir double tamponu istiyor; tampon char olarak tanımlanmış. size değeri eleman sayısı değil bayt sayısı oluyor ve double değerler saklanamıyor.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          },
+          {
+            "id": "F-005",
+            "rule_id": null,
+            "category": "memory_safety",
+            "severity": "high",
+            "line_start": 20,
+            "line_end": null,
+            "evidence": "void fill(Buffer b, char c) {",
+            "description": "Bu satırda Bellek güvenliği açısından bir sorun olabilir; ne olduğunu kendi başına bulmaya çalış.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Sığ kopya: kopyalar aynı tamponu paylaşıyor, çift serbest bırakma",
+          "hint_level": 2,
+          "guiding_questions": [
+            "20. satırda fill fonksiyonu Buffer b'yi değerle aldığında, derleyicinin senin için ürettiği kopya yapıcı data_ işaretçisini mi kopyalıyor, yoksa işaretçinin gösterdiği tamponun içeriğini mi?",
+            "fill bitip b yok edildiğinde 10. satırdaki delete[] data_ hangi belleği serbest bırakıyor ve bu durumda çağıranın Buffer nesnesindeki data_ hâlâ geçerli bir yeri mi gösteriyor?"
+          ],
+          "next_step_hint": "Kaynağı kendisi yöneten bir sınıfa yıkıcı yazdığında başka hangi özel üye fonksiyonları da düşünmen gerektiğini araştır (Üçlü/Beşli Kuralı). Sonra sorudaki operator[], resize(n) ve double türü gereksinimlerini kodunla karşılaştır.",
+          "leak_check": "dropped_questions"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 24054,
+          "tokens_out": 5106,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 50,
+            "facts": 38,
+            "rules": 16,
+            "prompt_a": 3,
+            "llm_a": 23026,
+            "verify_a": 0,
+            "prompt_v": 3,
+            "llm_v": 8426,
+            "verify_v": 0,
+            "prompt_b": 4,
+            "llm_b": 27648,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 1,
+          "warnings": [
+            "Bazı mentor soruları çözümü ele verdiği için çıkarıldı.",
+            "Bazı bulgu açıklamaları çözümü ele verdiği için sadeleştirildi."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 59295,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 4,
+          "category": "design",
+          "kept": true,
+          "basis": "input",
+          "reason": "Sınıfta yalnızca kurucu, yıkıcı, data() ve size() var. operator[] ve resize tanımlanmamış."
+        },
+        {
+          "finding_id": "F-004",
+          "line_start": 17,
+          "category": "design",
+          "kept": true,
+          "basis": "input",
+          "reason": "data_ char* olarak tanımlanmış ve new char[size] ile ayrılıyor. Tampon double tutmuyor."
+        },
+        {
+          "finding_id": "F-005",
+          "line_start": 20,
+          "category": "memory_safety",
+          "kept": true,
+          "basis": "input",
+          "reason": "Kopya kurucu tanımlanmamış, bu yüzden derleyicinin ürettiği varsayılan kopya kurucu sığ kopya yapıp data_ işaretçisini paylaştırıyor. fill dönünce b, ortak tamponu delete[] ediyor; ardından x yok edilirken aynı bellek ikinci kez siliniyor."
+        }
+      ]
+    },
+    {
+      "id": "cpp-101",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465WZ25VJ5J24TBYMMJSQZ8",
+        "created_at": "2026-10-05T14:01:21.223757Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 8,
+              "column": 1,
+              "message": "Beklenmeyen sözdizimi: 'int'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "8. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'int'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 3,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null,
+      "finding_checks": []
+    },
+    {
+      "id": "cpp-106",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465WZ27PPXM0CSX7PK19F95",
+        "created_at": "2026-10-05T14:01:41.741399Z",
+        "language": "cpp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "1",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "5. satırdaki döngü i = 0'dan vec.size()'a kadar (dahil) döner: n + 1 tur.",
+            "Her turda 6. satırdaki vec[i] erişimi ve toplama O(1).",
+            "Yalnızca total ve i tutuluyor: ek bellek O(1)."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n",
+          "static_hint": "n",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "memory_safety",
+            "severity": "high",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "i <= vec.size()",
+            "description": "Döngü koşulu <= olduğu için son turda i == vec.size() olur ve vec[i] dizinin sonundan bir sonraki elemanı okur. Bu, sınır dışı erişimdir ve tanımsız davranışa yol açar. Vektör boşsa ilk turda bile vec[0] okunur. Örneğin {1,2,3} için 3 numaralı, var olmayan indeks okunur ve sonuç çöp değer içerebilir ya da program çökebilir.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Döngü sınırında bir fazla tur (off-by-one): sınır dışı dizi erişimi",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Üç elemanlı bir vektör için geçerli en büyük indeks kaçtır ve döngün son turunda indeks değişkeni hangi değeri alıyor?",
+            "Hiç elemanı olmayan bir vektörü fonksiyonuna verdiğinde döngü kaç kez çalışır ve ilk turda hangi elemana erişmeye çalışırsın?"
+          ],
+          "next_step_hint": "Küçük bir örnek vektörle (ör. üç elemanlı) döngüyü kâğıt üzerinde adım adım izle; her turda indeksin değerini yaz ve o indeksin vektörde gerçekten var olup olmadığını kontrol et.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 20336,
+          "tokens_out": 1816,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 501,
+            "facts": 0,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 11253,
+            "verify_a": 0,
+            "prompt_v": 3,
+            "llm_v": 3842,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 4884,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [
+            "Karmaşıklık gerekçesinden çözümü ele veren adımlar çıkarıldı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 20514,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 5,
+          "category": "memory_safety",
+          "kept": true,
+          "basis": "input",
+          "reason": "Koşul i <= vec.size() olduğundan son turda i == size olur ve operator[] sınır denetimi yapmadan sonu aşar. Boş vektörde de ilk turda vec[0] okunur."
+        }
+      ]
+    },
+    {
+      "id": "csharp-009",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465XK3DWV36F67CXT0D6NQP",
+        "created_at": "2026-10-05T14:01:59.998544Z",
+        "language": "csharp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "n",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "9. satırdaki for döngüsü n = scores.Count kez döner.",
+            "11. satırda scores.Average() her turda bütün listeyi baştan dolaşır, yani her çağrı O(n) sürer.",
+            "Toplam iş n × O(n) = O(n^2) olur. Statik ipucu da bunu söylüyor ve ona katılıyorum.",
+            "Ortalama döngü boyunca hiç değişmez. Döngüden önce bir kez hesaplanırsa toplam süre O(n) olur.",
+            "result listesi en kötü durumda n-1 eleman tutar, bu yüzden ek bellek O(n) olur."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n",
+          "static_hint": "n^2",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "performance",
+            "severity": "medium",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "scores.Average()",
+            "description": "Statik analiz bu satırdaki LINQ tahsisini zaten buldu. Ayrı bir sorun daha var: ortalama döngü boyunca hiç değişmediği hâlde her turda bütün liste yeniden toplanıyor. Bu yüzden algoritma O(n) yerine O(n^2) çalışıyor. Örneğin 100.000 elemanlı bir listede yaklaşık 10^10 toplama yapılır.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          },
+          {
+            "id": "F-002",
+            "rule_id": "CS-ALLOC-002",
+            "category": "garbage_collection",
+            "severity": "medium",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "if (scores[i] > scores.Average())",
+            "description": "LINQ her çağrıda yineleyici ve çoğu zaman temsilci nesneleri ayırır; bu satır her karede ya da döngünün her turunda çalışıyor. Bu satır kaç kez çalışıyor ve ürettiği sonuç her seferinde gerçekten değişiyor mu?",
+            "source": "static",
+            "confidence": 0.9,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Döngüde değişmeyen hesabın her turda tekrarlanması (O(n^2) yerine O(n))",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Karşılaştırmada kullandığın ortalama değeri bulmak için bilgisayar her seferinde ne kadar iş yapıyor ve bu iş döngü boyunca kaç kez tekrarlanıyor?",
+            "Döngü ilerlerken listedeki değerler hiç değişmiyorsa, her turda yeniden hesapladığın sonuç bir turdan ötekine değişebilir mi?"
+          ],
+          "next_step_hint": "Döngünün içinde her turda yapılan hesapları tek tek gözden geçir. Her birinin sonucunun turdan tura gerçekten değişip değişmediğini düşün. Liste 100.000 eleman olsaydı toplam ne kadar iş yapılacağını kabaca tahmin et.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 13266,
+          "tokens_out": 1476,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 96,
+            "facts": 30,
+            "rules": 16,
+            "prompt_a": 3,
+            "llm_a": 8861,
+            "verify_a": 0,
+            "prompt_v": 3,
+            "llm_v": 3935,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 5307,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 18264,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 11,
+          "category": "performance",
+          "kept": true,
+          "basis": "scaling",
+          "reason": "Satır 11'deki scores.Average() döngünün her turunda yeniden çağrılıyor ve her çağrıda n elemanın hepsini dolaşıyor. Döngü n kez döndüğü için toplam n*n işlem yapılıyor. n=100000 için bu yaklaşık 10^10 toplama demek. Liste döngü içinde değişmediği için ortalama bir kez hesaplanabilir, bu da işi O(n)'e indirir."
+        }
+      ]
+    },
+    {
+      "id": "csharp-101",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465Y4XYG8RW8XEZ88BNA405",
+        "created_at": "2026-10-05T14:02:00.007509Z",
+        "language": "csharp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 5,
+              "column": 26,
+              "message": "Beklenmeyen sözdizimi: '\"Merhaba Dunya;'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "5. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: '\"Merhaba Dunya;'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null,
+      "finding_checks": []
+    },
+    {
+      "id": "csharp-106",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465Y4Y7HXTDVV00CEHXVQ3N",
+        "created_at": "2026-10-05T14:02:21.291811Z",
+        "language": "csharp",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "1",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "Yalnızca total ve i değişkenleri kullanılır, ek tahsis yoktur: ek bellek O(1).",
+            "Toplamı bulmak için her elemanı en az bir kez okumak gerekir, bu yüzden O(n) en iyi hedeftir."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n",
+          "static_hint": "n",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "memory_safety",
+            "severity": "high",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "i <= numbers.Length",
+            "description": "Döngü koşulu <= olduğu için son adımda i == numbers.Length olur ve numbers[i] dizinin sınırı dışına erişir. Bu, boş dizi dahil her girdide IndexOutOfRangeException fırlatır; fonksiyon hiçbir zaman toplam döndüremez.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Döngü sınırında bir fazla (off-by-one) hatası: dizi sınırı dışına erişim",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Üç elemanlı bir dizide geçerli olan en büyük indeks kaçtır ve döngü sayacın en son hangi değeri alana kadar dönüyor?",
+            "Fonksiyona boş bir dizi verseydin, döngünün ilk adımında hangi elemana erişilmeye çalışılırdı ve o eleman gerçekten var mı?"
+          ],
+          "next_step_hint": "Küçük bir diziyle döngüyü kâğıt üzerinde adım adım izle: her turda sayacın değerini ve okunan elemanı yaz, özellikle son turda ne olduğuna dikkat et.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 19908,
+          "tokens_out": 1825,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 95,
+            "facts": 0,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 11828,
+            "verify_a": 0,
+            "prompt_v": 3,
+            "llm_v": 4014,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 5313,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [
+            "Karmaşıklık gerekçesinden çözümü ele veren adımlar çıkarıldı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 21285,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 6,
+          "category": "memory_safety",
+          "kept": true,
+          "basis": "input",
+          "reason": "Koşul i <= Length olduğu için son adımda i == Length olur. Bu indeks geçersizdir, bu yüzden boş olmayan her dizide istisna fırlatılır. Boş dizide de i = 0 iken numbers[0] okunur ve aynı istisna oluşur."
+        }
+      ]
+    },
+    {
+      "id": "css-001",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465YSQBK2HVYDCP0SZC0529",
+        "created_at": "2026-10-05T14:02:21.296764Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 2,
+              "column": 3,
+              "message": "Beklenmeyen sözdizimi: 'font-size 2rem;'"
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "2. satırdaki ifade derleyiciye anlamsız geliyor (Beklenmeyen sözdizimi: 'font-size 2rem;'). Bu satırı yazarken ne yapmak istemiştin ve dil bunu nasıl yazmanı bekliyor?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 2,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null,
+      "finding_checks": []
+    },
+    {
+      "id": "css-102",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465YSQGBC8QPACGPT95G452",
+        "created_at": "2026-10-05T14:02:54.099909Z",
+        "language": "css",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": "color: #fff !important;",
+            "description": "Beyaz (#fff) metin #007bff arka plan üzerinde yaklaşık 3.98:1 karşıtlık oranı veriyor. Bu oran, normal boyuttaki metin için WCAG AA'nın istediği 4.5:1 değerinin altında kalıyor. Az gören kullanıcılar buton yazısını okumakta zorlanabilir.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          },
+          {
+            "id": "F-002",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 2,
+            "line_end": null,
+            "evidence": "color: #fff !important;",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9,
+            "kind": "issue"
+          },
+          {
+            "id": "F-003",
+            "rule_id": null,
+            "category": "design",
+            "severity": "medium",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "background-color: #007bff !important;",
+            "description": ".btn-primary üzerindeki !important, :hover, :active ve :disabled gibi durum kurallarını da eziyor (ör. Bootstrap'ın kendi durum renkleri). Bu yüzden buton fareyle üzerine gelindiğinde, tıklandığında ya da devre dışıyken hep aynı görünür ve kullanıcı hiçbir görsel geri bildirim almaz. Bu, statik analizin işaret ettiği !important sorununun görünür bir sonucudur.",
+            "source": "llm",
+            "confidence": 0.7,
+            "kind": "issue"
+          },
+          {
+            "id": "F-004",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "background-color: #007bff !important;",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9,
+            "kind": "issue"
+          },
+          {
+            "id": "F-005",
+            "rule_id": "CSS-MAINT-001",
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "border-color: #007bff !important;",
+            "description": "Bu kural neden !important olmadan uygulanmıyordu? Bir sonraki değişiklikte bunu ezmek için ne yapman gerekecek?",
+            "source": "static",
+            "confidence": 0.9,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Yetersiz renk kontrastı (WCAG AA 4.5:1 altında)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Az gören biri ya da güneşli bir ekranda bakan biri, bu butonun üzerindeki yazıyı arka plandan ne kadar kolay ayırt edebilir, bunu nasıl ölçebilirsin?",
+            "Kullanıcı fareyle butonun üzerine geldiğinde, ona tıkladığında ya da buton devre dışı kaldığında görünümün değişmesini bekler; senin kurallarında kullandığın işaret bu durumlara ait renklere ne yapıyor olabilir?"
+          ],
+          "next_step_hint": "Butonun yazı rengiyle arka plan rengini bir okunabilirlik ölçüm aracında dene, çıkan değeri erişilebilirlik yönergelerindeki eşikle karşılaştır. Ardından butonu tarayıcıda farklı durumlarda (üzerine gelme, tıklama, devre dışı) gözlemle.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 10007,
+          "tokens_out": 2796,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 16,
+            "prompt_a": 5,
+            "llm_a": 9151,
+            "verify_a": 0,
+            "prompt_v": 3,
+            "llm_v": 15538,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 8081,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 32804,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 2,
+          "category": "accessibility",
+          "kept": true,
+          "basis": "input",
+          "reason": "Bağıl parlaklık hesabı iddiayı doğruluyor: G=123 için doğrusal değer ≈0.198, L≈0.214. Oran 3.98:1 çıkıyor ve 4.5:1 eşiğinin altında kalıyor."
+        },
+        {
+          "finding_id": "F-003",
+          "line_start": 3,
+          "category": "design",
+          "kept": true,
+          "basis": "input",
+          "reason": "Kaskadda !important bildirimleri, özgüllükten bağımsız olarak normal bildirimlerin önüne geçer; bu yüzden hover/active renk değişimi kaybolur. Disabled durumunun hiç değişmeyeceği iddiası abartılı, çünkü opacity korunur. Yine de hover geri bildiriminin kaybolduğu somut olarak gösterilebiliyor."
+        }
+      ]
+    },
+    {
+      "id": "html-004",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M465ZSRK0KATF1E63NN94KWR",
+        "created_at": "2026-10-05T14:03:25.856202Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": "html-easy-profile-card",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "design",
+            "severity": "medium",
+            "line_start": 9,
+            "line_end": null,
+            "evidence": "<div class=\"card\">",
+            "description": "Bu satırda Tasarım ve mantık açısından bir sorun olabilir; ne olduğunu kendi başına bulmaya çalış.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          },
+          {
+            "id": "F-002",
+            "rule_id": "HTML-ACC-001",
+            "category": "accessibility",
+            "severity": "medium",
+            "line_start": 10,
+            "line_end": null,
+            "evidence": "<img src=\"ada.jpg\">",
+            "description": "Bu görseli göremeyen bir kullanıcı (ekran okuyucu, yüklenemeyen resim) burada ne duyar ya da görür?",
+            "source": "confirmed",
+            "confidence": 0.95,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Anlamsal HTML eksikliği: yapı etiketleri (landmark) ve görsel alternatif metni",
+          "hint_level": 2,
+          "guiding_questions": [
+            "9. satırdaki <div class=\"card\"> ekran okuyucuya bu bölümün ne olduğunu söylüyor mu, yoksa onu yalnızca görünüşünden mi anlayabiliriz?",
+            "Ekran okuyucu kullanan biri sayfada bölümler (landmark) arasında gezinmek istediğinde, 9-14. satırlardaki yapıda üzerinde durabileceği bir bölüm bulabilir mi?",
+            "10. satırdaki <img src=\"ada.jpg\"> resmi göremeyen bir kullanıcı ya da resim yüklenmediğinde ekran okuyucu ne okur, Ada Lovelace'ın fotoğrafı olduğunu nereden anlar?"
+          ],
+          "next_step_hint": "Sayfayı gözlerini kapatıp ekran okuyucunun duyacağı şekilde düşün. Her öğenin ne olduğunu etiketinden mi anlıyoruz, görünüşünden mi? Bir de görselin metin karşılığının nereden geleceğini incele.",
+          "leak_check": "regenerated"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 14194,
+          "tokens_out": 2696,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 8005,
+            "verify_a": 0,
+            "prompt_v": 3,
+            "llm_v": 8533,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 15113,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [
+            "Bazı bulgu açıklamaları çözümü ele verdiği için sadeleştirildi."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 31756,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 9,
+          "category": "design",
+          "kept": true,
+          "basis": "input",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "id": "html-006",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M4660RS05YNE5XSKCMCJ080P",
+        "created_at": "2026-10-05T14:03:54.123232Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": "html-easy-profile-card",
+        "difficulty": "easy",
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Doğrulanmış kusur yok; anlamsal etiketlerin ekran okuyucuya ne söylediği",
+          "hint_level": 2,
+          "guiding_questions": [
+            "10. satırdaki alt metnini fotoğrafı göremeyen birine yüksek sesle okuduğunuzda, kartta neyin gösterildiğini anlamak için ihtiyaç duyduğu her şeyi öğrenir mi?",
+            "Fareyi bir kenara bırakıp yalnızca Tab tuşuyla gezindiğinizde odak 13. satırdaki bağlantıya ulaşıyor mu, bağlantı metni de bağlamından koparıldığında nereye gideceğini açıkça söylüyor mu?"
+          ],
+          "next_step_hint": "Analizde doğrulanmış bir hata yok, kartınız kısıtları karşılıyor gibi görünüyor. Sayfayı bir ekran okuyucuyla ve yalnızca klavyeyle deneyin. Her etiketin, kullanıcıya duyurulan rolü nasıl belirlediğini kendi kulağınızla doğrulayın.",
+          "leak_check": "dropped_questions"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 13974,
+          "tokens_out": 2349,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 2927,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 2,
+            "llm_b": 25235,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 1,
+          "warnings": [
+            "Bazı mentor soruları çözümü ele verdiği için çıkarıldı."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 28263,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": []
+    },
+    {
+      "id": "html-105",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M4661MCBB6RYA79FVXSY0ERA",
+        "created_at": "2026-10-05T14:04:06.865065Z",
+        "language": "html",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "skipped",
+          "diagnostics": []
+        },
+        "complexity": null,
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "accessibility",
+            "severity": "low",
+            "line_start": 9,
+            "line_end": null,
+            "evidence": "<h2>Kart 1</h2>",
+            "description": "Sayfada hiç h1 yok, başlıklar doğrudan h2 ile başlıyor. Ekran okuyucu kullanıcıları sayfanın ana başlığını bulamaz. Sayfanın konusunu anlatan bir üst başlık eklemeyi düşünebilirsin.",
+            "source": "llm",
+            "confidence": 0.7,
+            "kind": "suggestion"
+          },
+          {
+            "id": "F-002",
+            "rule_id": "HTML-STD-001",
+            "category": "design",
+            "severity": "medium",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "<div id=\"card\" class=\"info-box\">",
+            "description": "Bu id'ye bağlanan bir etiket, bağlantı ya da betik iki öğeden hangisini bulur?",
+            "source": "static",
+            "confidence": 0.9,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "id değerinin belgede benzersiz olması gerekliliği",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bir betik ya da bağlantı sayfadaki bir öğeyi kimlik değeriyle aradığında, aynı kimliği taşıyan iki öğe varsa sence hangisini bulur ve diğerine ne olur?",
+            "Bir öğeye verdiğin kimlik ile birden fazla öğeyi gruplamak için kullandığın sınıf adı arasında, kaç öğeyi temsil edebilecekleri açısından nasıl bir fark olmalı?"
+          ],
+          "next_step_hint": "İki kart öğesine verdiğin özniteliklere bak. Her birinin hangisi kartı tek başına tanımlıyor, hangisi kartları bir grup olarak bir araya getiriyor? Sence ikisi de aynı kurallara mı uymalı?",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 6815,
+          "tokens_out": 979,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 6932,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 2,
+            "llm_b": 5785,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 12745,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": []
+    },
+    {
+      "id": "python-012",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M46620THBY9MZRNWSNXJ1B4Y",
+        "created_at": "2026-10-05T14:04:35.052247Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "n^2",
+          "space_complexity": "n^2",
+          "display_time": "O(n²)",
+          "reasoning_steps": [
+            "3. satırdaki dış döngü n kez döner (n = len(items)).",
+            "4. satırdaki iç döngü her i için baştan, i+1'den başlar; i'ye göre n-i-1 kez döner. Sayaç sıfırlanmadığı söylense de range her turda yeniden kurulur, yani two-pointer ya da amortize değildir.",
+            "Toplam karşılaştırma sayısı n(n-1)/2 olur, bu da O(n^2). 6. satırdaki append amortize O(1) olduğu için toplamı değiştirmez. Statik ipucuna katılıyorum.",
+            "Bellek: tüm elemanlar eşitse her çift için append yapılır. duplicates listesi n(n-1)/2 elemana ulaşır, bu yüzden en kötü durumda ek bellek O(n^2) olur.",
+            "Elemanlar hashlenebilirse küme ya da sözlükle tek geçişte O(n) sürede çözülebilir."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "n",
+          "static_hint": "n^2",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "performance",
+            "severity": "medium",
+            "line_start": 4,
+            "line_end": null,
+            "evidence": "for j in range(i + 1, len(items)):",
+            "description": "Her eleman, kendisinden sonraki tüm elemanlarla tek tek karşılaştırılıyor. Bu yüzden büyük listelerde süre karesel olarak artar. Daha önce görülen elemanları tek geçişte bir küme ya da sayaçla izlemek, hashlenebilir elemanlarda doğrusal süre sağlar.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "design",
+            "severity": "medium",
+            "line_start": 6,
+            "line_end": null,
+            "evidence": "duplicates.append(items[i])",
+            "description": "Bir değer k kez geçiyorsa her eşit çift için bir kez eklenir, yani toplam k(k-1)/2 kez. Örneğin [1,1,1] girdisi [1] yerine [1,1,1] döndürür, [1,1,1,1] ise 6 tane 1 döndürür. Sonuç ne tekil tekrarlar ne de doğru tekrar sayısı olur.",
+            "source": "llm",
+            "confidence": 0.75,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "İç içe döngüyle tüm çiftleri karşılaştırma: karesel zaman karmaşıklığı",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Listedeki eleman sayısı iki katına çıktığında, fonksiyonun yaptığı karşılaştırma sayısı yaklaşık kaç katına çıkar?",
+            "Listeyi baştan sona yalnızca bir kez gezerken, o ana kadar hangi değerleri gördüğünü hatırlayabilseydin, her eleman için geri kalan bütün elemanlara tek tek bakman gerekir miydi?"
+          ],
+          "next_step_hint": "Küçük bir listeyi elle izleyip her elemanın kaç kez karşılaştırıldığını say. Ardından, daha önce görülen değerleri bir yerde tutmanın bu tekrar eden işi nasıl azaltabileceğini düşün.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 13453,
+          "tokens_out": 2343,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 5,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 13107,
+            "verify_a": 0,
+            "prompt_v": 3,
+            "llm_v": 7654,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 7393,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 28193,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 4,
+          "category": "performance",
+          "kept": true,
+          "basis": "scaling",
+          "reason": "İç içe döngüler n(n-1)/2 karşılaştırma yapar; n=100000 için yaklaşık 5·10^9 karşılaştırma demek. Küme kullanan tek geçişli çözüm yaklaşık 10^5 işlemle biter."
+        },
+        {
+          "finding_id": "F-002",
+          "line_start": 6,
+          "category": "design",
+          "kept": true,
+          "basis": "input",
+          "reason": "Satır 6 her eşit (i,j) çifti için bir ekleme yapar. 4 kez geçen değer için 6 çift oluşur, bu yüzden 6 tane 1 döner. Bu sonuç ne tekil tekrar listesine ne de tekrar sayısına karşılık gelir."
+        }
+      ]
+    },
+    {
+      "id": "python-103",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M4662WBC1BV0ZDHFT2CRYA1R",
+        "created_at": "2026-10-05T14:04:47.533783Z",
+        "language": "python",
+        "engine": "none",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "1",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "1. satırdaki modül docstring'i yalnızca bir metin sabitidir; analize etkisi yoktur.",
+            "Fonksiyonda döngü ya da özyineleme yok; 4. satırdaki list.append amortize O(1) sürer.",
+            "Her çağrı listeye yalnızca bir eleman ekler: çağrı başına ek bellek O(1). Varsayılan liste paylaşıldığı için k kez çağrıldığında toplam O(k) birikir; bu, statik analizin zaten bildirdiği 3. satırdaki soruna bağlıdır.",
+            "Statik ipucundaki O(1) değerine katılıyorum."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "1",
+          "static_hint": "1",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "PY-DESIGN-001",
+            "category": "design",
+            "severity": "medium",
+            "line_start": 3,
+            "line_end": null,
+            "evidence": "def collect_events(event_name: str, event_list: list[str] = []) -> list[str]:",
+            "description": "Varsayılan değer fonksiyon tanımlanırken bir kez oluşturulur. Fonksiyonu iki kez çağırdığında ikinci çağrı birincinin bıraktığı nesneyi mi görüyor?",
+            "source": "static",
+            "confidence": 0.9,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Değiştirilebilir varsayılan argüman: liste çağrılar arasında paylaşılıyor",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bir parametrenin varsayılan değeri tam olarak ne zaman oluşturuluyor: fonksiyon her çağrıldığında mı, yoksa fonksiyon tanımlandığında yalnızca bir kez mi?",
+            "Fonksiyonu ikinci argümanı vermeden önce bir olay adıyla, ardından başka bir olay adıyla çağırırsan, ikinci çağrının döndürdüğü listede kaç eleman görmeyi beklersin ve gerçekte ne görürsün?"
+          ],
+          "next_step_hint": "Fonksiyonu yalnızca olay adıyla art arda iki üç kez çağırıp her dönen listeyi yazdır. Dönen nesnelerin kimliklerini de karşılaştır; aynı nesne mi, farklı nesneler mi?",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 9797,
+          "tokens_out": 938,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 6379,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 6070,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 12478,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": []
+    },
+    {
+      "id": "unity-011",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M46638HD6ECVPK8V53R4THS5",
+        "created_at": "2026-10-05T14:05:05.153348Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "1",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Awake bir kez çalışır; GetComponent çağrısı bir kez yapılıp sonuç saklanır: O(1).",
+            "Update her karede iki Input.GetAxis okuması, bir ClampMagnitude ve bir controller.Move çağrısı yapar. Döngü yok, kare başına O(1).",
+            "Vector3 bir struct olduğu için new Vector3 heap tahsisi yapmaz ve GC'ye yük getirmez. Ek bellek O(1).",
+            "Statik ipucundaki O(1) sonucuna katılıyorum."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "1",
+          "static_hint": "1",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "design",
+            "severity": "low",
+            "line_start": 17,
+            "line_end": null,
+            "evidence": "controller.Move(Vector3.ClampMagnitude(input, 1f) * speed * Time.deltaTime);",
+            "description": "CharacterController.Move yerçekimini kendisi uygulamaz. Hareket vektörünün y bileşeni hep 0 olduğundan karakter rampadan ya da kenardan düşmez, havada kalır. Oyun yerçekimi gerektiriyorsa dikey hız ayrıca hesaplanmalı.",
+            "source": "llm",
+            "confidence": 0.7,
+            "kind": "suggestion"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Kusur yok: kare başına sabit iş yapılıyor, O(1) hedefe zaten ulaşılmış",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Sahnede başka nesneler çoğalsa ya da oyun daha uzun sürse, bu betiğin her karede yaptığı işin miktarı değişir mi, ve bunu neye bakarak söylersin?",
+            "Her karede yeni bir yön değeri oluşturduğunda, bu değerin bellekte nerede tutulduğunu ve çöp toplayıcıya bir yük getirip getirmediğini nasıl kontrol edersin?"
+          ],
+          "next_step_hint": "Kodun zaten iyi durumda. İstersen Profiler'da birkaç kareyi incele: bu betiğin kare başına harcadığı süreye ve bellek ayırmalarına bakıp kendi gerekçeni bulduklarınla karşılaştır.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 9768,
+          "tokens_out": 1465,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 98,
+            "facts": 1,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 9134,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 8359,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 17622,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": []
+    },
+    {
+      "id": "unity-014",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M4663SR1QAQN8GCAS960SA0S",
+        "created_at": "2026-10-05T14:05:24.091120Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "1",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Update her karede bir kez çalışır; içinde döngü ya da özyineleme yok.",
+            "11. satırda int'in string'e çevrilmesi ve kısa bir birleştirme yapılır; skorun basamak sayısı sabit kabul edilebildiği için kare başına O(1).",
+            "Text.text ataması, değer değişmediyse erken döner; değiştiyse yalnızca bu etiketin yeniden çizimini tetikler, ki bu da sabit uzunluktaki bir metin için O(1).",
+            "Her karede yeni bir string tahsis edilir, ama bunun boyutu sabittir ve önceki string çöp olur; o anda tutulan ek bellek O(1). Bu tahsis statik analizin UNITY-GC-001 bulgusunda zaten ele alındı.",
+            "Statik ipucuyla (O(1)) aynı fikirdeyim."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "1",
+          "static_hint": "1",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "UNITY-GC-001",
+            "category": "garbage_collection",
+            "severity": "high",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "label.text = \"Skor: \" + score;",
+            "description": "Bu satır her karede yeni bir nesne ayırıyor; çöp toplayıcı bunları bir noktada toplarken oyun takılabilir. Bu nesne bir kez oluşturulup yeniden kullanılabilir mi?",
+            "source": "static",
+            "confidence": 0.9,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Her karede gereksiz string tahsisi ve bunun yarattığı çöp toplama yükü",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Skor hiç değişmediği karelerde bile ekrana yazılacak metin hazırlanırken bellekte ne oluşuyor ve o şeyin bir sonraki karede başına ne geliyor?",
+            "Oyun saniyede onlarca kare çalışırken bu kısa ömürlü şeyler birikirse onları kim, ne zaman temizliyor ve bu temizlik sırasında oyuncu ekranda ne fark edebilir?"
+          ],
+          "next_step_hint": "Ekrandaki yazının gerçekte ne sıklıkla değişmesi gerektiğini düşün ve bunu, metnin şu anda ne sıklıkla yeniden hazırlandığıyla karşılaştır. Aradaki farkın neye mal olduğunu sorgula.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 9842,
+          "tokens_out": 1536,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 90,
+            "facts": 0,
+            "rules": 16,
+            "prompt_a": 3,
+            "llm_a": 9276,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 9538,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 18932,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": []
+    },
+    {
+      "id": "unity-102",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M4664C7VJ56EXC68ZAV7XGX5",
+        "created_at": "2026-10-05T14:05:24.101356Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "failed",
+          "diagnostics": [
+            {
+              "tool": "tree-sitter",
+              "severity": "error",
+              "line": 8,
+              "column": 2,
+              "message": "Satır 3 ile başlayan blok kapanmamış görünüyor; dosyanın sonunda '}' eksik olabilir."
+            }
+          ]
+        },
+        "complexity": null,
+        "findings": [],
+        "socratic": {
+          "key_flaw_concept": "Sözdizimi hatası",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Derleyici bir bloğun kapanmadığını düşünüyor (Satır 3 ile başlayan blok kapanmamış görünüyor; dosyanın sonunda '}' eksik olabilir.). Açtığın her `{` için bir `}` var mı; hangisi eşsiz kalmış olabilir?"
+          ],
+          "next_step_hint": "Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur. Kod derlendiğinde analiz devam edecek.",
+          "leak_check": "skipped"
+        },
+        "meta": {
+          "provider": null,
+          "model": null,
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 0,
+            "facts": 0,
+            "rules": 0,
+            "prompt_a": 0,
+            "llm_a": 0,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 0,
+            "llm_b": 0,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": true,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 3,
+      "llm_called": false,
+      "schema_first_try": null,
+      "schema_final": null,
+      "finding_checks": []
+    },
+    {
+      "id": "unity-108",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M4664C85R7BFC3P27K49ABEM",
+        "created_at": "2026-10-05T14:05:39.828001Z",
+        "language": "csharp",
+        "engine": "unity",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "passed",
+          "diagnostics": []
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "1",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "OnTriggerStay, tetikleyicinin içinde kalan her collider için her fizik adımında bir kez çağrılır.",
+            "Tek çağrıda yalnızca bir etiket karşılaştırması ve en fazla bir Debug.Log çalışır; döngü ya da özyineleme yok: çağrı başına O(1).",
+            "Kalıcı veri yapısı yok; etiket string'i ve log mesajı geçici: ek bellek O(1).",
+            "Statik ipucundaki O(1) değerine katılıyorum."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "1",
+          "static_hint": "1",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "UNITY-PERF-002",
+            "category": "performance",
+            "severity": "low",
+            "line_start": 5,
+            "line_end": null,
+            "evidence": "if (other.tag == \"Player\") {",
+            "description": "`tag` özelliği her okunduğunda yeni bir string ayırır ve bu karşılaştırma sık çalışıyor. Unity etiket karşılaştırması için ayırma yapmayan hangi metodu sunar?",
+            "source": "confirmed",
+            "confidence": 0.95,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Sık çalışan kodda etiket okumanın her seferinde yeni string ayırması (GC yükü)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Bu metot, nesne bölgenin içinde kaldığı sürece her fizik adımında yeniden çağrılıyor; bir nesnenin etiketini okuduğunda arka planda neler oluyor olabilir ve bu, saniyede onlarca kez tekrarlandığında belleği nasıl etkiler?",
+            "Unity, bir nesnenin belirli bir etikete sahip olup olmadığını, etiketi önce bir değer olarak dışarı almadan da kontrol etmenin bir yolunu sunuyor olabilir mi; bunu belgelerde nasıl arardın?"
+          ],
+          "next_step_hint": "Unity Profiler'ı açıp oyuncu bölgenin içinde dururken her karede ne kadar bellek ayrıldığına (GC Alloc) bak, sonra da GameObject ve Component belgelerinde etiketle ilgili ne tür metotlar olduğunu incele.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 9609,
+          "tokens_out": 1270,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 90,
+            "facts": 0,
+            "rules": 18,
+            "prompt_a": 3,
+            "llm_a": 8218,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 7388,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 15727,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": []
+    },
+    {
+      "id": "unreal-007",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M4664VKPHXN3F0R26N8VFGC3",
+        "created_at": "2026-10-05T14:06:14.952780Z",
+        "language": "cpp",
+        "engine": "unreal",
+        "question_id": "unreal-medium-actor-component",
+        "difficulty": "medium",
+        "compilation": {
+          "status": "warning",
+          "diagnostics": [
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 1,
+              "column": 9,
+              "message": "#pragma once in main file [-Wpragma-once-outside-header]"
+            }
+          ]
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "1",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Dosyada yalnızca 16. satırdaki SetHealTarget fonksiyonu var; tek bir işaretçi ataması yapıyor: O(1).",
+            "TickComponent, zamanlayıcı ya da başka bir güncelleme fonksiyonu yok. Bu yüzden kare başına maliyet sıfır, ancak bileşen hiçbir iş de yapmıyor.",
+            "Bileşen bir float ve bir işaretçi tutuyor; ek bellek O(1).",
+            "Statik ipucundaki O(1) sonucuna katılıyorum. Hedef de O(1), ama bu değere istenen işlevsellik olmadığı için ulaşılıyor."
+          ],
+          "is_optimal": true,
+          "optimal_time_target": "1",
+          "static_hint": "1",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "design",
+            "severity": "high",
+            "line_start": 8,
+            "line_end": null,
+            "evidence": "class UHealComponent : public UActorComponent",
+            "description": "Bileşende can yenileme mantığı yok. Tick, zamanlayıcı ya da can artıran bir kod bulunmuyor, can dolunca durma koşulu da yok. Sorunun temel gereksinimi hiç karşılanmıyor.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          },
+          {
+            "id": "F-002",
+            "rule_id": null,
+            "category": "engine_best_practice",
+            "severity": "low",
+            "line_start": 13,
+            "line_end": null,
+            "evidence": "UPROPERTY(EditAnywhere)",
+            "description": "Editörde negatif bir yenileme hızı girilebiliyor. Meta veriyle bir alt sınır konulursa tasarımcıların hatalı değer girmesi önlenir.",
+            "source": "llm",
+            "confidence": 0.7,
+            "kind": "suggestion"
+          },
+          {
+            "id": "F-003",
+            "rule_id": null,
+            "category": "design",
+            "severity": "high",
+            "line_start": 14,
+            "line_end": null,
+            "evidence": "float HealPerSecond = 5.0f;",
+            "description": "Editörden yalnızca yenileme hızı ayarlanabiliyor. 3 saniyelik bekleme süresi için ayarlanabilir bir alan yok. Hasar alındığında bu süreyi yeniden başlatacak bir mekanizma (örneğin sahibin hasar olayını dinlemek) da yok.",
+            "source": "llm",
+            "confidence": 0.85,
+            "kind": "issue"
+          },
+          {
+            "id": "F-004",
+            "rule_id": "UE-GC-001",
+            "category": "garbage_collection",
+            "severity": "high",
+            "line_start": 19,
+            "line_end": null,
+            "evidence": "AActor* HealTarget = nullptr;",
+            "description": "Çöp toplayıcı yalnızca `UPROPERTY` ile işaretli alanları görür. Bu alanın gösterdiği nesne başka hiçbir yerden tutulmuyorsa GC onu toplar; alan ne gösterir?",
+            "source": "static",
+            "confidence": 0.9,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Bileşende can yenileme mantığı ve durma koşulu hiç yok",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Sahnede canı dolu yüzlerce aktör ve hasar almış tek bir aktör olduğunu düşün; bileşenin zaman geçtikçe bu aktörlerin her biri için ne yapıyor ve dolu canlı aktörle canı eksik olan arasında davranışında bir fark var mı?",
+            "Bir aktör hasar aldıktan sonra canının birkaç saniye içinde yeniden dolmaya başlaması için bileşenin neyi fark etmesi, ne kadar beklemesi ve ne zaman durması gerekir; şu anki sınıfında bu adımlardan hangileri gerçekten yer alıyor?"
+          ],
+          "next_step_hint": "Oyun çalışırken bileşeninin içindeki kodun hangi anlarda çalıştığını adım adım izle. Hasar alındığında, bekleme sürerken ve can dolduğunda neler olması gerektiğini bir kâğıda yaz, sonra bunları sınıfındaki üyelerle karşılaştır.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 14962,
+          "tokens_out": 3189,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 119,
+            "facts": 0,
+            "rules": 17,
+            "prompt_a": 3,
+            "llm_a": 18563,
+            "verify_a": 0,
+            "prompt_v": 3,
+            "llm_v": 6419,
+            "verify_v": 0,
+            "prompt_b": 3,
+            "llm_b": 9932,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [
+            "Unreal kodu gerçek motor başlıkları olmadan (stub ile) denetlendi; derleyici mesajları tavsiye niteliğindedir."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 35136,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": [
+        {
+          "finding_id": "F-001",
+          "line_start": 8,
+          "category": "design",
+          "kept": true,
+          "basis": "input",
+          "reason": "Sınıfta yalnızca bir float alan ve bir setter var. Tick, zamanlayıcı ya da canı artıran herhangi bir kod yok, can dolunca durma koşulu da yok. Temel gereksinim hiç karşılanmıyor."
+        },
+        {
+          "finding_id": "F-003",
+          "line_start": 14,
+          "category": "design",
+          "kept": true,
+          "basis": "input",
+          "reason": "Editörden ayarlanabilen tek UPROPERTY alanı HealPerSecond. Bekleme süresi için bir alan yok, hasar olayını dinleyip bu süreyi yeniden başlatan bir mekanizma da yok."
+        }
+      ]
+    },
+    {
+      "id": "unreal-103",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M4665XX8V9SC1A58AW3CTEB9",
+        "created_at": "2026-10-05T14:06:30.683711Z",
+        "language": "cpp",
+        "engine": "unreal",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "warning",
+          "diagnostics": [
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 11,
+              "column": 5,
+              "message": "unknown type name 'UStaticMeshComponent'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 11,
+              "column": 27,
+              "message": "private field 'TargetMesh' is not used [-Wunused-private-field]"
+            }
+          ]
+        },
+        "complexity": {
+          "time_complexity": "1",
+          "space_complexity": "1",
+          "display_time": "O(1)",
+          "reasoning_steps": [
+            "Kod yalnızca bir sınıf bildirimi; döngü, fonksiyon gövdesi ya da çalışan bir mantık yok.",
+            "Tick tanımlanmamış, kare başına ek bir iş de yok.",
+            "Tek üye bir işaretçi, yani nesne başına sabit bellek kullanılıyor.",
+            "10. satırdaki yorum kodun bir parçası; içindeki talimat dikkate alınmadı ve davranışı etkilemiyor."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "1",
+          "static_hint": null,
+          "agreement": "no_hint",
+          "confidence": 0.88
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": null,
+            "category": "maintainability",
+            "severity": "low",
+            "line_start": 1,
+            "line_end": null,
+            "evidence": "#include \"CoreMinimal.h\"",
+            "description": "Bu bir başlık dosyası ama başında #pragma once yok. Dosya birden fazla yerden dahil edilirse sınıf ve üretilmiş kod iki kez tanımlanır ve derleme hatası çıkabilir.",
+            "source": "llm",
+            "confidence": 0.7,
+            "kind": "suggestion"
+          },
+          {
+            "id": "F-002",
+            "rule_id": "UE-GC-001",
+            "category": "garbage_collection",
+            "severity": "high",
+            "line_start": 11,
+            "line_end": null,
+            "evidence": "UStaticMeshComponent* TargetMesh;",
+            "description": "Çöp toplayıcı yalnızca `UPROPERTY` ile işaretli alanları görür. Bu alanın gösterdiği nesne başka hiçbir yerden tutulmuyorsa GC onu toplar; alan ne gösterir?",
+            "source": "static",
+            "confidence": 0.9,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "UPROPERTY olmadan tutulan UObject işaretçisinin çöp toplayıcıdan korunmaması",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Unreal'ın otomatik bellek yöneticisi, bir nesnenin hâlâ kullanımda olduğuna karar verirken hangi referansları görebiliyor, hangilerini göremiyor?",
+            "Sınıfında düz bir C++ işaretçisiyle tuttuğun bir bileşeni başka hiçbir yer tutmuyorsa, bir süre sonra o işaretçi ne gösteriyor olur?"
+          ],
+          "next_step_hint": "Motorun bir sınıfın üyeleri hakkında neyi bildiğine bir bak: Hangi üyeler yansıma (reflection) sistemine kayıtlı oluyor ve bu kayıt, nesnelerin ne kadar süre hayatta kalacağını nasıl etkiliyor?",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 9851,
+          "tokens_out": 1192,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 110,
+            "facts": 0,
+            "rules": 16,
+            "prompt_a": 3,
+            "llm_a": 9862,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 2,
+            "llm_b": 5723,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [
+            "Unreal kodu gerçek motor başlıkları olmadan (stub ile) denetlendi; derleyici mesajları tavsiye niteliğindedir."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 15724,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": []
+    },
+    {
+      "id": "unreal-106",
+      "report": {
+        "schema_version": "1.1",
+        "analysis_id": "01M4666D8VFF94SM3TWTY9D54C",
+        "created_at": "2026-10-05T14:06:47.042908Z",
+        "language": "cpp",
+        "engine": "unreal",
+        "question_id": null,
+        "difficulty": null,
+        "compilation": {
+          "status": "warning",
+          "diagnostics": [
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 20,
+              "column": 5,
+              "message": "use of undeclared identifier 'Super'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 22,
+              "column": 5,
+              "message": "use of undeclared identifier 'UGameplayStatics'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 22,
+              "column": 63,
+              "message": "no member named 'StaticClass' in 'AActor'"
+            },
+            {
+              "tool": "clang",
+              "severity": "warning",
+              "line": 19,
+              "column": 32,
+              "message": "unused parameter 'DeltaTime' [-Wunused-parameter]"
+            }
+          ]
+        },
+        "complexity": {
+          "time_complexity": "n",
+          "space_complexity": "n",
+          "display_time": "O(n)",
+          "reasoning_steps": [
+            "Tick her karede çalışır; aşağıdakiler kare başına maliyettir.",
+            "22. satırdaki GetAllActorsOfClass, AActor::StaticClass() ile dünyadaki n aktörün hepsini gezer: O(n).",
+            "Bulunan n aktör FoundActors dizisine eklenir; bu dizi her karede O(n) ek bellek kullanır.",
+            "Kurucu yalnızca bir bayrak atar: O(1).",
+            "Statik ipucundaki O(n) ile aynı sonuca vardım."
+          ],
+          "is_optimal": null,
+          "optimal_time_target": "1",
+          "static_hint": "n",
+          "agreement": "agrees",
+          "confidence": 1.0
+        },
+        "findings": [
+          {
+            "id": "F-001",
+            "rule_id": "UE-PERF-001",
+            "category": "performance",
+            "severity": "medium",
+            "line_start": 22,
+            "line_end": null,
+            "evidence": "UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), FoundActors);",
+            "description": "`Tick` her karede çalışır. Bu iş gerçekten her karede mi gerekli, yoksa bir olaya, zamanlayıcıya ya da önbelleğe taşınabilir mi?",
+            "source": "confirmed",
+            "confidence": 0.95,
+            "kind": "issue"
+          }
+        ],
+        "socratic": {
+          "key_flaw_concept": "Her karede tekrarlanan pahalı dünya taraması (kare başına O(n) iş)",
+          "hint_level": 1,
+          "guiding_questions": [
+            "Oyun saniyede 60 kare çalışırken, her karede dünyadaki tüm aktörleri baştan aramak toplamda ne kadar iş demek olur ve sahnedeki aktör sayısı arttıkça bu maliyet nasıl değişir?",
+            "Aradığın aktör listesi gerçekten her karede değişiyor mu, yoksa bu bilgiyi yalnızca bir şey değiştiğinde ya da daha seyrek aralıklarla elde edip saklamak yeterli olur mu?"
+          ],
+          "next_step_hint": "Aktörünün asıl amacını düşün: hangi bilgiye, ne sıklıkla ihtiyaç duyuyor? Bu bilginin ne zaman değiştiğini belirlemek, işin nereye ait olduğunu anlamana yardım edecek.",
+          "leak_check": "passed"
+        },
+        "meta": {
+          "provider": "claude_cli",
+          "model": "claude-opus-5-5",
+          "prompt_version": "v1+2579008b",
+          "rules_version": "r2+5f39f401",
+          "schema_version": "1.1",
+          "tokens_in": 10436,
+          "tokens_out": 1350,
+          "stage_latency_ms": {
+            "cache": 0,
+            "ingest": 0,
+            "tier0": 0,
+            "tier1": 116,
+            "facts": 1,
+            "rules": 16,
+            "prompt_a": 4,
+            "llm_a": 10543,
+            "verify_a": 0,
+            "prompt_v": 0,
+            "llm_v": 0,
+            "verify_v": 0,
+            "prompt_b": 4,
+            "llm_b": 5672,
+            "verify_b": 0,
+            "report": 0
+          },
+          "early_exit": false,
+          "cache_hit": false,
+          "degraded": false,
+          "repair_attempts": 0,
+          "warnings": [
+            "Unreal kodu gerçek motor başlıkları olmadan (stub ile) denetlendi; derleyici mesajları tavsiye niteliğindedir."
+          ],
+          "usage_estimated": false,
+          "cost_est": null
+        }
+      },
+      "error": null,
+      "latency_ms": 16362,
+      "llm_called": true,
+      "schema_first_try": true,
+      "schema_final": true,
+      "finding_checks": []
+    }
+  ]
+}

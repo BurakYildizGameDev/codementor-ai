@@ -1699,7 +1699,7 @@ CI'da `pip-audit`; loopback dışına bağlanan test düşer.
 
 **Commit:** `fix(faz-50): SARIF dil kapsamı, kodlama, CI denetimi`
 
-### Faz 51 — Kategori tutarlılığı (YAPILDI 2026-10-05; canlı ölçüm açık)
+### Faz 51 — Kategori tutarlılığı (YAPILDI 2026-10-05; canlı dev 96: 78/96/86)
 
 **Dal:** `faz/51-kategori` · **Mimari:** §6.2, §14.2
 

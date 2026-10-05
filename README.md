@@ -203,8 +203,13 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 74% / 88% / 81% | 96% | 0% | 100% | 24.0 / 44.6 | 16484 |
 | claude_cli / claude-opus-5-5 | two_pass | — | 3 (dev) | 100% / 100% | — / — | 100% / 100% | 60% / 100% / 75% | 100% | 0% | — | 30.2 / 31.4 | 16757 |
 | claude_cli / claude-opus-5-5 | two_pass | — | 1 (dev) | 100% / 100% | — / — | 100% / 100% | 100% / 100% / 100% | 100% | 0% | — | 19.8 / 19.8 | 13589 |
+| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 80% / 92% / 86% | 100% | 0% | 100% | 16.4 / 35.1 | 14892 |
+| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 87% / 100% / 93% | 100% | 0% | 100% | 16.0 / 34.4 | 14023 |
+| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 78% / 95% / 86% | 100% | 0% | 100% | 16.2 / 27.6 | 14416 |
+| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 71% / 96% / 82% | 100% | 0% | 100% | 18.2 / 38.0 | 15080 |
 
 Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
+Sürümler: prompt v1+2579008b · kurallar r2+5f39f401 · şema 1.1
 Sürümler: prompt v1+7205d091 · kurallar r1+d1852061 · şema 1.1
 Sürümler: prompt v1+a4c5ebfc · kurallar r1+d1852061 · şema 1.1
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0

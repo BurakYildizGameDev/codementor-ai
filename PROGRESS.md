@@ -890,7 +890,18 @@ süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölç�
 - **Test seti notu:** `cpp-008` ve `c-016` etiketi değişti; Faz 51 öncesi test sonuçları bu iki örnekte doğrudan karşılaştırılamaz.
 **kod-denetci sonrası (ikinci commit):** few-shot'lar sınıra uyduruldu (`cpp_unreal_uproperty` null aktör → memory_safety, `csharp_unity_update_alloc` Destroy edilmiş düşman → engine_best_practice, `csharp_none_string_concat` boş listede `Substring` → memory_safety); ortak metne Unreal GC istisnası, yönetilen dillerde sınır dışı (her dilde memory_safety), C/C++ NULL dereference ifadesi, Unity Destroy edilmiş nesne, Unreal Tick tahsisi (performance) ve dile göre sıfıra bölme eklendi. Kullanıcı kararıyla ek etiketler: **test** `csharp-016` L7 edge_case → memory_safety; **test** `csharp-013` L9 (lo + hi taşması, kuramsal uç değer) kaldırıldı; **test** `c-013` L8 edge_case → undefined_behavior; dev `css-004` L5, **test** `css-005` L3, **test** `css-009` L2 design → edge_case (işaretleme kuralı "dar ekran/taşma → edge_case"). Testler: etiket sezgisi genişletildi (OutOfRange/IndexError/use-after), GC muafiyeti yalnız Unreal, sezginin kendi fixture'ları, işaretleme taşma etiketleri, few-shot kategorileri. Kural 8 ≈ +350 token (golden en büyük tek geçiş prompt'u ~5,1k; bütçe testleri geçiyor, büyük kodda few-shot'lar daha erken kırpılır).
 **Test seti notu (toplam):** `cpp-008`, `c-016`, `csharp-016`, `c-013`, `css-005`, `css-009` kategorisi değişti, `csharp-013`'ten bir bulgu çıktı: Faz 51 öncesi test sonuçları bu örneklerde doğrudan karşılaştırılamaz (eski koşuları `eval analyze` ile yeniden puanlarken dikkat).
-**Açık sorular:** Prompt değişikliğinin etkisi canlı dev ölçümü ister (~0,3M token × 4 parça); kullanıcı onayıyla koşulacak.
+**Canlı dev ölçümü (2026-10-05, kullanıcı onayıyla):** Claude Opus 5.5, `two_pass`, 4 parça (`20261005T135928`…`T141946`, prompt `v1+2579008b`, kurallar `r2+5f39f401`), 96 örnek, hata yok, ~28 dk. Faz 36 Claude birleşimiyle (parça 1-4 + missing3) **ikisi de güncel etiketlerle**:
+
+| | P / R / F1 | TP / FP / FN | Kategorisiz P / R / F1 | Kategori karışıklığı |
+|---|---|---|---|---|
+| Faz 36 | 77 / 88 / 82 | 80 / 24 / 11 | 84 / 96 / 89 | 7 |
+| **Faz 51** | **78 / 96 / 86** | **87 / 24 / 4** | 80 / 98 / 88 | **2** |
+
+- Kazanılan TP'lerin çoğu Faz 51'in hedeflediği karışıklıklar: `cpp-005`, `cpp-106`, `csharp-009`, `csharp-014`, `unity-009`, `unity-104`, `python-012`; `cpp-007` Faz 39'un etkisi (bilinen). Karışıklık 7 → 2 (kalan: `accessibility→design`, `memory_safety→performance`).
+- Gerilemeler kategori kaynaklı değil: `unreal-011` gereksinim bulgusu yanlış satırda (3 yerine 12); `cpp-102` yineleyici geçersizleşmesini `edge_case` + `performance` yazdı (bellek hatasını tanımadı); `c-106` kuramsal int taşması (kural yasaklıyor, model yine yazdı). FP sayısı aynı (24).
+- Tek koşu gürültüsü ±3 (Faz 36 §4.3); recall artışı (+8) bunun belirgin üstünde, precision değişmedi sayılır. Kategorisiz precision 84 → 80: model biraz daha fazla bulgu yazıyor, ama doğru kategoriye düşenler arttı.
+- README dev tablosu yenilendi; öneri toplamı 33.
+**Açık sorular:** Yok.
 **Bu fazda öğrendiğim:** Jinja `trim_blocks` `{% include %}` etiketinden sonraki satır sonunu da yer; satır içi include'da `+%}` gerekir.
 
 ## Faz 50 — Notlar (exe paketi, dil kapsamı, kodlama, CI hijyeni)
@@ -1142,7 +1153,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı ölçüm onay bekliyor). Sıradaki Faz 52 (kural bazında öneri türü), sonra 53-57; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı dev 78/96/86, karışıklık 7 → 2). Sıradaki Faz 52 (kural bazında öneri türü), sonra 53-57; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1176,7 +1187,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 21. ~~**Faz 48 — Rol sınırlayıcıları ve analiz süresi:**~~ Yapıldı (2026-10-05). `<system>`/`<user>` enjeksiyonu, toplam süre sınırı.
 22. ~~**Faz 49 — Depolama ve önbellek:**~~ Yapıldı (2026-10-05). oturum yarışı (500), `rules_version` kapsamı (Faz 55 öncesi), saklama.
 23. ~~**Faz 50 — Dil kapsamı, kodlama, CI:**~~ Yapıldı (2026-10-05). SARIF Python/HTML/CSS 500, UTF-8 dışı dosya, `pip-audit`.
-24. ~~**Faz 51 — Kategori tutarlılığı:**~~ Yapıldı (2026-10-05; canlı ölçüm açık). doğru satır/yanlış kategori FP-FN'leri; prompt ve etiket
+24. ~~**Faz 51 — Kategori tutarlılığı:**~~ Yapıldı (2026-10-05; canlı dev 96: 78/96/86). doğru satır/yanlış kategori FP-FN'leri; prompt ve etiket
    rehberinde tek kategori tanımı.
 25. **Faz 52 — Kural bazında öneri türü:** CPP-OWN-001, UE-MEM-001, PY-RES-001 gibi kurallarda öneri.
 26. **Faz 53 — Ölçüm altyapısı ve belge tazeleme:** `pytest-cov` + CI kapsama raporu, README eval
