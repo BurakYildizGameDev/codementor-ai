@@ -58,6 +58,8 @@ def merge_findings(static: list[Finding], llm: list[Finding]) -> list[Finding]:
             update={
                 "source": FindingSource.CONFIRMED,
                 "confidence": max(base.confidence, finding.confidence, CONFIRMED_CONFIDENCE),
+                # Faz 52: statik öneri + LLM hatası → hata; tersi ya da öneri+öneri → statik türü
+                "kind": FindingKind.ISSUE if finding.kind is FindingKind.ISSUE else base.kind,
             }
         )
     return number_findings(merged + extra)

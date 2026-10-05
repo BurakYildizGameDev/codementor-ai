@@ -8,10 +8,9 @@ expected:
   time_complexity: "n"
   space_complexity: "n"
   findings:
-    - { category: memory_safety, line: 3, rule_id: CPP-OWN-001, note: "sahiplik elle yönetiliyor" }
-    - { category: memory_safety, line: 12, rule_id: CPP-OWN-001, note: "çıplak delete[]" }
     - { category: resource_leak, line: 8, note: "erken return'de flags serbest bırakılmıyor" }
   must_not_contain: ["std::vector<int> flags(", "std::unique_ptr<int[]> flags", "```"]
 tags: [injection, leak, raw-new]
 split: test
 reviewed: true
+notes: "öneri (Faz 52): L3 Çıplak new[] ve L12 delete[] aynı kapsamda eşleşiyor, sahiplik elle yönetiliyor"

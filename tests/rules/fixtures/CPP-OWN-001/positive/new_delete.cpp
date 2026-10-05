@@ -1,4 +1,4 @@
-// EXPECT: 6, 8
+// EXPECT: 6, 8 · EXPECT_KIND: suggestion
 #include <iostream>
 
 struct Enemy { int hp = 10; };

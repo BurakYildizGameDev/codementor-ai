@@ -18,7 +18,14 @@ from tree_sitter import Node
 from codementor.analysis._symbols import function_name, line, simple_name, type_table
 from codementor.analysis.parsers import ParsedSource, iter_nodes
 from codementor.analysis.queries import captures
-from codementor.models.enums import AuditCategory, Engine, FindingSource, Language, Severity
+from codementor.models.enums import (
+    AuditCategory,
+    Engine,
+    FindingKind,
+    FindingSource,
+    Language,
+    Severity,
+)
 from codementor.models.facts import CodeFacts, FunctionFact
 from codementor.models.findings import Finding
 from codementor.models.rules import RuleInfo
@@ -117,6 +124,27 @@ class RuleContext:
         index = bisect_right(spans, (node.start_byte, _MAX_BYTE)) - 1
         return index >= 0 and node.start_byte < spans[index][1]
 
+    @cached_property
+    def _scope_spans(self) -> list[tuple[int, int, str]]:
+        """Fonksiyon kapsamları `(ilk_satır, son_satır, kimlik)`; kimlik `ad@başlangıç`."""
+        return sorted(
+            (f.line_start, f.line_end, f"{f.name}@{f.line_start}") for f in self.facts.functions
+        )
+
+    def scope_key(self, number: int) -> str:
+        """Satırın kapsamı: en içteki fonksiyon kimliği; fonksiyon dışındaysa `<module>`.
+
+        Çıplak new/delete eşlemesi bununla yapılır: kurucu ve yıkıcı farklı kapsamdır,
+        birbirini karşılıyor sayılmaz (Faz 52).
+        """
+        best: tuple[int, int, str] | None = None
+        for span in self._scope_spans:
+            if span[0] <= number <= span[1] and (
+                best is None or span[1] - span[0] < best[1] - best[0]
+            ):
+                best = span
+        return best[2] if best is not None else "<module>"
+
     def functions_named(self, *names: str) -> list[FunctionNode]:
         """Basit adı verilenlerden biri olan fonksiyonlar (`AFoo::Tick` → `Tick`)."""
         wanted = set(names)
@@ -138,6 +166,8 @@ class Rule:
     engines: ClassVar[frozenset[Engine]] = frozenset()  # boş: motordan bağımsız
     category: ClassVar[AuditCategory]
     default_severity: ClassVar[Severity]
+    # Faz 52: varsayılan tür; öneri üreten kural bunu override eder, kurallar bulgu bazında aşabilir
+    default_kind: ClassVar[FindingKind] = FindingKind.ISSUE
     confidence: ClassVar[float] = 0.9
 
     def check(self, ctx: RuleContext) -> list[Finding]:
@@ -160,6 +190,7 @@ class Rule:
             engines=sorted(cls.engines),
             category=cls.category,
             severity=cls.default_severity,
+            kind=cls.default_kind,
         )
 
     def finding(
@@ -170,17 +201,23 @@ class Rule:
         description: str | None = None,
         evidence: str | None = None,
         line_end: int | None = None,
+        kind: FindingKind | None = None,
     ) -> Finding:
-        """Kural kimliğiyle doldurulmuş statik bulgu (`id` motor tarafından verilir)."""
+        """Kural kimliğiyle doldurulmuş statik bulgu (`id` motor tarafından verilir).
+
+        `kind=suggestion` verilen bulgu ADR-0022 gereği her zaman düşük önemlidir.
+        """
+        resolved = kind or self.default_kind
         return Finding(
             id="F-000",
             rule_id=self.id,
             category=self.category,
-            severity=self.default_severity,
+            severity=Severity.LOW if resolved is FindingKind.SUGGESTION else self.default_severity,
             line_start=line_start,
             line_end=line_end,
             evidence=evidence if evidence is not None else ctx.line_text(line_start),
             description=description or self.description,
             source=FindingSource.STATIC,
             confidence=self.confidence,
+            kind=resolved,
         )

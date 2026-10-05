@@ -5,7 +5,7 @@ from __future__ import annotations
 from tree_sitter import Node
 
 from codementor.analysis._symbols import line, text
-from codementor.models.enums import AuditCategory, Language, Severity
+from codementor.models.enums import AuditCategory, FindingKind, Language, Severity
 from codementor.models.findings import Finding
 from codementor.rules.base import Rule, RuleContext
 from codementor.rules.registry import register_rule
@@ -85,7 +85,11 @@ class BareExcept(Rule):
 
 @register_rule
 class OpenWithoutWith(Rule):
-    """PY-RES-001: `with` dışında `open()`; hata yolunda dosya kapanmayabilir."""
+    """PY-RES-001: `with` dışında `open()`; hata yolunda dosya kapanmayabilir.
+
+    Aynı kapsanda `close()` varsa (Faz 52) kapatma niyeti görünüyor → `suggestion`;
+    hiç kapanmıyorsa `issue`.
+    """
 
     id = "PY-RES-001"
     title = "with dışında open()"
@@ -98,13 +102,24 @@ class OpenWithoutWith(Rule):
 
     def check(self, ctx: RuleContext) -> list[Finding]:
         managed = [(item.start_byte, item.end_byte) for item in ctx.nodes_in(ctx.root, "with_item")]
+        # Aynı kapsandaki herhangi bir `close()` çağrısı kapatma niyeti sayılır (Faz 52)
+        closed = {
+            ctx.scope_key(line(n))
+            for n in ctx.nodes_in(ctx.root, "call")
+            if (fn := n.child_by_field_name("function")) is not None
+            and fn.type == "attribute"
+            and text(fn.child_by_field_name("attribute")) == "close"
+        }
         found: list[Finding] = []
         for call in ctx.nodes_in(ctx.root, "call"):
             if _call_name(call) not in ("open", "io.open"):
                 continue
             if any(start <= call.start_byte < end for start, end in managed):
                 continue
-            found.append(self.finding(ctx, line(call)))
+            kind = (
+                FindingKind.SUGGESTION if ctx.scope_key(line(call)) in closed else FindingKind.ISSUE
+            )
+            found.append(self.finding(ctx, line(call), kind=kind))
         return found
 
 

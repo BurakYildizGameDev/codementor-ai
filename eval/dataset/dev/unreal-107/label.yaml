@@ -8,10 +8,9 @@ expected:
   compilation_status: passed
   time_complexity: "n"
   space_complexity: "n"
-  findings:
-    - { category: performance, line: 6, rule_id: UE-MEM-001, note: "Döngüde Reserve çağrılmadan TArray::Add ile sürekli yeniden tahsis yapılıyor" }
+  findings: []
   must_not_contain: ["OutIndices.Reserve(Count);", "OutIndices.SetNum(Count);"]
 tags: [performance]
 split: dev
 reviewed: true
-notes: null
+notes: "öneri (Faz 52): L6 Döngüde Reserve çağrılmadan TArray::Add ile sürekli yeniden tahsis yapılıyor"

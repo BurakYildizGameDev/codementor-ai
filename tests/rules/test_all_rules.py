@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from codementor.models.enums import FindingKind, Severity
 from codementor.rules import all_rules
 from codementor.rules.base import Rule
 from tests.rules._fixtures import FIXTURES, Fixture, all_fixtures
@@ -18,8 +19,10 @@ NEGATIVE = [f for f in _FIXTURES if f.kind == "negative"]
 def test_positive_fixture(fixture: Fixture) -> None:
     expected = fixture.expected_lines()
     assert expected, "pozitif fixture `// EXPECT: <satır>` içermeli"
-    found = {f.line_start for f in fixture.findings(RULES[fixture.rule_id])}
-    assert found == expected
+    findings = fixture.findings(RULES[fixture.rule_id])
+    assert {f.line_start for f in findings} == expected
+    if (expected_kind := fixture.expected_kind()) is not None:
+        assert {f.kind for f in findings} == {expected_kind}, fixture.label
 
 
 @pytest.mark.parametrize("fixture", NEGATIVE, ids=lambda f: f.label)
@@ -48,5 +51,8 @@ def test_positive_findings_are_well_formed() -> None:
         for f in fixture.findings(rule):
             assert f.source == "static"
             assert f.category == rule.category
-            assert f.severity == rule.default_severity
+            # Faz 52 / ADR-0022: öneri her zaman düşük önemde; hata kural varsayılanını alır
+            assert f.severity == (
+                Severity.LOW if f.kind is FindingKind.SUGGESTION else rule.default_severity
+            ), fixture.label
             assert f.evidence.strip(), fixture.label

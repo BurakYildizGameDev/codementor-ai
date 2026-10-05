@@ -1,4 +1,4 @@
-# EXPECT: 3, 7
+# EXPECT: 3, 7 · EXPECT_KIND: issue
 def count_lines(path):
     return len(open(path).readlines())
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from codementor.models.enums import Engine, Language, required_language
+from codementor.models.enums import Engine, FindingKind, Language, required_language
 from codementor.models.rules import RuleInfo
 from codementor.rules.registry import all_rules
 
@@ -39,6 +39,11 @@ def _engines(info: RuleInfo) -> str:
     return ", ".join(info.engines) if info.engines else "—"
 
 
+def kind_label(info: RuleInfo) -> str:
+    """Katalog ve CLI tür etiketi (Faz 52): `hata` ya da `öneri`."""
+    return "öneri" if info.kind is FindingKind.SUGGESTION else "hata"
+
+
 def render_catalog() -> str:
     """Katalog Markdown metni (kimliğe göre sıralı; belirleyici)."""
     rules = rule_catalog()
@@ -46,12 +51,12 @@ def render_catalog() -> str:
         _HEADER,
         f"Toplam: {len(rules)} kural.",
         "",
-        "| ID | Başlık | Dil | Motor | Kategori | Önem |",
-        "|---|---|---|---|---|---|",
+        "| ID | Başlık | Dil | Motor | Kategori | Önem | Tür |",
+        "|---|---|---|---|---|---|---|",
     ]
     lines += [
         f"| {r.id} | {r.title} | {', '.join(r.languages)} | {_engines(r)} "
-        f"| {r.category} | {r.severity} |"
+        f"| {r.category} | {r.severity} | {kind_label(r)} |"
         for r in rules
     ]
     lines += ["", "## Açıklamalar", ""]

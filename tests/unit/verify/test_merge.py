@@ -93,6 +93,22 @@ def test_merge_with_static_keeps_issue_kind() -> None:
     assert merged.kind == "issue"
 
 
+def test_static_suggestion_upgraded_by_llm_issue() -> None:
+    """Faz 52: statik öneri, LLM aynı satırda hata diyorsa birleşik bulgu hatadır."""
+    suggestion = static(11).model_copy(update={"kind": "suggestion"})
+    (merged,) = merge_findings([suggestion], [llm(11)])
+    assert merged.source == FindingSource.CONFIRMED
+    assert merged.kind == "issue"
+
+
+def test_static_suggestion_with_llm_suggestion_stays_suggestion() -> None:
+    """İkisi de öneriyse birleşik bulgu öneridir (Faz 52)."""
+    suggestion = static(11).model_copy(update={"kind": "suggestion"})
+    other = llm(11).model_copy(update={"kind": "suggestion"})
+    (merged,) = merge_findings([suggestion], [other])
+    assert merged.kind == "suggestion"
+
+
 def test_dedupe_prefers_issue_over_suggestion() -> None:
     """LLM aynı sorunu hem öneri hem hata olarak yazarsa hata kalır."""
     suggestion = llm(10).model_copy(update={"kind": "suggestion", "description": "öneri"})

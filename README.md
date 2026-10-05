@@ -168,8 +168,10 @@ Bulgu eşleşmesi: aynı kategori + satır farkı ≤ 2. Model: `claude-opus-5-5
 | claude_cli / claude-opus-5-5 | two_pass | — | 49 (test) | 100% / 100% | 100% / 100% | 91% / 94% | 27% / 92% / 42% | 94% | 0% | 100% | 20.3 / 57.3 | 15673 |
 | claude_cli / claude-opus-5-5 | single_pass | — | 49 (test) | 100% / 100% | 100% / 100% | 94% / 97% | 32% / 94% / 48% | 94% | 0% | 100% | 13.5 / 35.7 | 10182 |
 | Yalnızca statik (LLM yok) | static | — | 49 (test) | — / — | 100% / 100% | 97% / 97% | 90% / 49% / 63% | 100% | 0% | — | 0.1 / 0.5 | — |
+| Yalnızca statik (LLM yok) | static | — | 70 (test) | — / — | 100% / 100% | 97% / 97% | 94% / 55% / 69% | 100% | 0% | — | 0.0 / 0.6 | — |
 
 Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
+Sürümler: prompt v1+2579008b · kurallar r2+2256b8a8 · şema 1.1
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 <!-- eval-table:test:end -->
 
@@ -207,8 +209,10 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 87% / 100% / 93% | 100% | 0% | 100% | 16.0 / 34.4 | 14023 |
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 78% / 95% / 86% | 100% | 0% | 100% | 16.2 / 27.6 | 14416 |
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 71% / 96% / 82% | 100% | 0% | 100% | 18.2 / 38.0 | 15080 |
+| Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 55% / 71% | 100% | 0% | — | 0.1 / 0.7 | — |
 
 Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
+Sürümler: prompt v1+2579008b · kurallar r2+2256b8a8 · şema 1.1
 Sürümler: prompt v1+2579008b · kurallar r2+5f39f401 · şema 1.1
 Sürümler: prompt v1+7205d091 · kurallar r1+d1852061 · şema 1.1
 Sürümler: prompt v1+a4c5ebfc · kurallar r1+d1852061 · şema 1.1

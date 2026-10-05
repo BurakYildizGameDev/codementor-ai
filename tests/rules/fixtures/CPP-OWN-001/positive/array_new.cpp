@@ -1,4 +1,4 @@
-// EXPECT: 5, 7
+// EXPECT: 5, 7 · EXPECT_KIND: suggestion
 #include <cstddef>
 
 void fill(std::size_t n) {

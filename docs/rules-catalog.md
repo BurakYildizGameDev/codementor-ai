@@ -9,42 +9,42 @@ içinde `[rules] disabled = ["KURAL-ID"]` ile kapatılabilir.
 
 Toplam: 34 kural.
 
-| ID | Başlık | Dil | Motor | Kategori | Önem |
-|---|---|---|---|---|---|
-| C-BUF-001 | Sınır denetimsiz tampon fonksiyonu | c | — | memory_safety | high |
-| C-IO-001 | scanf dönüş değeri denetlenmiyor | c | — | input_handling | medium |
-| C-MEM-001 | Serbest bırakılmayan bellek | c | — | resource_leak | high |
-| C-MEM-002 | realloc sonucu aynı işaretçiye atanıyor | c | — | memory_safety | high |
-| C-MEM-003 | Tahsis sonucu NULL denetimi yok | c | — | memory_safety | medium |
-| C-PERF-001 | Döngü koşulunda strlen | c | — | performance | low |
-| C-UB-001 | fflush(stdin) | c | — | undefined_behavior | medium |
-| CPP-OWN-001 | Çıplak new/delete | cpp | — | memory_safety | medium |
-| CPP-PERF-001 | Büyük nesne değerle geçiriliyor | cpp | — | performance | low |
-| CPP-SP-001 | Döngüsel shared_ptr şüphesi | cpp | — | resource_leak | high |
-| CS-ALLOC-001 | Döngüde string birleştirme | csharp | — | garbage_collection | medium |
-| CS-ALLOC-002 | Sıcak yolda LINQ | csharp | — | garbage_collection | medium |
-| CS-PERF-001 | Döngüde doğrusal arama | csharp | — | performance | medium |
-| CSS-MAINT-001 | Çok sayıda !important | css | — | maintainability | low |
-| CSS-MAINT-002 | Boş kural bloğu | css | — | maintainability | low |
-| CSS-STD-001 | Aynı blokta yinelenen özellik | css | — | maintainability | low |
-| HTML-ACC-001 | Alternatif metni olmayan görsel | html | — | accessibility | medium |
-| HTML-ACC-002 | Belge dili belirtilmemiş | html | — | accessibility | low |
-| HTML-ACC-003 | Etiketsiz form alanı | html | — | accessibility | medium |
-| HTML-STD-001 | Yinelenen id | html | — | design | medium |
-| HTML-STD-002 | DOCTYPE bildirimi yok | html | — | design | low |
-| HTML-STD-003 | Dengesiz etiket | html | — | design | medium |
-| PY-DESIGN-001 | Değiştirilebilir varsayılan argüman | python | — | design | medium |
-| PY-DESIGN-002 | None ile eşitlik karşılaştırması | python | — | design | low |
-| PY-EDGE-001 | Çıplak except | python | — | edge_case | medium |
-| PY-PERF-001 | Döngüde doğrusal liste işlemi | python | — | performance | medium |
-| PY-RES-001 | with dışında open() | python | — | resource_leak | medium |
-| UE-GC-001 | UPROPERTY'siz UObject alanı | cpp | unreal | garbage_collection | high |
-| UE-MEM-001 | Reserve olmadan TArray::Add | cpp | unreal | performance | low |
-| UE-PERF-001 | Tick içinde ağır iş | cpp | unreal | performance | medium |
-| UNITY-EVT-001 | Kaldırılmayan olay aboneliği | csharp | unity | resource_leak | medium |
-| UNITY-GC-001 | Sıcak yolda heap tahsisi | csharp | unity | garbage_collection | high |
-| UNITY-PERF-001 | Sıcak yolda bileşen/sahne araması | csharp | unity | performance | high |
-| UNITY-PERF-002 | Sıcak yolda string etiket karşılaştırma | csharp | unity | performance | low |
+| ID | Başlık | Dil | Motor | Kategori | Önem | Tür |
+|---|---|---|---|---|---|---|
+| C-BUF-001 | Sınır denetimsiz tampon fonksiyonu | c | — | memory_safety | high | hata |
+| C-IO-001 | scanf dönüş değeri denetlenmiyor | c | — | input_handling | medium | hata |
+| C-MEM-001 | Serbest bırakılmayan bellek | c | — | resource_leak | high | hata |
+| C-MEM-002 | realloc sonucu aynı işaretçiye atanıyor | c | — | memory_safety | high | hata |
+| C-MEM-003 | Tahsis sonucu NULL denetimi yok | c | — | memory_safety | medium | hata |
+| C-PERF-001 | Döngü koşulunda strlen | c | — | performance | low | hata |
+| C-UB-001 | fflush(stdin) | c | — | undefined_behavior | medium | hata |
+| CPP-OWN-001 | Çıplak new/delete | cpp | — | memory_safety | medium | hata |
+| CPP-PERF-001 | Büyük nesne değerle geçiriliyor | cpp | — | performance | low | hata |
+| CPP-SP-001 | Döngüsel shared_ptr şüphesi | cpp | — | resource_leak | high | hata |
+| CS-ALLOC-001 | Döngüde string birleştirme | csharp | — | garbage_collection | medium | hata |
+| CS-ALLOC-002 | Sıcak yolda LINQ | csharp | — | garbage_collection | medium | hata |
+| CS-PERF-001 | Döngüde doğrusal arama | csharp | — | performance | medium | hata |
+| CSS-MAINT-001 | Çok sayıda !important | css | — | maintainability | low | hata |
+| CSS-MAINT-002 | Boş kural bloğu | css | — | maintainability | low | hata |
+| CSS-STD-001 | Aynı blokta yinelenen özellik | css | — | maintainability | low | hata |
+| HTML-ACC-001 | Alternatif metni olmayan görsel | html | — | accessibility | medium | hata |
+| HTML-ACC-002 | Belge dili belirtilmemiş | html | — | accessibility | low | hata |
+| HTML-ACC-003 | Etiketsiz form alanı | html | — | accessibility | medium | hata |
+| HTML-STD-001 | Yinelenen id | html | — | design | medium | hata |
+| HTML-STD-002 | DOCTYPE bildirimi yok | html | — | design | low | hata |
+| HTML-STD-003 | Dengesiz etiket | html | — | design | medium | hata |
+| PY-DESIGN-001 | Değiştirilebilir varsayılan argüman | python | — | design | medium | hata |
+| PY-DESIGN-002 | None ile eşitlik karşılaştırması | python | — | design | low | hata |
+| PY-EDGE-001 | Çıplak except | python | — | edge_case | medium | hata |
+| PY-PERF-001 | Döngüde doğrusal liste işlemi | python | — | performance | medium | hata |
+| PY-RES-001 | with dışında open() | python | — | resource_leak | medium | hata |
+| UE-GC-001 | UPROPERTY'siz UObject alanı | cpp | unreal | garbage_collection | high | hata |
+| UE-MEM-001 | Reserve olmadan TArray::Add | cpp | unreal | performance | low | öneri |
+| UE-PERF-001 | Tick içinde ağır iş | cpp | unreal | performance | medium | hata |
+| UNITY-EVT-001 | Kaldırılmayan olay aboneliği | csharp | unity | resource_leak | medium | hata |
+| UNITY-GC-001 | Sıcak yolda heap tahsisi | csharp | unity | garbage_collection | high | hata |
+| UNITY-PERF-001 | Sıcak yolda bileşen/sahne araması | csharp | unity | performance | high | hata |
+| UNITY-PERF-002 | Sıcak yolda string etiket karşılaştırma | csharp | unity | performance | low | hata |
 
 ## Açıklamalar
 

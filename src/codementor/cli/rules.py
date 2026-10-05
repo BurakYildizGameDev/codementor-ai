@@ -11,7 +11,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from codementor.models.enums import Engine, Language
-from codementor.rules.catalog import render_catalog, rule_catalog
+from codementor.rules.catalog import kind_label, render_catalog, rule_catalog
 
 rules_app = typer.Typer(name="rules", no_args_is_help=True, help="Statik kural kataloğu.")
 
@@ -32,10 +32,13 @@ def rules_list(
     table.add_column("Dil", no_wrap=True)
     table.add_column("Motor", no_wrap=True)
     table.add_column("Önem", no_wrap=True)
+    table.add_column("Tür", no_wrap=True)  # Faz 52: hata / öneri
     table.add_column("Başlık", overflow="fold")
     for r in rules:
         engines = ", ".join(r.engines) if r.engines else "—"
-        table.add_row(r.id, ", ".join(r.languages), engines, r.severity, escape(r.title))
+        table.add_row(
+            r.id, ", ".join(r.languages), engines, r.severity, kind_label(r), escape(r.title)
+        )
     console.print(table)
 
 

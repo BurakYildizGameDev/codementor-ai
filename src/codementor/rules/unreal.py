@@ -9,6 +9,7 @@ from codementor.models.enums import (
     AllocationKind,
     AuditCategory,
     Engine,
+    FindingKind,
     Language,
     LoopBound,
     Severity,
@@ -153,7 +154,10 @@ def _member_call(node: Node) -> tuple[str, str, int] | None:
 
 @register_rule
 class AddWithoutReserve(Rule):
-    """UE-MEM-001: eleman sayısı bilinen döngüde `Reserve` olmadan `TArray::Add`."""
+    """UE-MEM-001: eleman sayısı bilinen döngüde `Reserve` olmadan `TArray::Add`.
+
+    Hataya yol açmaz, yalnız yeniden tahsis maliyeti: her zaman `suggestion` (Faz 52).
+    """
 
     id = "UE-MEM-001"
     title = "Reserve olmadan TArray::Add"
@@ -165,6 +169,7 @@ class AddWithoutReserve(Rule):
     engines = UNREAL
     category = AuditCategory.PERFORMANCE
     default_severity = Severity.LOW
+    default_kind = FindingKind.SUGGESTION
 
     def check(self, ctx: RuleContext) -> list[Finding]:
         counted: dict[int, bool] = {}  # döngü satırı → sınırı bilinen mi (aynı satırda hepsi)

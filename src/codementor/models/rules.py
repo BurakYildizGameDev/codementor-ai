@@ -5,7 +5,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from codementor.models._base import StrictModel
-from codementor.models.enums import AuditCategory, Engine, Language, Severity
+from codementor.models.enums import AuditCategory, Engine, FindingKind, Language, Severity
 from codementor.models.findings import Finding
 
 RULE_ID_PATTERN = r"^[A-Z]+-[A-Z]+-\d{3}$"  # {ALAN}-{KATEGORİ}-{NNN} (mimari §8.1)
@@ -21,6 +21,8 @@ class RuleInfo(StrictModel):
     engines: list[Engine] = Field(description="Boşsa motordan bağımsız")
     category: AuditCategory
     severity: Severity
+    # Faz 52: kuralın varsayılan bulgu türü; kurallar bulgu bazında bunu aşabilir
+    kind: FindingKind = Field(description="issue: hata; suggestion: hataya yol açmayan öneri")
 
 
 class RuleRunResult(StrictModel):

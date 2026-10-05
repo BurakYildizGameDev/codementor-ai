@@ -5,6 +5,8 @@ Düzen: `tests/rules/fixtures/{RULE_ID}/{positive,negative}/*.{c,cpp,cs,py,html,
 - Motor: dosyada `// ENGINE: unity|unreal|none` varsa o; yoksa kural tek bir motora
   özgüyse o motor, değilse `none`.
 - Pozitif fixture'lar beklenen satırları `// EXPECT: 7` ya da `// EXPECT: 7, 12` ile verir.
+- Tür beklentisi varsa `// EXPECT_KIND: issue` ya da `// EXPECT_KIND: suggestion` ile verilir
+  (Faz 52); tüm beklenen satırlar aynı türdedir.
 """
 
 from __future__ import annotations
@@ -15,7 +17,7 @@ from pathlib import Path
 
 from codementor.analysis.extractor import extract_facts
 from codementor.ingest.normalize import normalize
-from codementor.models.enums import Engine, Language
+from codementor.models.enums import Engine, FindingKind, Language
 from codementor.models.findings import Finding
 from codementor.models.request import LanguageHint
 from codementor.rules import run_rules
@@ -33,6 +35,7 @@ _EXTENSIONS = {
 }
 # `//`, Python `#`, HTML `<!--`, CSS `/*` yorumları (ADR-0015)
 _EXPECT = re.compile(r"(?://|#|<!--|/\*)\s*EXPECT:\s*([\d,\s]+)")
+_KIND = re.compile(r"EXPECT_KIND:\s*(issue|suggestion)")
 _ENGINE = re.compile(r"//\s*ENGINE:\s*(\w+)")
 
 
@@ -52,6 +55,11 @@ class Fixture:
 
     def expected_lines(self) -> set[int]:
         return {int(n) for m in _EXPECT.finditer(self.text) for n in re.findall(r"\d+", m[1])}
+
+    def expected_kind(self) -> FindingKind | None:
+        """`EXPECT_KIND` ile bildirilen tür; yoksa tür kontrolü yapılmaz."""
+        match = _KIND.search(self.text)
+        return FindingKind(match[1]) if match else None
 
     def engine(self, rule: type[Rule]) -> Engine:
         match = _ENGINE.search(self.text)

@@ -13,6 +13,7 @@ from codementor.models.enums import (
     AllocationKind,
     AuditCategory,
     DeallocationKind,
+    FindingKind,
     Language,
     Severity,
 )
@@ -27,7 +28,12 @@ _MAX_TYPE_BYTES = 200  # daha uzun tip metni alınmaz (mimari §12)
 
 @register_rule
 class NakedNewDelete(Rule):
-    """CPP-OWN-001: akıllı işaretçi yerine çıplak `new`/`delete`."""
+    """CPP-OWN-001: akıllı işaretçi yerine çıplak `new`/`delete`.
+
+    Tahsisle serbest bırakma aynı kapsamdaysa (Faz 52) ömür en azından tutarlı yönetiliyor
+    demektir → bulgu `suggestion`; eşleşme yoksa `issue` kalır. Kurucu ve yıkıcı farklı
+    kapsamdır (tek başına yıkıcı doğru anlamına gelmez).
+    """
 
     id = "CPP-OWN-001"
     title = "Çıplak new/delete"
@@ -46,11 +52,28 @@ class NakedNewDelete(Rule):
             for n in ctx.nodes_in(ctx.root, "new_expression")
             if n.child_by_field_name("placement") is not None
         }
-        lines = [
-            a.line for a in ctx.facts.allocations if a.kind in _RAW_NEW and a.line not in placement
-        ]
-        lines += [d.line for d in ctx.facts.deallocations if d.kind in _RAW_DELETE]
-        return [self.finding(ctx, n) for n in lines]
+        # (kapsam, aile) → tahsis/serbest satırları; aileler new↔delete ve new[]↔delete[]
+        groups: dict[tuple[str, int], dict[str, list[int]]] = {}
+
+        def bucket(key: tuple[str, int]) -> dict[str, list[int]]:
+            return groups.setdefault(key, {"alloc": [], "free": []})
+
+        for a in ctx.facts.allocations:
+            if a.kind in _RAW_NEW and a.line not in placement:
+                family = 0 if a.kind is AllocationKind.NEW else 1
+                bucket((ctx.scope_key(a.line), family))["alloc"].append(a.line)
+        for d in ctx.facts.deallocations:
+            if d.kind in _RAW_DELETE:
+                family = 0 if d.kind is DeallocationKind.DELETE else 1
+                bucket((ctx.scope_key(d.line), family))["free"].append(d.line)
+        found: list[Finding] = []
+        for roles in groups.values():
+            paired = bool(roles["alloc"] and roles["free"])
+            kind = FindingKind.SUGGESTION if paired else FindingKind.ISSUE
+            found += [
+                self.finding(ctx, n, kind=kind) for n in sorted(roles["alloc"] + roles["free"])
+            ]
+        return found
 
 
 _SHARED_PTR = re.compile(r"(?<![\w])shared_ptr\s*<\s*(?:const\s+)?((?:\w+\s*::\s*)*\w+)")
