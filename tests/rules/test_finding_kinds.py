@@ -75,6 +75,39 @@ def test_cpp_mismatched_new_delete_kinds_do_not_match() -> None:
     assert found == {FindingKind.ISSUE: {2, 3}}
 
 
+def test_cpp_delete_of_other_pointer_does_not_hide_leak() -> None:
+    """Eşleşme ada bağlıdır: `b` silinince `a`'nın sızıntısı öneriye düşmez."""
+    found = kinds(
+        "void f(int n) {\n    int* a = new int[n];\n    int* b = new int[n];\n    delete[] b;\n}\n",
+        Language.CPP,
+    )
+    assert found == {FindingKind.ISSUE: {2}, FindingKind.SUGGESTION: {3, 4}}
+
+
+def test_cpp_assignment_and_member_pairs_match() -> None:
+    """`this->p = new T` ile `delete p` (ve parantezli biçim) aynı sahibi gösterir."""
+    found = kinds(
+        "struct S {\n"
+        "    int* p;\n"
+        "    void reset() {\n"
+        "        this->p = new int;\n"
+        "        delete (p);\n"
+        "    }\n"
+        "};\n",
+        Language.CPP,
+    )
+    assert found == {FindingKind.SUGGESTION: {4, 5}}
+
+
+def test_cpp_unnamed_allocation_is_issue() -> None:
+    """Bir ada atanmayan tahsis (`return new T`) eşleştirilemez: hata kalır."""
+    found = kinds(
+        "int* make() {\n    int* p = new int;\n    delete p;\n    return new int;\n}\n",
+        Language.CPP,
+    )
+    assert found == {FindingKind.SUGGESTION: {2, 3}, FindingKind.ISSUE: {4}}
+
+
 def test_python_open_with_close_in_same_scope_is_suggestion() -> None:
     found = kinds(
         'def save(path: str) -> None:\n    f = open(path, "w")\n    f.write("x")\n    f.close()\n',

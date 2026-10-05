@@ -8,11 +8,16 @@ from dataclasses import dataclass
 
 from tree_sitter import Node
 
-from codementor.analysis._symbols import declarator_name, line, simple_name, strip_templates, text
+from codementor.analysis._symbols import (
+    declarator_name,
+    line,
+    operator_of,
+    simple_name,
+    strip_templates,
+    text,
+)
 from codementor.models.enums import (
-    AllocationKind,
     AuditCategory,
-    DeallocationKind,
     FindingKind,
     Language,
     Severity,
@@ -21,8 +26,6 @@ from codementor.models.findings import Finding
 from codementor.rules.base import Rule, RuleContext
 from codementor.rules.registry import register_rule
 
-_RAW_NEW = frozenset({AllocationKind.NEW, AllocationKind.NEW_ARRAY})
-_RAW_DELETE = frozenset({DeallocationKind.DELETE, DeallocationKind.DELETE_ARRAY})
 _MAX_TYPE_BYTES = 200  # daha uzun tip metni alınmaz (mimari §12)
 
 
@@ -30,9 +33,10 @@ _MAX_TYPE_BYTES = 200  # daha uzun tip metni alınmaz (mimari §12)
 class NakedNewDelete(Rule):
     """CPP-OWN-001: akıllı işaretçi yerine çıplak `new`/`delete`.
 
-    Tahsisle serbest bırakma aynı kapsamdaysa (Faz 52) ömür en azından tutarlı yönetiliyor
-    demektir → bulgu `suggestion`; eşleşme yoksa `issue` kalır. Kurucu ve yıkıcı farklı
-    kapsamdır (tek başına yıkıcı doğru anlamına gelmez).
+    Aynı kapsamda aynı ada atanan tahsis ile o adın serbest bırakılması eşleşiyorsa (Faz 52)
+    ömür en azından tutarlı yönetiliyor demektir → bulgu `suggestion`; eşleşmeyen tahsis ya da
+    serbest bırakma `issue` kalır (başka bir işaretçinin `delete`'i sızıntıyı örtmez). Kurucu ve
+    yıkıcı farklı kapsamdır (tek başına yıkıcı doğru anlamına gelmez).
     """
 
     id = "CPP-OWN-001"
@@ -46,34 +50,81 @@ class NakedNewDelete(Rule):
     default_severity = Severity.MEDIUM
 
     def check(self, ctx: RuleContext) -> list[Finding]:
-        # placement new (`new (buf) T`) bellek ayırmaz; sahiplik sorusu yok
-        placement = {
-            line(n)
-            for n in ctx.nodes_in(ctx.root, "new_expression")
-            if n.child_by_field_name("placement") is not None
+        owners: dict[int, str] = {}  # new_expression başlangıç baytı → atandığı ad
+        news: list[Node] = []
+        deletes: list[Node] = []
+        for n in ctx.nodes_in(
+            ctx.root,
+            "new_expression",
+            "delete_expression",
+            "init_declarator",
+            "assignment_expression",
+            "field_initializer",
+        ):
+            if n.type == "new_expression":
+                # placement new (`new (buf) T`) bellek ayırmaz; sahiplik sorusu yok
+                if n.child_by_field_name("placement") is None:
+                    news.append(n)
+            elif n.type == "delete_expression":
+                deletes.append(n)
+            elif (target := _new_target(n)) is not None:
+                owners[target[0].start_byte] = target[1]
+        # Eşleşme anahtarı (kapsam, aile, ad); aileler new↔delete ve new[]↔delete[]
+        allocated = {
+            n.start_byte: (ctx.scope_key(line(n)), _is_array_new(n), owners.get(n.start_byte))
+            for n in news
         }
-        # (kapsam, aile) → tahsis/serbest satırları; aileler new↔delete ve new[]↔delete[]
-        groups: dict[tuple[str, int], dict[str, list[int]]] = {}
-
-        def bucket(key: tuple[str, int]) -> dict[str, list[int]]:
-            return groups.setdefault(key, {"alloc": [], "free": []})
-
-        for a in ctx.facts.allocations:
-            if a.kind in _RAW_NEW and a.line not in placement:
-                family = 0 if a.kind is AllocationKind.NEW else 1
-                bucket((ctx.scope_key(a.line), family))["alloc"].append(a.line)
-        for d in ctx.facts.deallocations:
-            if d.kind in _RAW_DELETE:
-                family = 0 if d.kind is DeallocationKind.DELETE else 1
-                bucket((ctx.scope_key(d.line), family))["free"].append(d.line)
+        freed = {
+            n.start_byte: (ctx.scope_key(line(n)), _is_array_delete(n), _owner(_deleted(n)))
+            for n in deletes
+        }
+        alloc_keys = {key for key in allocated.values() if key[2]}
+        free_keys = {key for key in freed.values() if key[2]}
         found: list[Finding] = []
-        for roles in groups.values():
-            paired = bool(roles["alloc"] and roles["free"])
+        for node in sorted(news + deletes, key=lambda n: n.start_byte):
+            key = allocated.get(node.start_byte) or freed[node.start_byte]
+            paired = key in (free_keys if node.type == "new_expression" else alloc_keys)
             kind = FindingKind.SUGGESTION if paired else FindingKind.ISSUE
-            found += [
-                self.finding(ctx, n, kind=kind) for n in sorted(roles["alloc"] + roles["free"])
-            ]
+            found.append(self.finding(ctx, line(node), kind=kind))
         return found
+
+
+def _owner(raw: str) -> str:
+    """Sahip ifadesinin karşılaştırma biçimi: `(this->data_)` → `data_`."""
+    raw = raw.replace(" ", "")
+    while raw.startswith("(") and raw.endswith(")"):
+        raw = raw[1:-1]
+    return raw.removeprefix("this->")
+
+
+def _new_target(node: Node) -> tuple[Node, str] | None:
+    """`T* p = new T`, `p = new T`, `: p(new T)` → (new düğümü, sahip adı)."""
+    if node.type == "init_declarator":
+        value = node.child_by_field_name("value")
+        name = declarator_name(node.child_by_field_name("declarator"))
+    elif node.type == "assignment_expression":
+        value = node.child_by_field_name("right")
+        name = node.child_by_field_name("left") if operator_of(node) == "=" else None
+    else:  # field_initializer: `: data_(new char[n])`
+        args = next((c for c in node.named_children if c.type == "argument_list"), None)
+        value = args.named_children[0] if args is not None and args.named_child_count == 1 else None
+        name = next((c for c in node.named_children if c.type == "field_identifier"), None)
+    if value is None or value.type != "new_expression" or name is None:
+        return None
+    return value, _owner(text(name))
+
+
+def _deleted(node: Node) -> str:
+    """`delete[] p` → `p` (son adlandırılmış çocuk)."""
+    return text(node.named_children[-1]) if node.named_child_count else ""
+
+
+def _is_array_new(node: Node) -> bool:
+    return node.child_by_field_name("declarator") is not None
+
+
+def _is_array_delete(node: Node) -> bool:
+    return any(c.type == "[" for c in node.children)
 
 
 _SHARED_PTR = re.compile(r"(?<![\w])shared_ptr\s*<\s*(?:const\s+)?((?:\w+\s*::\s*)*\w+)")
