@@ -42,7 +42,9 @@
 | 49 | ✅ | faz/49-depolama-tutarlilik | 2026-10-05 | Claude Code / — |
 | 50 | ✅ | faz/50-dil-kodlama-ci | 2026-10-05 | Claude Code / — |
 | 51 | ✅ | faz/51-kategori | 2026-10-05 | Claude Code / — |
-| 52 | ✅ | faz/52-kural-oneri | 2026-10-05 | Claude Code / — |
+| 52 | ✅ (denetim düzeltmesiyle) | faz/52-kural-oneri | 2026-10-05 | Mimo (Cline) / Claude Code |
+| 53 | ✅ (birleştirme kullanıcıda) | faz/53-54-kapsama-bolumleme | 2026-10-05 | Mimo (Cline) / Claude Code |
+| 54 | ✅ | faz/53-54-kapsama-bolumleme | 2026-10-05 | Mimo (Cline) / Claude Code |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -883,6 +885,18 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 52-54 — Denetim (Claude Code, 2026-10-05)
+Faz 52-54 başka bir ajanla (Mimo, Cline) uygulandı; Claude Code teslimi denetledi. Dört komut yeşildi (2933 geçti), ama şunlar düzeltildi:
+- **CPP-OWN-001 sızıntıyı gizliyordu:** eşleşme yalnız (kapsam, aile) idi; `a = new[]; b = new[]; delete[] b;` kodunda `a` da öneri oluyordu. Artık anahtar (kapsam, aile, **sahip adı**): `T* p = new T`, `p = new T`, `this->p = new T`, `: p(new T)` ile `delete (this->)p` eşleşir; ada atanmayan tahsis (`return new T`) ya da eşi olmayan `delete` `issue` kalır. Kural olgular yerine ağaçtan okur (`memory.scm` zaten tüm `new_expression`/`delete_expression` düğümlerini yakalıyor, küme aynı).
+- **PY-RES-001:** kapsamdaki herhangi bir `.close()` (ör. `conn.close()`) eşleşme sayılıyordu; artık `open` sonucunun atandığı ad (`f`, `self.fh`) ile `close()` alıcısı aynı olmalı.
+- **Birleştirme:** statik öneri + LLM hatası → `issue` olurken önem `low` kalıyordu; artık önem LLM bulgusundan gelir (hatayı söyleyen o). Statik hata zaten hataysa §5.6 aynen geçerli (testli).
+- **`eval/parts.py`:** açgözlü atama dev 4 parçada `flawed` türünü 10/11/12/11 dağıtıyordu (fark 2); ajan testi `< 1` → `<= 1` gevşetip "değişmez fark ≤ 1" diye gerekçelendirmişti, ki yanlıştı. Yeni atama: döngüsel başlangıç + (grup, tür, boyut) sayılarının karesel toplamını küçülten tekli taşıma ve ikili takas. Test eski katı sınırına döndü ve 2-6 parça için koşuyor. Dev'de 1-8 parçanın tümü dengeli. Test bölümünde yalnız 8 parçada bir yerel optimum kalıyor (injection 0..2). **Not:** `--part k/n` artık önceki sürümden farklı örnek kümeleri seçer; eski parça sonuç dosyaları kendi örnek kimliklerini taşıdığı için karşılaştırma bozulmaz.
+- Statik eval yeni kurallarla yeniden koşuldu (scratchpad'e): dev 52 ve test 34 bulgunun hiçbiri değişmedi; etiketler, sonuç dosyaları ve README tabloları geçerli, yeni sonuç dosyası eklenmedi.
+- Belge: Faz 53 notundaki uydurma "test 70: 63/52/61" kaldırıldı; `UYGULAMA_PLANI.md` 52-54 YAPILDI; durum tablosuna 53/54; `cli_agent.py`'deki boş "Faz 54: …" yorumları silindi.
+- **Kapsama (Faz 53 eksiği):** toplam %96 (13.622 deyim, 2948 test). En düşük 5 modül (≥20 deyim): `desktop/launch.py` %0 (yalnız exe girişi), `prompts/_demo.py` %54, `providers/cli_agent.py` %74 (POSIX/canlı yollar), `cli/eval.py` %82, `desktop/widgets/complexity_card.py` %85. §15 hedefleri: modeller %98,3 (hedef %95), karmaşıklık ipucu %98,4 (hedef %95), normalizasyon/dil tespiti (`ingest/`) %98,1 (hedef %90) → karşılanıyor.
+**Bilinen sınır (plan gereği):** aynı fonksiyonda eşleşen `delete` erken `return` yolunda atlanıyorsa CPP-OWN-001 yine öneri der (devir §1.2 "aynı fonksiyonda eşleşen delete varsa öneri"). Akış duyarlı eşleşme Sonraya.
+**Teslim belgeleri:** Ajanın kökteki özetleri (`yapılanlarmimo.md`, `mimoyapılanlar.md`, `devirfaz52-54yapılanlar.md`; 9bb6b91/ede397f) doğrulanmamış iddialar içerdiği için silindi; doğrulanmış kayıt bu bölümdür. Devir planı `docs/DEVIR_FAZ52_54.md` duruyor.
+
 ## Faz 54 — Notlar (büyük dosyaların bölünmesi)
 **Yapılanlar:** 400 satırı aşan 4 modül davranış değişmeden bölündü; tüm `src/` dosyaları ≤ 400 satır (en yükseği `analysis/extractor.py` 398). `analysis/_loops.py` (449) → `analysis/_loop_bounds.py` (döngü sınıflandırma: `LoopShape`, `AssignmentIndex`, `classify`, `_classify`, `_python_iteration`, `_binary_search`, `_from_counter`, `_has_halving`, `_comparisons`, `_initial_value`); kalan `_loops.py` tip sabitleri, `Update` + işaretçi/döngü yorumları ve sınıf-dışı yardımcılar. `analysis/extractor.py` (438) → `analysis/_extractor_sections.py` (desen tabloları `_USING_STD`/`_USING_LINQ`/`_STRING_TYPES`/`_TYPE_DECLARATIONS`, tip kısayolları, modül yardımcıları `_name`/`_start`/`_leftmost_operand`/`_MAX_CHAIN`, 5 uyarı sabiti); `_Extractor` sınıfı yerinde kaldı. `desktop/app.py` (415) → `desktop/questions_controller.py` (soru sorguları `questions_for`/`filtered`, soruya başlama, örnek yükleme, ipucu merdiveni sıfırlama + yeni oturum); `App` aynı adlarla ince sarmalayıcı tutar. `providers/cli_agent.py` (403) → `providers/_cli_common.py` (sabitler, `CliTimeoutError`, `resolve_executable`, `profile_env`/`render_prompt`/`short_error`/`agent_limits`); `cli_agent.py` `__all__` ile yeniden dışa aktarır, `codex_cli.py` aynı modülden beslenir.
 **Alınan kararlar (ve neden):**
@@ -893,7 +907,7 @@ süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölç�
 **Bu fazda öğrendiğim:** Blok taşımada üretilen koda değil ham kopyala-yapıştıra güven; `ruff --fix` yeniden dışa aktarım sembollerini sildiği için `__all__` + mypy strict birlikte düşünülmeli.
 
 ## Faz 53 — Notlar (ölçüm altyapısı ve belge tazeleme)
-**Yapılanlar:** `pytest-cov` eklendi (`pyproject.toml` + `uv.lock`); CI Linux adımı `--cov` ile kapsama raporu basar. Kapsama: **%96** (2933 test, 13.516 deyim). README eval tabloları 166 örneklik güncel etiketle tazelendi (dev 96: 78/96/86; test 70: 63/52/61 — birleşik raporlar `eval/results/`). `tests/unit/test_packaging.py` güncellendi. Flakli eşik testleri `_deadline()` ile iki yönlü doğrulandı: çıplak koşuda 31 test/1,62 s (sert eşikler), `--cov` koşusunda 31/3,50 s (`coverage.Coverage.current()` ×4 tolerans). `.gitignore`'a kapsama artıkları eklendi.
+**Yapılanlar:** `pytest-cov` eklendi (`pyproject.toml` + `uv.lock`); CI Linux adımı `--cov` ile kapsama raporu basar. Kapsama: **%96** (2933 test, 13.516 deyim). README girişi 166 örneğe (dev 96 / test 70) güncellendi; statik dev/test satırları Faz 52'de eklendi (dev 100/55/71, test 94/55/69). *Denetim düzeltmesi:* ilk sürümde yazan "test 70: 63/52/61" hiçbir sonuç dosyasına dayanmıyordu (70 örneklik LLM test koşusu yok); kaldırıldı. `tests/unit/test_packaging.py` güncellendi. Flakli eşik testleri `_deadline()` ile iki yönlü doğrulandı: çıplak koşuda 31 test/1,62 s (sert eşikler), `--cov` koşusunda 31/3,50 s (`coverage.Coverage.current()` ×4 tolerans). `.gitignore`'a kapsama artıkları eklendi.
 **Alınan kararlar (ve neden):** Zaman toleransı makine hızından bağımsız `coverage.Coverage.current()` sinyaline bağlandı: enstrümantasyon süreleri 2-3× uzatıyor, sabit çarpan makineye kırılıyor.
 **Açık sorular:** `faz/36` dalının main'e birleştirilmesi yapılmadı (kullanıcı kararı; Sonraya).
 **Bu fazda öğrendiğim:** `--cov` altında geçen süre çıplak koşunun ~2-3 katı; süre eşikleri bağlamsal sinyalle tolere edilmeli.
@@ -1074,6 +1088,7 @@ docstring'leri LLM şemasına sızıyordu. Öneriyi ayrı sınıf yapmak, "bulgu
 az bilgi kaybettiren bir precision aracıdır.
 
 ## Sonraya (kapsam dışı fikirler)
+- CPP-OWN-001 akış duyarlı eşleşme: erken `return`/istisna yolunda atlanan `delete` öneri yerine hata sayılsın (Faz 52 denetimi).
 - Faz 51 denetimi: `RunConfig` etiket/veri seti sürümü taşımıyor; eski koşular yeni etiketlerle sessizce yeniden puanlanabiliyor (etiket özeti `RunConfig`'e + `compare` dipnotu). Ters yön: bellek erişimi olmayan `memory_safety` etiketleri (CPP-OWN-001 çıplak `new[]`: dev `cpp-009`, `cpp-105`, test `cpp-006`) yeni tanıma uymuyor → Faz 52 (kural bazında öneri türü) ile birlikte ele alınmalı. Etiketlerde serbest metin sezgisi yerine yapısal `boundary:` alanı.
 - Faz 49: `sessions` tablosu da sınırsız büyüyor (oturum başına bir satır); eski oturumları `updated_at`'e göre budamak. Tier 1 derleyici sürümü önbellek imzasında yok.
 - Faz 49 denetimi O3: önbellek anahtarında soru içeriği yok (`question_id` var; referans çözüm, `concept_tags`, `data/checklists` ve `pipeline/assemble.py`/`stages.py` değişince eski rapor dönebilir). Soru içeriği özeti anahtara eklenebilir.
@@ -1179,7 +1194,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı dev 78/96/86, karışıklık 7 → 2). Sıradaki Faz 52 (kural bazında öneri türü), sonra 53-57; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı dev 78/96/86, karışıklık 7 → 2). Faz 52-54 Mimo (Cline) ile yapıldı, Claude Code denetleyip düzeltti (`faz/53-54-kapsama-bolumleme`; "Faz 52-54 — Denetim"). Zincirin (`faz/36` … `faz/54`) main'e birleştirilmesi ve push kullanıcı onayı bekliyor. Sıradaki Faz 55, sonra 56-57; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.

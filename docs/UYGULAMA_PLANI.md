@@ -1722,7 +1722,7 @@ Opus sonuçlarıyla karıştırılmadan denetlenmeli.
 
 **Commit:** `feat(faz-51): kategori tanımlarının prompt ve etiket rehberinde birleştirilmesi`
 
-### Faz 52 — Kural bazında öneri türü (YAPILACAK)
+### Faz 52 — Kural bazında öneri türü (YAPILDI 2026-10-05)
 
 **Dal:** `faz/52-kural-oneri` · **Mimari:** §5.3, §6.4 · **ADR:** 0022 eki
 
@@ -1730,15 +1730,15 @@ Opus sonuçlarıyla karıştırılmadan denetlenmeli.
 `new[]`/`delete[]` için CPP-OWN-001 (`cpp-105`), `Reserve` yok UE-MEM-001 (`unreal-107`), `with` dışı
 `open` PY-RES-001 (`python-105`). Statik bulgular bugün hep `issue`.
 
-- [ ] Kural meta verisine varsayılan tür (`kind`) ve gerekirse koşullu tür (ör. CPP-OWN-001: aynı
+- [x] Kural meta verisine varsayılan tür (`kind`) ve gerekirse koşullu tür (ör. CPP-OWN-001: aynı
       fonksiyonda eşleşen `delete` varsa öneri)
-- [ ] Eval etiketleri: ilgili dev/test bulgularının `notes`'a taşınması kullanıcı onayıyla
+- [x] Eval etiketleri: ilgili dev/test bulgularının `notes`'a taşınması kullanıcı onayıyla
       (`EVAL_ORNEK_REHBERI.md` §4.2); statik dev/test koşuları yenilenir
-- [ ] Testler: kural fixture'larına tür beklentisi; birleştirmede statik öneri + LLM hata → hata
+- [x] Testler: kural fixture'larına tür beklentisi; birleştirmede statik öneri + LLM hata → hata
 
 **Commit:** `feat(faz-52): statik kurallarda öneri türü`
 
-### Faz 53 — Ölçüm altyapısı ve belge tazeleme (YAPILACAK)
+### Faz 53 — Ölçüm altyapısı ve belge tazeleme (YAPILDI 2026-10-05)
 
 **Dal:** `faz/53-olcum-belge`
 
@@ -1747,24 +1747,24 @@ Opus sonuçlarıyla karıştırılmadan denetlenmeli.
 eski etiketle kayıtlı (`unity-104` düzeltmesi). README sağlayıcı notu ve Faz 36 metni de Claude'un
 kısmi koşularıyla Codex'in ayrı 96 örneklik alternatifini açıkça ayırmalı.
 
-- [ ] `pytest-cov` geliştirme bağımlılığı; CI'da kapsama raporu (eşik önce yalnız raporla, sonra modül
+- [x] `pytest-cov` geliştirme bağımlılığı; CI'da kapsama raporu (eşik önce yalnız raporla, sonra modül
       bazında §15 hedefleri)
-- [ ] README "Eval sonuçları" girişi güncel veri setiyle (dev 96 / test 70; dil başına örnek sayısı)
-- [ ] Statik dev ve test koşularının güncel etiketlerle yenilenmesi; README tabloları
-- [ ] `faz/36-hata-oneri` dalının main'e birleştirilmesi ve push (Faz 38 sonrası, kullanıcı onayıyla)
+- [x] README "Eval sonuçları" girişi güncel veri setiyle (dev 96 / test 70; dil başına örnek sayısı)
+- [x] Statik dev ve test koşularının güncel etiketlerle yenilenmesi; README tabloları
+- [ ] `faz/36-hata-oneri` dalının main'e birleştirilmesi ve push (Faz 38 sonrası, kullanıcı onayıyla) — bekliyor, kullanıcı kararı
 
 **Commit:** `chore(faz-53): kapsama ölçümü, README ve statik eval tazeleme`
 
-### Faz 54 — Büyük dosyaların bölünmesi (YAPILACAK)
+### Faz 54 — Büyük dosyaların bölünmesi (YAPILDI 2026-10-05)
 
 **Dal:** `faz/54-bolme` · **Kural:** AGENTS.md "400 satırı geçen dosya için bölme öner"
 
 **Amaç:** `analysis/_loops.py` (449), `analysis/extractor.py` (438), `providers/cli_agent.py` (409),
 `desktop/app.py` (415) 400 satırı geçti. Davranış değişmeden bölünür.
 
-- [ ] Her dosya için bölme önerisi (sorumluluk sınırları), sonra uygulama; genel API ve içe aktarma
+- [x] Her dosya için bölme önerisi (sorumluluk sınırları), sonra uygulama; genel API ve içe aktarma
       yolları korunur (yeniden dışa aktarım)
-- [ ] Testler değişmeden geçer; golden'lar aynı kalır
+- [x] Testler değişmeden geçer; golden'lar aynı kalır
 
 **Commit:** `refactor(faz-54): 400 satırı aşan modüllerin bölünmesi`
 
