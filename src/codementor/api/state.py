@@ -42,6 +42,7 @@ class ApiState:
             self.database(),
             provider_factory=self.provider_factory,
             bus=bus or EventBus(),
+            questions=self.questions,  # süreç başına bir kez yüklenir (Faz 49)
         )
 
     def close(self) -> None:

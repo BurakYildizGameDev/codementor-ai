@@ -1656,19 +1656,19 @@ sağlayıcıyla süre aşımında `degraded=true`; SSE kopma ve istisna dalları
 
 **Commit:** `fix(faz-48): rol etiketi enjeksiyonu ve analiz süre sınırı`
 
-### Faz 49 — Depolama tutarlılığı ve önbellek doğruluğu (YAPILACAK)
+### Faz 49 — Depolama tutarlılığı ve önbellek doğruluğu (YAPILDI 2026-10-05)
 
 **Dal:** `faz/49-depolama-tutarlilik` · **Mimari:** §11 · **Kaynak:** tarama K6, K9, D2, D3, D4
 
-- [ ] Aynı oturumda eşzamanlı gönderim: atomik deneme ayırma
+- [x] Aynı oturumda eşzamanlı gönderim: atomik deneme ayırma
       (`INSERT … ON CONFLICT DO UPDATE … RETURNING`); bugün iki istek de deneme 1 alır ve ikinci
       kayıt `IntegrityError` ile 500 verir
-- [ ] `rules_version` özetine `analysis/queries/**/*.scm`, `validation/`, `verify/`,
+- [x] `rules_version` özetine `analysis/queries/**/*.scm`, `validation/`, `verify/`,
       `data/mentor_templates.yaml` (Faz 55 öncesi şart: Tier 0 değişince erken çıkış önbelleği bayatlar)
-- [ ] Soru bankası orkestratöre enjekte (her istekte ~68 ms yeniden yükleme); `QuestionBankError` 503
-- [ ] Saklama: `storage.max_analyses`, `desktop-sources` temizliği, masaüstü log döndürme,
+- [x] Soru bankası orkestratöre enjekte (her istekte ~68 ms yeniden yükleme); `QuestionBankError` 503
+- [x] Saklama: `storage.max_analyses`, `desktop-sources` temizliği, masaüstü log döndürme,
       tercihlerde atomik yazma
-- [ ] Uyumsuz eski `report_json` geçmiş ekranını / `GET /v1/analyses/{id}`'yi çökertmez
+- [x] Uyumsuz eski `report_json` geçmiş ekranını / `GET /v1/analyses/{id}`'yi çökertmez
 
 **Kabul:** `asyncio.gather` ile iki gönderim deneme 1 ve 2, 500 yok; `.scm` değişince
 `rules_version` değişir; sınır üstü kayıtlar budanır.
@@ -1679,6 +1679,9 @@ sağlayıcıyla süre aşımında `degraded=true`; SSE kopma ve istisna dalları
 
 **Dal:** `faz/50-dil-kodlama-ci` · **Mimari:** §12, §13 · **Kaynak:** tarama K5, K10, K11, D5, D6, D8, D9
 
+- [ ] **Öncelikli (Faz 49 denetimi K1):** exe paketine `analysis/queries/*.scm` (bugün yok: exe'de olgu
+      çıkarımı boş) ve `rules_version` için derleme anında üretilen kaynak özeti (exe'de `.py` yok);
+      exe duman testinde olgu çıkarımı ve `rules_version_without_sources` uyarısının olmaması
 - [ ] SARIF Python/HTML/CSS'te 500 (`api/routes.py` `_EXTENSIONS` yalnız C ailesi): `Language` →
       uzantı eşlemesi tek yerde (API, CLI, masaüstü); altı dil için SARIF testi
 - [ ] UTF-8 olmayan dosya (`cli/analyze.py`, `desktop/files.py` `errors="replace"`): ham bayt
@@ -1757,7 +1760,7 @@ kısmi koşularıyla Codex'in ayrı 96 örneklik alternatifini açıkça ayırma
 **Dal:** `faz/54-bolme` · **Kural:** AGENTS.md "400 satırı geçen dosya için bölme öner"
 
 **Amaç:** `analysis/_loops.py` (449), `analysis/extractor.py` (438), `providers/cli_agent.py` (409),
-`desktop/app.py` (412) 400 satırı geçti. Davranış değişmeden bölünür.
+`desktop/app.py` (415) 400 satırı geçti. Davranış değişmeden bölünür.
 
 - [ ] Her dosya için bölme önerisi (sorumluluk sınırları), sonra uygulama; genel API ve içe aktarma
       yolları korunur (yeniden dışa aktarım)

@@ -7,10 +7,11 @@ saklanır, doğruluk kaynağı `models/report.py`'dir.
 from __future__ import annotations
 
 import os
+import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-from sqlalchemy import Engine
+from sqlalchemy import Engine, text
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Field, Session, SQLModel, create_engine
 
@@ -19,6 +20,8 @@ from codementor.config import Settings
 DB_PATH_ENV = "CODEMENTOR_DB_PATH"
 DEFAULT_DB_PATH = Path.home() / ".codementor" / "codementor.db"
 MEMORY = ":memory:"
+# Oturum denemesi `INSERT … ON CONFLICT DO UPDATE … RETURNING` kullanır (Faz 49)
+MIN_SQLITE = (3, 35)
 
 
 def utcnow() -> datetime:
@@ -29,7 +32,7 @@ class AnalysisRow(SQLModel, table=True):
     __tablename__ = "analyses"
 
     id: str = Field(primary_key=True)
-    created_at: datetime = Field(default_factory=utcnow)
+    created_at: datetime = Field(default_factory=utcnow, index=True)  # budama sırası (Faz 49)
     cache_key: str = Field(index=True)
     language: str
     engine: str
@@ -94,6 +97,11 @@ class Database:
     """Motor + tablo oluşturma; her işlem kendi kısa `Session`'ını açar."""
 
     def __init__(self, path: Path | str) -> None:
+        if sqlite3.sqlite_version_info < MIN_SQLITE:
+            raise RuntimeError(
+                f"SQLite {sqlite3.sqlite_version} çok eski; en az "
+                f"{'.'.join(map(str, MIN_SQLITE))} gerekli (Python'u güncelleyin)."
+            )
         if isinstance(path, Path):
             path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
@@ -104,6 +112,10 @@ class Database:
             poolclass=StaticPool if path == MEMORY else None,
         )
         SQLModel.metadata.create_all(self.engine)
+        with self.engine.begin() as connection:  # create_all eski tabloya indeks eklemez
+            connection.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_analyses_created_at ON analyses (created_at)")
+            )
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Database:

@@ -1044,7 +1044,7 @@ Aşama durumları: `started` · `completed` · `skipped` (çalışmayan aşama, 
 
 **Güven sınırı (Faz 47, ADR-0023):** istemci sunucu yapılandırmasını aşamaz. (1) `options.tier1` yalnız kapatabilir; `validation.tier1_enabled = false` iken `true` derleyiciyi çalıştırmaz. (2) Host başlığı loopback adlarından (`127.0.0.1`, `localhost`, `[::1]`) ya da `api.allowed_hosts`'tan biri olmalıdır, aksi halde `400` (DNS rebinding); `*` denetimi kapatır. (3) `provider` yalnız `api.allowed_providers`'tan (boşsa `providers.default` + `fallback`) seçilebilir, aksi halde `422`. (4) `question_id`/`session_id`/`provider` ≤ 128 karakter ve `^[A-Za-z0-9_.-]+$` (`422`); `code` `limits.max_bytes` × 4 karakteri aşarsa normalizasyona girmeden `413`; gövde `api.max_body_bytes`'ı (1 MiB) aşarsa okunmadan `413`. (5) Aynı anda en çok `api.max_concurrent_analyses` (4) analiz; dolunca `503`. Hız sınırı (istek/dakika) yoktur (yerel araç; Sonraya).
 
-**Hata kodları:** `400` izinsiz Host başlığı · `401` API anahtarı eksik/yanlış (yalnız anahtar tanımlıysa) · `404` soru/analiz bulunamadı · `413` kod ya da istek gövdesi çok büyük · `422` dil belirlenemedi / geçersiz istek / izinsiz sağlayıcı · `502` tüm sağlayıcılar başarısız (yine de `degraded` rapor döndürülebiliyorsa `200` + `degraded=true` tercih edilir) · `503` sağlayıcı yapılandırması eksik, servis hazır değil ya da eşzamanlı analiz sınırı dolu. (Tier 1 derleyicisinin olmaması hata değildir: `SKIPPED`.)
+**Hata kodları:** `400` izinsiz Host başlığı · `401` API anahtarı eksik/yanlış (yalnız anahtar tanımlıysa) · `404` soru/analiz bulunamadı (bugünkü şemaya uymayan eski kayıt da, Faz 49) · `413` kod ya da istek gövdesi çok büyük · `422` dil belirlenemedi / geçersiz istek / izinsiz sağlayıcı · `502` tüm sağlayıcılar başarısız (yine de `degraded` rapor döndürülebiliyorsa `200` + `degraded=true` tercih edilir) · `503` sağlayıcı yapılandırması eksik, servis hazır değil, soru bankası okunamıyor (Faz 49) ya da eşzamanlı analiz sınırı dolu. (Tier 1 derleyicisinin olmaması hata değildir: `SKIPPED`.)
 
 ---
 
@@ -1080,8 +1080,11 @@ codementor schema export --out schemas/
 | `eval_results` | `run_id`, `sample_id`, `passed_checks_json`, `report_json` |
 
 - **Önbellek anahtarı:**
-  `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version | pipeline)`; `rules_version` kural kimlikleri, `rules/` ve `analysis/` kaynakları ile `data/call_costs.yaml`'ın hash'idir (Faz 31); `pipeline` mod ve doğrulama geçişi imzasıdır, ör. `two_pass+verify` (Faz 35)
+  `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version | pipeline)`; `rules_version` (`r2+…`) kural kimlikleri, `rules/`, `analysis/` (alt paketler ve `queries/**/*.scm` dahil), `validation/` ve `verify/` kaynakları ile `data/call_costs.yaml` ve `data/mentor_templates.yaml`'ın hash'idir (Faz 31, Faz 49); `pipeline` mod ve doğrulama geçişi imzasıdır, ör. `two_pass+verify` (Faz 35)
 - Önbellek isabeti `meta.cache_hit = true` ile işaretlenir; eval çalıştırmalarında önbellek **kapalıdır**.
+- **Oturum denemesi (Faz 49):** deneme analiz başında tek ifadeyle ayrılır (`INSERT … ON CONFLICT DO UPDATE … RETURNING attempt_count`); aynı oturumdan eşzamanlı gönderimler farklı deneme alır. İptal/hata ayrılan denemeyi geri verir (yalnız arada başka ayırma olmadıysa), yarıda kalan analiz ipucu merdivenini ilerletmez.
+- **Saklama (Faz 49):** `storage.max_analyses` (2000) en yeni kaydı tutar, fazlası her kayıtta budanır (`created_at` indeksli); masaüstü kod arşivi aynı sınırla, `desktop.log` açılışta 5 MB'ı aşmışsa `desktop.log.1`'e döner, tercihler atomik yazılır. Bugünkü şemaya uymayan eski `report_json` yok sayılır (önbellek ıskası, `GET` 404) ve loglanır.
+- **Soru bankası:** API/masaüstü süreç başına bir kez yükler ve orkestratöre verir; okunamazsa `503`.
 
 ---
 
@@ -1338,6 +1341,7 @@ max_concurrent_analyses = 4  # dolunca 503
 
 [storage]                    # Faz 10 (§11); yoksa CODEMENTOR_DB_PATH, o da yoksa ~/.codementor/codementor.db
 # db_path = "~/.codementor/codementor.db"
+max_analyses = 2000           # Faz 49: en yeni N analiz kaydı tutulur; fazlası budanır
 
 [verify]                     # Faz 9 (§5.6); eşikler Faz 12 eval'inde ayarlanır
 evidence_window = 2

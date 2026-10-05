@@ -1,18 +1,22 @@
 """Rapor önbelleği (mimari §11).
 
 Anahtar: sha256(normalized_code | language | engine | question_id | hint_level | provider |
-model | prompt_version | rules_version | schema_version). Bozulmuş (degraded) raporlar
-önbellekten dönmez: geçici sağlayıcı hatası kalıcı olmasın.
+model | prompt_version | rules_version | schema_version | pipeline). Bozulmuş (degraded)
+raporlar önbellekten dönmez: geçici sağlayıcı hatası kalıcı olmasın. Faz 49: bugünkü şemaya
+uymayan eski `report_json` yok sayılır (geçmiş/GET çökmez); `max_analyses` üstü en eskiler budanır.
 """
 
 from __future__ import annotations
 
 import hashlib
 
-from sqlmodel import col, select
+from sqlmodel import col, delete, select
 
+from codementor.log import get_logger
 from codementor.models.report import AnalysisReport
 from codementor.storage.db import AnalysisRow, Database
+
+log = get_logger("codementor.storage")
 
 _SEPARATOR = "\x1f"  # alan ayırıcı: kodda geçse bile uzunluk öneki çakışmayı önler
 
@@ -53,6 +57,17 @@ def cache_key(
     return digest.hexdigest()
 
 
+def _decode(row: AnalysisRow | None) -> AnalysisReport | None:
+    """Kayıtlı raporu çözer; eski/bozuk biçim None (rapor içeriği loglanmaz)."""
+    if row is None:
+        return None
+    try:
+        return AnalysisReport.model_validate_json(row.report_json)
+    except ValueError:  # pydantic ValidationError ve bozuk JSON (ValueError alt sınıfı)
+        log.warning("stored_report_incompatible", analysis_id=row.id)
+        return None
+
+
 def find_cached(db: Database, key: str) -> AnalysisReport | None:
     """Bu anahtarla kaydedilmiş en yeni bozulmamış rapor."""
     with db.session() as session:
@@ -61,14 +76,14 @@ def find_cached(db: Database, key: str) -> AnalysisReport | None:
             .where(AnalysisRow.cache_key == key, col(AnalysisRow.degraded).is_(False))
             .order_by(col(AnalysisRow.created_at).desc())
         ).first()
-    return AnalysisReport.model_validate_json(row.report_json) if row else None
+    return _decode(row)
 
 
 def get_analysis(db: Database, analysis_id: str) -> AnalysisReport | None:
     """Kimlikle kayıtlı rapor (API `GET /v1/analyses/{id}`)."""
     with db.session() as session:
         row = session.get(AnalysisRow, analysis_id)
-    return AnalysisReport.model_validate_json(row.report_json) if row else None
+    return _decode(row)
 
 
 def list_analyses(db: Database, limit: int = 50) -> list[AnalysisRow]:
@@ -87,8 +102,10 @@ def save_analysis(
     key: str,
     session_id: str | None,
     latency_ms: int,
+    max_analyses: int | None = None,
 ) -> None:
-    """Raporu `analyses` tablosuna yazar (önbellek isabetleri de iz için kaydedilir)."""
+    """Raporu `analyses` tablosuna yazar (önbellek isabetleri de iz için kaydedilir);
+    `max_analyses` verilirse en yeni o kadar kayıt kalır."""
     row = AnalysisRow(
         id=report.analysis_id,
         created_at=report.created_at,
@@ -108,4 +125,14 @@ def save_analysis(
     )
     with db.session() as session:
         session.add(row)
+        if max_analyses is not None:
+            keep = (
+                select(AnalysisRow.id)
+                .order_by(
+                    col(AnalysisRow.created_at).desc(), col(AnalysisRow.id).desc()
+                )  # eşitlikte kimlikle kararlı
+                .limit(max_analyses)
+            )
+            session.flush()
+            session.exec(delete(AnalysisRow).where(col(AnalysisRow.id).not_in(keep)))
         session.commit()

@@ -275,7 +275,10 @@ class App(ctk.CTk):  # type: ignore[misc]
         view.set_busy(False)
         view.show_progress(self.tracker)
         if message.kind == "result" and isinstance(message.payload, AnalysisReport):
-            runtime.save_source(message.payload.analysis_id, self._last_code, self.prefs_dir)
+            keep = self.core.settings.storage.max_analyses
+            runtime.save_source(
+                message.payload.analysis_id, self._last_code, self.prefs_dir, keep=keep
+            )
             view.show_report(message.payload)
         else:
             view.show_error(str(message.payload))

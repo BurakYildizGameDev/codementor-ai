@@ -13,6 +13,7 @@ from typing import Literal
 from codementor.config import Settings, ValidationSettings
 from codementor.ingest.errors import CodeTooLargeError, IngestError
 from codementor.ingest.normalize import normalize
+from codementor.log import get_logger
 from codementor.models.enums import PipelineMode
 from codementor.models.prompts import MentoringProfile, QuestionContext
 from codementor.models.questions import Question
@@ -34,7 +35,7 @@ from codementor.prompts.templates import prompt_version
 from codementor.providers.base import LLMProvider, ProviderError
 from codementor.providers.cli_agent import model_label
 from codementor.providers.factory import build_chain
-from codementor.questions.bank import QuestionBank, QuestionNotFoundError
+from codementor.questions.bank import QuestionBank, QuestionBankError, QuestionNotFoundError
 from codementor.storage import cache, sessions
 from codementor.storage.db import Database
 from codementor.validation.policy import decide
@@ -45,7 +46,10 @@ from codementor.validation.tier1 import run_tier1
 ProviderFactory = Callable[[str], LLMProvider]
 
 
-PipelineErrorKind = Literal["too_large", "invalid", "not_found", "provider"]
+PipelineErrorKind = Literal["too_large", "invalid", "not_found", "provider", "unavailable"]
+
+log = get_logger("codementor.pipeline")
+BANK_UNREADABLE = "Soru bankası okunamadı; ayrıntı sunucu log'unda."
 
 
 class PipelineError(Exception):
@@ -69,6 +73,7 @@ class _Run:
     context: QuestionContext | None = None
     warnings: list[str] = field(default_factory=list)
     finding_checks: list[FindingCheck] = field(default_factory=list)
+    saved: bool = False  # analiz kaydedildi: deneme artık geri alınmaz (Faz 49)
 
     @property
     def analysis_id(self) -> str:
@@ -93,6 +98,8 @@ class Orchestrator:
     bus: EventBus = field(default_factory=EventBus)
     toolchain: Toolchain | None = None
     tier1_runner: Runner = run_process
+    # Faz 49: API/masaüstü süreç başına yüklenmiş bankayı verir; yoksa her istekte diskten
+    questions: Callable[[], QuestionBank] | None = None
 
     async def analyze(self, request: AnalysisRequest) -> AnalysisReport:
         """§4 yaşam döngüsü. Kullanıcı hatasında `PipelineError`; sağlayıcı hatası bozulmadır."""
@@ -105,7 +112,29 @@ class Orchestrator:
         run = _Run(request, StageTimer(new_ulid(), self.bus), name)
         code = self._ingest(run)
         if self.db is not None:
-            run.attempt = sessions.next_attempt(self.db, request.session_id, request.question_id)
+            # Faz 49: atomik ayırma; eşzamanlı gönderimler ayrı deneme alır
+            run.attempt = sessions.reserve_attempt(self.db, request.session_id, request.question_id)
+        try:
+            return await self._run_attempt(run, code)
+        except BaseException:
+            # iptal ya da hata: yarıda kalan analiz ipucu merdivenini ilerletmez (Faz 19);
+            # kayıt yazıldıysa deneme geçmişte durur, geri alınmaz
+            if self.db is not None and not run.saved:
+                self._release(run)
+            raise
+
+    def _release(self, run: _Run) -> None:
+        """Ayrılan denemeyi geri verir; bu da başarısız olursa asıl istisnayı örtmez."""
+        assert self.db is not None
+        request = run.request
+        try:
+            sessions.release_attempt(self.db, request.session_id, request.question_id, run.attempt)
+        except Exception as exc:
+            log.warning("attempt_release_failed", error=type(exc).__name__)
+
+    async def _run_attempt(self, run: _Run, code: NormalizedCode) -> AnalysisTrace:
+        request = run.request
+        name = run.provider_name
         profile = mentoring_profile(run.context.difficulty if run.context else None, run.attempt)
         try:
             provider = (self.provider_factory or self._build_provider)(name)
@@ -129,8 +158,14 @@ class Orchestrator:
         if self.db is not None:
             latency = sum(report.meta.stage_latency_ms.values())
             cache.save_analysis(
-                self.db, report, key=key, session_id=request.session_id, latency_ms=latency
+                self.db,
+                report,
+                key=key,
+                session_id=request.session_id,
+                latency_ms=latency,
+                max_analyses=self.settings.storage.max_analyses,
             )
+            run.saved = True
             sessions.record_attempt(
                 self.db,
                 request.session_id,
@@ -151,7 +186,7 @@ class Orchestrator:
         request = run.request
         try:
             if request.question_id:
-                bank = QuestionBank.load(self.settings.data.questions_dir)
+                bank = self._question_bank()
                 run.question = bank.get(request.question_id)
                 run.context = QuestionContext.from_question(run.question)
             with run.timer.stage("ingest"):
@@ -160,12 +195,25 @@ class Orchestrator:
                     engine=request.engine or (run.question.engine if run.question else None),
                 )
                 return normalize(request.code, hint, limits=self.settings.limits)
+        except QuestionBankError as exc:
+            # dosya adı/ayrıştırıcı ayrıntısı yanıta değil log'a (Faz 49 denetimi)
+            log.error("question_bank_unreadable", error=type(exc).__name__, detail=str(exc)[:300])
+            raise PipelineError(BANK_UNREADABLE, "unavailable") from exc
         except QuestionNotFoundError as exc:
             raise PipelineError(str(exc).strip("'\""), "not_found") from exc
         except CodeTooLargeError as exc:
             raise PipelineError(str(exc), "too_large") from exc
         except IngestError as exc:
             raise PipelineError(str(exc), "invalid") from exc
+
+    def _question_bank(self) -> QuestionBank:
+        if self.questions is not None:
+            return self.questions()
+        return QuestionBank.load(self.settings.data.questions_dir)
+
+    def _rules_version(self) -> str:
+        data = self.settings.data
+        return rules_version(data.call_costs_file, data.mentor_templates_file)
 
     def _cache_key(
         self,
@@ -187,7 +235,7 @@ class Orchestrator:
             provider=run.provider_name,
             model=model if isinstance(model, str) else None,
             prompt_version=version,
-            rules_version=rules_version(self.settings.data.call_costs_file),
+            rules_version=self._rules_version(),
             schema_version=SCHEMA_VERSION,
             pipeline=self._pipeline_signature(run.request),
         )
@@ -326,7 +374,7 @@ class Orchestrator:
             prompt_version=version,
             warnings=run.warnings,
             timer=run.timer,
-            rules_version_value=rules_version(self.settings.data.call_costs_file),
+            rules_version_value=self._rules_version(),
         )
         meta = report.meta
         meta.cost_est = estimate_cost(

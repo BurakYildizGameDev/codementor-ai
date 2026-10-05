@@ -7,6 +7,7 @@ Exe'de `data/` ve `prompts/` PyInstaller'ın açtığı `sys._MEIPASS` altındad
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import sys
@@ -22,6 +23,7 @@ from codementor.models.desktop import MAX_RECENT_FILES, DesktopPrefs
 PREFS_FILE = "desktop.json"
 LOG_FILE = "desktop.log"
 SOURCES_DIR = "desktop-sources"
+LOG_MAX_BYTES = 5 * 1024 * 1024  # Faz 49: açılışta aşılmışsa `desktop.log.1` olur (tek yedek)
 
 
 def is_frozen() -> bool:
@@ -80,6 +82,11 @@ def prepare_environment() -> Path:
 def _log_stream() -> TextIO:
     path = user_dir() / LOG_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if path.stat().st_size > LOG_MAX_BYTES:
+            os.replace(path, path.with_name(LOG_FILE + ".1"))
+    except OSError:
+        pass  # dosya yok ya da kilitli: eklemeye devam
     return path.open("a", encoding="utf-8", buffering=1)
 
 
@@ -93,13 +100,17 @@ def load_prefs(directory: Path | None = None) -> DesktopPrefs:
 
 
 def save_prefs(prefs: DesktopPrefs, directory: Path | None = None) -> None:
-    """Tercihleri yazar; yazılamazsa sessizce geçer (uygulama yine çalışır)."""
+    """Tercihleri atomik yazar (geçici dosya + `os.replace`; yarıda kesilen yazım eski dosyayı
+    bozmaz, Faz 49); yazılamazsa sessizce geçer (uygulama yine çalışır)."""
     path = (directory or user_dir()) / PREFS_FILE
+    temp = path.with_name(f"{PREFS_FILE}.{os.getpid()}.tmp")  # iki örnek aynı dosyaya yazmasın
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(prefs.model_dump_json(indent=2), encoding="utf-8")
+        temp.write_text(prefs.model_dump_json(indent=2), encoding="utf-8")
+        os.replace(temp, path)
     except OSError:
-        pass
+        with contextlib.suppress(OSError):
+            temp.unlink(missing_ok=True)
 
 
 def remember_file(prefs: DesktopPrefs, path: str) -> DesktopPrefs:
@@ -113,14 +124,39 @@ def forget_file(prefs: DesktopPrefs, path: str) -> DesktopPrefs:
     return prefs.model_copy(update={"recent_files": [p for p in prefs.recent_files if p != path]})
 
 
-def save_source(analysis_id: str, code: str, directory: Path | None = None) -> None:
-    """Geçmişten açılabilsin diye analiz edilen kodu saklar (rapor kodu içermez)."""
+def save_source(
+    analysis_id: str, code: str, directory: Path | None = None, *, keep: int | None = None
+) -> None:
+    """Geçmişten açılabilsin diye analiz edilen kodu saklar (rapor kodu içermez); `keep`
+    verilirse en yeni o kadar dosya kalır (Faz 49)."""
     folder = (directory or user_dir()) / SOURCES_DIR
     try:
         folder.mkdir(parents=True, exist_ok=True)
         (folder / f"{analysis_id}.txt").write_text(code, encoding="utf-8")
     except OSError:
-        pass
+        return
+    prune_sources(keep, directory)
+
+
+def prune_sources(keep: int | None, directory: Path | None = None) -> None:
+    """Saklanan kodlardan en yeni `keep` tanesi kalır (analiz kayıt sınırıyla aynı, Faz 49)."""
+    if keep is None:
+        return
+    folder = (directory or user_dir()) / SOURCES_DIR
+    try:
+        files = list(folder.glob("*.txt"))
+    except OSError:
+        return
+    if len(files) <= keep:  # çoğu kayıtta stat taraması yok (Tk ana iş parçacığı)
+        return
+    dated: list[tuple[float, Path]] = []
+    for path in files:
+        with contextlib.suppress(OSError):  # başka örnek arada silmiş olabilir
+            dated.append((path.stat().st_mtime, path))
+    dated.sort(reverse=True)
+    for _mtime, path in dated[keep:]:
+        with contextlib.suppress(OSError):
+            path.unlink(missing_ok=True)
 
 
 def load_source(analysis_id: str, directory: Path | None = None) -> str | None:

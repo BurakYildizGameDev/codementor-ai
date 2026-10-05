@@ -195,7 +195,9 @@ async def run_eval(
         static_only=static_only,
         ablations=ablations,
         prompt_version=prompt_version(settings.prompts.dir),
-        rules_version=rules_version(settings.data.call_costs_file),
+        rules_version=rules_version(
+            settings.data.call_costs_file, settings.data.mentor_templates_file
+        ),
         schema_version=SCHEMA_VERSION,
         started_at=datetime.now(UTC),
         sample_ids=[s.label.id for s in samples],

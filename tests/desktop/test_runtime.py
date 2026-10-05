@@ -91,3 +91,63 @@ def test_source_round_trip_and_unsafe_ids(tmp_path: Path) -> None:
     assert runtime.load_source("01J9ABC", tmp_path) == "int x;\n"
     assert runtime.load_source("01J9XYZ", tmp_path) is None
     assert runtime.load_source("../desktop", tmp_path) is None
+
+
+# --- Faz 49: saklama ---
+
+
+def test_prune_sources_keeps_newest(tmp_path: Path) -> None:
+    folder = tmp_path / runtime.SOURCES_DIR
+    folder.mkdir()
+    for i in range(5):
+        path = folder / f"A{i}.txt"
+        path.write_text(str(i), encoding="utf-8")
+        os.utime(path, (1_000_000 + i, 1_000_000 + i))
+    (folder / "not.md").write_text("x", encoding="utf-8")  # .txt dışı dosyaya dokunulmaz
+    runtime.prune_sources(2, tmp_path)
+    assert sorted(p.name for p in folder.iterdir()) == ["A3.txt", "A4.txt", "not.md"]
+    runtime.prune_sources(None, tmp_path)  # sınırsız: bir şey silinmez
+    runtime.prune_sources(2, tmp_path / "yok")  # klasör yoksa sessiz
+
+
+def test_log_rotates_over_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(runtime, "user_dir", lambda: tmp_path)
+    monkeypatch.setattr(runtime, "LOG_MAX_BYTES", 10)
+    log = tmp_path / runtime.LOG_FILE
+    log.write_text("eski günlük satırları", encoding="utf-8")
+    (tmp_path / (runtime.LOG_FILE + ".1")).write_text("daha eski", encoding="utf-8")
+    stream = runtime._log_stream()
+    stream.write("yeni\n")
+    stream.close()
+    assert log.read_text(encoding="utf-8") == "yeni\n"
+    assert (tmp_path / (runtime.LOG_FILE + ".1")).read_text(encoding="utf-8") == (
+        "eski günlük satırları"
+    )
+    small = runtime._log_stream()  # sınır altında: eklemeye devam
+    small.write("ek\n")
+    small.close()
+    assert log.read_text(encoding="utf-8") == "yeni\nek\n"
+
+
+def test_save_prefs_atomic_keeps_old_on_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runtime.save_prefs(DesktopPrefs(recent_files=["a.c"]), tmp_path)
+
+    def broken_replace(_src: object, _dst: object) -> None:
+        raise OSError("disk dolu")
+
+    monkeypatch.setattr(runtime.os, "replace", broken_replace)
+    runtime.save_prefs(DesktopPrefs(recent_files=["b.c"]), tmp_path)  # sessizce geçer
+    assert runtime.load_prefs(tmp_path).recent_files == ["a.c"]  # eski dosya bozulmadı
+    assert [p.name for p in tmp_path.iterdir()] == [runtime.PREFS_FILE]  # geçici dosya kalmadı
+
+
+def test_save_source_prunes_with_keep(tmp_path: Path) -> None:
+    for i in range(3):
+        runtime.save_source(f"A{i}", "kod", tmp_path, keep=2)
+        path = tmp_path / runtime.SOURCES_DIR / f"A{i}.txt"
+        os.utime(path, (1_000_000 + i, 1_000_000 + i))
+    runtime.save_source("A3", "kod", tmp_path, keep=2)
+    names = sorted(p.name for p in (tmp_path / runtime.SOURCES_DIR).iterdir())
+    assert names == ["A2.txt", "A3.txt"]

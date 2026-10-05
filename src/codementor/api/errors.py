@@ -1,8 +1,8 @@
 """RFC 7807 hata yanıtları (mimari §9): her hata `application/problem+json`.
 
 §9 hata kodları: 413 kod çok büyük · 422 dil belirlenemedi / geçersiz istek · 404 bulunamadı ·
-503 sağlayıcı yapılandırması eksik. Tüm sağlayıcılar düşse de bozulmuş rapor döndürülebildiği
-için 502 yerine 200 + `degraded=true` verilir.
+503 sağlayıcı yapılandırması eksik ya da soru bankası okunamıyor (Faz 49). Tüm sağlayıcılar
+düşse de bozulmuş rapor döndürülebildiği için 502 yerine 200 + `degraded=true` verilir.
 """
 
 from __future__ import annotations
@@ -14,7 +14,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from codementor.log import get_logger
 from codementor.models.api import PROBLEM_JSON, Problem
-from codementor.pipeline.orchestrator import PipelineError, PipelineErrorKind
+from codementor.pipeline.orchestrator import BANK_UNREADABLE, PipelineError, PipelineErrorKind
+from codementor.questions import QuestionBankError
 
 log = get_logger("codementor.api")
 
@@ -23,6 +24,7 @@ _KIND_STATUS: dict[PipelineErrorKind, tuple[int, str]] = {
     "invalid": (422, "Geçersiz istek"),
     "not_found": (404, "Bulunamadı"),
     "provider": (503, "Sağlayıcı kullanılamıyor"),
+    "unavailable": (503, "Hizmet kullanılamıyor"),
 }
 _TITLES = {
     400: "Hatalı istek",
@@ -84,6 +86,24 @@ def install_error_handlers(app: FastAPI) -> None:
                 detail="İstek gövdesi şemaya uymuyor.",
                 instance=request.url.path,
                 errors=errors[:20],
+            )
+        )
+
+    @app.exception_handler(QuestionBankError)
+    async def _bank(request: Request, exc: QuestionBankError) -> JSONResponse:
+        # Sunucu verisi bozuk (Faz 49): istemci hatası değil, 500 de değil; düzelince geçer
+        log.error(
+            "question_bank_unreadable",
+            path=request.url.path,
+            error=type(exc).__name__,
+            detail=str(exc)[:300],
+        )
+        return problem_response(
+            Problem(
+                title="Hizmet kullanılamıyor",
+                status=503,
+                detail=BANK_UNREADABLE,
+                instance=request.url.path,
             )
         )
 

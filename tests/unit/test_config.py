@@ -140,3 +140,10 @@ def test_analysis_timeout_default_and_none(tmp_path: Path, monkeypatch: pytest.M
     assert load_settings(pipeline={"analysis_timeout_s": None}).pipeline.analysis_timeout_s is None
     with pytest.raises(ValueError, match="analysis_timeout_s"):
         load_settings(pipeline={"analysis_timeout_s": 0})
+
+
+def test_storage_max_analyses_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Faz 49: analiz kayıtları varsayılan 2000 ile sınırlı; `None` sınırsız."""
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(tmp_path / "yok.toml"))
+    assert load_settings().storage.max_analyses == 2000
+    assert load_settings(storage={"max_analyses": None}).storage.max_analyses is None

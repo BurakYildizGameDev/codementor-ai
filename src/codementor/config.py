@@ -151,6 +151,9 @@ class StorageSettings(BaseModel):
     """SQLite depolama (mimari §11); yol yoksa CODEMENTOR_DB_PATH, o da yoksa ~/.codementor."""
 
     db_path: Path | None = None
+    # Faz 49: `analyses` tablosunda tutulacak en yeni kayıt sayısı (masaüstü kod dosyaları da);
+    # None sınırsız
+    max_analyses: int | None = Field(default=2000, ge=1)
 
 
 class VerifySettings(BaseModel):

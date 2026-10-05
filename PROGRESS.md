@@ -39,6 +39,7 @@
 | 39 | ✅ (`cpp-007` canlıda doğrulandı) | faz/39-dogrulama-performans | 2026-10-04 | Claude Code / kod-denetci |
 | 47 | ✅ | faz/47-api-guven-siniri | 2026-10-05 | Claude Code / — |
 | 48 | ✅ | faz/48-rol-siniri-sure | 2026-10-05 | Claude Code / — |
+| 49 | ✅ | faz/49-depolama-tutarlilik | 2026-10-05 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -879,6 +880,17 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 49 — Notlar (oturum yarışı, önbellek imzası, saklama)
+**Yapılanlar:** `storage/sessions.reserve_attempt` (SQLite `INSERT … ON CONFLICT DO UPDATE … RETURNING`) analiz başında denemeyi atomik ayırır; `release_attempt` iptal/hatada geri verir (yalnız sayaç hâlâ o denemedeyse); `record_attempt` yalnız ipucu seviyesini yazar (`max` ile geriye düşmez). Orkestratör ayırmadan kayda kadar olan bölümü `_run_attempt`'e ayırıp `BaseException`'da geri alır. `pipeline/versions`: `rules_version` `r2+`; özet `analysis/**` (`.scm` dahil), `validation/`, `verify/` ve `mentor_templates.yaml`'ı kapsar (`digest_files` saf, köke göreli yollar); orkestratör ve eval aynı dosyaları geçirir. `Orchestrator.questions` enjeksiyonu (`ApiState.questions`, süreç başına bir kez); `QuestionBankError` → `PipelineError("unavailable")` / API işleyicisi 503 (`/v1/questions` da). `storage.max_analyses` (2000): `save_analysis` en yeniyi tutar, `created_at` indeksi (eski veritabanına `CREATE INDEX IF NOT EXISTS`). `cache._decode`: uyumsuz eski `report_json` → None + `stored_report_incompatible` logu (GET 404, önbellek ıskası). Masaüstü: `save_source(keep=)` + `prune_sources` (mtime'a göre en yeni N), `desktop.log` açılışta 5 MB üstündeyse `.1`'e döner, `save_prefs` geçici dosya + `os.replace`. Mimari §9, §11, config örneği güncellendi. Testler: `test_storage.py` (ayırma/geri alma/budama/uyumsuz kayıt), `tests/integration/test_pipeline_sessions.py`, `tests/api/test_storage_api.py`, `test_prompt_version.py` (kapsam, `.scm`, mentor şablonları), `tests/desktop/test_runtime.py` (budama, log döndürme, atomik yazım), `test_config.py`.
+**Alınan kararlar (ve neden):**
+- Ayırma analiz başında (kayıtta değil): ikinci gönderim ipucu seviyesini doğru almalı (deneme 2). Faz 19 sözleşmesi geri almayla korunur; arada başka ayırma olduysa boşluk kalır ama merdiven hiç geri gitmez.
+- `rules_version` öneki `r2+`: kapsam değişti, eski önbellek kayıtları zaten eşleşmez; ad bunu görünür kılar.
+- Uyumsuz kayıt 404 (410 değil): §9'daki kodlarla tutarlı; ayrıntı log'da.
+- Kod arşivi DB kimliklerine değil dosya sayısına göre budanır: masaüstü ve DB ayrı yaşam döngülü, sorgu gerekmez.
+- kod-denetci sonrası: kayıt yazıldıktan sonraki hata denemeyi geri almaz (`_Run.saved`, O1); geri alma hatası asıl istisnayı örtmez, loglanır (O2); budamada eşit `created_at` kimlikle kararlı; ipucu seviyesi `max` ile geri gitmez; geçici tercih dosyası süreç kimliğiyle; kod arşivi budaması sınır altındaysa taramaz ve tek dosya hatasında durmaz; 503 yanıtı dosya/ayrıştırıcı ayrıntısını vermez (log'a); SQLite < 3.35 Türkçe hatayla reddedilir; kaynak listesi boşsa `rules_version_without_sources` uyarısı.
+**Açık sorular:** Masaüstü exe'de (`build_exe.py`) `analysis/queries/*.scm` ve `.py` kaynakları pakette yok: statik olgu çıkarımı exe'de boş kalıyor (Faz 49'dan önce de vardı) ve `rules_version` exe'de yalnız kural kimlikleri + veri dosyalarına dayanıyor. Faz 50'ye öncelikli iş olarak eklendi.
+**Bu fazda öğrendiğim:** SQLAlchemy `create_all` var olan tabloya yeni indeks eklemez; şema evrimi için ayrı `IF NOT EXISTS` gerekir.
+
 ## Faz 48 — Notlar (rol etiketleri, analiz süre sınırı)
 **Yapılanlar:** `prompts/templates.guard_delimiters`: `<user_code>`'a ek olarak CLI ajanlarının rol etiketleri nötrlenir (tüm kapanışlar `</user|system|assistant>`, açılış `<system>`/`<assistant>`; iskelet katlaması aynı, Kiril a/u eklendi). `guard` zaten tüm kullanıcı kaynaklı alanlarda olduğu için şablon değişmedi (`prompt_version` aynı). `pipeline.analysis_timeout_s` (varsayılan 900, `None` kapalı): orkestratör LLM geçişlerini kalan süreyle `asyncio.timeout` içinde koşar; aşımda bozulmuş rapor + Türkçe uyarı, iptal CLI çalıştırıcısına ulaşıp süreç ağacını öldürür (Faz 19 yolu), bozulmuş rapor önbelleğe girmez. `api/disconnect.run_until_disconnect`: senkron `/v1/analyze` ASGI `receive` kanalından `http.disconnect` dinler, koparsa analiz iptal + 499, yuva bırakılır, kayıt yok. Sessiz `except`'ler loglanır: `api/sse.py` (`analysis_stream_failed`), `validation/tier1.py` (`tier1_runner_exception`), masaüstü soru bankası (`question_bank_unreadable`); yalnız istisna türü (mesaj kod parçası taşıyabilir, §12). Mimari §5.4.4, §12, `[pipeline]` örneği güncellendi. Testler: `tests/unit/test_prompt_role_tags.py`, `tests/integration/test_pipeline_timeout.py`, `tests/api/test_cancellation.py`, `tests/desktop/test_app_logging.py`, `test_config.py::test_analysis_timeout_default_and_none`, `test_tier1.py::test_never_raises_on_runner_exception` (log).
 **Alınan kararlar (ve neden):**
@@ -1002,6 +1014,9 @@ docstring'leri LLM şemasına sızıyordu. Öneriyi ayrı sınıf yapmak, "bulgu
 az bilgi kaybettiren bir precision aracıdır.
 
 ## Sonraya (kapsam dışı fikirler)
+- Faz 49: `sessions` tablosu da sınırsız büyüyor (oturum başına bir satır); eski oturumları `updated_at`'e göre budamak. Tier 1 derleyici sürümü önbellek imzasında yok.
+- Faz 49 denetimi O3: önbellek anahtarında soru içeriği yok (`question_id` var; referans çözüm, `concept_tags`, `data/checklists` ve `pipeline/assemble.py`/`stages.py` değişince eski rapor dönebilir). Soru içeriği özeti anahtara eklenebilir.
+- Faz 49 denetimi Ü9: eksik sütunlu eski şema (`OperationalError`) ve bozuk `created_at` için şema göçü yok; `list_analyses` korunmuyor.
 - Faz 48 denetimi: süre Geçiş B (Sokratik) sırasında dolarsa doğrulanmış Geçiş A sonucu da atılıyor; bulguları koruyup yalnız Sokratik kısmı şablona düşürmek `run_pass_b is None` yoluyla tutarlı olur (`run_llm_passes` kısmi sonuç döndürmeli).
 - Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001). ~~Claude Opus canlı dev ölçümü~~ → yapıldı (2026-10-05).
 - Eval: `select_part` etiket değişikliğine duyarlı; parça atamasını kimlik özetiyle sabitlemek ya da sonuç dosyasına parça kimliklerini yazıp birleştirmede eksik/çakışanı uyarmak.
@@ -1103,7 +1118,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`). Sıradaki Faz 49 (depolama/önbellek), sonra 50 ve 51-57 (eski 40-46); ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`). Sıradaki Faz 50 (dil kapsamı, kodlama, CI), sonra 51-57 (eski 40-46); ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1135,7 +1150,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 20. ~~**Faz 47 — API güven sınırı (öncelikli):**~~ Yapıldı (2026-10-05, ADR-0023). istek Tier 1'i açamaz, Host doğrulaması, izinli
    sağlayıcılar, girdi/gövde sınırları (2026-10-04 tam tarama).
 21. ~~**Faz 48 — Rol sınırlayıcıları ve analiz süresi:**~~ Yapıldı (2026-10-05). `<system>`/`<user>` enjeksiyonu, toplam süre sınırı.
-22. **Faz 49 — Depolama ve önbellek:** oturum yarışı (500), `rules_version` kapsamı (Faz 55 öncesi), saklama.
+22. ~~**Faz 49 — Depolama ve önbellek:**~~ Yapıldı (2026-10-05). oturum yarışı (500), `rules_version` kapsamı (Faz 55 öncesi), saklama.
 23. **Faz 50 — Dil kapsamı, kodlama, CI:** SARIF Python/HTML/CSS 500, UTF-8 dışı dosya, `pip-audit`.
 24. **Faz 51 — Kategori tutarlılığı:** doğru satır/yanlış kategori FP-FN'leri; prompt ve etiket
    rehberinde tek kategori tanımı.
