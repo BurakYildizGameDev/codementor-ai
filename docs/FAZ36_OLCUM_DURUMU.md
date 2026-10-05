@@ -124,7 +124,7 @@ döngüde `erase`) aynı sorunun bilinen örneğiydi.
 düşürmelerin çoğu ise memory_safety, undefined_behavior, design ve engine_best_practice
 kategorisinde. Faz 39 kapsamı bunu dikkate almalı.
 
-### 5.2 Kategori karışıklığı (→ Faz 40)
+### 5.2 Kategori karışıklığı (→ Faz 51)
 
 Kategori yok sayılınca F1 78'den 88'e çıkıyor. Model çoğu zaman doğru satırı buluyor ama farklı
 kategori seçiyor. En sık karışanlar: `undefined_behavior` ↔ `memory_safety` (`cpp-005`,
@@ -202,9 +202,9 @@ Dillere göre F1 (Claude 96): CSS 93, C 92, Python 86, Unreal 85, HTML 83, C++ 7
     Güncel kodla tek örnek yeniden koşuldu (`20261004T225020_..._cpp007-faz39_dev.json`):
     bulgu korundu, düşürme uyarısı yok (1 TP). Bu düzeltmeyle recall 87 olur (±3 içinde).
   - `csharp-014` (resource_leak → garbage_collection) ve `unreal-014` (undefined_behavior →
-    memory_safety): doğru satır, farklı kategori → Faz 40.
+    memory_safety): doğru satır, farklı kategori → Faz 51.
 - Fark 46 örnekte 2 TP / 2 FP. Tek koşunun gürültüsü bu düzeyde (§4.3), yani etki "nötr".
 
 **Özet cümle:** Faz 36 öneri sınıfı gerçek hataları yutmadan 32 düşük önemli bulguyu ayırıyor.
 Ancak bunu precision artışına çeviremedi: kalan FP'ler önemsiz bulgu değil, kategori karışıklığı
-ve gerçek yanlış alarm. Sıradaki kazanç Faz 40'ta (kategori tutarlılığı).
+ve gerçek yanlış alarm. Sıradaki kazanç Faz 51'de (kategori tutarlılığı).
