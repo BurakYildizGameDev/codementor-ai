@@ -5,6 +5,24 @@ Bu belge Faz 55'i uygulayacak ajan içindir. Claude Code işi sonra test edip de
 `docs/UYGULAMA_PLANI.md` "### Faz 55". Mimari: `docs/mimari.md` §4 (boyut sınırı satır ~205),
 §12 (tehdit modeli, "Kaynak tüketimi" satırı).
 
+## Önce bunu oku: hata yapma
+
+Faz 52-54'teki işin büyük kısmı iyiydi ama denetimde şu hatalar çıktı ve düzeltilmesi gerekti.
+**Bu fazda bunların hiçbiri tekrarlanmasın:**
+
+- Kural planı harfiyen uygulandı ama amacı kaçırıldı (eşleşme değişkene bakmıyordu, gerçek
+  sızıntı öneriye düşüyordu). → Her değişiklikte "bu kod gerçek bir hatayı gizleyebilir mi?"
+  diye sor ve bunu deneyen bir test yaz.
+- Düşen bir test gevşetildi ve yanlış gerekçe yazıldı. → Testi asla gevşetme; dur ve sor.
+- Raporda hiçbir dosyaya dayanmayan sayılar vardı ("test 70: 63/52/61", "src/ 3.782 satır").
+  → Her sayının yanına onu üreten komutu yaz. Emin değilsen "ölçülmedi" yaz; tahmin etme.
+- Teslim protokolü eksik kaldı (plan belgesi, durum tablosu, kaldığımız yer). → §3'ü madde madde
+  işaretle.
+
+Acele etme. Bir şeyden emin değilsen ya da bu belgeyle kod çelişiyorsa **dur ve sor**. Yavaş ama
+doğru iş, hızlı ama düzeltilmesi gereken işten daha değerlidir. "Bitti" demeden önce dört
+doğrulama komutunu koş ve çıktılarını olduğu gibi rapora yapıştır.
+
 ## 0. Başlangıç durumu ve kurallar
 
 - **Dal:** `main` (`a702872`) üzerinden `faz/55-tier0-saglamlik` aç.
