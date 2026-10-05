@@ -1,13 +1,14 @@
 """Masaüstü: soru bankası okunamazsa görünüm boş/None alır, hata loglanır (Faz 48).
-Tk penceresi açılmaz; yöntemler yalnız `core` alanını kullanır."""
+
+Mantık Faz 54'te Tk'siz `questions_controller`'a taşındı; `App` yalnız ona devreder. Test
+doğrudan denetleyiciyi sınar, böylece tkinter'ı olmayan Linux CI'da da toplanır."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from types import SimpleNamespace
 from typing import Any
 
-from codementor.desktop.app import App
+from codementor.desktop import questions_controller
 from codementor.models.enums import Engine, Language
 
 
@@ -17,8 +18,8 @@ class _BrokenCore:
 
 
 def test_question_bank_error_logged(captured_logs: Callable[[], list[dict[str, Any]]]) -> None:
-    fake_app = SimpleNamespace(core=_BrokenCore())
-    assert App.questions_for(fake_app, Language.C, Engine.NONE) == []  # type: ignore[arg-type]
-    assert App._filtered_questions(fake_app, Language.C, None) is None  # type: ignore[arg-type]
+    core: Any = _BrokenCore()
+    assert questions_controller.questions_for(core, Language.C, Engine.NONE) == []
+    assert questions_controller.filtered(core, Language.C, None) is None
     events = [e for e in captured_logs() if e["event"] == "question_bank_unreadable"]
     assert [e["error"] for e in events] == ["OSError", "OSError"]
