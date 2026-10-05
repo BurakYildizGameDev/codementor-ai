@@ -32,17 +32,16 @@ def test_parts_are_disjoint_and_cover_split() -> None:
     assert max(sizes) - min(sizes) <= 1
 
 
+@pytest.mark.parametrize("parts", [2, 3, 4, 5, 6])
 @pytest.mark.parametrize("key", [lambda s: group_of(s.label), lambda s: sample_kind(s.label)])
-def test_parts_are_balanced_per_group_and_kind(key: object) -> None:
+def test_parts_are_balanced_per_group_and_kind(key: object, parts: int) -> None:
     """Her dil/motor grubu ve her örnek türü parçalara en fazla 1 farkla dağılır."""
     totals = Counter(key(s) for s in SAMPLES)  # type: ignore[operator]
-    for index in range(1, PARTS + 1):
-        counts = Counter(key(s) for s in select_part(SAMPLES, index, PARTS))  # type: ignore[operator]
+    for index in range(1, parts + 1):
+        counts = Counter(key(s) for s in select_part(SAMPLES, index, parts))  # type: ignore[operator]
         for value, total in totals.items():
-            # Docstring'deki değişmezin kendisi: parçalar arası fark en fazla 1.
-            # Toplam 4'e bölündüğünde kusursuz pay (ör. 10/11/11/12) da bu sınıra uyar;
-            # katı `< 1` sınırı yalnız mükemmelden sapmayı yakalar, değişmezi değil.
-            assert abs(counts[value] - total / PARTS) <= 1, (index, value)
+            # pay ⌊total/n⌋ ya da ⌈total/n⌉ olmalı: parçalar arası fark en fazla 1
+            assert abs(counts[value] - total / parts) < 1, (parts, index, value)
 
 
 def test_parts_are_deterministic() -> None:

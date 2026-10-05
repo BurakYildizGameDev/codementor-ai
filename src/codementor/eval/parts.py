@@ -37,23 +37,65 @@ def sample_kind(label: Label) -> str:
     return "clean" if not label.expected.findings else "flawed"
 
 
-def select_part(samples: list[Sample], index: int, parts: int) -> list[Sample]:
-    """`index`. parçanın örnekleri (kimlik sırasıyla).
+def _assign(samples: list[Sample], parts: int) -> dict[str, int]:
+    """Örnek kimliği → parça (0..n-1); grup, tür ve boyut sayıları parçalar arasında dengeli.
 
-    Açgözlü atama: her örnek, kendi grubundan ve türünden en az örneği olan, eşitlikte en küçük
-    parçaya gider. Girdi sırası sonucu etkilemez.
+    Döngüsel ilk atamadan sonra tek örnek taşıma ve iki örnek takası, her (öznitelik, parça)
+    sayısının karesel toplamını küçülttüğü sürece uygulanır. Ortalama sabit olduğundan bu,
+    sapmayı küçültür; dev ve test bölümlerinde olağan parça sayılarında fark en fazla 1 olur.
     """
-    ordered = sorted(samples, key=lambda s: (group_of(s.label), sample_kind(s.label), s.label.id))
-    groups: list[Counter[str]] = [Counter() for _ in range(parts)]
-    kinds: list[Counter[str]] = [Counter() for _ in range(parts)]
-    sizes = [0] * parts
-    chosen: list[Sample] = []
-    for sample in ordered:
-        group, kind = group_of(sample.label), sample_kind(sample.label)
-        target = min(range(parts), key=lambda p: (groups[p][group], kinds[p][kind], sizes[p], p))
-        groups[target][group] += 1
-        kinds[target][kind] += 1
-        sizes[target] += 1
-        if target == index - 1:
-            chosen.append(sample)
-    return sorted(chosen, key=lambda s: s.label.id)
+    ordered = sorted(samples, key=lambda s: s.label.id)
+    attrs = {
+        s.label.id: (("group", group_of(s.label)), ("kind", sample_kind(s.label)), ("size", ""))
+        for s in ordered
+    }
+    by_cell = sorted(ordered, key=lambda s: (group_of(s.label), sample_kind(s.label), s.label.id))
+    out = {s.label.id: i % parts for i, s in enumerate(by_cell)}
+    counts: Counter[tuple[tuple[str, str], int]] = Counter()
+    for sample_id, part in out.items():
+        for attr in attrs[sample_id]:
+            counts[attr, part] += 1
+
+    def improves(change: Counter[tuple[tuple[str, str], int]]) -> bool:
+        delta = sum((counts[k] + v) ** 2 - counts[k] ** 2 for k, v in change.items() if v)
+        if delta < 0:
+            counts.update(change)
+        return delta < 0
+
+    def moved(sample_id: str, source: int, target: int) -> Counter[tuple[tuple[str, str], int]]:
+        change: Counter[tuple[tuple[str, str], int]] = Counter()
+        for attr in attrs[sample_id]:
+            change[attr, source] -= 1
+            change[attr, target] += 1
+        return change
+
+    ids = list(attrs)
+    improved = True
+    while improved:
+        improved = False
+        for a in ids:
+            for target in range(parts):
+                if target != out[a] and improves(moved(a, out[a], target)):
+                    out[a], improved = target, True
+        for i, a in enumerate(ids):
+            for b in ids[i + 1 :]:
+                pa, pb = out[a], out[b]
+                if pa == pb:
+                    continue
+                swap = moved(a, pa, pb)
+                swap.update(moved(b, pb, pa))  # `+` sıfır/negatifleri atardı; `update` korur
+                if improves(swap):
+                    out[a], out[b], improved = pb, pa, True
+    return out
+
+
+def select_part(samples: list[Sample], index: int, parts: int) -> list[Sample]:
+    """`index`. parça örnekleri (kimlik sırasıyla).
+
+    Bölme belirleyicidir ve girdi sırasından bağımsızdır; her dil/motor grubu, örnek türü ve
+    parça boyutu parçalara olabildiğince eşit (hedef: en fazla 1 fark) dağılır (`_assign`).
+    """
+    assignment = _assign(samples, parts)
+    return sorted(
+        (s for s in samples if assignment[s.label.id] == index - 1), key=lambda s: s.label.id
+    )
