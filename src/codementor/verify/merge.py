@@ -54,12 +54,13 @@ def merge_findings(static: list[Finding], llm: list[Finding]) -> list[Finding]:
         best = min(candidates, key=lambda i: abs(static[i].line_start - finding.line_start))
         confirmed.add(best)
         base = static[best]
-        merged[best] = base.model_copy(
-            update={
-                "source": FindingSource.CONFIRMED,
-                "confidence": max(base.confidence, finding.confidence, CONFIRMED_CONFIDENCE),
-                # Faz 52: statik öneri + LLM hatası → hata; tersi ya da öneri+öneri → statik türü
-                "kind": FindingKind.ISSUE if finding.kind is FindingKind.ISSUE else base.kind,
-            }
-        )
+        update: dict[str, object] = {
+            "source": FindingSource.CONFIRMED,
+            "confidence": max(base.confidence, finding.confidence, CONFIRMED_CONFIDENCE),
+        }
+        # Faz 52: statik öneri + LLM hatası → hata; önem de hatanınki olur (öneri hep `low`dur).
+        # Tersi ya da öneri+öneri → statik tür ve önem korunur.
+        if base.kind == FindingKind.SUGGESTION and finding.kind == FindingKind.ISSUE:
+            update |= {"kind": FindingKind.ISSUE, "severity": finding.severity}
+        merged[best] = base.model_copy(update=update)
     return number_findings(merged + extra)

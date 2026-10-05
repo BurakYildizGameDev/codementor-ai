@@ -101,6 +101,20 @@ def test_static_suggestion_upgraded_by_llm_issue() -> None:
     assert merged.kind == "issue"
 
 
+def test_upgraded_suggestion_takes_llm_issue_severity() -> None:
+    """Öneri hep `low`dur; hataya yükselince önem hatayı söyleyen LLM bulgusundan gelir."""
+    suggestion = static(11).model_copy(update={"kind": "suggestion", "severity": Severity.LOW})
+    issue = llm(11).model_copy(update={"severity": Severity.HIGH})
+    (merged,) = merge_findings([suggestion], [issue])
+    assert (merged.kind, merged.severity) == ("issue", Severity.HIGH)
+
+
+def test_static_issue_keeps_its_severity_over_llm() -> None:
+    """Statik hata zaten hataysa §5.6 geçerli: statik önem korunur."""
+    (merged,) = merge_findings([static(11)], [llm(11).model_copy(update={"severity": "critical"})])
+    assert merged.severity == Severity.HIGH
+
+
 def test_static_suggestion_with_llm_suggestion_stays_suggestion() -> None:
     """İkisi de öneriyse birleşik bulgu öneridir (Faz 52)."""
     suggestion = static(11).model_copy(update={"kind": "suggestion"})
