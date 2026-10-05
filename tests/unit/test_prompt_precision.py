@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
 from codementor.ingest.normalize import normalize
 from codementor.models.enums import Engine, Language
+from codementor.models.prompts import BuiltPrompt
 from codementor.models.request import LanguageHint
 from codementor.prompts.builder import (
     build_analysis_messages,
@@ -97,9 +99,11 @@ CATEGORY_BOUNDARY_PHRASES = [
 
 
 @pytest.mark.parametrize("builder", [build_analysis_messages, build_single_pass_messages])
-def test_category_boundaries_in_code_prompts(tmp_path: Path, builder: object) -> None:
+def test_category_boundaries_in_code_prompts(
+    tmp_path: Path, builder: Callable[..., BuiltPrompt]
+) -> None:
     """Faz 51: kategori sınırları (rehberle ortak metin) kod prompt'larında."""
-    built = builder(analysis_input(tmp_path), settings=prompt_settings())  # type: ignore[operator]
+    built = builder(analysis_input(tmp_path), settings=prompt_settings())
     system = system_text(built.messages)
     for phrase in CATEGORY_BOUNDARY_PHRASES:
         assert phrase in system, phrase

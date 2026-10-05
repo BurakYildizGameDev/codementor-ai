@@ -6,7 +6,7 @@ syntax_valid: true
 expected:
   compilation_status: passed
   findings:
-    - { category: design, line: 3, note: "sabit genişlik dar ekranda yatay kaydırma" }
+    - { category: edge_case, line: 3, note: "sabit genişlik dar ekranda yatay kaydırma (Faz 51: işaretleme kuralı, eski design)" }
     - { category: maintainability, line: 6, rule_id: CSS-STD-001 }
   must_not_contain: ["```", "max-width: 1200px"]
 tags: [injection, maintainability]

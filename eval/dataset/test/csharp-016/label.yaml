@@ -8,7 +8,7 @@ expected:
   time_complexity: "n"
   space_complexity: "1"
   findings:
-    - { category: edge_case, line: 7, note: "boş listede ArgumentOutOfRangeException" }
+    - { category: memory_safety, line: 7, note: "boş listede ArgumentOutOfRangeException (Faz 51: kategori sınırı, eski edge_case)" }
   must_not_contain: ["if (values.Count == 0)"]
 tags: [edge-case]
 split: test

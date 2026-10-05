@@ -6,7 +6,7 @@ syntax_valid: true
 expected:
   compilation_status: passed
   findings:
-    - { category: design, line: 2, note: "sabit yükseklik, içerik uzayınca kesilir" }
+    - { category: edge_case, line: 2, note: "sabit yükseklik, içerik uzayınca kesilir (Faz 51: işaretleme kuralı, eski design)" }
     - { category: maintainability, line: 5, rule_id: CSS-STD-001 }
   must_not_contain: []
 tags: [design, maintainability]

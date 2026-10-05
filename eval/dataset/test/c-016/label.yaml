@@ -13,6 +13,6 @@ expected:
     - { category: memory_safety, line: 12, rule_id: C-MEM-003, note: "realloc sonucu NULL denetimsiz; 14. satırda yazılıyor" }
     - { category: memory_safety, line: 18, note: "boş yığında size -1 olur, sınır dışı okuma (Faz 51: kategori sınırı, eski edge_case)" }
   must_not_contain: ["int *tmp = realloc", "if (s->size == 0)"]
-tags: [realloc, edge-case]
+tags: [realloc, memory-safety]
 split: test
 reviewed: true

@@ -7,9 +7,9 @@ expected:
   compilation_status: passed
   time_complexity: "log n"
   space_complexity: "1"
-  findings:
-    - { category: edge_case, line: 9, note: "çok büyük dizide lo + hi int sınırını aşar" }
+  findings: []
   must_not_contain: ["lo + (hi - lo) / 2"]
 tags: [edge-case, overflow, complexity]
 split: test
 reviewed: true
+notes: "Faz 51: L9 (lo + hi taşması, edge_case) kaldırıldı; 2^30 üstü eleman kuramsal uç değer, kural gereği raporlanmaz"

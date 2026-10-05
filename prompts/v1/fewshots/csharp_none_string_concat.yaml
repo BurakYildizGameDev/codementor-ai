@@ -31,7 +31,7 @@ analysis:
     optimal_time_target: "O(n)"
     agreement: agrees
   additional_findings:
-    - category: edge_case
+    - category: memory_safety
       severity: high
       line_start: 9
       line_end: null

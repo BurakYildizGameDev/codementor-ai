@@ -46,12 +46,12 @@ analysis:
     optimal_time_target: "O(n)"
     agreement: agrees
   additional_findings:
-    - category: edge_case
+    - category: memory_safety
       severity: medium
       line_start: 14
       line_end: null
       evidence: "GetDistanceTo(Enemy)"
-      description: "Yok edilmiş ya da null bir aktör için mesafe hesaplanıyor; geçerlilik denetimi yok."
+      description: "Enemies listesinde null bir aktör varsa mesafe hesabı onu kullanır; IsValid denetimi yok."
 socratic:
   key_flaw_concept: "Unreal çöp toplayıcısı ve UPROPERTY"
   guiding_questions:

@@ -9,7 +9,7 @@ expected:
   findings:
     - { category: maintainability, line: 4, rule_id: CSS-MAINT-001 }
     - { category: maintainability, line: 5, rule_id: CSS-MAINT-001 }
-    - { category: design, line: 5, note: "sabit genişlik dar ekranda taşar" }
+    - { category: edge_case, line: 5, note: "sabit genişlik dar ekranda taşar (Faz 51: işaretleme kuralı, eski design)" }
     - { category: maintainability, line: 6, rule_id: CSS-MAINT-001 }
     - { category: accessibility, line: 10, note: "odak göstergesi kaldırılmış" }
   must_not_contain: ["```", "@media (max-width: 600px)"]

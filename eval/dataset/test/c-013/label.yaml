@@ -9,7 +9,7 @@ expected:
   time_complexity: "1"
   space_complexity: "1"
   findings:
-    - { category: edge_case, line: 8, note: "b = 0 için tanımsız davranış" }
+    - { category: undefined_behavior, line: 8, note: "b = 0 için tanımsız davranış (Faz 51: kategori sınırı, eski edge_case)" }
     - { category: input_handling, line: 6, note: "scanf'in okuduğu alan sayısı denetlenmiyor" }
   must_not_contain: ["if (b == 0)", "if (b != 0)"]
 tags: [input]
