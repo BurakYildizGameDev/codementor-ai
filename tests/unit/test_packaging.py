@@ -54,7 +54,7 @@ def test_ci_builds_roslyn_for_tests_and_exe() -> None:
     check = workflow["jobs"]["check"]["steps"]
     check_runs = [str(step.get("run", "")) for step in check]
     assert any("dotnet build tools/roslyn-check" in r for r in check_runs)
-    linux_pytest = 'uv run pytest -m "not live"'
+    linux_pytest = next(r for r in check_runs if r.startswith("uv run pytest"))
     pytest_index = check_runs.index(linux_pytest)
     install_index = check_runs.index("uv run codementor toolchain install zig")
     assert install_index < pytest_index
@@ -79,3 +79,12 @@ def test_ci_runs_pip_audit_and_npm_audit() -> None:
     assert check.index(export) < check.index(audit)
     web = [str(step.get("run", "")) for step in workflow["jobs"]["web"]["steps"]]
     assert any("npm audit --omit=dev" in r for r in web)
+
+
+def test_ci_reports_coverage() -> None:
+    """Kabul (Faz 53): CI Linux pytest adımı kapsama raporu üretir (mimari §15)."""
+    workflow = yaml.safe_load((REPO / ".github" / "workflows" / "ci.yml").read_text("utf-8"))
+    check = [str(step.get("run", "")) for step in workflow["jobs"]["check"]["steps"]]
+    linux_pytest = next(r for r in check if "pytest" in r and "--cov=codementor" in r)
+    assert '-m "not live"' in linux_pytest
+    assert "--cov-report=term-missing:skip-covered" in linux_pytest

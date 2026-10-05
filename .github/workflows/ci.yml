@@ -47,7 +47,7 @@ jobs:
       - if: runner.os == 'Linux'
         run: uvx pip-audit --strict --requirement requirements-audit.txt
       - if: runner.os == 'Linux'
-        run: uv run pytest -m "not live"
+        run: uv run pytest -m "not live" --cov=codementor --cov-report=term-missing:skip-covered
         env:
           CODEMENTOR_REQUIRE_ROSLYN: "1"
           CODEMENTOR_REQUIRE_ZIG: "1"

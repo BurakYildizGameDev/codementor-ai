@@ -27,3 +27,12 @@ web/playwright-report/
 web/*.tsbuildinfo
 src/codementor/pipeline/source_digest.txt
 requirements-audit.txt
+
+# Kapsama ve test artıkları (Faz 53)
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+cov-*.txt
+desk_app.*
+full_suite.*

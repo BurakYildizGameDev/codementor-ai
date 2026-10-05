@@ -18,7 +18,7 @@ soruyu veriyor. Web arayüzü: [docs/img/web-live.png](docs/img/web-live.png).</
 - **Deterministik temel.** Sözdizimi hataları, bilinen bellek/GC/motor hataları ve karmaşıklık
   ipucu LLM'e gitmeden statik olarak bulunur. LLM yanıt vermezse rapor yine döner
   (`meta.degraded`).
-- **Ölçülmüş iddialar.** 80 elle etiketlenmiş örnekle dev/test ayrımlı eval; aşağıdaki tablolar
+- **Ölçülmüş iddialar.** 166 elle etiketlenmiş örnekle dev/test ayrımlı eval (dev 96 / test 70); aşağıdaki tablolar
   `eval/results/` dosyalarından üretilir.
 
 ## Nasıl çalışır?
@@ -139,8 +139,8 @@ tutulur (ADR-0008).
 
 | Sağlayıcı | Kurulum | Not |
 |---|---|---|
-| `claude_cli` (varsayılan) | `claude` CLI'ında oturum aç | API anahtarı gerekmez; araçları kapalı, prompt stdin'den (ADR-0012). Eval bununla ölçüldü. |
-| `codex` | `codex login` (ChatGPT), `[providers.codex] model` (ör. `gpt-6-luna`), `allow_tool_agent = true` | API anahtarı gerekmez; salt okunur sandbox, kullanıcı ayarları yok sayılır, prompt stdin'den (ADR-0017). Dev 96 ölçümü ayrı satırlarda kayıtlı |
+| `claude_cli` (varsayılan) | `claude` CLI'ında oturum aç | API anahtarı gerekmez; araçları kapalı, prompt stdin'den (ADR-0012). Tüm eval ölçümleri bu sağlayıcıyla yapıldı (Claude satırları). |
+| `codex` | `codex login` (ChatGPT), `[providers.codex] model` (ör. `gpt-6-luna`), `allow_tool_agent = true` | API anahtarı gerekmez; salt okunur sandbox, kullanıcı ayarları yok sayılır, prompt stdin'den (ADR-0017). Alternatif ölçüm: `gpt-6-luna` dev 96 satırları ayrıdır, Claude ölçümleriyle karıştırılmaz |
 | `anthropic` | `ANTHROPIC_API_KEY`, `[providers.anthropic] model` | Yapılandırılmış çıktı (ADR-0011) |
 | `ollama` (yerel) | [Ollama](https://ollama.com) kur, `ollama pull qwen2.5-coder:7b`, `default = "ollama"` | Tamamen çevrimdışı; kalite modele bağlı, **eval'de ölçülmedi** |
 | `gemini` (deneysel) | `GEMINI_API_KEY`, `[providers.gemini] model` (ör. `gemini-3.8-flash`) | OpenAI uyumlu uç, katı şema (ADR-0020). Canlı doğrulanmadı, eval'de ölçülmedi |
@@ -150,8 +150,10 @@ tutulur (ADR-0008).
 
 ## Eval sonuçları
 
-80 elle etiketlenmiş örnek (her dil/motor 16; %25 sözdizimi hatalı, %12,5 prompt injection),
-dev 31 / test 49. Prompt'lar dev'de **ayarlanmadı**; test bölümü en sonda **bir kez** koşuldu.
+166 elle etiketlenmiş örnek (**dev 96 / test 70**; dil/motor başına dev/test: C 13/9,
+C++ 12/10, C♯ 12/10, Python 11/7, HTML 11/7, CSS 9/7, Unity 14/10, Unreal 14/10;
+%25 sözdizimi hatalı, %12,5 prompt injection). Prompt'lar dev'de **ayarlanmadı**; test
+bölümü en sonda **bir kez** koşuldu.
 Bulgu eşleşmesi: aynı kategori + satır farkı ≤ 2. Model: `claude-opus-5-5` (`claude_cli`),
 önbellek kapalı.
 
@@ -160,7 +162,7 @@ Bulgu eşleşmesi: aynı kategori + satır farkı ≤ 2. Model: `claude-opus-5-5
 > (yeniden koşulmadı). Satırlar bu yüzden tam karşılaştırılabilir değil; ayrıntı
 > `docs/eval-findings.md` §5.
 
-**Test (49 örnek):**
+**Test (70 örnek):**
 
 <!-- eval-table:test:start -->
 | Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
@@ -223,6 +225,8 @@ Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 > Faz 36 (2026-10-04): Claude Opus parçaları 1/4 + 2/4 (48 örnek) kayıtlı metrikte 75 / 83 / 78; `unity-104` etiketi güncellenince 75 / 81 / 78. Claude parçaları 3/4 + 4/4 henüz koşulmadı. Kullanıcı talimatıyla Codex `gpt-6-luna` aynı promptla dört parçayı koştu: 96 örnekte 79 / 77 / 78, bir öneri. Sağlayıcılar farklı olduğundan sonuçlar birleştirilmez; ortak 46 örnekteki 75 / 73 / 74 kıyası Faz 36'nın nedensel etkisini göstermez. Ayrıntı: `docs/eval-findings.md` §11.
 
 > Dev genişletmesi (2026-10-04): dev 46 → 96 örnek (50 yeni; Unity/Unreal 8'er, diğerleri 4-6). Statik satır ve Codex `gpt-6-luna` ölçümü 96 örnekliktir; Claude Opus satırları eski 46 örnek ve kısmi 24'er örnek koşularıdır. Yeni örneklerin statik Big-O'su etiketle birebir. Ayrıntı: `docs/eval-findings.md` §10–11.
+
+> En güncel dev ölçümü (Faz 51, 2026-10-05): **Claude 96 örnek — Denetim P / R / F1 = 78 / 96 / 86** (karışıklık 7 → 2). Ayrıntı: `PROGRESS.md` "Faz 51 — Notlar".
 
 > Faz 34/35B (2026-10-03): 46 örneklik satırlar güncel dev setidir (C ailesi + Python/HTML/CSS). `verify` = bulgu doğrulama geçişi (artık varsayılan açık, ADR-0019): precision 69 → 79, recall aynı. İkinci model Claude Haiku 4.5 (düşünme kapalı). Few-shot 0/1/2 arasında fark yok. Ayrıntı: `docs/eval-findings.md` §9.
 

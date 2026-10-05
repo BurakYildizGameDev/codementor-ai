@@ -233,25 +233,34 @@ def _timed(text: str, language: Language) -> float:
     return time.perf_counter() - start
 
 
+def _deadline(seconds: float) -> float:
+    """Zaman sınırı; kapsama ölçümü yavaşlattığı için ölçümde genişletilir (Faz 53)."""
+    try:
+        from coverage import Coverage
+    except ImportError:  # pragma: no cover
+        return seconds
+    return seconds * (4.0 if Coverage.current() is not None else 1.0)
+
+
 def test_o1_many_inner_loops_linear() -> None:
     inner = " ".join(["while (j < n) j++;"] * 2000)
     text = f"void f(int n) {{ int j = 0; for (int i = 0; i < n; i++) {{ {inner} }} }}\n"
-    assert _timed(text, C) < 1.5
+    assert _timed(text, C) < _deadline(1.5)
 
 
 def test_o2_many_functions_linear() -> None:
     body = " ".join(f"void f{i}(void) {{ f{i + 1}(); }}" for i in range(1300))  # < 40 KB
-    assert _timed(body + "\n", C) < 1.5
+    assert _timed(body + "\n", C) < _deadline(1.5)
 
 
 def test_o3_long_member_chain_linear() -> None:
     chain = "x" + ".g()" * 7000
-    assert _timed(f"void f(void) {{ {chain}; }}\n", CPP) < 1.5
+    assert _timed(f"void f(void) {{ {chain}; }}\n", CPP) < _deadline(1.5)
 
 
 def test_o3_long_concat_chain_linear() -> None:
     chain = " + ".join(['"a"'] * 6000)  # < 40 KB
-    assert _timed(f"class A {{ void F() {{ var s = {chain}; }} }}\n", CS) < 1.5
+    assert _timed(f"class A {{ void F() {{ var s = {chain}; }} }}\n", CS) < _deadline(1.5)
 
 
 def test_o4_long_call_chain_keeps_hint() -> None:
