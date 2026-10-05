@@ -40,6 +40,7 @@
 | 47 | ✅ | faz/47-api-guven-siniri | 2026-10-05 | Claude Code / — |
 | 48 | ✅ | faz/48-rol-siniri-sure | 2026-10-05 | Claude Code / — |
 | 49 | ✅ | faz/49-depolama-tutarlilik | 2026-10-05 | Claude Code / — |
+| 50 | ✅ | faz/50-dil-kodlama-ci | 2026-10-05 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -880,6 +881,16 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 50 — Notlar (exe paketi, dil kapsamı, kodlama, CI hijyeni)
+**Yapılanlar:** `build_exe.py`: `analysis/queries` (.scm) pakete girer; `source_digest_file` derleme anındaki kaynak özetini `codementor/pipeline/source_digest.txt` olarak gömer, `versions._sources_digest` exe'de onu okur (yoksa ve `.py` kaynağı da yoksa `rules_version_without_sources` uyarısı). Yerel onedir derlemesinde 17 `.scm` ve özet dosyası doğrulandı. `codementor/languages.py`: `CANONICAL_SUFFIX` + `SUFFIXES` tek tablo; API SARIF artefaktı, masaüstü (açma, dışa aktarma), `analysis/_cli`, eval veri seti buradan. `ingest.normalize.decode_source`: UTF-8 (BOM'lu), BOM'lu UTF-16; başka kodlama Türkçe `InvalidEncodingError` (CLI çıkış 3, masaüstü uyarı; editöre satır sonları LF olarak gider). CI: `uv export --no-dev` + `uvx pip-audit --strict` (yerelde: bilinen açık yok), web `npm audit --omit=dev --audit-level=high`. Log: `merge_contextvars`; orkestratör `analysis_id`, `StageTimer.stage` `stage` bağlar. `EvalRunRow`/`EvalResultRow` kaldırıldı (§11). Tekrarlar: `cli_agent.short_error` + `agent_limits` (Codex ortak), tek `Runner` Protocol (`validation.runner`), `connections_controller` `type: ignore` → `cast`. `desktop.connections.login_env`: oturum konsolu `*_API_KEY` ve yapılandırılmış `api_key_env` değişkenlerini almaz. Testler: `tests/network_guard.py` + autouse `_no_network` (loopback dışı `connect` → `NetworkBlockedError`, `live` muaf), `tests/unit/test_network_guard.py`, `tests/api/test_sarif_languages.py`, `tests/unit/test_languages.py`, `test_normalize.py` (BOM/UTF-16/cp1254), `test_cli_analyze.py::test_cli_cp1254_file_fails_with_turkish_message`, `tests/desktop/test_files.py::test_non_utf8_file_shows_toast`, `test_build_exe.py` (sorgular, özet), `test_prompt_version.py::test_embedded_digest_used_when_sources_missing`, `tests/integration/test_log_context.py`, `test_connections.py::test_login_env_strips_api_keys`, `test_packaging.py::test_ci_runs_pip_audit_and_npm_audit`.
+**Alınan kararlar (ve neden):**
+- Gömülü özet varsa kaynaklardan önce gelir: exe'de `.scm` artık var ama `.py` yok; kısmi kaynakla özet yanıltıcı olurdu. Kaynaktan çalışırken dosya yok (`.gitignore`).
+- Kodlama tespiti yok (chardet vb.): yalnız BOM'lar; yanlış tahmin kodu sessizce bozardı, açık hata daha dürüst.
+- Ağ koruması soket düzeyinde (`connect`/`connect_ex`): httpx, asyncio ve `socket.create_connection` hepsi buradan geçer; alt süreçler kendi süreçleridir.
+- `login_env` `*_API_KEY` sonekini de atar: kullanıcı ortamındaki ilgisiz anahtarlar da etkileşimli konsola sızmasın.
+**Açık sorular:** Yok. (Exe'de olgu çıkarımının uçtan uca duman testi GUI gerektiriyor; paket içeriği doğrulandı.)
+**Bu fazda öğrendiğim:** PyInstaller `.py` modüllerini PYZ'ye koyar ama paket dizinindeki veri dosyalarını (`.scm`) almaz; `Path(__file__).parent` yine `_MEIPASS/paket` olduğu için `--add-data` hedefini paket yoluyla eşlemek yeterli.
+
 ## Faz 49 — Notlar (oturum yarışı, önbellek imzası, saklama)
 **Yapılanlar:** `storage/sessions.reserve_attempt` (SQLite `INSERT … ON CONFLICT DO UPDATE … RETURNING`) analiz başında denemeyi atomik ayırır; `release_attempt` iptal/hatada geri verir (yalnız sayaç hâlâ o denemedeyse); `record_attempt` yalnız ipucu seviyesini yazar (`max` ile geriye düşmez). Orkestratör ayırmadan kayda kadar olan bölümü `_run_attempt`'e ayırıp `BaseException`'da geri alır. `pipeline/versions`: `rules_version` `r2+`; özet `analysis/**` (`.scm` dahil), `validation/`, `verify/` ve `mentor_templates.yaml`'ı kapsar (`digest_files` saf, köke göreli yollar); orkestratör ve eval aynı dosyaları geçirir. `Orchestrator.questions` enjeksiyonu (`ApiState.questions`, süreç başına bir kez); `QuestionBankError` → `PipelineError("unavailable")` / API işleyicisi 503 (`/v1/questions` da). `storage.max_analyses` (2000): `save_analysis` en yeniyi tutar, `created_at` indeksi (eski veritabanına `CREATE INDEX IF NOT EXISTS`). `cache._decode`: uyumsuz eski `report_json` → None + `stored_report_incompatible` logu (GET 404, önbellek ıskası). Masaüstü: `save_source(keep=)` + `prune_sources` (mtime'a göre en yeni N), `desktop.log` açılışta 5 MB üstündeyse `.1`'e döner, `save_prefs` geçici dosya + `os.replace`. Mimari §9, §11, config örneği güncellendi. Testler: `test_storage.py` (ayırma/geri alma/budama/uyumsuz kayıt), `tests/integration/test_pipeline_sessions.py`, `tests/api/test_storage_api.py`, `test_prompt_version.py` (kapsam, `.scm`, mentor şablonları), `tests/desktop/test_runtime.py` (budama, log döndürme, atomik yazım), `test_config.py`.
 **Alınan kararlar (ve neden):**
@@ -1118,7 +1129,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`). Sıradaki Faz 50 (dil kapsamı, kodlama, CI), sonra 51-57 (eski 40-46); ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`). Sıradaki Faz 51 (kategori tutarlılığı), sonra 52-57; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1151,7 +1162,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    sağlayıcılar, girdi/gövde sınırları (2026-10-04 tam tarama).
 21. ~~**Faz 48 — Rol sınırlayıcıları ve analiz süresi:**~~ Yapıldı (2026-10-05). `<system>`/`<user>` enjeksiyonu, toplam süre sınırı.
 22. ~~**Faz 49 — Depolama ve önbellek:**~~ Yapıldı (2026-10-05). oturum yarışı (500), `rules_version` kapsamı (Faz 55 öncesi), saklama.
-23. **Faz 50 — Dil kapsamı, kodlama, CI:** SARIF Python/HTML/CSS 500, UTF-8 dışı dosya, `pip-audit`.
+23. ~~**Faz 50 — Dil kapsamı, kodlama, CI:**~~ Yapıldı (2026-10-05). SARIF Python/HTML/CSS 500, UTF-8 dışı dosya, `pip-audit`.
 24. **Faz 51 — Kategori tutarlılığı:** doğru satır/yanlış kategori FP-FN'leri; prompt ve etiket
    rehberinde tek kategori tanımı.
 25. **Faz 52 — Kural bazında öneri türü:** CPP-OWN-001, UE-MEM-001, PY-RES-001 gibi kurallarda öneri.

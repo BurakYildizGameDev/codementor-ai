@@ -69,3 +69,24 @@ def test_self_contained_roslyn_preferred(tmp_path: Path, monkeypatch: pytest.Mon
     sc.unlink()
     args = " ".join(build_exe.pyinstaller_args(onefile=True, console=False, work=tmp_path))
     assert f"{out}{os.pathsep}tools/roslyn-check/out" in args
+
+
+def test_queries_bundled(tmp_path: Path) -> None:
+    """Faz 50 (Faz 49 denetimi K1): sorgular pakette; yoksa exe'de olgu çıkarımı boş."""
+    args = build_exe.pyinstaller_args(onefile=False, console=False, work=tmp_path)
+    data = [args[i + 1] for i, arg in enumerate(args) if arg == "--add-data"]
+    queries = [d for d in data if d.endswith("codementor/analysis/queries")]
+    assert len(queries) == 1
+    source = Path(queries[0].rsplit(";" if ";" in queries[0] else ":", 1)[0])
+    assert any(source.rglob("*.scm"))
+
+
+def test_source_digest_written_and_bundled(tmp_path: Path) -> None:
+    """Exe'de `.py` kaynağı yok: `rules_version` derleme anındaki kaynak özetini kullanır."""
+    from codementor.pipeline.versions import DIGEST_FILE, source_digest
+
+    args = build_exe.pyinstaller_args(onefile=True, console=False, work=tmp_path)
+    written = tmp_path / DIGEST_FILE
+    assert written.read_text(encoding="utf-8") == source_digest()
+    data = [args[i + 1] for i, arg in enumerate(args) if arg == "--add-data"]
+    assert any(d.startswith(str(written)) and d.endswith("codementor/pipeline") for d in data)

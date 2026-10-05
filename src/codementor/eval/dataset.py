@@ -12,20 +12,19 @@ import shutil
 from pathlib import Path
 
 from codementor.ingest.normalize import split_lines
+from codementor.languages import CANONICAL_SUFFIX
+from codementor.models.enums import Language
 from codementor.models.eval import Label, Sample, Split
 from codementor.questions._loader import DataFileError, load_model
 
 DATASET_DIR = Path("eval/dataset")
 DRAFT = "_draft"
 SPLITS: tuple[Split, ...] = ("dev", "test")
-_CODE_SUFFIXES = {
-    "c": ".c",
-    "cpp": ".cpp",
-    "csharp": ".cs",
-    "python": ".py",
-    "html": ".html",
-    "css": ".css",
-}
+
+
+def code_suffix(language: str) -> str:
+    """Örnek kod dosyasının uzantısı (tek tablo: `codementor.languages`, Faz 50)."""
+    return CANONICAL_SUFFIX[Language(language)]
 
 
 class DatasetError(DataFileError):
@@ -45,7 +44,7 @@ def load_sample(directory: Path) -> Sample:
     if label.id != directory.name:
         raise DatasetError(f"{directory.name}: label.id ({label.id}) dizin adıyla aynı olmalı")
     code_file = _code_file(directory)
-    expected_suffix = _CODE_SUFFIXES[label.language.value]
+    expected_suffix = code_suffix(label.language.value)
     if code_file.suffix != expected_suffix:
         raise DatasetError(
             f"{label.id}: {label.language.value} için dosya {expected_suffix} olmalı"

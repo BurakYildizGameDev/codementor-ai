@@ -67,3 +67,15 @@ def test_ci_builds_roslyn_for_tests_and_exe() -> None:
     assert "--self-contained true" in publish
     assert "-o tools/roslyn-check/sc" in publish
     assert runs.index(publish) < runs.index(next(r for r in runs if "build_exe.py" in r))
+
+
+def test_ci_runs_pip_audit_and_npm_audit() -> None:
+    """Kabul (Faz 50): CI bağımlılık açığı denetimi yapar (mimari §12 "Bağımlılık riski")."""
+    workflow = yaml.safe_load((REPO / ".github" / "workflows" / "ci.yml").read_text("utf-8"))
+    check = [str(step.get("run", "")) for step in workflow["jobs"]["check"]["steps"]]
+    export = next(r for r in check if "uv export" in r)
+    audit = next(r for r in check if "pip-audit" in r)
+    assert "--no-dev" in export
+    assert check.index(export) < check.index(audit)
+    web = [str(step.get("run", "")) for step in workflow["jobs"]["web"]["steps"]]
+    assert any("npm audit --omit=dev" in r for r in web)

@@ -168,3 +168,27 @@ def test_empty_sources_logged(
     finally:
         versions._code_digest.cache_clear()
     assert [e["event"] for e in captured_logs()] == ["rules_version_without_sources"]
+
+
+def test_embedded_digest_used_when_sources_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    captured_logs: Callable[[], list[dict[str, Any]]],
+) -> None:
+    """Faz 50: exe'de kaynak yok ama derleme anında gömülen özet var → uyarı yok, sürüm özete
+    bağlı (kural gövdesi değişen yeni exe eski önbelleği kullanmaz)."""
+    from codementor.pipeline import versions
+
+    embedded = tmp_path / versions.DIGEST_FILE
+    monkeypatch.setattr(versions, "hashed_sources", list)
+    monkeypatch.setattr(versions, "EMBEDDED_DIGEST", embedded)
+    try:
+        embedded.write_text("a" * 64, encoding="utf-8")
+        versions._code_digest.cache_clear()
+        first = versions.rules_version()
+        embedded.write_text("b" * 64, encoding="utf-8")
+        versions._code_digest.cache_clear()
+        assert versions.rules_version() != first
+    finally:
+        versions._code_digest.cache_clear()
+    assert captured_logs() == []

@@ -15,12 +15,8 @@ from pathlib import Path
 from codementor.analysis.complexity_hint import compute_hint, function_hints
 from codementor.ingest.errors import IngestError
 from codementor.ingest.normalize import normalize
-from codementor.models.enums import Language
+from codementor.languages import language_for_suffix
 from codementor.models.request import LanguageHint
-
-_BY_SUFFIX = {".c": Language.C, ".cs": Language.CSHARP} | dict.fromkeys(
-    (".cpp", ".cc", ".cxx", ".hpp", ".hh"), Language.CPP
-)
 
 
 def _write_utf8(data: str) -> None:
@@ -41,7 +37,7 @@ def run(argv: list[str] | None = None) -> int:
     parser.add_argument("path", type=Path)
     args = parser.parse_args(argv)
     try:
-        hint = LanguageHint(language=_BY_SUFFIX.get(args.path.suffix.lower()))
+        hint = LanguageHint(language=language_for_suffix(args.path.suffix))
         code = normalize(args.path.read_bytes(), hint)
     except OSError as exc:
         print(f"Dosya okunamadı: {exc}", file=sys.stderr)

@@ -1675,24 +1675,24 @@ sağlayıcıyla süre aşımında `degraded=true`; SSE kopma ve istisna dalları
 
 **Commit:** `fix(faz-49): oturum yarışı, önbellek anahtarı kapsamı, saklama`
 
-### Faz 50 — Dil kapsamı, kodlama ve CI hijyeni (YAPILACAK)
+### Faz 50 — Dil kapsamı, kodlama ve CI hijyeni (YAPILDI 2026-10-05)
 
 **Dal:** `faz/50-dil-kodlama-ci` · **Mimari:** §12, §13 · **Kaynak:** tarama K5, K10, K11, D5, D6, D8, D9
 
-- [ ] **Öncelikli (Faz 49 denetimi K1):** exe paketine `analysis/queries/*.scm` (bugün yok: exe'de olgu
+- [x] **Öncelikli (Faz 49 denetimi K1):** exe paketine `analysis/queries/*.scm` (bugün yok: exe'de olgu
       çıkarımı boş) ve `rules_version` için derleme anında üretilen kaynak özeti (exe'de `.py` yok);
       exe duman testinde olgu çıkarımı ve `rules_version_without_sources` uyarısının olmaması
-- [ ] SARIF Python/HTML/CSS'te 500 (`api/routes.py` `_EXTENSIONS` yalnız C ailesi): `Language` →
+- [x] SARIF Python/HTML/CSS'te 500 (`api/routes.py` `_EXTENSIONS` yalnız C ailesi): `Language` →
       uzantı eşlemesi tek yerde (API, CLI, masaüstü); altı dil için SARIF testi
-- [ ] UTF-8 olmayan dosya (`cli/analyze.py`, `desktop/files.py` `errors="replace"`): ham bayt
+- [x] UTF-8 olmayan dosya (`cli/analyze.py`, `desktop/files.py` `errors="replace"`): ham bayt
       `normalize`'a; UTF-8/UTF-16 BOM tanınır, cp125x için Türkçe hata
-- [ ] CI'a `pip-audit` (+ `npm audit --omit=dev`), mimari §13'te yazıyor ama yok
-- [ ] Log'lara `analysis_id`/`stage` bağlamı (§13) ya da belgenin düzeltilmesi; kullanılmayan
+- [x] CI'a `pip-audit` (+ `npm audit --omit=dev`), mimari §13'te yazıyor ama yok
+- [x] Log'lara `analysis_id`/`stage` bağlamı (§13) ya da belgenin düzeltilmesi; kullanılmayan
       `EvalRunRow`/`EvalResultRow` kaldırılır ya da §11 güncellenir
-- [ ] Tekrarlar: `_short`, `ProcessLimits` kurulumu, iki `Runner` Protocol; gerekçesiz
+- [x] Tekrarlar: `_short`, `ProcessLimits` kurulumu, iki `Runner` Protocol; gerekçesiz
       `type: ignore` (`connections_controller.py`)
-- [ ] Oturum konsolu ortamından API anahtarı değişkenleri çıkarılır
-- [ ] Test ağ koruması (loopback dışını engelleyen fixture)
+- [x] Oturum konsolu ortamından API anahtarı değişkenleri çıkarılır
+- [x] Test ağ koruması (loopback dışını engelleyen fixture)
 
 **Kabul:** altı dilde `/v1/analyses/{id}/sarif` 200; cp1254 fixture U+FFFD yerine Türkçe hata;
 CI'da `pip-audit`; loopback dışına bağlanan test düşer.

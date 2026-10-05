@@ -20,6 +20,7 @@ from codementor.api.errors import ApiProblemError
 from codementor.api.sse import SSE_HEADERS, stream_analysis
 from codementor.api.state import ApiState
 from codementor.config import Settings
+from codementor.languages import CANONICAL_SUFFIX
 from codementor.models.api import PROBLEM_JSON, Health, Problem, Readiness
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.provider import ProviderStatus
@@ -38,7 +39,6 @@ from codementor.validation.toolchain import compiler_statuses, get_toolchain
 
 SARIF_MEDIA_TYPE = "application/sarif+json"
 MARKDOWN_MEDIA_TYPE = "text/markdown; charset=utf-8"
-_EXTENSIONS = {Language.C: "c", Language.CPP: "cpp", Language.CSHARP: "cs"}
 # Kaba ön sınır (karakter): asıl bayt/satır sınırı K0'da (`too_large`); bu, devasa girdiyi
 # normalizasyona hiç sokmaz (Faz 47)
 CODE_CHARS_FACTOR = 4
@@ -198,7 +198,7 @@ def get_stored(request: Request, analysis_id: str) -> AnalysisReport:
 def get_sarif(request: Request, analysis_id: str) -> JSONResponse:
     """Kayıtlı raporun SARIF 2.1.0 dışa aktarımı."""
     report = _stored(request, analysis_id)
-    artifact = f"{report.analysis_id}.{_EXTENSIONS[report.language]}"
+    artifact = f"{report.analysis_id}{CANONICAL_SUFFIX[report.language]}"
     return JSONResponse(to_sarif(report, artifact), media_type=SARIF_MEDIA_TYPE)
 
 

@@ -60,29 +60,6 @@ class SessionRow(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utcnow)
 
 
-class EvalRunRow(SQLModel, table=True):
-    """Faz 12 (eval) için; şema §11'de tanımlı olduğu için şimdiden oluşturulur."""
-
-    __tablename__ = "eval_runs"
-
-    id: str = Field(primary_key=True)
-    created_at: datetime = Field(default_factory=utcnow)
-    split: str
-    provider: str
-    model: str
-    prompt_version: str
-    metrics_json: str
-
-
-class EvalResultRow(SQLModel, table=True):
-    __tablename__ = "eval_results"
-
-    run_id: str = Field(primary_key=True, foreign_key="eval_runs.id")
-    sample_id: str = Field(primary_key=True)
-    passed_checks_json: str
-    report_json: str
-
-
 def resolve_db_path(settings: Settings) -> Path | str:
     """Öncelik: `[storage] db_path` > `CODEMENTOR_DB_PATH` > `~/.codementor/codementor.db`."""
     if settings.storage.db_path is not None:

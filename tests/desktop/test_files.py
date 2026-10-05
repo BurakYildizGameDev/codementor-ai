@@ -54,3 +54,26 @@ def test_folder_sources_limited(tmp_path: Path) -> None:
     for i in range(MAX_FOLDER_FILES + 5):
         (tmp_path / f"f{i:03d}.c").write_text("x", encoding="utf-8")
     assert len(folder_sources(tmp_path)) == MAX_FOLDER_FILES
+
+
+def test_non_utf8_file_shows_toast(tmp_path: Path) -> None:
+    """Faz 50: cp1254 dosya editöre U+FFFD'li düşmez; Türkçe uyarı, editör değişmez."""
+    from types import SimpleNamespace
+
+    from codementor.desktop.files import FileController
+
+    source = tmp_path / "eski.c"
+    source.write_bytes("// öğrenci\nint x;\n".encode("cp1254"))
+    toasts: list[str] = []
+    loaded: list[str] = []
+    app = SimpleNamespace(
+        settings=SimpleNamespace(limits=SimpleNamespace(max_bytes=40_000)),
+        toast=toasts.append,
+        analyze_view=SimpleNamespace(
+            editor=SimpleNamespace(set=lambda code, _l: loaded.append(code))
+        ),
+    )
+    FileController(app).load(str(source))  # type: ignore[arg-type]
+    assert loaded == []
+    assert len(toasts) == 1
+    assert "UTF-8 değil" in toasts[0]

@@ -31,15 +31,26 @@ _INVISIBLE_BREAKS = str.maketrans(
 )
 
 
-def _decode(raw: str | bytes) -> str:
-    if isinstance(raw, str):
-        return raw
+_UTF16_BOMS = {b"\xff\xfe": "utf-16-le", b"\xfe\xff": "utf-16-be"}
+
+
+def decode_source(raw: bytes) -> str:
+    """Dosya baytlarını metne çevirir (Faz 50): UTF-8 (BOM'lu/BOM'suz) ve BOM'lu UTF-16.
+    Başka kodlama sessizce U+FFFD'ye dönüşmez; Türkçe `InvalidEncodingError`."""
+    codec = _UTF16_BOMS.get(raw[:2])
     try:
-        return raw.decode("utf-8")
+        if codec is not None:
+            return raw[2:].decode(codec)
+        return raw.decode("utf-8").removeprefix(_BOM)
     except UnicodeDecodeError as exc:
         raise InvalidEncodingError(
-            f"Kod UTF-8 olarak çözülemedi (bayt {exc.start}). Dosyayı UTF-8 olarak kaydedin."
+            f"Dosya UTF-8 değil (bayt {exc.start}); Windows-1254 gibi bir kod sayfasıyla "
+            "kaydedilmiş olabilir. Dosyayı UTF-8 olarak kaydedin."
         ) from None
+
+
+def _decode(raw: str | bytes) -> str:
+    return raw if isinstance(raw, str) else decode_source(raw)
 
 
 def split_lines(text: str) -> list[str]:

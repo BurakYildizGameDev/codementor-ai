@@ -203,7 +203,7 @@ Her aşama `StageEvent` yayınlar (`stage`, `status`, `duration_ms`, `tokens`). 
 **Sorumluluklar**
 
 - Boyut limitleri: varsayılan en fazla **600 satır / 40 KB**. Aşılırsa `413` / anlaşılır hata.
-- Encoding: UTF-8'e çevir; BOM'u at; çözülemeyen baytlar → hata.
+- Encoding: UTF-8'e çevir; BOM'u at; çözülemeyen baytlar → hata. Dosyadan okuyan istemciler (CLI, masaüstü) aynı `decode_source`'u kullanır: UTF-8 (BOM'lu/BOM'suz) ve BOM'lu UTF-16 tanınır, başka kod sayfası (ör. Windows-1254) U+FFFD'ye dönüşmez, Türkçe hata verir (Faz 50).
 - Satır sonları: CRLF → LF. Sekmeler korunur (satır/kolon doğruluğu için).
 - **Satır numaralı görünüm:** LLM'e kod her zaman `  14 | foo();` biçiminde gönderilir. Bu, satır numarası halüsinasyonunu azaltan en ucuz yöntemdir.
 - Dil/motor tespiti: kullanıcı belirtmezse sezgisel tespit (`using UnityEngine;` → Unity, `UCLASS(`/`GENERATED_BODY()` → Unreal, `#include <iostream>`/`std::` → C++, yalnızca C başlıkları → C). Belirsizse kullanıcıya sorulur (API'de `422`).
@@ -1076,9 +1076,8 @@ codementor schema export --out schemas/
 |---|---|
 | `analyses` | `id`, `created_at`, `cache_key`, `language`, `engine`, `question_id`, `session_id`, `provider`, `model`, `early_exit`, `degraded`, `tokens_in`, `tokens_out`, `latency_ms`, `report_json` |
 | `sessions` | `session_id`, `question_id`, `attempt_count`, `current_hint_level`, `updated_at` |
-| `eval_runs` | `id`, `created_at`, `split`, `provider`, `model`, `prompt_version`, `metrics_json` |
-| `eval_results` | `run_id`, `sample_id`, `passed_checks_json`, `report_json` |
 
+- Eval sonuçları veritabanında değil, `eval/results/*.json` dosyalarındadır (Faz 50: kullanılmayan `eval_runs`/`eval_results` tabloları kaldırıldı; eski veritabanlarında kalan boş tablolar zararsızdır).
 - **Önbellek anahtarı:**
   `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version | pipeline)`; `rules_version` (`r2+…`) kural kimlikleri, `rules/`, `analysis/` (alt paketler ve `queries/**/*.scm` dahil), `validation/` ve `verify/` kaynakları ile `data/call_costs.yaml` ve `data/mentor_templates.yaml`'ın hash'idir (Faz 31, Faz 49); `pipeline` mod ve doğrulama geçişi imzasıdır, ör. `two_pass+verify` (Faz 35)
 - Önbellek isabeti `meta.cache_hit = true` ile işaretlenir; eval çalıştırmalarında önbellek **kapalıdır**.
@@ -1098,7 +1097,7 @@ codementor schema export --out schemas/
 | Kaynak tüketimi (DoS) | Devasa şablon açılımı, çok uzun kod, kötü niyetli girdi | Boyut limiti; doğrusal zamanlı ön işlem; derleyici zaman aşımı + süreç ağacını öldürme; POSIX rlimit / Windows Job Object; API gövde boyutu ve eşzamanlı analiz sınırı (Faz 47; istek/dakika hız sınırı yok); toplam analiz süresi sınırı `pipeline.analysis_timeout_s` (aşımda LLM geçişleri ve CLI alt süreci iptal, bozulmuş rapor) ve istemci koptuğunda senkron uçta da iptal (Faz 48) |
 | Gizli anahtar sızıntısı | API anahtarının loglara/rapora düşmesi | Anahtarlar yalnızca env; log redaksiyon filtresi; `.env` `.gitignore`'da |
 | Referans çözüm sızıntısı | API veya prompt üzerinden | Çözümler prompt'a girmez; `/v1/questions/{id}` çözüm alanını döndürmez; `private/` repoda yok |
-| Bağımlılık riski | Zararlı paket | `uv.lock` sabitleme; CI'da `pip-audit` |
+| Bağımlılık riski | Zararlı paket | `uv.lock` sabitleme; CI'da `pip-audit --strict` (kilitli çalışma zamanı bağımlılıkları) ve web için `npm audit --omit=dev --audit-level=high` (Faz 50) |
 | Yerel servisin dışarı açılması | `--host 0.0.0.0` | Varsayılan `127.0.0.1`; dışa açma belgelenmiş uyarıyla (anahtar ve Host listesi durumunu söyler) |
 | Tarayıcı üzerinden yerel API'ye erişim / kota harcatma | DNS rebinding; istekte `provider: "claude_cli"`, `options.tier1: true` | Host doğrulaması; sağlayıcı izin listesi; istek Tier 1'i yalnız kapatır; CORS yalnız yapılandırılan kökenler (Faz 47, ADR-0023) |
 
@@ -1106,7 +1105,7 @@ codementor schema export --out schemas/
 
 ## 13. Gözlemlenebilirlik ve Maliyet Takibi
 
-- **Yapılandırılmış log:** `structlog`, JSON çıktı; her satırda `analysis_id`, `stage`.
+- **Yapılandırılmış log:** `structlog`, JSON çıktı; analiz sırasında yazılan her satırda `analysis_id`, bir aşamanın içindeyse `stage` (`structlog.contextvars`; iş parçacığına geçen aşamalar da taşır, Faz 50). Analiz dışı satırlarda (başlangıç, API ara katmanı) bu alanlar yoktur.
 - **Aşama zamanlaması:** her aşama `stage_latency_ms` içine yazılır.
 - **Token muhasebesi:** sağlayıcının bildirdiği `usage` kullanılır; bildirmiyorsa `tiktoken`/yaklaşık sayım + `usage_estimated=true`.
 - **Maliyet tahmini:** `data/pricing.yaml` (`data.pricing_file`) içindeki birim fiyatlardan (fiyatlar değişir; dosya elle güncellenir, rapora `meta.cost_est` olarak "tahmini" yazılır; fiyatı olmayan sağlayıcı/modelde `null`). **Faz 25:** sağlayıcı token bildirmezse prompt/yanıt uzunluğundan yaklaşık sayım (`prompts.budget.estimate_*`, 4 karakter ≈ 1 token) + `meta.usage_estimated=true`.

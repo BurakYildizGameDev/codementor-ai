@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 import json
 import logging
+import socket
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,7 @@ import pytest
 import codementor.config
 from codementor.log import configure_logging, logging_snapshot, restore_logging
 from codementor.validation.toolchain import clear_toolchain_cache
+from tests.network_guard import guarded_methods
 
 
 @pytest.fixture(autouse=True)
@@ -30,6 +32,16 @@ def _isolated_toolchain_dir(
     clear_toolchain_cache()
     yield
     clear_toolchain_cache()
+
+
+@pytest.fixture(autouse=True)
+def _no_network(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Testler ağa çıkmaz (AGENTS.md kural 4, Faz 50): loopback dışı bağlantı hata verir;
+    `@pytest.mark.live` testleri muaf."""
+    if request.node.get_closest_marker("live") is not None:
+        return
+    for name, method in guarded_methods().items():
+        monkeypatch.setattr(socket.socket, name, method)
 
 
 @pytest.fixture(autouse=True)

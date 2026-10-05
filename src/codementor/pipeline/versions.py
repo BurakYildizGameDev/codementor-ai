@@ -28,6 +28,8 @@ def _package_root(package: object) -> Path:
 
 
 SOURCE_ROOT = _package_root(rules_package).parent  # `codementor/`
+DIGEST_FILE = "source_digest.txt"
+EMBEDDED_DIGEST = Path(__file__).resolve().parent / DIGEST_FILE  # yalnız exe paketinde var
 
 
 def hashed_sources() -> list[Path]:
@@ -62,13 +64,26 @@ def _code_digest() -> str:
     digest = hashlib.sha256()
     for rule_id in sorted(rule.id for rule in all_rules()):
         digest.update(rule_id.encode() + b"\0")
-    sources = hashed_sources()
-    if not sources:
-        # Paketlenmiş exe'de .py/.scm kaynakları yoksa imza yalnız kural kimlikleri ve veri
-        # dosyalarına dayanır; kural gövdesi değişince önbellek bayatlayabilir (Faz 50)
-        log.warning("rules_version_without_sources", root=str(SOURCE_ROOT))
-    digest.update(digest_files(sources, SOURCE_ROOT).encode())
+    digest.update(_sources_digest().encode())
     return digest.hexdigest()
+
+
+def source_digest() -> str:
+    """Kaynak dosyaların özeti; `build_exe.py` bunu pakete gömer (exe'de `.py` yok, Faz 50)."""
+    return digest_files(hashed_sources(), SOURCE_ROOT)
+
+
+def _sources_digest() -> str:
+    try:  # paketlenmiş exe: derleme anındaki özet (kaynaktan çalışırken bu dosya yok)
+        return EMBEDDED_DIGEST.read_text(encoding="utf-8").strip()
+    except OSError:
+        pass
+    sources = hashed_sources()
+    if not any(p.suffix == ".py" for p in sources):
+        # Ne kaynak ne gömülü özet: imza yalnız kural kimlikleri ve veri dosyalarına dayanır;
+        # kural gövdesi değişince önbellek bayatlayabilir
+        log.warning("rules_version_without_sources", root=str(SOURCE_ROOT))
+    return digest_files(sources, SOURCE_ROOT)
 
 
 def _file_bytes(path: Path, missing: bytes) -> bytes:

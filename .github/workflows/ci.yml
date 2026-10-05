@@ -41,6 +41,11 @@ jobs:
         run: uv run ruff format --check .
       - if: runner.os == 'Linux'
         run: uv run mypy src/
+      # Bağımlılık açığı denetimi (Faz 50, mimari §12): kilitli çalışma zamanı bağımlılıkları
+      - if: runner.os == 'Linux'
+        run: uv export --locked --no-dev --no-emit-project --no-hashes --format requirements-txt -o requirements-audit.txt
+      - if: runner.os == 'Linux'
+        run: uvx pip-audit --strict --requirement requirements-audit.txt
       - if: runner.os == 'Linux'
         run: uv run pytest -m "not live"
         env:
@@ -92,6 +97,8 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      # Yayımlanan pakete giren bağımlılıklarda yüksek önemli açık (Faz 50)
+      - run: npm audit --omit=dev --audit-level=high
       # Tipler şemadan üretilir; elle düzenleme ya da güncel olmayan tip CI'da yakalanır
       - run: npm run gen:types && git diff --exit-code -- src/types
       - run: npm run typecheck

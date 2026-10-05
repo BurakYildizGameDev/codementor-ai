@@ -10,6 +10,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
 
+import structlog
+
 from codementor.config import Settings, ValidationSettings
 from codementor.ingest.errors import CodeTooLargeError, IngestError
 from codementor.ingest.normalize import normalize
@@ -110,6 +112,12 @@ class Orchestrator:
         gelen raporda boştur)."""
         name = request.provider or self.settings.providers.default
         run = _Run(request, StageTimer(new_ulid(), self.bus), name)
+        # analiz boyunca yazılan her log satırı `analysis_id` taşır (mimari §13, Faz 50)
+        with structlog.contextvars.bound_contextvars(analysis_id=run.analysis_id):
+            return await self._traced(run)
+
+    async def _traced(self, run: _Run) -> AnalysisTrace:
+        request = run.request
         code = self._ingest(run)
         if self.db is not None:
             # Faz 49: atomik ayırma; eşzamanlı gönderimler ayrı deneme alır

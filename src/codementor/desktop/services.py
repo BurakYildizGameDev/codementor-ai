@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 from codementor.config import Settings
+from codementor.languages import CANONICAL_SUFFIX
 from codementor.models.api import CompilerStatus
 from codementor.models.report import AnalysisReport
 from codementor.models.validation import DownloadProgress
@@ -55,6 +56,6 @@ def render_export(report: AnalysisReport, fmt: str) -> str:
     if fmt == "md":
         return to_markdown(report)
     if fmt == "sarif":
-        uri = f"codementor-{report.analysis_id}"
+        uri = f"codementor-{report.analysis_id}{CANONICAL_SUFFIX[report.language]}"
         return json.dumps(to_sarif(report, uri), ensure_ascii=False, indent=2) + "\n"
     return report.model_dump_json(indent=2) + "\n"

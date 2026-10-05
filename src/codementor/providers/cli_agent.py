@@ -28,7 +28,7 @@ import threading
 import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Literal, Protocol
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -55,7 +55,7 @@ from codementor.providers.base import (
     RetryPolicy,
 )
 from codementor.providers.schema_adapter import SchemaAdapter
-from codementor.validation.runner import ProcessLimits, ProcessResult, run_process
+from codementor.validation.runner import ProcessLimits, ProcessResult, Runner, run_process
 
 CliKind = Literal["claude_cli", "agy"]
 
@@ -85,20 +85,6 @@ _QUIET_ENV = {"DISABLE_AUTOUPDATER": "1", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAF
 _BATCH_SUFFIXES = (".cmd", ".bat")
 _CMD_TARGET = re.compile(r'"%dp0%\\?([^"%]+\.exe)"', re.IGNORECASE)
 _MAX_ERROR_TEXT = 200
-
-
-class Runner(Protocol):
-    """`validation.runner.run_process` imzası (testlerde sahtesi verilir)."""
-
-    def __call__(
-        self,
-        argv: Sequence[str],
-        stdin: str,
-        limits: ProcessLimits,
-        *,
-        extra_env: Mapping[str, str] | None = None,
-        cancel: threading.Event | None = None,
-    ) -> ProcessResult: ...
 
 
 class CliTimeoutError(ProviderUnavailableError):
@@ -192,8 +178,20 @@ def _json_document(stdout: str, marker: str) -> dict[str, Any] | None:
     return None
 
 
-def _short(text: str) -> str:
+def short_error(text: str) -> str:
+    """Hata metnini tek satıra indirir, gizli anahtarları maskeler ve kısaltır (CLI ajanları)."""
     return " ".join(str(scrub(text[:4096])).split())[:_MAX_ERROR_TEXT]
+
+
+def agent_limits(timeout_s: float) -> ProcessLimits:
+    """CLI ajanı alt süreç sınırları (Claude/Gemini/agy ve Codex ortak)."""
+    return ProcessLimits(
+        timeout_s=timeout_s,
+        memory_mb=MEMORY_MB,
+        limit_address_space=False,
+        max_processes=MAX_PROCESSES,
+        file_size_bytes=FILE_SIZE_BYTES,
+    )
 
 
 def _served_model(served: object, requested: str) -> str:
@@ -295,13 +293,7 @@ class CliAgentProvider:
         stdin = render_prompt(messages)
         if self.kind == "agy":
             stdin = encode_stdin(stdin)
-        limits = ProcessLimits(
-            timeout_s=self.config.timeout_s,
-            memory_mb=MEMORY_MB,
-            limit_address_space=False,
-            max_processes=MAX_PROCESSES,
-            file_size_bytes=FILE_SIZE_BYTES,
-        )
+        limits = agent_limits(self.config.timeout_s)
         start = time.perf_counter()
 
         async def once() -> ProviderResult:
@@ -324,7 +316,7 @@ class CliAgentProvider:
             # İptal bir sağlayıcı hatası değildir: retry/fallback'e girmemeli (Faz 19)
             raise asyncio.CancelledError
         if result.error is not None:
-            raise ProviderConfigError(self.name, f"çalıştırılamadı ({_short(result.error)})")
+            raise ProviderConfigError(self.name, f"çalıştırılamadı ({short_error(result.error)})")
         if result.timed_out:
             raise CliTimeoutError(self.name, "zaman aşımı")
         if self.kind == "claude_cli":
@@ -334,7 +326,9 @@ class CliAgentProvider:
         if data is None:
             if result.truncated:
                 raise ProviderResponseError(self.name, "çıktı boyutu sınırı aşıldı")
-            detail = _short(result.stderr or result.stdout) or f"çıkış kodu {result.returncode}"
+            detail = (
+                short_error(result.stderr or result.stdout) or f"çıkış kodu {result.returncode}"
+            )
             raise ProviderRequestError(self.name, f"JSON çıktı alınamadı ({detail})")
         if self.kind == "claude_cli":
             return self._claude(data, model, start)
@@ -370,7 +364,7 @@ class CliAgentProvider:
         status = as_text(data.get("status"))
         text = as_text(data.get("response"))
         if status and status != "SUCCESS":
-            detail = _short(as_text(data.get("error")) or status)
+            detail = short_error(as_text(data.get("error")) or status)
             raise ProviderRequestError(self.name, f"agy hatası: {detail}")
         if not text.strip() and "print timeout" in stderr:
             # agy --print-timeout doldu: tur başladı ama model süre içinde yanıt vermedi
@@ -397,7 +391,7 @@ class CliAgentProvider:
 def _claude_error(provider: str, data: Mapping[str, Any]) -> ProviderError:
     """Claude CLI hata sonucu → sağlayıcı hatası (`api_error_status` HTTP durumunu taşır)."""
     status = data.get("api_error_status")
-    detail = _short(as_text(data.get("result")) or as_text(data.get("subtype")))
+    detail = short_error(as_text(data.get("result")) or as_text(data.get("subtype")))
     if status == 429:
         return ProviderRateLimitError(provider, f"hız sınırı (429): {detail}", retry_after=None)
     if isinstance(status, int) and status >= 500:

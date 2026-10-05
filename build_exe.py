@@ -11,8 +11,10 @@ Kullanım:
   --onedir   klasör; hiçbir şey çözülmez, açılış yalnızca import süresi kadardır.
 
 Pakete girenler: `data/` (soru bankası, kontrol listeleri, şablonlar), `prompts/`, varsayılan
-`codementor.toml` ve masaüstü görselleri. Kullanıcı exe'nin yanına kendi `codementor.toml`'unu
-koyarsa o kullanılır (bkz. `codementor.desktop.runtime`). Veritabanı `~/.codementor` altındadır.
+`codementor.toml`, masaüstü görselleri, tree-sitter sorguları (`.scm`) ve `rules_version` için
+derleme anındaki kaynak özeti (`codementor/pipeline/source_digest.txt`; exe'de `.py` yok).
+Kullanıcı exe'nin yanına kendi `codementor.toml`'unu koyarsa o kullanılır (bkz.
+`codementor.desktop.runtime`). Veritabanı `~/.codementor` altındadır.
 """
 
 from __future__ import annotations
@@ -36,6 +38,9 @@ DATA = [
     (ROOT / "prompts", "prompts"),
     (ROOT / "codementor.toml", "."),
     (ASSETS, "codementor/desktop/assets"),
+    # tree-sitter sorguları `.scm` (Faz 50): kod değil, PyInstaller kendiliğinden almaz; yoksa
+    # exe'de olgu çıkarımı (fonksiyon, döngü, bellek) sessizce boş kalır
+    (ROOT / "src" / "codementor" / "analysis" / "queries", "codementor/analysis/queries"),
 ]
 # Roslyn denetleyicisi pakete girer (C# Tier 1). Self-contained tek dosya (make roslyn-check-sc,
 # Faz 29) dotnet gerektirmez ve tercih edilir; yoksa dotnet'e bağlı derleme (make roslyn-check)
@@ -114,6 +119,15 @@ def version_file(version: str, target: Path) -> Path:
     return target
 
 
+def source_digest_file(work: Path) -> Path:
+    """Kaynak özetini yazar: exe'de `.py` olmadığından `rules_version` bunu okur (Faz 50)."""
+    from codementor.pipeline.versions import DIGEST_FILE, source_digest  # uv ortamında kurulu
+
+    target = work / DIGEST_FILE
+    target.write_text(source_digest(), encoding="utf-8")
+    return target
+
+
 def pyinstaller_args(onefile: bool, console: bool, work: Path) -> list[str]:
     """PyInstaller komut satırı (test edilebilsin diye ayrı)."""
     sep = ";" if sys.platform == "win32" else ":"
@@ -141,7 +155,7 @@ def pyinstaller_args(onefile: bool, console: bool, work: Path) -> list[str]:
     ]
     if onefile:
         args += ["--splash", str(ASSETS / "splash.png")]
-    data = list(DATA)
+    data = [*DATA, (source_digest_file(work), "codementor/pipeline")]
     if ROSLYN_SC.is_file():
         data.append((ROSLYN_SC, "tools/roslyn-check/sc"))
     elif ROSLYN_OUT.is_dir():

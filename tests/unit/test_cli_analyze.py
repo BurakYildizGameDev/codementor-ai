@@ -165,3 +165,13 @@ def test_cli_tier1_flag_controls_local_config(
     monkeypatch.setattr(Orchestrator, "_validation", capture)
     run(CLEAN_C, flag, "--format", "json")
     assert seen == [expected]
+
+
+def test_cli_cp1254_file_fails_with_turkish_message(tmp_path: Path) -> None:
+    """Kabul (Faz 50): UTF-8 olmayan dosya sessizce U+FFFD'ye dönüşmez; Türkçe hata, çıkış 3."""
+    source = tmp_path / "eski.c"
+    source.write_bytes("// açıklama: öğrenci\nint main(void) { return 0; }\n".encode("cp1254"))
+    result = CliRunner().invoke(app, ["analyze", str(source), "--language", "c"])
+    assert result.exit_code == 3
+    assert "UTF-8 değil" in result.output
+    assert "\ufffd" not in result.output

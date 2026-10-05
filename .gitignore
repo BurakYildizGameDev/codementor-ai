@@ -25,3 +25,5 @@ tools/roslyn-check/sc/
 web/test-results/
 web/playwright-report/
 web/*.tsbuildinfo
+src/codementor/pipeline/source_digest.txt
+requirements-audit.txt

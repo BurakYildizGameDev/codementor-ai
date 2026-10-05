@@ -357,4 +357,21 @@ def open_login_console(name: str, providers: ProvidersSettings) -> None:
         raise ProviderError(name, "konsoldan oturum açma yalnızca Windows'ta destekleniyor")
     argv = login_command(name, providers)
     flags: Any = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
-    subprocess.Popen(argv, cwd=Path.home(), creationflags=flags, close_fds=True)
+    env = login_env(providers)
+    subprocess.Popen(argv, cwd=Path.home(), creationflags=flags, close_fds=True, env=env)
+
+
+def login_env(providers: ProvidersSettings) -> dict[str, str]:
+    """Oturum konsolunun ortamı: API anahtarı değişkenleri çıkarılır (Faz 50). Konsol
+    etkileşimlidir ve kasadan yüklenen anahtarlar süreç ortamındadır; CLI yalnız kendi
+    girişini kullanmalı, kullanıcı konsolda anahtarı da görmemeli."""
+    configured = {
+        str(env_name)
+        for config in providers.model_dump().values()
+        if isinstance(config, dict) and (env_name := config.get("api_key_env"))
+    }
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if key not in configured and not key.upper().endswith("_API_KEY")
+    }

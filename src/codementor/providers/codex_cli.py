@@ -26,7 +26,6 @@ from typing import Any
 from pydantic import BaseModel
 
 from codementor.config import CodexConfig
-from codementor.log import scrub
 from codementor.models.provider import (
     ChatMessage,
     GenerationOptions,
@@ -45,21 +44,18 @@ from codementor.providers.base import (
     RetryPolicy,
 )
 from codementor.providers.cli_agent import (
-    FILE_SIZE_BYTES,
-    MAX_PROCESSES,
-    MEMORY_MB,
     CliTimeoutError,
-    Runner,
+    agent_limits,
     profile_env,
     render_prompt,
     resolve_executable,
+    short_error,
 )
 from codementor.providers.schema_adapter import SchemaAdapter
-from codementor.validation.runner import ProcessLimits, ProcessResult, run_process
+from codementor.validation.runner import ProcessResult, Runner, run_process
 
 NAME = "codex"
 SCHEMA_FILE = "schema.json"
-_MAX_ERROR_TEXT = 200
 _LOGIN_HINTS = ("not logged in", "codex login", "unauthorized", "401")
 _LIMIT_HINTS = ("usage limit", "rate limit", "429", "too many requests")
 
@@ -68,10 +64,6 @@ class CodexUsageLimitError(ProviderRateLimitError):
     """ChatGPT planının kullanım sınırı saatlerce sürer; yeniden denemek boşunadır."""
 
     retryable = False
-
-
-def _short(text: str) -> str:
-    return " ".join(str(scrub(text[:4096])).split())[:_MAX_ERROR_TEXT]
 
 
 def _events(stdout: str) -> list[dict[str, Any]]:
@@ -106,10 +98,12 @@ def _failure(events: list[dict[str, Any]]) -> str | None:
 def _classify(detail: str) -> ProviderError:
     lowered = detail.lower()
     if any(hint in lowered for hint in _LIMIT_HINTS):
-        return CodexUsageLimitError(NAME, f"kullanım sınırı: {_short(detail)}", retry_after=None)
+        return CodexUsageLimitError(
+            NAME, f"kullanım sınırı: {short_error(detail)}", retry_after=None
+        )
     if any(hint in lowered for hint in _LOGIN_HINTS):
         return ProviderConfigError(NAME, "oturum açılmamış; terminalde `codex login` çalıştırın")
-    return ProviderRequestError(NAME, f"Codex hatası: {_short(detail)}")
+    return ProviderRequestError(NAME, f"Codex hatası: {short_error(detail)}")
 
 
 class CodexCliProvider:
@@ -170,13 +164,7 @@ class CodexCliProvider:
             raise ProviderConfigError(NAME, "en az bir kullanıcı mesajı gerekli")
         schema = json.dumps(SchemaAdapter(output_model).openai_strict(), ensure_ascii=False)
         stdin = render_prompt(messages)
-        limits = ProcessLimits(
-            timeout_s=self.config.timeout_s,
-            memory_mb=MEMORY_MB,
-            limit_address_space=False,
-            max_processes=MAX_PROCESSES,
-            file_size_bytes=FILE_SIZE_BYTES,
-        )
+        limits = agent_limits(self.config.timeout_s)
         start = time.perf_counter()
 
         async def once() -> ProviderResult:
@@ -200,7 +188,7 @@ class CodexCliProvider:
         if result.cancelled:
             raise asyncio.CancelledError  # retry/fallback'e girmemeli (Faz 19)
         if result.error is not None:
-            raise ProviderConfigError(NAME, f"çalıştırılamadı ({_short(result.error)})")
+            raise ProviderConfigError(NAME, f"çalıştırılamadı ({short_error(result.error)})")
         if result.timed_out:
             raise CliTimeoutError(NAME, "zaman aşımı")
         events = _events(result.stdout)

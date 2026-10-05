@@ -358,3 +358,31 @@ async def test_try_connection_unparsed_reply_is_failure(
     message = await try_connection("anthropic", settings)
     assert message.startswith("Başarısız")
     assert "length" in message
+
+
+def test_login_env_strips_api_keys(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Faz 50: oturum açma konsolu API anahtarlarını miras almaz (yalnız CLI'nin kendi girişi)."""
+    from codementor.desktop.connections import login_env
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-gizli")
+    monkeypatch.setenv("GEMINI_API_KEY", "gizli")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-gizli")
+    monkeypatch.setenv("CODEMENTOR_TEST_OZEL_ANAHTAR", "gizli")
+    monkeypatch.setenv("PATH_DISINDA_KALAN", "kalir")
+    providers = settings.providers.model_copy(
+        update={
+            "ollama": settings.providers.ollama.model_copy(
+                update={"api_key_env": "CODEMENTOR_TEST_OZEL_ANAHTAR"}
+            )
+        }
+    )
+    env = login_env(providers)
+    for name in (
+        "ANTHROPIC_API_KEY",
+        "GEMINI_API_KEY",
+        "OPENAI_API_KEY",
+        "CODEMENTOR_TEST_OZEL_ANAHTAR",
+    ):
+        assert name not in env
+    assert env["PATH_DISINDA_KALAN"] == "kalir"
+    assert "PATH" in env or "Path" in env

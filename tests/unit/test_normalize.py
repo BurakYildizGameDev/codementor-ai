@@ -16,7 +16,7 @@ from codementor.ingest.errors import (
     IngestError,
     InvalidEncodingError,
 )
-from codementor.ingest.normalize import escape_invisible_breaks, normalize
+from codementor.ingest.normalize import decode_source, escape_invisible_breaks, normalize
 from codementor.models.enums import Engine, Language
 from codementor.models.request import LanguageHint, NormalizedCode
 
@@ -201,3 +201,32 @@ def test_hint_sets_language_and_engine() -> None:
 def test_detection_used_without_hint() -> None:
     code = normalize("using UnityEngine;\npublic class A : MonoBehaviour {}")
     assert (code.language, code.engine) == (Language.CSHARP, Engine.UNITY)
+
+
+# --- Faz 50: dosya kodlaması ---
+
+TURKISH = "// ğüşıöç İĞÜŞ\nint main(void) { return 0; }\n"
+
+
+def test_decode_utf8_bom() -> None:
+    assert decode_source(b"\xef\xbb\xbf" + TURKISH.encode("utf-8")) == TURKISH
+
+
+@pytest.mark.parametrize("codec", ["utf-16-le", "utf-16-be"])
+def test_decode_utf16_le_be_bom(codec: str) -> None:
+    bom = b"\xff\xfe" if codec.endswith("le") else b"\xfe\xff"
+    assert decode_source(bom + TURKISH.encode(codec)) == TURKISH
+
+
+def test_cp1254_rejected_turkish() -> None:
+    """Kabul: cp1254 dosyası U+FFFD'li koda dönüşmez, Türkçe hata verir."""
+    with pytest.raises(InvalidEncodingError, match="UTF-8 değil") as info:
+        decode_source(TURKISH.encode("cp1254"))
+    assert "Windows-1254" in str(info.value)
+    assert "\ufffd" not in str(info.value)
+
+
+def test_normalize_bytes_use_decode_source() -> None:
+    utf16 = b"\xff\xfe" + TURKISH.encode("utf-16-le")
+    code = normalize(utf16, LanguageHint(language=Language.C))
+    assert code.text.startswith("// ğüşıöç")

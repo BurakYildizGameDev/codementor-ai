@@ -7,6 +7,8 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
+import structlog
+
 from codementor.log import get_logger
 from codementor.models.pipeline import Stage, StageEvent, StageStatus
 
@@ -82,7 +84,10 @@ class StageTimer:
         start = time.perf_counter()
         status: StageStatus = "completed"
         try:
-            yield
+            # bu aşamada (iş parçacığına geçenler dahil: to_thread bağlamı kopyalar) yazılan
+            # log satırları `stage` taşır (mimari §13, Faz 50)
+            with structlog.contextvars.bound_contextvars(stage=stage):
+                yield
         except BaseException:
             status = "failed"
             raise

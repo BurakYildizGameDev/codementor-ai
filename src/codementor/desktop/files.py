@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING, Any
 
 from codementor.desktop import runtime
 from codementor.desktop.viewmodel import SOURCE_PATTERNS, language_for_path
+from codementor.ingest.errors import InvalidEncodingError
+from codementor.ingest.normalize import decode_source
 from codementor.log import get_logger
 from codementor.models.desktop import DesktopPrefs
 from codementor.models.enums import Engine
@@ -103,9 +105,13 @@ class FileController:
             if size > limit:
                 app.toast(f"Dosya çok büyük ({size // 1024} KB); sınır {limit // 1024} KB.")
                 return
-            code = Path(path).read_text(encoding="utf-8", errors="replace")
+            # metin kipindeki gibi satır sonları `\n` (editör ve analiz aynı kodu görür)
+            code = decode_source(Path(path).read_bytes()).replace("\r\n", "\n").replace("\r", "\n")
         except OSError as exc:
             app.toast(f"Dosya okunamadı: {exc.strerror or exc}")
+            return
+        except InvalidEncodingError as exc:  # U+FFFD'li kod editöre düşmesin (Faz 50)
+            app.toast(f"{Path(path).name}: {exc}")
             return
         view = app.analyze_view
         language = language_for_path(path) or view.language

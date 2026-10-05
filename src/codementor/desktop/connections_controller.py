@@ -7,7 +7,7 @@ yeniden uygulama, arka plan görevi başlatma ve bildirim gösterme.
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from codementor.desktop.bridge import Cancellation, Emit, Message
 from codementor.desktop.connections import (
@@ -123,7 +123,7 @@ class ConnectionsController:
         kind, _, name = message.task.partition(":")
         if kind == "compilers":
             if message.kind == "result" and self.view is not None:
-                compilers: list[CompilerStatus] = message.payload  # type: ignore[assignment]
+                compilers = cast(list[CompilerStatus], message.payload)  # bridge yükü Any
                 offer = offer_compiler_download(self.app.settings, compilers)
                 self.view.show_compilers(compilers, offer_download=offer)
         elif kind == "toolchain":

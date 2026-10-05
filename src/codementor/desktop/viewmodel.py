@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
+from codementor.languages import SUFFIXES, language_for_file
 from codementor.models.enums import (
     AuditCategory,
     Difficulty,
@@ -222,27 +223,12 @@ def engines_for(language: Language) -> list[Engine]:
     return [Engine.NONE]
 
 
-_SUFFIXES: dict[str, Language] = {
-    ".c": Language.C,
-    ".h": Language.C,
-    ".cpp": Language.CPP,
-    ".cc": Language.CPP,
-    ".cxx": Language.CPP,
-    ".hpp": Language.CPP,
-    ".hh": Language.CPP,
-    ".cs": Language.CSHARP,
-    ".py": Language.PYTHON,
-    ".pyw": Language.PYTHON,
-    ".html": Language.HTML,
-    ".htm": Language.HTML,
-    ".css": Language.CSS,
-}
-SOURCE_PATTERNS = " ".join(f"*{s}" for s in _SUFFIXES)
+SOURCE_PATTERNS = " ".join(f"*{s}" for s in SUFFIXES)  # tek tablo: codementor.languages
 
 
 def language_for_path(path: str | Path) -> Language | None:
     """Dosya uzantısından dil; bilinmiyorsa None."""
-    return _SUFFIXES.get(Path(path).suffix.lower())
+    return language_for_file(path)
 
 
 def format_ms(ms: int) -> str:

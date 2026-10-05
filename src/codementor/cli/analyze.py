@@ -21,6 +21,8 @@ from rich.console import Console
 from rich.markup import escape
 
 from codementor.config import Settings, load_settings
+from codementor.ingest.errors import InvalidEncodingError
+from codementor.ingest.normalize import decode_source
 from codementor.models.enums import Engine, Language, PipelineMode, Severity
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisOptions, AnalysisRequest
@@ -129,8 +131,12 @@ def analyze(
     except OSError as exc:
         raise _fail(console, f"Dosya okunamadı: {path}") from exc
     try:
+        source = decode_source(raw) if raw else " "
+    except InvalidEncodingError as exc:  # U+FFFD'li kodla sessizce sürmesin (Faz 50)
+        raise _fail(console, f"{path.name}: {exc}") from exc
+    try:
         request = AnalysisRequest(
-            code=raw.decode("utf-8", errors="replace") if raw else " ",
+            code=source,
             language=language,
             engine=engine,
             question_id=question,

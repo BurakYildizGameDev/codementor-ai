@@ -105,6 +105,7 @@ def _processors(json: bool) -> list[Processor]:
         else structlog.dev.ConsoleRenderer(colors=False)
     )
     return [
+        structlog.contextvars.merge_contextvars,  # analysis_id / stage bağlamı (§13, Faz 50)
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         structlog.processors.format_exc_info,
