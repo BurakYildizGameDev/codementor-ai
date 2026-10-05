@@ -108,6 +108,26 @@ def test_cpp_unnamed_allocation_is_issue() -> None:
     assert found == {FindingKind.SUGGESTION: {2, 3}, FindingKind.ISSUE: {4}}
 
 
+def test_python_close_of_other_object_is_issue() -> None:
+    """Başka bir nesnenin `close()`'u açılan dosyayı kapatmaz."""
+    found = kinds(
+        "def load(path, conn):\n    f = open(path)\n    conn.close()\n    return f.read()\n",
+        Language.PYTHON,
+    )
+    assert found == {FindingKind.ISSUE: {2}}
+
+
+def test_python_attribute_owner_matches_close() -> None:
+    found = kinds(
+        "class Log:\n"
+        "    def start(self, path):\n"
+        "        self.fh = open(path)\n"
+        "        self.fh.close()\n",
+        Language.PYTHON,
+    )
+    assert found == {FindingKind.SUGGESTION: {3}}
+
+
 def test_python_open_with_close_in_same_scope_is_suggestion() -> None:
     found = kinds(
         'def save(path: str) -> None:\n    f = open(path, "w")\n    f.write("x")\n    f.close()\n',

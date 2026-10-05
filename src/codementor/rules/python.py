@@ -87,8 +87,9 @@ class BareExcept(Rule):
 class OpenWithoutWith(Rule):
     """PY-RES-001: `with` dışında `open()`; hata yolunda dosya kapanmayabilir.
 
-    Aynı kapsanda `close()` varsa (Faz 52) kapatma niyeti görünüyor → `suggestion`;
-    hiç kapanmıyorsa `issue`.
+    Açılan dosya bir ada atanmış ve aynı kapsamda o adın `close()`'u çağrılıyorsa (Faz 52)
+    kapatma niyeti görünüyor → `suggestion`; atanmamış ya da kapatılmıyorsa `issue`
+    (başka bir nesnenin `close()`'u eşleşme sayılmaz).
     """
 
     id = "PY-RES-001"
@@ -101,24 +102,30 @@ class OpenWithoutWith(Rule):
     default_severity = Severity.MEDIUM
 
     def check(self, ctx: RuleContext) -> list[Finding]:
-        managed = [(item.start_byte, item.end_byte) for item in ctx.nodes_in(ctx.root, "with_item")]
-        # Aynı kapsandaki herhangi bir `close()` çağrısı kapatma niyeti sayılır (Faz 52)
-        closed = {
-            ctx.scope_key(line(n))
-            for n in ctx.nodes_in(ctx.root, "call")
-            if (fn := n.child_by_field_name("function")) is not None
-            and fn.type == "attribute"
-            and text(fn.child_by_field_name("attribute")) == "close"
-        }
+        managed: list[tuple[int, int]] = []
+        owners: dict[int, str] = {}  # open çağrısının başlangıç baytı → atandığı ad
+        closed: set[tuple[str, str]] = set()  # (kapsam, kapatılan nesne)
+        calls: list[Node] = []
+        for n in ctx.nodes_in(ctx.root, "with_item", "assignment", "call"):
+            if n.type == "with_item":
+                managed.append((n.start_byte, n.end_byte))
+            elif n.type == "assignment":
+                right = n.child_by_field_name("right")
+                if right is not None and right.type == "call":
+                    owners[right.start_byte] = text(n.child_by_field_name("left"))
+            elif _call_name(n) in ("open", "io.open"):
+                calls.append(n)
+            elif (fn := n.child_by_field_name("function")) is not None and (
+                fn.type == "attribute" and text(fn.child_by_field_name("attribute")) == "close"
+            ):
+                closed.add((ctx.scope_key(line(n)), text(fn.child_by_field_name("object"))))
         found: list[Finding] = []
-        for call in ctx.nodes_in(ctx.root, "call"):
-            if _call_name(call) not in ("open", "io.open"):
-                continue
+        for call in calls:
             if any(start <= call.start_byte < end for start, end in managed):
                 continue
-            kind = (
-                FindingKind.SUGGESTION if ctx.scope_key(line(call)) in closed else FindingKind.ISSUE
-            )
+            owner = owners.get(call.start_byte)
+            paired = owner is not None and (ctx.scope_key(line(call)), owner) in closed
+            kind = FindingKind.SUGGESTION if paired else FindingKind.ISSUE
             found.append(self.finding(ctx, line(call), kind=kind))
         return found
 
