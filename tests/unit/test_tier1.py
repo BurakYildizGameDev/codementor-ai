@@ -384,13 +384,18 @@ def test_truncated_output_flagged() -> None:
     assert result.status is CompilationStatus.FAILED
 
 
-def test_never_raises_on_runner_exception() -> None:
+def test_never_raises_on_runner_exception(
+    captured_logs: Callable[[], list[dict[str, Any]]],
+) -> None:
     def broken(*_args: object, **_kwargs: object) -> ProcessResult:
         raise OSError("disk dolu")
 
     result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=broken)
     assert result.status is CompilationStatus.SKIPPED
     assert result.skip_reason is SkipReason.TOOL_ERROR
+    # Faz 48: sessiz geçilmez, istisna türü loglanır
+    logs = [e for e in captured_logs() if e["event"] == "tier1_runner_exception"]
+    assert [e["error"] for e in logs] == ["OSError"]
 
 
 # ------------------------------------------------------------------ güvenlik denetimi regresyonları

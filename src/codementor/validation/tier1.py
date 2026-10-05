@@ -237,7 +237,8 @@ def run_tier1(
     argv, stdin, limits, env = prepared
     try:
         outcome = runner(argv, stdin, limits, extra_env=env, cancel=cancel)
-    except Exception:  # runner sözleşmesi istisna fırlatmamak; yine de sistemi düşürme
+    except Exception as exc:  # runner sözleşmesi istisna fırlatmamak; yine de sistemi düşürme
+        log.warning("tier1_runner_exception", tool=tool.kind, error=type(exc).__name__)
         outcome = ProcessResult(None, "", "", error="runner exception")
     return _interpret(
         tool,

@@ -131,3 +131,12 @@ def test_settings_work_from_foreign_cwd(tmp_path: Path, monkeypatch: pytest.Monk
     assert settings.data.mentor_templates_file.is_file()
     assert settings.verify.common_identifiers_file.is_file()
     assert "claude_cli" in model_suggestions()
+
+
+def test_analysis_timeout_default_and_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Faz 48: toplam analiz süresi varsayılan 900 sn; `None` sınırı kapatır, 0 geçersiz."""
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(tmp_path / "yok.toml"))
+    assert load_settings().pipeline.analysis_timeout_s == 900
+    assert load_settings(pipeline={"analysis_timeout_s": None}).pipeline.analysis_timeout_s is None
+    with pytest.raises(ValueError, match="analysis_timeout_s"):
+        load_settings(pipeline={"analysis_timeout_s": 0})

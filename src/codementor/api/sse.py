@@ -12,11 +12,14 @@ import json
 from collections.abc import AsyncIterator, Callable
 
 from codementor.api.errors import pipeline_problem
+from codementor.log import get_logger
 from codementor.models.pipeline import StageEvent
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest
 from codementor.pipeline.events import EventBus
 from codementor.pipeline.orchestrator import Orchestrator, PipelineError
+
+log = get_logger("codementor.api")
 
 SSE_HEADERS = {
     "Cache-Control": "no-cache",
@@ -58,7 +61,9 @@ async def stream_analysis(
         except PipelineError as exc:
             problem = pipeline_problem(exc, path)
             post(("error", json.dumps(problem.model_dump(exclude_none=True))))
-        except Exception:
+        except Exception as exc:
+            # Mesaj kod parçası taşıyabilir (§12): yalnız tür loglanır (Faz 48)
+            log.error("analysis_stream_failed", error=type(exc).__name__)
             detail = {
                 "title": "Sunucu hatası",
                 "status": 500,

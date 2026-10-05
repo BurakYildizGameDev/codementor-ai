@@ -48,6 +48,7 @@ mode = "two_pass"            # two_pass | single_pass
 max_repair_attempts = 1
 use_cache = true
 verify_findings = true       # Faz 35 (ADR-0019): LLM bulguları için ayrı doğrulama çağrısı
+analysis_timeout_s = 900     # Faz 48: toplam analiz süresi (sn); aşımda bozulmuş rapor
 
 [data]
 questions_dir = "data/questions"

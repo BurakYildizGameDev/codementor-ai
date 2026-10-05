@@ -92,6 +92,9 @@ class PipelineSettings(BaseModel):
     # Faz 35 (ADR-0019): LLM bulgularını ayrı bir "kanıtla" çağrısıyla süz; canlı ölçümle
     # (Faz 35B: dev P 69 → 79, R aynı) varsayılan açık
     verify_findings: bool = True
+    # Faz 48: bir analizin toplam süresi (sn). Aşılırsa LLM geçişleri iptal edilir (CLI alt
+    # süreci öldürülür) ve rapor statik analizle bozulmuş döner; None sınırı kapatır
+    analysis_timeout_s: float | None = Field(default=900, gt=0)
 
 
 class DataSettings(BaseModel):

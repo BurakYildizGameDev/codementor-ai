@@ -31,6 +31,7 @@ from codementor.desktop.views.connections_view import ConnectionsView
 from codementor.desktop.views.history_view import HistoryView
 from codementor.desktop.views.questions_view import QuestionsView
 from codementor.desktop.widgets.sidebar import Sidebar
+from codementor.log import get_logger
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.pipeline import StageEvent
 from codementor.models.questions import QuestionPublic
@@ -46,6 +47,7 @@ WINDOW_SIZE = (1480, 940)
 TOAST_MS = 2600
 CLOSE_JOIN_S = 2.0  # kapanışta süren analizin iptalini bekleme süresi
 _EXPORT_SUFFIX = {"md": ".md", "sarif": ".sarif", "json": ".json"}
+log = get_logger("codementor.desktop")
 
 
 class App(ctk.CTk):  # type: ignore[misc]
@@ -305,7 +307,8 @@ class App(ctk.CTk):  # type: ignore[misc]
     def questions_for(self, language: Language, engine: Engine) -> list[QuestionPublic]:
         try:
             return self.core.questions().filter(language, engine)
-        except Exception:
+        except Exception as exc:
+            log.warning("question_bank_unreadable", error=type(exc).__name__)
             return []
 
     def _filtered_questions(
@@ -314,7 +317,8 @@ class App(ctk.CTk):  # type: ignore[misc]
         """Filtrelenmiş sorular; banka okunamazsa None (görünüm 'okunamadı' der)."""
         try:
             return self.core.questions().filter(language, None, difficulty)
-        except Exception:
+        except Exception as exc:
+            log.warning("question_bank_unreadable", error=type(exc).__name__)
             return None
 
     def start_question(self, question: QuestionPublic) -> None:

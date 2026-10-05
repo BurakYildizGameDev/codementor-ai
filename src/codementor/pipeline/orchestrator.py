@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
@@ -63,6 +64,7 @@ class _Run:
     timer: StageTimer
     provider_name: str
     attempt: int = 1
+    started: float = field(default_factory=time.monotonic)
     question: Question | None = None
     context: QuestionContext | None = None
     warnings: list[str] = field(default_factory=list)
@@ -260,13 +262,29 @@ class Orchestrator:
         )
         llm = LLMSession(provider, settings, timer)
         mode = self._mode(run.request)
-        try:
-            outcome = await run_llm_passes(
-                llm, static, verify, profile, mode=mode, provider=run.provider_name
-            )
-        except (ProviderError, PromptBudgetError, PromptConfigError) as exc:
+        limit = settings.pipeline.analysis_timeout_s
+        remaining = self._remaining(run, limit)
+        outcome: LLMOutcome | None = None
+        if remaining != 0.0:  # süre LLM'den önce bittiyse CLI süreci hiç açılmaz
+            try:
+                # Aşım görevi iptal eder; CLI sağlayıcıları iptalde süreç ağacını öldürür (Faz 48)
+                async with asyncio.timeout(remaining) as deadline:
+                    outcome = await run_llm_passes(
+                        llm, static, verify, profile, mode=mode, provider=run.provider_name
+                    )
+            except (ProviderError, PromptBudgetError, PromptConfigError) as exc:
+                outcome = LLMOutcome(verification=None, socratic=None)
+                llm.warnings.append(
+                    f"Model kullanılamadı ({exc}); rapor statik analizle hazırlandı."
+                )
+            except TimeoutError:
+                if not deadline.expired():  # başka kaynaklı zaman aşımı bizim sınırımız değil
+                    raise
+        if outcome is None:
             outcome = LLMOutcome(verification=None, socratic=None)
-            llm.warnings.append(f"Model kullanılamadı ({exc}); rapor statik analizle hazırlandı.")
+            llm.warnings.append(
+                f"Analiz süre sınırı ({limit:g} sn) aşıldı; rapor statik analizle hazırlandı."
+            )
         run.warnings += [*llm.warnings, *outcome.warnings]
 
         parts = ReportParts(policy=policy, degraded=outcome.verification is None)
@@ -282,6 +300,13 @@ class Orchestrator:
             templates, parts.findings, run.context, profile.hint_level
         )
         return self._report(run, code, parts, llm, version)
+
+    @staticmethod
+    def _remaining(run: _Run, limit: float | None) -> float | None:
+        """Toplam süre sınırından kalan saniye (Tier 0/1 ve statik aşama düşülmüş); yoksa None."""
+        if limit is None:
+            return None
+        return max(limit - (time.monotonic() - run.started), 0.0)
 
     def _report(
         self,

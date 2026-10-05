@@ -17,7 +17,22 @@ TEMPLATE_SUFFIXES = (".j2", ".yaml", ".yml")
 # ayraç `&lt;` yapılır (mimari §12). Eşleşme bir "iskelet" üzerinde aranır: görünmez karakterler
 # atılır, NFKC (tam genişlikli biçimler) ve benzer görünen harfler (Kiril e, c ...) katlanır.
 # Metnin geri kalanı değişmez; kanıtın birebir alıntı olması bozulmasın.
-_DELIMITER = re.compile(r"<\s*/?\s*user_code")
+# Faz 48: CLI ajanları mesajları `<system>`/`<user>`/`<assistant>` ile sarar (cli_agent.
+# render_prompt); bu rol etiketleri de taklit edilemesin. Kapanışlar önekle yakalanır
+# (`</user x>`, `</user/>`; kodda `</ad` biçiminde generic yok), `<system>`/`<assistant>`
+# açılışları öznitelikli biçimleriyle (`<system role=x>`, `<system/>`); öznitelik `ad=`
+# ister ki `a < system && b > 0` gibi karşılaştırmalar bozulmasın. Açılış `<user>` bırakılır:
+# iskelet küçük harfe katlandığı için `List<User>` gibi generic'leri bozardı; kapanış nötrken
+# kullanıcı bloğundan çıkılamaz.
+_ROLE = r"(?:user|system|assistant)(?![a-z0-9_])"
+_DELIMITER = re.compile(
+    r"<\s*/?\s*user_code"
+    rf"|<\s*/\s*{_ROLE}"
+    r"|<\s*(?:system|assistant)(?:\s+[\w-]+\s*=[^<>]*)?\s*/?\s*>"
+)
+# Görünmez/biçim karakterleri ve birleştirici işaretler iskelete girmez (Faz 48 denetimi:
+# sabit liste U+034F, U+0332, varyasyon seçicileri, yön denetimlerini kaçırıyordu).
+_IGNORED_CATEGORIES = frozenset({"Cf", "Mn", "Me"})
 # Kod noktalarıyla yazıldı: kaynakta görünmez ya da benzer görünen karakter olmasın.
 _INVISIBLE = frozenset(
     map(chr, (0x00AD, 0x180E, 0xFEFF, *range(0x200B, 0x2010), *range(0x2060, 0x2065)))
@@ -29,6 +44,10 @@ _CONFUSABLES = str.maketrans(
         **dict.fromkeys(map(chr, (0x057D, 0x03C5)), "u"),  # Ermeni seh, Yunan upsilon
         chr(0x0455): "s",  # Kiril dze
         chr(0x0435): "e",  # Kiril ie
+        **dict.fromkeys(map(chr, (0x0430, 0x03B1)), "a"),  # Kiril a, Yunan alfa
+        chr(0x0443): "y",  # Kiril u
+        **dict.fromkeys(map(chr, (0x0456, 0x0131)), "i"),  # Ukrayna i, Türkçe noktasız ı
+        **dict.fromkeys(map(chr, (0x043C, 0x1D0D)), "m"),  # Kiril em, küçük büyük M
         chr(0x0433): "r",  # Kiril ghe
         **dict.fromkeys(map(chr, (0x0441, 0x03F2)), "c"),  # Kiril es, Yunan hilal sigma
         **dict.fromkeys(map(chr, (0x043E, 0x03BF)), "o"),  # Kiril o, Yunan omikron
@@ -43,16 +62,20 @@ def _skeleton(text: str) -> tuple[str, list[int]]:
     chars: list[str] = []
     positions: list[int] = []
     for i, ch in enumerate(text):
-        if ch in _INVISIBLE:
+        if ch in _INVISIBLE or unicodedata.category(ch) in _IGNORED_CATEGORIES:
             continue
         folded = unicodedata.normalize("NFKC", ch.translate(_CONFUSABLES)).lower()
+        # `İ`.lower() = i + birleştirici nokta: işaretler atılınca tek harf kalır
+        folded = "".join(c for c in folded if unicodedata.category(c) not in _IGNORED_CATEGORIES)
+        # büyük Kiril/Yunan harfi küçülünce benzer listesine düşer (Kiril Dze U+0405 → s)
+        folded = folded.translate(_CONFUSABLES)
         chars.append(folded if len(folded) == 1 else ch)
         positions.append(i)
     return "".join(chars), positions
 
 
 def guard_delimiters(text: str) -> str:
-    """Kullanıcı kaynaklı metindeki `<user_code>` benzeri dizileri etkisizleştirir."""
+    """Kullanıcı metnindeki `<user_code>` ve rol etiketi benzeri dizileri etkisizleştirir."""
     skeleton, positions = _skeleton(text)
     starts = [positions[m.start()] for m in _DELIMITER.finditer(skeleton)]
     if not starts:

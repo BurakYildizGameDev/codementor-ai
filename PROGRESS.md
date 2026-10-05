@@ -38,6 +38,7 @@
 | 38 | ✅ Claude 96 ölçümü 2026-10-05 (77/88/82) | faz/36-hata-oneri | 2026-10-05 | Codex / Claude Code |
 | 39 | ✅ (`cpp-007` canlıda doğrulandı) | faz/39-dogrulama-performans | 2026-10-04 | Claude Code / kod-denetci |
 | 47 | ✅ | faz/47-api-guven-siniri | 2026-10-05 | Claude Code / — |
+| 48 | ✅ | faz/48-rol-siniri-sure | 2026-10-05 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -878,6 +879,17 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 48 — Notlar (rol etiketleri, analiz süre sınırı)
+**Yapılanlar:** `prompts/templates.guard_delimiters`: `<user_code>`'a ek olarak CLI ajanlarının rol etiketleri nötrlenir (tüm kapanışlar `</user|system|assistant>`, açılış `<system>`/`<assistant>`; iskelet katlaması aynı, Kiril a/u eklendi). `guard` zaten tüm kullanıcı kaynaklı alanlarda olduğu için şablon değişmedi (`prompt_version` aynı). `pipeline.analysis_timeout_s` (varsayılan 900, `None` kapalı): orkestratör LLM geçişlerini kalan süreyle `asyncio.timeout` içinde koşar; aşımda bozulmuş rapor + Türkçe uyarı, iptal CLI çalıştırıcısına ulaşıp süreç ağacını öldürür (Faz 19 yolu), bozulmuş rapor önbelleğe girmez. `api/disconnect.run_until_disconnect`: senkron `/v1/analyze` ASGI `receive` kanalından `http.disconnect` dinler, koparsa analiz iptal + 499, yuva bırakılır, kayıt yok. Sessiz `except`'ler loglanır: `api/sse.py` (`analysis_stream_failed`), `validation/tier1.py` (`tier1_runner_exception`), masaüstü soru bankası (`question_bank_unreadable`); yalnız istisna türü (mesaj kod parçası taşıyabilir, §12). Mimari §5.4.4, §12, `[pipeline]` örneği güncellendi. Testler: `tests/unit/test_prompt_role_tags.py`, `tests/integration/test_pipeline_timeout.py`, `tests/api/test_cancellation.py`, `tests/desktop/test_app_logging.py`, `test_config.py::test_analysis_timeout_default_and_none`, `test_tier1.py::test_never_raises_on_runner_exception` (log).
+**Alınan kararlar (ve neden):**
+- Açılış `<user>` nötrlenmez: iskelet küçük harfe katlandığından `List<User>`/`vector<user>` bozulur, kanıt birebir alıntısı kırılırdı. Kapanışlar nötrken kullanıcı bloğundan çıkılamaz; kabul "rol değiştiren etiket olmaz" diye okundu.
+- Süre sınırı yalnız LLM aşamasını keser (kalan süre Tier 0/1 ve statik aşamadan sonra hesaplanır); onların kendi sınırları var (derleyici zaman aşımı; Tier 0 ayrıştırma süresi Faz 55). Kısmi LLM sonucu (analiz bitti, Sokratik yarıda) saklanmaz, tümüyle bozulmuş rapor.
+- 900 sn: two_pass + doğrulama 3 CLI çağrısı × 300 sn CLI zaman aşımı; daha kısa değer eval'de sahte bozulma üretirdi.
+- Senkron uçta kopma 499 döner (okuyan yok); ayrı modül, `routes.py` ince kalsın.
+- kod-denetci denetimi sonrası: kapanış rol etiketleri önekle (`</user x>`, `</user/>`), `<system>`/`<assistant>` öznitelikli biçimleriyle de yakalanır; iskelet `Cf`/`Mn`/`Me` karakterlerini atar, ı/İ/і/α/м/ᴍ katlanır, büyük harf küçülünce benzer listesine yeniden bakılır. Süre LLM'den önce bittiyse sağlayıcı hiç çağrılmaz; yalnız kendi sınırımızın `TimeoutError`'ı bozulmaya döner (`deadline.expired()`). Süre testleri kalan süreyi LLM başlangıcında sabitler (makine hızından bağımsız). Kopma izleyicisinin istisnası loglanır; API anahtarlı yol da testli.
+**Açık sorular:** Yok. (`desktop/app.py` 410 satır: bölme Faz 54'te.)
+**Bu fazda öğrendiğim:** Senkron ASGI yanıtında kopma, gövde okunduktan sonra `receive()`'in `http.disconnect` döndürmesiyle algılanır; ara katmanın gövdeyi yeniden oynatması (`_replay`) bu kanalı koruduğu için çalışır.
+
 ## Faz 47 — Notlar (API güven sınırı; ADR-0023)
 **Yapılanlar:** `orchestrator._validation`: istek Tier 1'i yalnız kapatır (`--tier1` CLI'de yerel yapılandırmayı açar). `api/guard.py`: saf ASGI `GuardMiddleware` (Host doğrulaması: loopback + `api.allowed_hosts`, `*` kapatır → 400 problem+json; `Content-Length` > `api.max_body_bytes` okunmadan, chunked gövde sınırda kesilerek 413), `AnalysisSlots` (`api.max_concurrent_analyses`, dolunca 503). `routes._admit`: izinsiz sağlayıcı 422 (`api.allowed_providers`, boşsa default + fallback), kod > `limits.max_bytes` × 4 karakter 413, yuva en son alınır; SSE yuvası akış bitince ya da arka plan görevinde bir kez bırakılır. `/v1/providers` izin listesini döndürür (web seçicisi tutarlı). `AnalysisRequest` kimlikleri `Identifier` (≤ 128, `^[A-Za-z0-9_.-]+$`). `serve` uyarısı anahtar/Host durumunu söyler. Mimari §9/§12/§17/§20, ADR-0023, şema + web tipleri yenilendi. Testler: `tests/api/test_trust_boundary.py`, `tests/integration/test_tier1_request_policy.py`, `test_models.py::test_request_identifier_limits`, `test_cli_analyze.py::test_cli_tier1_flag_controls_local_config`.
 **Alınan kararlar (ve neden):**
@@ -983,13 +995,14 @@ P/R/F1: 71/65/68, 84/80/82, 79/79/79, 81/85/83; birleşik 96: **79/77/78**, bir 
 Hata/uyarı yok. 35B Opus ile ortak 46 örnekte 75/73/74 (Opus tabanı 79/89/84); model farklı
 olduğundan precision artışı ve "kaçırma oranı düşmez" hedefi hakkında nedensel sonuç çıkarılamaz.
 Öneri `unity-104`'te etiketli hatadan ayrı; otomatik yakın-satır eşleşmesi elle incelendi.
-**Ölçüm tamamlandı (2026-10-05, `docs/FAZ36_OLCUM_DURUMU.md` §7):** Claude Opus 96 örnek 77/88/82 (TP 80, FP 24, FN 11), 32 öneri; hiçbir etiketli hata öneriye düşmedi. Faz 35B ile ortak 46 örnekte 79/89/84 → 76/85/80 (2 TP, 2 FP fark): precision artmadı, recall korundu (FN farkı `cpp-007` doğrulama düşürmesi, Faz 39 sonrası canlı tekrarda korunuyor, ve `csharp-014`/`unreal-014` kategori karışıklığı, Faz 40). Parça kayması: `unity-104` etiket düzeltmesi `select_part` atamasını kaydırdı; eksik 3 örnek ayrıca koşuldu (rehber §6 satır 7).
+**Ölçüm tamamlandı (2026-10-05, `docs/FAZ36_OLCUM_DURUMU.md` §7):** Claude Opus 96 örnek 77/88/82 (TP 80, FP 24, FN 11), 32 öneri; hiçbir etiketli hata öneriye düşmedi. Faz 35B ile ortak 46 örnekte 79/89/84 → 76/85/80 (2 TP, 2 FP fark): precision artmadı, recall korundu (FN farkı `cpp-007` doğrulama düşürmesi, Faz 39 sonrası canlı tekrarda korunuyor, ve `csharp-014`/`unreal-014` kategori karışıklığı, Faz 51). Parça kayması: `unity-104` etiket düzeltmesi `select_part` atamasını kaydırdı; eksik 3 örnek ayrıca koşuldu (rehber §6 satır 7).
 **Açık sorular:** Kural bazında öneri (`cpp-105` CPP-OWN-001, `unreal-107`, `python-105`).
 **Bu fazda öğrendiğim:** Şemaya giren her metin dar bağlamda bütçe demektir; geliştirici
 docstring'leri LLM şemasına sızıyordu. Öneriyi ayrı sınıf yapmak, "bulgu yazma" yasağından daha
 az bilgi kaybettiren bir precision aracıdır.
 
 ## Sonraya (kapsam dışı fikirler)
+- Faz 48 denetimi: süre Geçiş B (Sokratik) sırasında dolarsa doğrulanmış Geçiş A sonucu da atılıyor; bulguları koruyup yalnız Sokratik kısmı şablona düşürmek `run_pass_b is None` yoluyla tutarlı olur (`run_llm_passes` kısmi sonuç döndürmeli).
 - Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001). ~~Claude Opus canlı dev ölçümü~~ → yapıldı (2026-10-05).
 - Eval: `select_part` etiket değişikliğine duyarlı; parça atamasını kimlik özetiyle sabitlemek ya da sonuç dosyasına parça kimliklerini yazıp birleştirmede eksik/çakışanı uyarmak.
 - Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.
@@ -1017,10 +1030,10 @@ az bilgi kaybettiren bir precision aracıdır.
 - ~~Faz 21: `rules_version` yalnız `rules/*.py` hash'i; `analysis/` ve `data/call_costs.yaml` değişiklikleri önbellek anahtarına yansımıyor (bayat önbellek riski).~~ → Faz 31.
 - ~~Faz 21: `log.exception` izi sınırsız ve CLI'da WARNING düzeyinde stderr'e basılır; kural istisna mesajı kullanıcı kodu parçası içerebilir (§12) — iz DEBUG'a ya da kısaltılmış mesaja alınabilir. `captured_logs` teardown'u önceki yapılandırmayı değil varsayılanı geri yükler.~~ → Faz 31.
 - Faz 21: `file_value_types` ad çakışması (`struct Hit` + başka ad alanında `class Hit`) nadir yanlış negatif; yalnız arayüzden türeyen `class A : IFoo` sıcak sayılır (muhafazakâr).
-- Faz 21'den kalan işler Faz 32'de kısmen kapandı: C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray` alanları ve CS-PERF-001 `IList` çözüldü. Açık: C-MEM-003 akış duyarlılığı (Faz 46), döngüde `std::string +`/C# `string +=` karesel ipucu (Sonraya).
+- Faz 21'den kalan işler Faz 32'de kısmen kapandı: C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray` alanları ve CS-PERF-001 `IList` çözüldü. Açık: C-MEM-003 akış duyarlılığı (Faz 57), döngüde `std::string +`/C# `string +=` karesel ipucu (Sonraya).
 - ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
 - ~~Faz 18: Tier 0 `</div>` kör noktası~~ → Faz 20'de HTML-STD-003 ile bulgu olarak.
-- Faz 20: HTML-STD-003 kaçırmaları (Faz 45): dosya sonunda bitmemiş `<div`, `<p><span>a<div>` (örtük kapanış yalnız yığın tepesine bakıyor), DOCTYPE'sız belgede `table`/`p` kapanış davranışı, aynı satırdaki farklı ihlallerin birleştirilmesi ve katalog açıklaması.
+- Faz 20: HTML-STD-003 kaçırmaları (Faz 56): dosya sonunda bitmemiş `<div`, `<p><span>a<div>` (örtük kapanış yalnız yığın tepesine bakıyor), DOCTYPE'sız belgede `table`/`p` kapanış davranışı, aynı satırdaki farklı ihlallerin birleştirilmesi ve katalog açıklaması.
 - ~~Kural motoru: bulgu sayısına üst sınır yok (600 satırlık kötü niyetli girdi 600 bulgu üretip prompt'a gidebilir).~~ → Faz 31.
 - ~~Faz 18: `codementor eval check-drafts` Windows konsolunda (cp1254) çöküyor~~ → Faz 27 (konsol UTF-8).
 - Faz 18: eski veri seti etiketlerine Faz 17 bulguları (`c-008` 4. satır `memory_safety` C-MEM-003, `csharp-009` 11. satır `garbage_collection` CS-ALLOC-002) eklenmeli mi? (test etiketleri de etkilenebilir; kullanıcı kararı)
@@ -1036,9 +1049,9 @@ az bilgi kaybettiren bir precision aracıdır.
 - ~~Faz 19: Tier 1 derleyici/çalıştırma sürecine iptal olayı iletilmiyor~~ → Faz 24 (durdurulan analizde Tier 1 kendi zaman aşımına kadar sürebilir; arayüz bu sırada yeni analizi bildirimle reddeder).
 - ~~Faz 14: editörde arama (Ctrl+F), son dosyalar menüsü, sürükle-bırak ile dosya açma (tkinterdnd2).~~ → Faz 24
 - Faz 14: onefile açılışı arşiv çözme nedeniyle birkaç saniye; hızlı açılış için onedir zip önerilir.
-- ~~Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı; 40 KB girdide yüzlerce ms ölçülmüştü.~~ → Faz 44'e taşındı: güvenli sınır/iptal, sınır testi.
-- Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özete dönüşüyor; bağımsız gerçek hata ayrıca raporlanmayabilir (D2; Faz 44).
-- `mask_non_code` C++ raw string (`R"(...)"`) içindeki tırnak/yorum/ayraçları doğru maskelemiyor (Faz 44).
+- ~~Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı; 40 KB girdide yüzlerce ms ölçülmüştü.~~ → Faz 55'e taşındı: güvenli sınır/iptal, sınır testi.
+- Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özete dönüşüyor; bağımsız gerçek hata ayrıca raporlanmayabilir (D2; Faz 55).
+- `mask_non_code` C++ raw string (`R"(...)"`) içindeki tırnak/yorum/ayraçları doğru maskelemiyor (Faz 55).
 - ~~`data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.~~ → Faz 23
 - ~~Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.~~ → Faz 23
 - ~~`.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.~~ → Faz 23
@@ -1090,7 +1103,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`). Sıradaki Faz 48 (rol etiketi enjeksiyonu, süre sınırı), sonra Faz 40; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`). Sıradaki Faz 49 (depolama/önbellek), sonra 50 ve 51-57 (eski 40-46); ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1119,20 +1132,20 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    Codex'e verilecek; rehber `docs/EVAL_PARCA_REHBERI.md` (sorunlar oraya yazılır).
 12. **Faz 39 — Doğrulama geçişinde performans bulguları:** `cpp-007` gibi gerçek performans bulguları
    "somut girdi" kanıtı istenince düşüyor; ölçek kanıtı (`scaling`).
-13. **Faz 40 — Kategori tutarlılığı:** doğru satır/yanlış kategori FP-FN'leri; prompt ve etiket
-   rehberinde tek kategori tanımı.
-14. **Faz 41 — Kural bazında öneri türü:** CPP-OWN-001, UE-MEM-001, PY-RES-001 gibi kurallarda öneri.
-15. **Faz 42 — Ölçüm altyapısı ve belge tazeleme:** `pytest-cov` + CI kapsama raporu, README eval
-   girişi, statik koşuların güncel etiketle yenilenmesi, `faz/36` dalının main'e birleştirilmesi.
-16. **Faz 43 — Büyük dosyaların bölünmesi:** 400 satırı aşan 4 modül (davranış değişmeden).
-17. **Faz 44 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.
-18. **Faz 45 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.
-19. **Faz 46 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.
 20. ~~**Faz 47 — API güven sınırı (öncelikli):**~~ Yapıldı (2026-10-05, ADR-0023). istek Tier 1'i açamaz, Host doğrulaması, izinli
    sağlayıcılar, girdi/gövde sınırları (2026-10-04 tam tarama).
-21. **Faz 48 — Rol sınırlayıcıları ve analiz süresi:** `<system>`/`<user>` enjeksiyonu, toplam süre sınırı.
-22. **Faz 49 — Depolama ve önbellek:** oturum yarışı (500), `rules_version` kapsamı (Faz 44 öncesi), saklama.
+21. ~~**Faz 48 — Rol sınırlayıcıları ve analiz süresi:**~~ Yapıldı (2026-10-05). `<system>`/`<user>` enjeksiyonu, toplam süre sınırı.
+22. **Faz 49 — Depolama ve önbellek:** oturum yarışı (500), `rules_version` kapsamı (Faz 55 öncesi), saklama.
 23. **Faz 50 — Dil kapsamı, kodlama, CI:** SARIF Python/HTML/CSS 500, UTF-8 dışı dosya, `pip-audit`.
+24. **Faz 51 — Kategori tutarlılığı:** doğru satır/yanlış kategori FP-FN'leri; prompt ve etiket
+   rehberinde tek kategori tanımı.
+25. **Faz 52 — Kural bazında öneri türü:** CPP-OWN-001, UE-MEM-001, PY-RES-001 gibi kurallarda öneri.
+26. **Faz 53 — Ölçüm altyapısı ve belge tazeleme:** `pytest-cov` + CI kapsama raporu, README eval
+   girişi, statik koşuların güncel etiketle yenilenmesi, `faz/36` dalının main'e birleştirilmesi.
+27. **Faz 54 — Büyük dosyaların bölünmesi:** 400 satırı aşan 4 modül (davranış değişmeden).
+28. **Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.
+29. **Faz 56 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.
+30. **Faz 57 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,

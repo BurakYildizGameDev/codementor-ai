@@ -11,10 +11,11 @@ from importlib.resources import files
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Query, Request
-from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, Response, StreamingResponse
 from starlette.background import BackgroundTask
 
 from codementor import __version__
+from codementor.api.disconnect import ClientDisconnectedError, run_until_disconnect
 from codementor.api.errors import ApiProblemError
 from codementor.api.sse import SSE_HEADERS, stream_analysis
 from codementor.api.state import ApiState
@@ -82,12 +83,15 @@ def _state(request: Request) -> ApiState:
     responses={**_report_response(), **_problems(404, 413, 422, 503)},
     tags=["analiz"],
 )
-async def analyze(request: Request, body: AnalyzeBody) -> AnalysisReport:
-    """Senkron analiz. Sağlayıcıların hepsi düşse de rapor döner (`meta.degraded=true`)."""
+async def analyze(request: Request, body: AnalyzeBody) -> AnalysisReport | Response:
+    """Senkron analiz. Sağlayıcıların hepsi düşse de rapor döner (`meta.degraded=true`).
+    İstemci yanıtı beklemeden koparsa analiz iptal edilir (Faz 48; yanıt 499, okuyan yok)."""
     state = _state(request)
     _admit(state, body)
     try:
-        return await state.orchestrator().analyze(body)
+        return await run_until_disconnect(request.receive, state.orchestrator().analyze(body))
+    except ClientDisconnectedError:
+        return Response(status_code=499)
     finally:
         state.slots.release()
 

@@ -1613,126 +1613,6 @@ düşüyor. Örnek: `cpp-007` (döngüde `erase`, O(n²)); model buldu, doğrula
 
 **Commit:** `feat(faz-39): doğrulama geçişinde performans bulguları için ölçek kanıtı`
 
-### Faz 40 — Kategori tutarlılığı (YAPILACAK)
-
-**Dal:** `faz/40-kategori` · **Mimari:** §6.2, §14.2
-
-**Amaç:** Faz 36 parça 1-2'de FP/FN'lerin önemli kısmı doğru satırda yanlış kategoriden geliyor:
-performance↔garbage_collection (`unity-009`), undefined_behavior↔memory_safety (`cpp-106`),
-resource_leak↔garbage_collection (`csharp-014`), design↔engine_best_practice (`unity-104`).
-Etiket sınırları da tutarsız (Faz 22: `unreal-009` vs `unreal-014`). Codex'in ayrı 96 örneklik
-ölçümünde ek karışıklıklar: performance↔edge_case (`csharp-009`), memory_safety↔edge_case
-(`csharp-106`), undefined_behavior↔memory_safety (`cpp-005`, `cpp-102`), edge_case↔input_handling
-(`python-008`), memory_safety↔design (`unreal-009`) ve design↔edge_case (`css-004`). Bu etiketler
-Opus sonuçlarıyla karıştırılmadan denetlenmeli.
-
-- [ ] Kategori sınırlarını tek yerde tanımla: `docs/EVAL_ORNEK_REHBERI.md` §3.1 ile `_core_rules.j2`
-      kural 8 aynı metni kullansın (sıcak yolda tahsis → garbage_collection; dizi sınırı → memory_safety;
-      olay aboneliği sızıntısı → resource_leak; motor API'sinin yanlış kullanımı → engine_best_practice)
-- [ ] Dev ve test etiketlerini bu sınırlara göre denetle (değişiklik listesi kullanıcı onayıyla; test
-      etiketi değişirse not düş)
-- [ ] `eval analyze` karışıklık tablosu raporlanır; eşleşme kuralı (§14.2) **değişmez**
-- [ ] Testler: `test_prompt_precision.py` kategori ifadeleri; rehber ile prompt metninin eşitliği
-
-**Commit:** `feat(faz-40): kategori tanımlarının prompt ve etiket rehberinde birleştirilmesi`
-
-### Faz 41 — Kural bazında öneri türü (YAPILACAK)
-
-**Dal:** `faz/41-kural-oneri` · **Mimari:** §5.3, §6.4 · **ADR:** 0022 eki
-
-**Amaç:** Bazı statik kurallar gerçek hata değil iyi uygulama işaret ediyor: doğru eşleşmiş
-`new[]`/`delete[]` için CPP-OWN-001 (`cpp-105`), `Reserve` yok UE-MEM-001 (`unreal-107`), `with` dışı
-`open` PY-RES-001 (`python-105`). Statik bulgular bugün hep `issue`.
-
-- [ ] Kural meta verisine varsayılan tür (`kind`) ve gerekirse koşullu tür (ör. CPP-OWN-001: aynı
-      fonksiyonda eşleşen `delete` varsa öneri)
-- [ ] Eval etiketleri: ilgili dev/test bulgularının `notes`'a taşınması kullanıcı onayıyla
-      (`EVAL_ORNEK_REHBERI.md` §4.2); statik dev/test koşuları yenilenir
-- [ ] Testler: kural fixture'larına tür beklentisi; birleştirmede statik öneri + LLM hata → hata
-
-**Commit:** `feat(faz-41): statik kurallarda öneri türü`
-
-### Faz 42 — Ölçüm altyapısı ve belge tazeleme (YAPILACAK)
-
-**Dal:** `faz/42-olcum-belge`
-
-**Amaç:** Tarama (2026-10-04) bulguları: mimari §15'teki kapsama hedefleri (%95 / %90) ölçülmüyor,
-çünkü `pytest-cov` yok; README eval girişi eskimiş ("80 örnek, dev 31 / test 49"); statik dev satırı
-eski etiketle kayıtlı (`unity-104` düzeltmesi). README sağlayıcı notu ve Faz 36 metni de Claude'un
-kısmi koşularıyla Codex'in ayrı 96 örneklik alternatifini açıkça ayırmalı.
-
-- [ ] `pytest-cov` geliştirme bağımlılığı; CI'da kapsama raporu (eşik önce yalnız raporla, sonra modül
-      bazında §15 hedefleri)
-- [ ] README "Eval sonuçları" girişi güncel veri setiyle (dev 96 / test 70; dil başına örnek sayısı)
-- [ ] Statik dev ve test koşularının güncel etiketlerle yenilenmesi; README tabloları
-- [ ] `faz/36-hata-oneri` dalının main'e birleştirilmesi ve push (Faz 38 sonrası, kullanıcı onayıyla)
-
-**Commit:** `chore(faz-42): kapsama ölçümü, README ve statik eval tazeleme`
-
-### Faz 43 — Büyük dosyaların bölünmesi (YAPILACAK)
-
-**Dal:** `faz/43-bolme` · **Kural:** AGENTS.md "400 satırı geçen dosya için bölme öner"
-
-**Amaç:** `analysis/_loops.py` (449), `analysis/extractor.py` (438), `providers/cli_agent.py` (409),
-`desktop/app.py` (408) 400 satırı geçti. Davranış değişmeden bölünür.
-
-- [ ] Her dosya için bölme önerisi (sorumluluk sınırları), sonra uygulama; genel API ve içe aktarma
-      yolları korunur (yeniden dışa aktarım)
-- [ ] Testler değişmeden geçer; golden'lar aynı kalır
-
-**Commit:** `refactor(faz-43): 400 satırı aşan modüllerin bölünmesi`
-
-### Faz 44 — Tier 0 ayrıştırma ve maskeleme sağlamlığı (YAPILACAK)
-
-**Dal:** `faz/44-tier0-saglamlik` · **Mimari:** §4.3, §12
-
-**Amaç:** Kullanıcı kodu güvenilmeyen girdidir. PROGRESS "Sonraya"da hâlâ kaydı olan iki girdi
-sınırı riski: 40 KB'a yakın kötü niyetli C++ girdisinde Tier 0 ayrıştırmanın yüzlerce ms sürmesi
-ve `mask_non_code`'un C++ raw string literal (`R"(...)"`) içeriğini doğru maskelememesi.
-
-- [ ] Pinned tree-sitter sürümünde parse işini güvenli biçimde sınırlama/iptal etme yöntemini doğrula;
-      mevcut 40 KB / 600 satır üst sınırını gevşetme. Zaman sınırı aşılırsa kısmi olgu üretme.
-- [ ] Pathological fixture ile süre sınırı ve normal sınıra yakın geçerli kod için gerileme testi
-- [ ] Kapanmamış blok özeti ile dosya sonundaki bağımsız gerçek ERROR düğümü birlikteyken
-      ikisini de doğru raporla (Tier 0 denetim D2)
-- [ ] C++ raw string literal maskelemesini delimiter biçimleriyle doğru yap; string içindeki sahte
-      `"`, yorum ve ayraçlar kod olarak algılanmasın; pozitif/negatif fixture ekle
-- [ ] İptal/zaman aşımı sonucu mimari §4.3/§12 ile çelişiyorsa uygulamadan önce ADR taslağı hazırla
-
-**Commit:** `fix(faz-44): Tier 0 ayrıştırma ve C++ raw string sınırları`
-
-### Faz 45 — HTML-STD-003 kenar durumları (YAPILACAK)
-
-**Dal:** `faz/45-html-std003-kenarlar` · **Mimari:** §4.3, §12
-
-**Amaç:** Faz 20'de eklenen HTML etiket dengesi kuralının bilinen parser ve bulgu birleştirme
-boşluklarını kapatmak. Bunlar PROGRESS "Sonraya"da somut kaçırma örnekleri olarak kayıtlı.
-
-- [ ] Dosya sonunda bitmemiş açılış etiketi (`<div`) ve örtük kapanışta yığının üstünden
-      aşağıdaki uygun elemanların aranması (`<p><span>a<div>`) için pozitif/negatif fixture
-- [ ] DOCTYPE'sız belge bağlamında `table`/`p` kapanış kurallarını doğrulayan fixture
-- [ ] Aynı satırdaki tekrarlı bulgular birleştirilirken farklı hata türlerinin ikisinin de
-      korunmasını sağla; tek satır için unique filtresi bağımsız ihlali gizlemesin
-- [ ] Katalog açıklamalarını kuralın gerçek kapsamı ve bilinen sınırlarıyla güncelle
-
-**Commit:** `fix(faz-45): HTML-STD-003 kenar durumlarını kapsa`
-
-### Faz 46 — C-MEM-003 akış sıralı null denetimi (YAPILACAK)
-
-**Dal:** `faz/46-c-mem003-akis` · **Mimari:** §4.3, §12
-
-**Amaç:** C-MEM-003, işaretçinin dereference edilmesinden sonra yapılan null kontrolünü bugün
-ayırt etmiyor. Kuralı fonksiyon içi ve muhafazakâr tutarak denetimin kullanım öncesi olup
-olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın kapsamında değildir.
-
-- [ ] Aynı blokta ve ilgili kontrol akışında kullanım öncesi null guard bulguyu bastırır
-- [ ] Dereference öncesi olmayan, yalnız başka bir yolda bulunan veya alakasız değişkeni
-      denetleyen guard bulguyu bastırmaz
-- [ ] Pointer alias ve helper fonksiyon sınırları belirsizse mevcut muhafazakâr davranışı
-      koru; her davranış pozitif/negatif fixture ile sabitlenir
-
-**Commit:** `fix(faz-46): C-MEM-003 kullanım öncesi null denetimi`
-
 ### Faz 47 — API güven sınırı (YAPILDI 2026-10-05)
 
 **Dal:** `faz/47-api-guven-siniri` · **Mimari:** §9, §12 · **ADR:** yeni (API güven sınırı)
@@ -1756,18 +1636,20 @@ olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın ka
 
 **Commit:** `fix(faz-47): API güven sınırı (tier1, host, sağlayıcı, girdi sınırları)`
 
-### Faz 48 — Prompt rol sınırlayıcıları ve analiz süresi (YAPILACAK)
+### Faz 48 — Prompt rol sınırlayıcıları ve analiz süresi (YAPILDI 2026-10-05)
 
 **Dal:** `faz/48-rol-siniri-sure` · **Mimari:** §5.4.4, §12 · **Kaynak:** tarama K4, K8, D1
 
 **Amaç:** CLI sağlayıcılarında rol enjeksiyonunu kapatmak; bir analizin kaynak tutma süresini
 sınırlamak.
 
-- [ ] `guard_delimiters` `<user>`, `<system>`, `<assistant>` rol etiketlerini de nötrler
+- [x] `guard_delimiters` `<user>`, `<system>`, `<assistant>` rol etiketlerini de nötrler
       (`cli_agent.render_prompt` mesajları bu etiketlerle sarıyor; bugün yalnız `user_code`)
-- [ ] `pipeline.analysis_timeout_s`: aşımda bozulmuş rapor + uyarı, alt süreç iptali
-- [ ] Senkron `/v1/analyze` istemci kopunca iptal (SSE'de var)
-- [ ] Sessiz `except`'ler loglanır: `api/sse.py` genel dal, `validation/tier1.py`, masaüstü
+- [x] `pipeline.analysis_timeout_s`: aşımda bozulmuş rapor + uyarı, alt süreç iptali
+- [x] Senkron `/v1/analyze` istemci kopunca iptal (SSE'de var)
+- [x] Sessiz `except`'ler loglanır: `api/sse.py` genel dal, `validation/tier1.py`, masaüstü
+
+**Not:** açılış `<user>` bilerek nötrlenmez (`List<User>`); kapanışlar ve `<system>`/`<assistant>` nötr.
 
 **Kabul:** `</user><system>…` içeren kod/kanıt render çıktısında rol etiketi olmaz; yavaş sahte
 sağlayıcıyla süre aşımında `degraded=true`; SSE kopma ve istisna dalları testli.
@@ -1782,7 +1664,7 @@ sağlayıcıyla süre aşımında `degraded=true`; SSE kopma ve istisna dalları
       (`INSERT … ON CONFLICT DO UPDATE … RETURNING`); bugün iki istek de deneme 1 alır ve ikinci
       kayıt `IntegrityError` ile 500 verir
 - [ ] `rules_version` özetine `analysis/queries/**/*.scm`, `validation/`, `verify/`,
-      `data/mentor_templates.yaml` (Faz 44 öncesi şart: Tier 0 değişince erken çıkış önbelleği bayatlar)
+      `data/mentor_templates.yaml` (Faz 55 öncesi şart: Tier 0 değişince erken çıkış önbelleği bayatlar)
 - [ ] Soru bankası orkestratöre enjekte (her istekte ~68 ms yeniden yükleme); `QuestionBankError` 503
 - [ ] Saklama: `storage.max_analyses`, `desktop-sources` temizliği, masaüstü log döndürme,
       tercihlerde atomik yazma
@@ -1813,6 +1695,126 @@ sağlayıcıyla süre aşımında `degraded=true`; SSE kopma ve istisna dalları
 CI'da `pip-audit`; loopback dışına bağlanan test düşer.
 
 **Commit:** `fix(faz-50): SARIF dil kapsamı, kodlama, CI denetimi`
+
+### Faz 51 — Kategori tutarlılığı (YAPILACAK)
+
+**Dal:** `faz/51-kategori` · **Mimari:** §6.2, §14.2
+
+**Amaç:** Faz 36 parça 1-2'de FP/FN'lerin önemli kısmı doğru satırda yanlış kategoriden geliyor:
+performance↔garbage_collection (`unity-009`), undefined_behavior↔memory_safety (`cpp-106`),
+resource_leak↔garbage_collection (`csharp-014`), design↔engine_best_practice (`unity-104`).
+Etiket sınırları da tutarsız (Faz 22: `unreal-009` vs `unreal-014`). Codex'in ayrı 96 örneklik
+ölçümünde ek karışıklıklar: performance↔edge_case (`csharp-009`), memory_safety↔edge_case
+(`csharp-106`), undefined_behavior↔memory_safety (`cpp-005`, `cpp-102`), edge_case↔input_handling
+(`python-008`), memory_safety↔design (`unreal-009`) ve design↔edge_case (`css-004`). Bu etiketler
+Opus sonuçlarıyla karıştırılmadan denetlenmeli.
+
+- [ ] Kategori sınırlarını tek yerde tanımla: `docs/EVAL_ORNEK_REHBERI.md` §3.1 ile `_core_rules.j2`
+      kural 8 aynı metni kullansın (sıcak yolda tahsis → garbage_collection; dizi sınırı → memory_safety;
+      olay aboneliği sızıntısı → resource_leak; motor API'sinin yanlış kullanımı → engine_best_practice)
+- [ ] Dev ve test etiketlerini bu sınırlara göre denetle (değişiklik listesi kullanıcı onayıyla; test
+      etiketi değişirse not düş)
+- [ ] `eval analyze` karışıklık tablosu raporlanır; eşleşme kuralı (§14.2) **değişmez**
+- [ ] Testler: `test_prompt_precision.py` kategori ifadeleri; rehber ile prompt metninin eşitliği
+
+**Commit:** `feat(faz-51): kategori tanımlarının prompt ve etiket rehberinde birleştirilmesi`
+
+### Faz 52 — Kural bazında öneri türü (YAPILACAK)
+
+**Dal:** `faz/52-kural-oneri` · **Mimari:** §5.3, §6.4 · **ADR:** 0022 eki
+
+**Amaç:** Bazı statik kurallar gerçek hata değil iyi uygulama işaret ediyor: doğru eşleşmiş
+`new[]`/`delete[]` için CPP-OWN-001 (`cpp-105`), `Reserve` yok UE-MEM-001 (`unreal-107`), `with` dışı
+`open` PY-RES-001 (`python-105`). Statik bulgular bugün hep `issue`.
+
+- [ ] Kural meta verisine varsayılan tür (`kind`) ve gerekirse koşullu tür (ör. CPP-OWN-001: aynı
+      fonksiyonda eşleşen `delete` varsa öneri)
+- [ ] Eval etiketleri: ilgili dev/test bulgularının `notes`'a taşınması kullanıcı onayıyla
+      (`EVAL_ORNEK_REHBERI.md` §4.2); statik dev/test koşuları yenilenir
+- [ ] Testler: kural fixture'larına tür beklentisi; birleştirmede statik öneri + LLM hata → hata
+
+**Commit:** `feat(faz-52): statik kurallarda öneri türü`
+
+### Faz 53 — Ölçüm altyapısı ve belge tazeleme (YAPILACAK)
+
+**Dal:** `faz/53-olcum-belge`
+
+**Amaç:** Tarama (2026-10-04) bulguları: mimari §15'teki kapsama hedefleri (%95 / %90) ölçülmüyor,
+çünkü `pytest-cov` yok; README eval girişi eskimiş ("80 örnek, dev 31 / test 49"); statik dev satırı
+eski etiketle kayıtlı (`unity-104` düzeltmesi). README sağlayıcı notu ve Faz 36 metni de Claude'un
+kısmi koşularıyla Codex'in ayrı 96 örneklik alternatifini açıkça ayırmalı.
+
+- [ ] `pytest-cov` geliştirme bağımlılığı; CI'da kapsama raporu (eşik önce yalnız raporla, sonra modül
+      bazında §15 hedefleri)
+- [ ] README "Eval sonuçları" girişi güncel veri setiyle (dev 96 / test 70; dil başına örnek sayısı)
+- [ ] Statik dev ve test koşularının güncel etiketlerle yenilenmesi; README tabloları
+- [ ] `faz/36-hata-oneri` dalının main'e birleştirilmesi ve push (Faz 38 sonrası, kullanıcı onayıyla)
+
+**Commit:** `chore(faz-53): kapsama ölçümü, README ve statik eval tazeleme`
+
+### Faz 54 — Büyük dosyaların bölünmesi (YAPILACAK)
+
+**Dal:** `faz/54-bolme` · **Kural:** AGENTS.md "400 satırı geçen dosya için bölme öner"
+
+**Amaç:** `analysis/_loops.py` (449), `analysis/extractor.py` (438), `providers/cli_agent.py` (409),
+`desktop/app.py` (412) 400 satırı geçti. Davranış değişmeden bölünür.
+
+- [ ] Her dosya için bölme önerisi (sorumluluk sınırları), sonra uygulama; genel API ve içe aktarma
+      yolları korunur (yeniden dışa aktarım)
+- [ ] Testler değişmeden geçer; golden'lar aynı kalır
+
+**Commit:** `refactor(faz-54): 400 satırı aşan modüllerin bölünmesi`
+
+### Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı (YAPILACAK)
+
+**Dal:** `faz/55-tier0-saglamlik` · **Mimari:** §4.3, §12
+
+**Amaç:** Kullanıcı kodu güvenilmeyen girdidir. PROGRESS "Sonraya"da hâlâ kaydı olan iki girdi
+sınırı riski: 40 KB'a yakın kötü niyetli C++ girdisinde Tier 0 ayrıştırmanın yüzlerce ms sürmesi
+ve `mask_non_code`'un C++ raw string literal (`R"(...)"`) içeriğini doğru maskelememesi.
+
+- [ ] Pinned tree-sitter sürümünde parse işini güvenli biçimde sınırlama/iptal etme yöntemini doğrula;
+      mevcut 40 KB / 600 satır üst sınırını gevşetme. Zaman sınırı aşılırsa kısmi olgu üretme.
+- [ ] Pathological fixture ile süre sınırı ve normal sınıra yakın geçerli kod için gerileme testi
+- [ ] Kapanmamış blok özeti ile dosya sonundaki bağımsız gerçek ERROR düğümü birlikteyken
+      ikisini de doğru raporla (Tier 0 denetim D2)
+- [ ] C++ raw string literal maskelemesini delimiter biçimleriyle doğru yap; string içindeki sahte
+      `"`, yorum ve ayraçlar kod olarak algılanmasın; pozitif/negatif fixture ekle
+- [ ] İptal/zaman aşımı sonucu mimari §4.3/§12 ile çelişiyorsa uygulamadan önce ADR taslağı hazırla
+
+**Commit:** `fix(faz-55): Tier 0 ayrıştırma ve C++ raw string sınırları`
+
+### Faz 56 — HTML-STD-003 kenar durumları (YAPILACAK)
+
+**Dal:** `faz/56-html-std003-kenarlar` · **Mimari:** §4.3, §12
+
+**Amaç:** Faz 20'de eklenen HTML etiket dengesi kuralının bilinen parser ve bulgu birleştirme
+boşluklarını kapatmak. Bunlar PROGRESS "Sonraya"da somut kaçırma örnekleri olarak kayıtlı.
+
+- [ ] Dosya sonunda bitmemiş açılış etiketi (`<div`) ve örtük kapanışta yığının üstünden
+      aşağıdaki uygun elemanların aranması (`<p><span>a<div>`) için pozitif/negatif fixture
+- [ ] DOCTYPE'sız belge bağlamında `table`/`p` kapanış kurallarını doğrulayan fixture
+- [ ] Aynı satırdaki tekrarlı bulgular birleştirilirken farklı hata türlerinin ikisinin de
+      korunmasını sağla; tek satır için unique filtresi bağımsız ihlali gizlemesin
+- [ ] Katalog açıklamalarını kuralın gerçek kapsamı ve bilinen sınırlarıyla güncelle
+
+**Commit:** `fix(faz-56): HTML-STD-003 kenar durumlarını kapsa`
+
+### Faz 57 — C-MEM-003 akış sıralı null denetimi (YAPILACAK)
+
+**Dal:** `faz/57-c-mem003-akis` · **Mimari:** §4.3, §12
+
+**Amaç:** C-MEM-003, işaretçinin dereference edilmesinden sonra yapılan null kontrolünü bugün
+ayırt etmiyor. Kuralı fonksiyon içi ve muhafazakâr tutarak denetimin kullanım öncesi olup
+olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın kapsamında değildir.
+
+- [ ] Aynı blokta ve ilgili kontrol akışında kullanım öncesi null guard bulguyu bastırır
+- [ ] Dereference öncesi olmayan, yalnız başka bir yolda bulunan veya alakasız değişkeni
+      denetleyen guard bulguyu bastırmaz
+- [ ] Pointer alias ve helper fonksiyon sınırları belirsizse mevcut muhafazakâr davranışı
+      koru; her davranış pozitif/negatif fixture ile sabitlenir
+
+**Commit:** `fix(faz-57): C-MEM-003 kullanım öncesi null denetimi`
 
 ---
 
