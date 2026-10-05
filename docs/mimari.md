@@ -602,6 +602,8 @@ class AuditCategory(StrEnum):
     EDGE_CASE = "edge_case"
     INPUT_HANDLING = "input_handling"
     DESIGN = "design"
+    # Faz 51: kategori sınırları tek metinde (prompts/v1/_category_rules.j2); etiket rehberi
+    # (docs/EVAL_ORNEK_REHBERI.md §3.1) aynı metni kullanır, test eşitliği denetler
 ```
 
 ### 6.3 LLM çıktı modelleri

@@ -106,10 +106,10 @@ Her bulgunun tek bir `category` değeri olur. Yalnız bu değerler geçerlidir:
 
 | Kategori | Ne zaman |
 |---|---|
-| `memory_safety` | Sınır dışı erişim, use-after-free, sarkan işaretçi/referans, NULL denetimsiz tahsis, çift `free`, tampon taşması |
+| `memory_safety` | Sınır dışı erişim, use-after-free, sarkan işaretçi/referans (yerel değişkene dönen referans dahil), geçersizleşmiş yineleyici, NULL denetimsiz tahsis/kullanım, çift `free`, tampon taşması |
 | `resource_leak` | `free`/`delete` edilmeyen bellek, kapatılmayan dosya, kaldırılmayan olay aboneliği (`+=` var `-=` yok), döngüsel `shared_ptr` |
-| `undefined_behavior` | İşaretli taşma, sıfıra bölme, başlatılmamış değişken okuma, `fflush(stdin)`, sıra noktası ihlali |
-| `garbage_collection` | C#/Unity: sıcak yolda tahsis (döngüde `new`, string birleştirme, LINQ, boxing); Unreal: `UPROPERTY` olmayan `UObject*` alanı |
+| `undefined_behavior` | Bellek erişimi olmayan UB: işaretli taşma, sıfıra bölme (boş girdi / n = 0 kaynaklıysa `edge_case`), başlatılmamış değişken okuma, `fflush(stdin)`, sıra noktası ihlali |
+| `garbage_collection` | C#/Unity: sıcak yolda tahsis (döngüde `new`, `Instantiate`/`Destroy`, string birleştirme, LINQ, boxing); Unreal: `UPROPERTY` olmayan `UObject*` alanı (GC'nin topladığı nesneye kalan sarkan işaretçi de buraya) |
 | `performance` | Gereksiz karesel algoritma, döngü koşulunda `strlen`, sıcak yolda `GetComponent`/`Find`, `Tick` içinde ağır iş, büyük nesneyi değerle geçirme |
 | `engine_best_practice` | Motor kuralına aykırılık **ve** gerçek bir hataya yol açması (ör. `Awake`/`Start` sırası yüzünden null, `FixedUpdate` dışında fizik kuvveti yüzünden titreme) |
 | `edge_case` | Gerçekçi girdi alanında yanlış davranış: boş dizi, `n = 0`, tek eleman, boş string |
@@ -118,12 +118,15 @@ Her bulgunun tek bir `category` değeri olur. Yalnız bu değerler geçerlidir:
 | `accessibility` | HTML/CSS: `alt` yok, etiketsiz form alanı, başlık sırası atlanmış, okunamaz renk karşıtlığı, odak görünmüyor, anlamsız bağlantı metni |
 | `maintainability` | HTML/CSS: çok sayıda `!important`, boş kural bloğu, aynı blokta yinelenen özellik |
 
-Sınır durumları:
+Sınır durumları (Faz 51): aşağıdaki metin modele giden kuralın **aynısıdır**
+(`prompts/v1/_category_rules.j2`; `tests/unit/test_category_rules.py` eşitliği denetler).
+Etiketlerken de bu sınırları uygula; metni değiştirirsen ikisini birlikte değiştir.
 
-- Sıfıra bölme ve işaretli taşma → `undefined_behavior`; dizi sınırı dışına okuma/yazma →
-  `memory_safety` (C/C++'ta teknik olarak UB olsa da). Bu ayrımı tutarlı uygula.
-- Soru bir süre ya da girdi şartı koyuyorsa (ör. "O(n) olmalı") ve kod buna uymuyorsa,
-  `design` değil sorunun kendi kategorisi (`performance`, `edge_case`) kullanılır.
+<!-- kategori-sinirlari:basla -->
+```text
+"memory_safety" geçersiz belleğe her erişimdir: dizi ya da tampon sınırı dışı, sarkan işaretçi/referans (yerel değişkene dönen referans dahil), geçersizleşmiş yineleyici, serbest bırakılmış belleğin kullanımı, NULL/nullptr kullanımı; kaynağı boş girdi olsa da, C/C++'ta teknik olarak tanımsız davranış olsa da bu kategoridir. "undefined_behavior" yalnızca bellek erişimi olmayan tanımsız davranıştır: işaretli taşma, sıfıra bölme, başlatılmamış değişken okuma, sıra noktası ihlali; boş girdi ya da n = 0 yüzünden sıfıra bölme ise "edge_case" olur. "garbage_collection": C#/Unity'de sıcak yolda (Update, döngü) tahsis (new, Instantiate/Destroy, string birleştirme, LINQ, boxing) ve Unreal'da UPROPERTY olmayan UObject* alanı; aynı satırda gereksiz karesel iş de varsa onu ayrı bir "performance" bulgusu yaz. Kaldırılmayan olay aboneliği (+= var, -= yok) "resource_leak" olur, "garbage_collection" değil. Motor API'sinin yanlış kullanımı gerçek bir hataya yol açıyorsa (fizik hızını her karede ezmek, yaşam döngüsü sırası) "engine_best_practice" olur, "design" değil. "input_handling" yalnızca dışarıdan gelen girdi (stdin, dosya, ağ, kullanıcı arayüzü) denetlenmiyorsa ya da soru o girdiyi tanımlıyorsa; iç ya da public bir fonksiyon parametresinin null/negatif denetimi tek başına bulgu değildir. "edge_case" yalnızca sorunun ya da kodun gerçekçi girdi alanındaki durumlar için (boş dizi, n = 0, tek eleman); INT_MIN, 2^31 eleman gibi kuramsal uç değer, soru böyle bir aralık vermedikçe raporlanmaz. "design" yalnızca (a) soruda istenen bir işlev ya da değer eksik veya yanlışsa ya da (b) yapısal bir hata yanlış davranışa yol açıyorsa; soru bir süre/bellek sınırı ya da girdi durumu (ör. O(n) süre, noktalama, boş girdi) şart koşuyorsa o sorunun kendi kategorisini ("performance", "edge_case" vb.) kullan.
+```
+<!-- kategori-sinirlari:bitir -->
 
 ### 3.2 Satır numarası
 

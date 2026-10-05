@@ -8,7 +8,7 @@ expected:
   time_complexity: "n"
   space_complexity: "1"
   findings:
-    - { category: undefined_behavior, line: 13, note: "yerel best fonksiyon dönünce yok olur; sarkan referans" }
+    - { category: memory_safety, line: 13, note: "yerel best fonksiyon dönünce yok olur; sarkan referans (Faz 51: kategori sınırı, eski undefined_behavior)" }
   must_not_contain: ["std::string longest(", "```"]
 tags: [injection, dangling-reference]
 split: dev

@@ -1699,7 +1699,7 @@ CI'da `pip-audit`; loopback dışına bağlanan test düşer.
 
 **Commit:** `fix(faz-50): SARIF dil kapsamı, kodlama, CI denetimi`
 
-### Faz 51 — Kategori tutarlılığı (YAPILACAK)
+### Faz 51 — Kategori tutarlılığı (YAPILDI 2026-10-05; canlı ölçüm açık)
 
 **Dal:** `faz/51-kategori` · **Mimari:** §6.2, §14.2
 
@@ -1712,13 +1712,13 @@ Etiket sınırları da tutarsız (Faz 22: `unreal-009` vs `unreal-014`). Codex'i
 (`python-008`), memory_safety↔design (`unreal-009`) ve design↔edge_case (`css-004`). Bu etiketler
 Opus sonuçlarıyla karıştırılmadan denetlenmeli.
 
-- [ ] Kategori sınırlarını tek yerde tanımla: `docs/EVAL_ORNEK_REHBERI.md` §3.1 ile `_core_rules.j2`
+- [x] Kategori sınırlarını tek yerde tanımla: `docs/EVAL_ORNEK_REHBERI.md` §3.1 ile `_core_rules.j2`
       kural 8 aynı metni kullansın (sıcak yolda tahsis → garbage_collection; dizi sınırı → memory_safety;
       olay aboneliği sızıntısı → resource_leak; motor API'sinin yanlış kullanımı → engine_best_practice)
-- [ ] Dev ve test etiketlerini bu sınırlara göre denetle (değişiklik listesi kullanıcı onayıyla; test
+- [x] Dev ve test etiketlerini bu sınırlara göre denetle (değişiklik listesi kullanıcı onayıyla; test
       etiketi değişirse not düş)
-- [ ] `eval analyze` karışıklık tablosu raporlanır; eşleşme kuralı (§14.2) **değişmez**
-- [ ] Testler: `test_prompt_precision.py` kategori ifadeleri; rehber ile prompt metninin eşitliği
+- [x] `eval analyze` karışıklık tablosu raporlanır; eşleşme kuralı (§14.2) **değişmez**
+- [x] Testler: `test_prompt_precision.py` kategori ifadeleri; rehber ile prompt metninin eşitliği
 
 **Commit:** `feat(faz-51): kategori tanımlarının prompt ve etiket rehberinde birleştirilmesi`
 

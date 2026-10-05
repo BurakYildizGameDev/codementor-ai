@@ -84,3 +84,29 @@ def test_python_fewshot_selected() -> None:
     examples = load_fewshots(REPO_PROMPTS / "fewshots")
     (chosen,) = select_fewshots(examples, Language.PYTHON, Engine.NONE, limit=1)
     assert chosen.language is Language.PYTHON
+
+
+CATEGORY_BOUNDARY_PHRASES = [
+    "sarkan işaretçi/referans",
+    "geçersizleşmiş yineleyici",
+    "Instantiate/Destroy",
+    "olay aboneliği",
+    "Motor API'sinin yanlış kullanımı",
+    "bellek erişimi olmayan",
+]
+
+
+@pytest.mark.parametrize("builder", [build_analysis_messages, build_single_pass_messages])
+def test_category_boundaries_in_code_prompts(tmp_path: Path, builder: object) -> None:
+    """Faz 51: kategori sınırları (rehberle ortak metin) kod prompt'larında."""
+    built = builder(analysis_input(tmp_path), settings=prompt_settings())  # type: ignore[operator]
+    system = system_text(built.messages)
+    for phrase in CATEGORY_BOUNDARY_PHRASES:
+        assert phrase in system, phrase
+
+
+def test_markup_prompt_has_no_code_category_rules(tmp_path: Path) -> None:
+    code = normalize(HTML, LanguageHint(language=Language.HTML, engine=Engine.NONE))
+    inp = analysis_input(tmp_path, code=code, hint=None, function_hints=[])
+    system = system_text(build_markup_analysis_messages(inp, settings=prompt_settings()).messages)
+    assert "geçersizleşmiş yineleyici" not in system

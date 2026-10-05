@@ -279,3 +279,12 @@ def test_two_drops_one_missed_issue_counts_once() -> None:
     )
     drops = analyze(_run([sample]), _labels(lb)).verify_drops
     assert [d.true_issue for d in drops] == [True, False, False]
+
+
+def test_markdown_includes_confusion_table() -> None:
+    """Faz 51: doğru satır, yanlış kategori karışıklıkları dökümde ayrı tabloda görünür."""
+    lb = label(findings=[(MEM, 4)])
+    rep = report(findings=[_f(DESIGN, 4, "F-001")])
+    text = analysis_markdown(analyze(_run([result(rep)]), _labels(lb)))
+    assert "## Kategori karışıklığı" in text
+    assert "memory_safety → design" in text
