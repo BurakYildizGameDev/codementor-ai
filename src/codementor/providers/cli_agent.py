@@ -82,11 +82,6 @@ __all__ = [
 
 CliKind = Literal["claude_cli", "agy"]
 
-# Faz 54: sabitler + CliTimeoutError `providers/_cli_common.py`'de (yeniden dışa aktarılır)
-
-
-# Faz 54: _candidates/resolve_executable `providers/_cli_common.py`'de
-
 
 def model_label(model: str | None, config: object) -> str | None:
     """Model adı + çıktıyı değiştiren CLI ayarı: `claude-haiku-4-5 (thinking=0)` (Faz 34).
@@ -95,9 +90,6 @@ def model_label(model: str | None, config: object) -> str | None:
     if model is None or budget is None:
         return model
     return f"{model} (thinking={budget})"
-
-
-# Faz 54: profile_env/render_prompt `providers/_cli_common.py`'de
 
 
 def _json_document(stdout: str, marker: str) -> dict[str, Any] | None:
@@ -119,9 +111,6 @@ def _json_document(stdout: str, marker: str) -> dict[str, Any] | None:
             return data
         position = start
     return None
-
-
-# Faz 54: short_error/agent_limits `providers/_cli_common.py`'de
 
 
 def _served_model(served: object, requested: str) -> str:
