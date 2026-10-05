@@ -36,3 +36,5 @@ htmlcov/
 cov-*.txt
 desk_app.*
 full_suite.*
+full_verify.*
+full_verify.*
