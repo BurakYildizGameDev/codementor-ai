@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import os
 import sys
-import uuid
 from pathlib import Path
 from tkinter import filedialog
 from typing import Any
@@ -18,7 +17,7 @@ import customtkinter as ctk
 
 from codementor.api.state import ApiState
 from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE, Settings, load_settings
-from codementor.desktop import runtime, theme
+from codementor.desktop import questions_controller, runtime, theme
 from codementor.desktop.bridge import Bridge, Cancellation, Message, analysis_work
 from codementor.desktop.config_writer import write_provider_prefs
 from codementor.desktop.connections import KeyStore, apply_overrides
@@ -248,14 +247,11 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.toast("Analiz durduruldu.")
 
     def restart(self) -> None:
-        """İpucu merdivenini sıfırlar: yeni oturum, bir sonraki analiz 1. seviyeden başlar."""
-        self._new_session()
-        self.analyze_view.reset_results()
-        self.toast("İpucu merdiveni sıfırlandı. Bir sonraki denetim ilk seviyeden başlar.")
+        """İpucu merdivenini sıfırlar (`questions_controller`, Faz 54)."""
+        questions_controller.restart(self)
 
     def _new_session(self) -> None:
-        self.prefs = self.prefs.model_copy(update={"session_id": f"desktop-{uuid.uuid4()}"})
-        runtime.save_prefs(self.prefs, self.prefs_dir)
+        questions_controller.new_session(self)
 
     def _on_message(self, message: Message) -> None:
         if message.task.partition(":")[0] in ("probe", "test", "compilers", "toolchain"):
@@ -286,9 +282,7 @@ class App(ctk.CTk):  # type: ignore[misc]
     # --- Dosyalar -----------------------------------------------------------------------
 
     def load_sample(self) -> None:
-        view = self.analyze_view
-        view.editor.set(SAMPLES[view.language], view.language)
-        view.reset_results()
+        questions_controller.load_sample(self)
 
     def export(self, fmt: str) -> None:
         report = self.analyze_view.report
@@ -308,30 +302,16 @@ class App(ctk.CTk):  # type: ignore[misc]
     # --- Sorular ve geçmiş --------------------------------------------------------------
 
     def questions_for(self, language: Language, engine: Engine) -> list[QuestionPublic]:
-        try:
-            return self.core.questions().filter(language, engine)
-        except Exception as exc:
-            log.warning("question_bank_unreadable", error=type(exc).__name__)
-            return []
+        return questions_controller.questions_for(self.core, language, engine)
 
     def _filtered_questions(
         self, language: Language | None, difficulty: Difficulty | None
     ) -> list[QuestionPublic] | None:
         """Filtrelenmiş sorular; banka okunamazsa None (görünüm 'okunamadı' der)."""
-        try:
-            return self.core.questions().filter(language, None, difficulty)
-        except Exception as exc:
-            log.warning("question_bank_unreadable", error=type(exc).__name__)
-            return None
+        return questions_controller.filtered(self.core, language, difficulty)
 
     def start_question(self, question: QuestionPublic) -> None:
-        view = self.analyze_view
-        view.select(question.language, question.engine, question.id)
-        if view.editor.get().strip() in {s.strip() for s in SAMPLES.values()}:
-            view.editor.set("", question.language)
-        view.reset_results()
-        self.navigate("analyze")
-        view.editor.text.focus_set()
+        questions_controller.start(self, question)
 
     def _history_rows(self) -> list[AnalysisRow]:
         return list_analyses(self.core.database())

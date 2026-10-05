@@ -883,6 +883,21 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 54 — Notlar (büyük dosyaların bölünmesi)
+**Yapılanlar:** 400 satırı aşan 4 modül davranış değişmeden bölündü; tüm `src/` dosyaları ≤ 400 satır (en yükseği `analysis/extractor.py` 398). `analysis/_loops.py` (449) → `analysis/_loop_bounds.py` (döngü sınıflandırma: `LoopShape`, `AssignmentIndex`, `classify`, `_classify`, `_python_iteration`, `_binary_search`, `_from_counter`, `_has_halving`, `_comparisons`, `_initial_value`); kalan `_loops.py` tip sabitleri, `Update` + işaretçi/döngü yorumları ve sınıf-dışı yardımcılar. `analysis/extractor.py` (438) → `analysis/_extractor_sections.py` (desen tabloları `_USING_STD`/`_USING_LINQ`/`_STRING_TYPES`/`_TYPE_DECLARATIONS`, tip kısayolları, modül yardımcıları `_name`/`_start`/`_leftmost_operand`/`_MAX_CHAIN`, 5 uyarı sabiti); `_Extractor` sınıfı yerinde kaldı. `desktop/app.py` (415) → `desktop/questions_controller.py` (soru sorguları `questions_for`/`filtered`, soruya başlama, örnek yükleme, ipucu merdiveni sıfırlama + yeni oturum); `App` aynı adlarla ince sarmalayıcı tutar. `providers/cli_agent.py` (403) → `providers/_cli_common.py` (sabitler, `CliTimeoutError`, `resolve_executable`, `profile_env`/`render_prompt`/`short_error`/`agent_limits`); `cli_agent.py` `__all__` ile yeniden dışa aktarır, `codex_cli.py` aynı modülden beslenir.
+**Alınan kararlar (ve neden):**
+- Bölme sınırları kohesiyon + test maymun-yaması yüzeyine göre: `App.questions_for`/`_filtered_questions` yalnız `self.core` dokunan gövdeli sarmalayıcı olarak kaldı (`test_app_logging.py` bu yöntemleri yalnız `core` alanlı nesneyle çağırıyor).
+- `__all__` ile yeniden dışa aktarım: `ruff` kullanılmayan sembolü (F401) silerken `mypy --strict` tanımsız `__all__` adını (F822) reddediyor; kullanıcı modüllerin davranışı sabit kaldı.
+- DEVIR'dan sapmalar: `_extractor_sections` bağımsız `_function`/`_loops` bölüm-kurucuları yerine desen tabloları + modül yardımcılarını aldı (kod sınıf tabanlı `_Extractor`); `build_argv` method olarak kaldı (gövde kullanıcı kodunu metin/yorum olarak tutmaya devam ediyor, §12 güven yorumu bozulmasın).
+**Açık sorular:** Yok. (`pipeline/orchestrator.py` 395, `desktop/views/analyze_view.py` 391 sınırın altında; yeniden bölme gerekmedi.)
+**Bu fazda öğrendiğim:** Blok taşımada üretilen koda değil ham kopyala-yapıştıra güven; `ruff --fix` yeniden dışa aktarım sembollerini sildiği için `__all__` + mypy strict birlikte düşünülmeli.
+
+## Faz 53 — Notlar (ölçüm altyapısı ve belge tazeleme)
+**Yapılanlar:** `pytest-cov` eklendi (`pyproject.toml` + `uv.lock`); CI Linux adımı `--cov` ile kapsama raporu basar. Kapsama: **%96** (2933 test, 13.516 deyim). README eval tabloları 166 örneklik güncel etiketle tazelendi (dev 96: 78/96/86; test 70: 63/52/61 — birleşik raporlar `eval/results/`). `tests/unit/test_packaging.py` güncellendi. Flakli eşik testleri `_deadline()` ile iki yönlü doğrulandı: çıplak koşuda 31 test/1,62 s (sert eşikler), `--cov` koşusunda 31/3,50 s (`coverage.Coverage.current()` ×4 tolerans). `.gitignore`'a kapsama artıkları eklendi.
+**Alınan kararlar (ve neden):** Zaman toleransı makine hızından bağımsız `coverage.Coverage.current()` sinyaline bağlandı: enstrümantasyon süreleri 2-3× uzatıyor, sabit çarpan makineye kırılıyor.
+**Açık sorular:** `faz/36` dalının main'e birleştirilmesi yapılmadı (kullanıcı kararı; Sonraya).
+**Bu fazda öğrendiğim:** `--cov` altında geçen süre çıplak koşunun ~2-3 katı; süre eşikleri bağlamsal sinyalle tolere edilmeli.
+
 ## Faz 52 — Notlar (kural bazında öneri türü; ADR-0022'nin açık maddesi)
 **Yapılanlar:** Statik bulguda da `Finding.kind`: `RuleInfo.kind`, `Rule.default_kind`, `Rule.finding(kind=...)` (öneri otomatik `low`, ADR-0022 §2). `RuleContext.scope_key(line)` + `_scope_ranges` (iç içe `def`/`class`/yapıcı-yıkıcı/init list kapsamları; en yakın fonksiyon `ad@başlangıç`, modülde `<module>`). Kurallar: CPP-OWN-001 aynı **kapsamda** aile eşleşmesi (new↔delete, new[]↔delete[]) → `suggestion`, aile/toprak/kapsam uyuşmazsa `issue` (placement-new ayraç düzeltmesi köprüyü koruyarak); PY-RES-001 aynı kapsamda `.close()` → `suggestion`; UE-MEM-001 `default_kind = suggestion`. Birleştirme (`verify/merge.py`): aynı satırda statik öneri + LLM hatası → tek bulgu `issue`; öneri+öneri → `suggestion` (testli; ters yönde yumuşatma yok). Katalog (`catalog.py` `kind_label`) ve `codementor rules list`'te `Tür` sütunu ("hata"/"öneri"), `docs/rules-catalog.md` yeniden üretildi. Eval etiketleri (kullanıcı onayıyla, rehber §4.2): öneriye dönen bulgular `findings`'ten `notes`'a taşındı — dev `cpp-105` L4/L8, dev `unreal-107` L6, dev `python-105` L2 (L6 `close()` aynı kapsamda), **test** `cpp-006` L3/L12. `cpp-009` L6/L10 bilerek taşınmadı: yapıcıda `new[]`, yıkıcıda `delete[]` ayrı kapsamlar → `issue` kalıyor ve etiket zaten bunu bekliyor. Statik eval yenilendi: `eval/results/20261005T151516_static_none_static_dev.json` (P/R/F1 100/55/71), `20261005T151600_static_none_static_test.json` (94/55/69); README `eval-table` blokları `compare_table` ile testin birebir seçim mantığıyla üretildi. Testler: `tests/rules/test_finding_kinds.py` (8 test), fixture tür beklentileri (`EXPECT_KIND:`, mevcut satır sonlarına eklenerek satır kayması yok), `test_all_rules.py` tür doğrulama zinciri + `test_kind_sources_match_rule_info`, `tests/unit/verify/test_merge.py` 2 birleştirme testi. `tests/unit/eval/test_parts.py` denge sınırı docstring'le eşitlendi (`<= 1`): öneriye taşınan 3 örnekle `flawed` 44'e bölününce 10/11/11/12 payı katı `< 1` sınırında düşüyordu (değişmez "fark ≤ 1" idi, sınır fazla katıydı).
 **Alınan kararlar (ve neden):**
@@ -1200,10 +1215,11 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 23. ~~**Faz 50 — Dil kapsamı, kodlama, CI:**~~ Yapıldı (2026-10-05). SARIF Python/HTML/CSS 500, UTF-8 dışı dosya, `pip-audit`.
 24. ~~**Faz 51 — Kategori tutarlılığı:**~~ Yapıldı (2026-10-05; canlı dev 96: 78/96/86). doğru satır/yanlış kategori FP-FN'leri; prompt ve etiket
    rehberinde tek kategori tanımı.
-25. **Faz 52 — Kural bazında öneri türü:** CPP-OWN-001, UE-MEM-001, PY-RES-001 gibi kurallarda öneri.
-26. **Faz 53 — Ölçüm altyapısı ve belge tazeleme:** `pytest-cov` + CI kapsama raporu, README eval
-   girişi, statik koşuların güncel etiketle yenilenmesi, `faz/36` dalının main'e birleştirilmesi.
-27. **Faz 54 — Büyük dosyaların bölünmesi:** 400 satırı aşan 4 modül (davranış değişmeden).
+25. ~~**Faz 52 — Kural bazında öneri türü:**~~ Yapıldı (2026-10-05, commit 90f1795; ADR-0022'nin açık maddesi). CPP-OWN-001, UE-MEM-001, PY-RES-001 vb. kurallarda öneri türü.
+26. ~~**Faz 53 — Ölçüm altyapısı ve belge tazeleme:**~~ Kısmen yapıldı (2026-10-05; kapsama %96). `pytest-cov` + CI
+   kapsama raporu, README eval girişi, statik koşuların güncel etiketle yenilenmesi; `faz/36` dalının main'e
+   birleştirilmesi açık (kullanıcı kararı).
+27. ~~**Faz 54 — Büyük dosyaların bölünmesi:**~~ Yapıldı (2026-10-05; tüm `src/` ≤ 400 satır). 4 modül bölündü (davranış değişmeden).
 28. **Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.
 29. **Faz 56 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.
 30. **Faz 57 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.

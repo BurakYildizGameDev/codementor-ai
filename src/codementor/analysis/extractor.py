@@ -15,14 +15,29 @@ Hata ayıklama: `uv run python -m codementor.analysis.extractor dosya.cs`
 
 from __future__ import annotations
 
-import re
 from collections.abc import Callable
-from typing import TypeVar
 
 from tree_sitter import Node
 
 from codementor.analysis import _engine, _loops, _memory, _recursion
 from codementor.analysis._context import Ctx, contexts
+from codementor.analysis._extractor_sections import (
+    _STRING_TYPES,
+    _TYPE_DECLARATIONS,
+    _USING_LINQ,
+    _USING_STD,
+    COSTS_WARNING,
+    FAILURE_WARNING,
+    NO_FUNCTION_WARNING,
+    SECTION_WARNING,
+    SYNTAX_WARNING,
+    T,
+    _Call,
+    _leftmost_operand,
+    _name,
+    _start,
+)
+from codementor.analysis._loop_bounds import AssignmentIndex, classify
 from codementor.analysis._symbols import (
     CallName,
     NodeKey,
@@ -55,33 +70,6 @@ from codementor.models.facts import (
 )
 from codementor.models.request import NormalizedCode
 from codementor.questions._loader import DataFileError
-
-SYNTAX_WARNING = "Kodda sözdizimi hatası var; statik olgular eksik olabilir."
-NO_FUNCTION_WARNING = "Fonksiyon bulunamadı; olgular dosya düzeyinde toplandı."
-FAILURE_WARNING = "Statik olgular çıkarılamadı ({}); analiz olgusuz devam ediyor."
-SECTION_WARNING = "{} olguları çıkarılamadı ({}); bu bölüm boş."
-COSTS_WARNING = "Çağrı maliyeti tablosu okunamadı; çağrı maliyetleri bilinmiyor."
-
-_USING_STD = re.compile(r"\busing\s+namespace\s+std\s*;")
-_USING_LINQ = re.compile(r"\busing\s+System\.Linq\s*;")
-_STRING_TYPES = frozenset({"string", "String", "std::string", "FString"})
-_TYPE_DECLARATIONS = frozenset(
-    {
-        "class_specifier",
-        "struct_specifier",
-        "union_specifier",
-        "enum_specifier",
-        "class_declaration",
-        "struct_declaration",
-        "interface_declaration",
-        "enum_declaration",
-        "record_declaration",
-        "class_definition",  # Python
-    }
-)
-
-T = TypeVar("T")
-_Call = tuple[Node, CallName, tuple[str, str] | None]
 
 
 class _Extractor:
@@ -209,7 +197,7 @@ class _Extractor:
         return self.loop_index.get(key(loop)) if loop is not None else None
 
     def _loops(self, loops: list[Node]) -> list[LoopFact]:
-        indexes: dict[NodeKey | None, _loops.AssignmentIndex] = {}
+        indexes: dict[NodeKey | None, AssignmentIndex] = {}
         resets: dict[NodeKey, set[str]] = {}  # dış döngü başına bir kez (O1: doğrusal)
         result: list[LoopFact] = []
         for loop in loops:
@@ -217,8 +205,8 @@ class _Extractor:
             scope_key = here.function
             if scope_key not in indexes:
                 scope = self.fn_nodes[scope_key] if scope_key is not None else self.root
-                indexes[scope_key] = _loops.AssignmentIndex.build(scope)
-            shape = _loops.classify(loop, indexes[scope_key])
+                indexes[scope_key] = AssignmentIndex.build(scope)
+            shape = classify(loop, indexes[scope_key])
             parent = here.loop
             outer = False
             if parent is not None:
@@ -375,34 +363,6 @@ class _Extractor:
             for kind, n in _memory.deallocations(self.found["memory"])
         ]
         return sorted(found, key=lambda d: d.line)
-
-
-def _name(fn: FunctionFact | None) -> str | None:
-    return fn.name if fn is not None else None
-
-
-def _start(fn: FunctionFact | None) -> int | None:
-    return fn.line_start if fn is not None else None
-
-
-_MAX_CHAIN = 64  # `a + b + ... ` zincirinde en soldaki işlenene kadar en fazla bu kadar adım
-
-
-def _leftmost_operand(node: Node | None) -> str | None:
-    """`s + a + b` → `s` (yalnız `+` zinciri); başka ifadede None."""
-    for _ in range(_MAX_CHAIN):
-        if node is None or node.type != "binary_expression" or operator_of(node) != "+":
-            break
-        node = node.child_by_field_name("left")
-    else:
-        return None
-    if node is None or node.type not in (
-        "identifier",
-        "member_access_expression",
-        "field_expression",
-    ):
-        return None
-    return text(node).removeprefix("this.")
 
 
 def extract_facts(
