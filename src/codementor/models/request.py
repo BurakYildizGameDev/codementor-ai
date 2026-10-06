@@ -19,6 +19,11 @@ class AnalysisOptions(StrictModel):
     mode: PipelineMode | None = None
     tier1: bool | None = None
     use_cache: bool | None = None
+    advance_hint: bool | None = Field(
+        default=None,
+        description="False: bu gönderim ipucu merdivenini ilerletmez (aynı kodu yeniden "
+        "denetlemek, model değiştirmek); None/True: ilerletir",
+    )
 
 
 class AnalysisRequest(StrictModel):

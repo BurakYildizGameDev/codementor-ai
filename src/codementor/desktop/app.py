@@ -35,7 +35,7 @@ from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.pipeline import StageEvent
 from codementor.models.questions import QuestionPublic
 from codementor.models.report import AnalysisReport
-from codementor.models.request import AnalysisRequest
+from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.providers.factory import PROVIDER_NAMES
 from codementor.storage.cache import get_analysis, get_row, list_analyses
 from codementor.storage.db import AnalysisRow, resolve_db_path
@@ -77,6 +77,8 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.tracker = StageTracker()
         self._closing = False
         self._last_code = ""
+        self._last_question_id: str | None = None
+        self._last_counted: bool | None = None
 
         self.title("CodeMentor AI")
         self._place_window()
@@ -112,7 +114,7 @@ class App(ctk.CTk):  # type: ignore[misc]
             AnalyzeActions(
                 analyze=self.analyze,
                 stop=self.stop_analysis,
-                next_hint=self.analyze,
+                next_hint=lambda: self.analyze(advance=True),
                 restart=self.restart,
                 open_file=self.files.open_dialog,
                 recent_files=self.files.recent,
@@ -201,7 +203,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.settings = apply_overrides(self.base_settings, self.prefs)
         self.core.settings = self.settings
 
-    def analyze(self) -> None:
+    def analyze(self, *, advance: bool | None = None) -> None:
         view = self.analyze_view
         if self.bridge.is_running("analyze"):
             if not view.busy:  # durdurulan önceki analizin iş parçacığı henüz kapanıyor
@@ -212,15 +214,25 @@ class App(ctk.CTk):  # type: ignore[misc]
             view.show_error("Analiz edilecek kod yok: editöre kod yaz ya da bir dosya aç.")
             return
         self.navigate("analyze")
+        current_qid = view.question.id if view.question else None
+        if (
+            advance is None
+            and code == self._last_code
+            and current_qid == self._last_question_id
+            and self._last_counted is True
+        ):
+            advance = False
         request = AnalysisRequest(
             code=code,
             language=view.language,
             engine=view.engine,
-            question_id=view.question.id if view.question else None,
+            question_id=current_qid,
             session_id=self.prefs.session_id,
             provider=self.prefs.provider,
+            options=AnalysisOptions(advance_hint=advance),
         )
         self._last_code = code
+        self._last_question_id = current_qid
         self.save_prefs(language=view.language, engine=view.engine)
         self.tracker.reset()
         view.set_busy(True)
@@ -248,6 +260,7 @@ class App(ctk.CTk):  # type: ignore[misc]
 
     def restart(self) -> None:
         """İpucu merdivenini sıfırlar (`questions_controller`, Faz 54)."""
+        self._last_counted = None
         questions_controller.restart(self)
 
     def _new_session(self) -> None:
@@ -271,12 +284,13 @@ class App(ctk.CTk):  # type: ignore[misc]
         view.set_busy(False)
         view.show_progress(self.tracker)
         if message.kind == "result" and isinstance(message.payload, AnalysisReport):
+            report = message.payload
             keep = self.core.settings.storage.max_analyses
-            runtime.save_source(
-                message.payload.analysis_id, self._last_code, self.prefs_dir, keep=keep
-            )
-            view.show_report(message.payload)
+            runtime.save_source(report.analysis_id, self._last_code, self.prefs_dir, keep=keep)
+            self._last_counted = not report.meta.early_exit and not report.meta.degraded
+            view.show_report(report)
         else:
+            self._last_counted = None
             view.show_error(str(message.payload))
 
     # --- Dosyalar -----------------------------------------------------------------------
@@ -311,6 +325,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         return questions_controller.filtered(self.core, language, difficulty)
 
     def start_question(self, question: QuestionPublic) -> None:
+        self._last_counted = None
         questions_controller.start(self, question)
 
     def _history_rows(self) -> list[AnalysisRow]:

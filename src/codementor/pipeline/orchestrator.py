@@ -76,6 +76,7 @@ class _Run:
     warnings: list[str] = field(default_factory=list)
     finding_checks: list[FindingCheck] = field(default_factory=list)
     saved: bool = False  # analiz kaydedildi: deneme artık geri alınmaz (Faz 49)
+    advance: bool = True  # Faz 61: advance_hint=False iken ayırma/kayıt yapılmaz
 
     @property
     def analysis_id(self) -> str:
@@ -120,14 +121,23 @@ class Orchestrator:
         request = run.request
         code = self._ingest(run)
         if self.db is not None:
-            # Faz 49: atomik ayırma; eşzamanlı gönderimler ayrı deneme alır
-            run.attempt = sessions.reserve_attempt(self.db, request.session_id, request.question_id)
+            if request.options.advance_hint is False:
+                current = (
+                    sessions.next_attempt(self.db, request.session_id, request.question_id) - 1
+                )
+                run.attempt = max(1, current)
+                run.advance = False
+            else:
+                # Faz 49: atomik ayırma; eşzamanlı gönderimler ayrı deneme alır
+                run.attempt = sessions.reserve_attempt(
+                    self.db, request.session_id, request.question_id
+                )
         try:
             return await self._run_attempt(run, code)
         except BaseException:
             # iptal ya da hata: yarıda kalan analiz ipucu merdivenini ilerletmez (Faz 19);
-            # kayıt yazıldıysa deneme geçmişte durur, geri alınmaz
-            if self.db is not None and not run.saved:
+            # kayıt yazıldıysa istisnalar için deneme geçmişte durur, geri alınmaz
+            if self.db is not None and run.advance and not run.saved:
                 self._release(run)
             raise
 
@@ -174,13 +184,20 @@ class Orchestrator:
                 max_analyses=self.settings.storage.max_analyses,
             )
             run.saved = True
-            sessions.record_attempt(
-                self.db,
-                request.session_id,
-                request.question_id,
-                attempt=run.attempt,
-                hint_level=profile.hint_level,
-            )
+            if run.advance:
+                counts = not report.meta.early_exit and not report.meta.degraded
+                if counts:
+                    sessions.record_attempt(
+                        self.db,
+                        request.session_id,
+                        request.question_id,
+                        attempt=run.attempt,
+                        hint_level=profile.hint_level,
+                    )
+                else:
+                    sessions.release_attempt(
+                        self.db, request.session_id, request.question_id, run.attempt
+                    )
         return AnalysisTrace(report, run.finding_checks)
 
     def _build_provider(self, name: str) -> LLMProvider:

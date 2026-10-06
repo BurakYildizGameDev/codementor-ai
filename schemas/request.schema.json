@@ -4,6 +4,19 @@
       "additionalProperties": false,
       "description": "İstek başına seçenekler; `None` → yapılandırmadaki değer kullanılır.",
       "properties": {
+        "advance_hint": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "False: bu gönderim ipucu merdivenini ilerletmez (aynı kodu yeniden denetlemek, model değiştirmek); None/True: ilerletir",
+          "title": "Advance Hint"
+        },
         "mode": {
           "anyOf": [
             {

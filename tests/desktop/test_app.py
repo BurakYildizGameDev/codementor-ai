@@ -24,6 +24,7 @@ from codementor.desktop.connections import PROVIDERS, KeyStore, Probe
 from codementor.desktop.views import analyze_view as analyze_view_module
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.provider import ProviderStatus
+from codementor.models.request import AnalysisRequest
 from codementor.models.validation import DownloadProgress
 from codementor.providers.base import RetryPolicy
 from codementor.providers.fake import FakeProvider, FakeReply
@@ -88,6 +89,12 @@ def analyze(app: App) -> None:
     pump(app, lambda: not app.analyze_view.busy)
 
 
+def next_hint(app: App) -> None:
+    app.analyze_view.actions.next_hint()
+    assert app.analyze_view.busy
+    pump(app, lambda: not app.analyze_view.busy)
+
+
 def test_full_mentoring_flow(app: App, prefs_dir: Path) -> None:
     view = app.analyze_view
     view.editor.set(LINKED_LIST, Language.C)
@@ -103,7 +110,11 @@ def test_full_mentoring_flow(app: App, prefs_dir: Path) -> None:
     assert runtime.load_source(report.analysis_id, prefs_dir) == LINKED_LIST
 
     first_level = report.socratic.hint_level
-    analyze(app)  # "Bir ipucu daha"
+    analyze(app)  # Aynı kodla "Denetle": seviye artmaz (Faz 61)
+    assert view.report is not None
+    assert view.report.socratic is not None
+    assert view.report.socratic.hint_level == first_level
+    next_hint(app)  # "Bir ipucu daha": seviye artar (Faz 61)
     assert view.report is not None
     assert view.report.socratic is not None
     assert view.report.socratic.hint_level == first_level + 1
@@ -783,3 +794,57 @@ def test_open_history_incompatible_report_invalid_language_preserves_selection(a
     assert app.current_view == "analyze"
     assert app.analyze_view.language == prev_lang
     assert "farklı bir CodeMentor sürümüyle" in _toast(app)
+
+
+# --- Faz 61: masaüstü advance_hint kararları ------------------------------------------------
+
+
+def test_advance_hint_desktop_decisions(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Faz 61 (K3): Masaüstü advance_hint kararları:
+    - İlk analiz / kod değişince: advance_hint=None
+    - Aynı kodla 'Denetle' (son analiz sayılmışsa): advance_hint=False
+    - 'Bir ipucu daha': advance_hint=True
+    - Son analiz degraded ise aynı kodla 'Denetle': advance_hint=None
+    """
+    captured: list[AnalysisRequest] = []
+    import codementor.desktop.app as app_module
+
+    def fake_work(core: object, req: AnalysisRequest, cancel: object) -> object:
+        captured.append(req)
+        return lambda _emit: None
+
+    def fake_submit(task: str, work: object, *, cancellation: object = None) -> None:
+        app._last_counted = True
+        app.analyze_view.set_busy(False)
+
+    monkeypatch.setattr(app_module, "analysis_work", fake_work)
+    monkeypatch.setattr(app.bridge, "submit", fake_submit)
+
+    # 1. İlk analiz: advance_hint is None
+    app.analyze_view.editor.set("int x = 1;\n", Language.C)
+    app.analyze()
+    assert len(captured) == 1
+    assert captured[-1].options.advance_hint is None
+    assert app._last_counted is True
+
+    # 2. Aynı kodla 'Denetle': advance_hint is False
+    app.analyze()
+    assert len(captured) == 2
+    assert captured[-1].options.advance_hint is False
+
+    # 3. 'Bir ipucu daha' (socratic card next_hint): advance_hint is True
+    app.analyze_view.actions.next_hint()
+    assert len(captured) == 3
+    assert captured[-1].options.advance_hint is True
+
+    # 4. Kod değişince 'Denetle': advance_hint is None
+    app.analyze_view.editor.set("int x = 2;\n", Language.C)
+    app.analyze()
+    assert len(captured) == 4
+    assert captured[-1].options.advance_hint is None
+
+    # 5. Son analiz degraded ise aynı kodla 'Denetle': advance_hint is None
+    app._last_counted = False
+    app.analyze()
+    assert len(captured) == 5
+    assert captured[-1].options.advance_hint is None

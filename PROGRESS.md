@@ -51,6 +51,7 @@
 | 58 | ✅ | faz/58-toolchain-test-kararlilik | 2026-10-06 | Claude Code / — |
 | 59 | ✅ (ADR-0025) | faz/59-tier0-alt-surec | 2026-10-06 | Claude Code / kod-denetci |
 | 60 | ✅ | faz/60-surum-uyumu | 2026-10-06 | Antigravity / — |
+| 61 | ✅ (ADR-0026) | faz/61-ipucu-merdiveni | 2026-10-07 | Antigravity / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -890,6 +891,36 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 **Bu fazda öğrendiğim:** Doğrulama geçişi precision'ı prompt kurallarının yapamadığı ölçüde
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
+
+## Faz 61 — Notlar (ipucu merdiveni yalnız sayılan denemelerle ilerler; ADR-0026)
+**Yapılanlar:**
+- `docs/adr/0026-ipucu-merdiveni-sayilan-denemeler.md`: K1 (bozulmuş rapor sayılmaz), K2 (erken çıkış sayılmaz), K3 (aynı kod ilerletmez, `options.advance_hint`) kararları belgelendi.
+- `models/request.py`: `AnalysisOptions` modeline `advance_hint: bool | None` alanı eklendi (`extra="forbid"` korunarak).
+- `pipeline/orchestrator.py`:
+  - `_traced()`: `options.advance_hint is False` ise deneme artırılmaz, mevcut deneme kullanılır (`run.attempt = max(1, current)`, `run.advance = False`). Hata durumunda yalnız `run.advance` ise deneme serbest bırakılır (`_release()`).
+  - `_run_attempt()`: Kayıt yazıldıktan sonra `run.advance` ise, analizin sayılıp sayılmadığı kontrol edilir (`counts = not report.meta.early_exit and not report.meta.degraded`). Sayılan analiz `sessions.record_attempt()` ile kalıcılaşır; sayılmayan analiz `sessions.release_attempt()` ile serbest bırakılır.
+- `storage/sessions.py`: Modül docstring'i Faz 61 K1/K2 kurallarıyla güncellendi.
+- `desktop/app.py`:
+  - `_last_question_id: str | None` ve `_last_counted: bool | None` durum alanları eklendi.
+  - `AnalyzeActions.next_hint`: `self.analyze(advance=True)` ile bağlandı.
+  - `analyze()`: Kod ve soru aynıysa ve `_last_counted is True` ise `options.advance_hint = False` atanır.
+  - `_on_analyze()`: `_last_counted = not report.meta.early_exit and not report.meta.degraded` güncellenir.
+  - `start_question()` ve `restart()`: `_last_counted = None` ile sıfırlanır.
+- `schemas/request.schema.json` ve `web/src/types/request.ts`: Şema dışa aktarımı ve TypeScript tipleri güncellendi.
+- Testler:
+  - `tests/integration/test_pipeline_sessions.py`: K1 sağlayıcı hatası (500), zaman aşımı, şema hatası; K2 Tier 0 sözdizimi erken çıkışı; K3 `advance_hint=False` ve iptal koruması testleri (13/13 yeşil).
+  - `tests/api/test_routes.py`: `options.advance_hint` kabulü (200) ve bilinmeyen alan reddi (422) testi.
+  - `tests/desktop/test_app.py`: `test_advance_hint_desktop_decisions` ile masaüstü 5 geçiş durumu test edildi (39/39 yeşil). Toplam 3068 test yeşil.
+**Alınan kararlar (ve neden):**
+- ADR-0026: Sağlayıcı hatası/bozulmuş rapor (K1) ve sözdizimi erken çıkışı (K2) öğrencinin kavramsal çözüm denemesi sayılmaz.
+- Masaüstünde aynı kodla arka arkaya "Denetle" basmak (model karşılaştırma, tekrar denetleme) ipucu harcamaz; açıkça "Bir ipucu daha" tıklandığında `advance=True` ile bir sonraki ipucu üretilir.
+**Değiştirilen mevcut testler ve neden:**
+- `tests/desktop/test_app.py`: `test_full_mentoring_flow` içinde daha önce aynı kodla `analyze(app)` çağrısıyla ikinci ipucu bekleniyordu; Faz 61 kuralı gereği aynı kodla `analyze()` seviyeyi ilerletmediğinden arayüzün gerçek "Bir ipucu daha" eylemini çağıran `next_hint(app)` eklendi.
+**Doğrulama çıktısı:**
+- `uv run ruff check . && uv run ruff format --check .` (temiz, 419 dosya)
+- `uv run mypy src/` (0 hata, 198 kaynak dosya)
+- `uv run pytest -m "not live"` (3068 passed, 14 skipped, 6 deselected; 109 sn)
+- `npm --prefix web run typecheck && npm --prefix web run build` (hatasız derlendi)
 
 ## Faz 60 — Notlar (sürüm bilgisi ve sürümler arası geçmiş uyumu)
 **Yapılanlar:**

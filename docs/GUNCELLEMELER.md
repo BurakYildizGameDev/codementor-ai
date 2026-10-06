@@ -66,13 +66,13 @@ Uygulama ayrıntısı: [DEVIR_FAZ60_62.md](DEVIR_FAZ60_62.md) (Faz 60-62 GLM'e d
 
 **Amaç:** İpucu merdiveni yalnız öğrencinin gerçek denemeleriyle ilerlesin.
 
-- [ ] Sağlayıcı kullanılamadığı için bozulmuş dönen deneme (model yok, CLI hatası, zaman aşımı)
+- [x] Sağlayıcı kullanılamadığı için bozulmuş dönen deneme (model yok, CLI hatası, zaman aşımı)
       ipucu seviyesi harcamaz (`release_attempt`)
-- [ ] Karar + ADR: sözdizimi hatasıyla erken çıkış ipucu seviyesini ilerletmeli mi? (Öneri:
+- [x] Karar + ADR: sözdizimi hatasıyla erken çıkış ipucu seviyesini ilerletmeli mi? (Öneri:
       ilerletmesin; içerik ipucu merdiveni ayrı)
-- [ ] Aynı kod + aynı görevle yalnız model değiştirilerek yeniden denetleme seviyeyi
+- [x] Aynı kod + aynı görevle yalnız model değiştirilerek yeniden denetleme seviyeyi
       ilerletmesin (ya da masaüstünde "aynı seviyede başka modelle dene" seçeneği)
-- [ ] Testler: başarısız sağlayıcı, erken çıkış ve model değişimi senaryoları
+- [x] Testler: başarısız sağlayıcı, erken çıkış ve model değişimi senaryoları
 
 ### Faz 62 — Geçmişi silme (öncelik: orta, kullanıcı isteği)
 

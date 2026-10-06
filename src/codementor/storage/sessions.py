@@ -4,6 +4,9 @@ her yeni gönderim deneme sayısını 1 artırır; ipucu seviyesi `mentoring_pro
 Faz 49: deneme analiz başında tek SQL ifadesiyle ayrılır (`INSERT … ON CONFLICT DO UPDATE …
 RETURNING`); eşzamanlı iki gönderim farklı deneme alır. İptal/hata ayrılan denemeyi geri verir
 (arada başka ayırma olmadıysa), böylece yarıda kalan analiz merdiveni ilerletmez (Faz 19).
+
+Faz 61 (ADR-0026): Yalnız sayılan denemeler (bozulmamış ve erken çıkış olmayan) merdiveni ilerletir;
+sayılmayan denemelerde ayrılan sayaç `release_attempt` ile geri verilir.
 """
 
 from __future__ import annotations

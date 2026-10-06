@@ -135,3 +135,127 @@ async def test_release_failure_does_not_mask_original_error(
     orch = Orchestrator(settings, db, provider_factory=broken_provider)
     with pytest.raises(PipelineError):
         await orch.analyze(_request())
+
+
+# --- Faz 61: sayılan denemeler ve advance_hint --------------------------------------------
+
+
+async def test_provider_error_degraded_does_not_advance_attempt(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """Faz 61 (K1): Sağlayıcı hatası (degraded rapor) sayacı artırmaz, sonraki başarılı gönderim
+    aynı ipucu seviyesinde döner."""
+    broken = fake(FakeReply(error="500"))
+    orch = Orchestrator(settings, db, provider_factory=lambda _n: broken)
+    rep1 = await orch.analyze(_request(cache=False))
+    assert rep1.meta.degraded is True
+    assert sessions.next_attempt(db, "oturum-1", QUESTION) == 1
+
+    # Sonraki başarılı gönderim aynı seviyede (1) gelir ve ardından sayaç 2 olur:
+    orch_ok = Orchestrator(settings, db, provider_factory=lambda _n: _fresh(fake, 0))
+    rep2 = await orch_ok.analyze(_request(cache=False))
+    assert rep2.meta.degraded is False
+    assert rep2.socratic.hint_level == 1
+    assert sessions.next_attempt(db, "oturum-1", QUESTION) == 2
+
+
+async def test_analysis_timeout_does_not_advance_attempt(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """Faz 61 (K1): Analiz süre sınırı aşıldığında sayaç değişmez."""
+    stalling = _fresh(fake, delay_ms=500)
+    settings.pipeline.analysis_timeout_s = 0.01
+    orch = Orchestrator(settings, db, provider_factory=lambda _n: stalling)
+    rep = await orch.analyze(_request(cache=False))
+    assert rep.meta.degraded is True
+    assert sessions.next_attempt(db, "oturum-1", QUESTION) == 1
+
+
+async def test_schema_repair_exhausted_does_not_advance_attempt(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """Faz 61 (K1): Şema onarımı tükendiğinde (iki kez bozuk JSON) sayaç değişmez."""
+    broken = fake(FakeReply(raw="{bozuk json"), FakeReply(raw="{hala bozuk"))
+    orch = Orchestrator(settings, db, provider_factory=lambda _n: broken)
+    rep = await orch.analyze(_request(cache=False))
+    assert rep.meta.degraded is True
+    assert sessions.next_attempt(db, "oturum-1", QUESTION) == 1
+
+
+async def test_syntax_error_early_exit_does_not_advance_attempt(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """Faz 61 (K2): Sözdizimi hatası (erken çıkış) sayacı ilerletmez; düzeltilmiş kodla
+    ilk başarılı analiz seviye 1 alır."""
+    syntax_req = AnalysisRequest(
+        code="int main() { return 0",
+        language=Language.C,
+        question_id=QUESTION,
+        session_id="oturum-1",
+        options=AnalysisOptions(use_cache=False),
+    )
+    orch = Orchestrator(settings, db, provider_factory=lambda _n: _fresh(fake, 0))
+    rep1 = await orch.analyze(syntax_req)
+    assert rep1.meta.early_exit is True
+    assert sessions.next_attempt(db, "oturum-1", QUESTION) == 1
+
+    # Düzeltilmiş kodla ilk gönderim seviye 1 alır:
+    rep2 = await orch.analyze(_request(cache=False))
+    assert rep2.meta.early_exit is False
+    assert rep2.socratic.hint_level == 1
+    assert sessions.next_attempt(db, "oturum-1", QUESTION) == 2
+
+
+async def test_advance_hint_false_preserves_attempt_and_hint_level(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """Faz 61 (K3): advance_hint=False ile sayaç ve seviye değişmez; oturum hiç yokken seviye 1
+    ve sayaç 0 kalır."""
+    req_no_adv = AnalysisRequest(
+        code=LINKED_LIST,
+        language=Language.C,
+        question_id=QUESTION,
+        session_id="oturum-no-adv",
+        options=AnalysisOptions(use_cache=False, advance_hint=False),
+    )
+    orch = Orchestrator(settings, db, provider_factory=lambda _n: _fresh(fake, 0))
+    rep = await orch.analyze(req_no_adv)
+    assert rep.socratic.hint_level == 1
+    # Oturum hiç ayrılmadı / kaydedilmedi: sıradaki deneme hâlâ 1:
+    assert sessions.next_attempt(db, "oturum-no-adv", QUESTION) == 1
+
+
+async def test_advance_hint_false_cancellation_does_not_corrupt_counter(
+    settings: Settings, db: Database, fake: FakeFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz 61 (K3): advance_hint=False analiz iptal edildiğinde release_attempt çağrılmaz."""
+    # Önce 1 başarılı gönderimle sayacı 2'ye taşı
+    orch = Orchestrator(settings, db, provider_factory=lambda _n: _fresh(fake, 0))
+    await orch.analyze(_request(cache=False))
+    assert sessions.next_attempt(db, "oturum-1", QUESTION) == 2
+
+    def fail_on_release(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("advance_hint=False iptal yolunda release_attempt çağrılmamalı")
+
+    monkeypatch.setattr(sessions, "release_attempt", fail_on_release)
+
+    stalling = _fresh(fake, delay_ms=10_000)
+    orch_stall = Orchestrator(settings, db, provider_factory=lambda _n: stalling)
+    req = AnalysisRequest(
+        code=LINKED_LIST,
+        language=Language.C,
+        question_id=QUESTION,
+        session_id="oturum-1",
+        options=AnalysisOptions(use_cache=False, advance_hint=False),
+    )
+    task = asyncio.create_task(orch_stall.analyze(req))
+    for _ in range(200):
+        if stalling.calls:
+            break
+        await asyncio.sleep(0.01)
+    assert stalling.calls
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    # Sayaç hâlâ 2 olarak kalmalı:
+    assert sessions.next_attempt(db, "oturum-1", QUESTION) == 2

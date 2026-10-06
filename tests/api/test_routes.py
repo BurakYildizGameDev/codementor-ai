@@ -59,6 +59,25 @@ async def test_early_exit_via_api(client_for: ClientFactory, fake: FakeFactory) 
     assert provider.calls == []
 
 
+async def test_analyze_options_advance_hint_and_extra_forbid(
+    client_for: ClientFactory, fake: FakeFactory
+) -> None:
+    client = client_for(fake(analysis_reply(), socratic_reply()))
+    body_with_advance = {
+        **BODY,
+        "options": {"advance_hint": False},
+    }
+    response = await client.post("/v1/analyze", json=body_with_advance)
+    assert response.status_code == 200
+
+    body_with_unknown = {
+        **BODY,
+        "options": {"unknown_field": 123},
+    }
+    response_unknown = await client.post("/v1/analyze", json=body_with_unknown)
+    assert response_unknown.status_code == 422
+
+
 async def test_stored_report_and_sarif(client_for: ClientFactory, fake: FakeFactory) -> None:
     client = client_for(fake(analysis_reply(), socratic_reply()))
     report = (await client.post("/v1/analyze", json=BODY)).json()
