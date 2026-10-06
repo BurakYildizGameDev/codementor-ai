@@ -902,7 +902,7 @@ süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölç�
 
 ## Faz 56 — Notlar (HTML-STD-003 kenar durumları)
 **Yapılanlar:**
-- `rules/html_balance.py`: dosya sonunda bitmemiş açılış (`<div class="a`) raporlanır; `feed` sonrası tamponda kalan `<harf…` aranır, script/style gibi metin kipinde aranmaz. Örtük kapanış artık yalnız yığının tepesine bakmıyor: blok açılışı açık `p`'yi satır içi öğelerin (`span`, `b`, `a`…) altından, `li`/`dt`/`dd` önceki öğeyi bunlara ek olarak `div`/`address`/`p` altından da kapatır; aradaki kapanmamış öğeler raporlanır. Arama en fazla 64 öğe derine iner (kötü niyetli girdide doğrusal). DOCTYPE'sız ya da eski (`PUBLIC`) DOCTYPE'lı belgede `table` açık `p`'yi kapatmaz (quirks modu; emin olunmayan yönde sessiz).
+- `rules/html_balance.py`: dosya sonunda bitmemiş açılış (`<div class="a`) raporlanır; `feed` sonrası tamponda kalan `<harf…` aranır, script/style gibi metin kipinde aranmaz. Örtük kapanış artık yalnız yığının tepesine bakmıyor: blok açılışı açık `p`'yi biçimlendirme olmayan satır içi öğelerin (`span`, `label`, `code` değil…) altından, `li`/`dt`/`dd` önceki öğeyi bunlara ek olarak `div`/`address`/`p` altından da kapatır; bulgu kapanışı tetikleyen etiketin satırında verilir (denetim sonrası, aşağıya bkz.). Arama en fazla 64 öğe derine iner (kötü niyetli girdide doğrusal). DOCTYPE'sız ya da eski (`PUBLIC`) DOCTYPE'lı belgede `table` açık `p`'yi kapatmaz (quirks modu; emin olunmayan yönde sessiz).
 - Aynı satır: motor `(rule_id, satır)` başına tek bulgu tutar; kural artık satırdaki türleri birleştirir, hem kapanmayan hem eşsiz etiket varsa `MIXED_DESCRIPTION` sorusu ikisini birden anlatır.
 - Katalog: `Rule.catalog_note` (yalnız `docs/rules-catalog.md`; öğrenciye giden soru ve `/v1/rules` şeması değişmedi) — HTML-STD-003 kapsam ve bilinen sınırlar notu.
 - Testler: 4 pozitif (`unfinished_start_tag_at_eof`, `p_implied_close_below_inline`, `p_closed_by_table_standards`, `mixed_kinds_same_line`) + 2 negatif (`p_table_quirks_mode`, `implied_close_scopes`) fixture; `test_html_balance.py`'ye 9 test (bitmemiş açılış, script içi `a<b`, satır içi altından örtük kapanış, `button` kapsamı, `li` `div` altından, standart/quirks/eski DOCTYPE, aynı satır karışık tür, doğrusal süre, katalog notu).
@@ -911,6 +911,10 @@ süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölç�
 - Quirks kararı muhafazakâr: yalnız `<!DOCTYPE html>` standart moddur; eski DOCTYPE'larda `table`→`p` kapanışı uygulanmaz (yanlış pozitif yerine kaçırma).
 - Kapsam notu açıklamaya değil ayrı alana: açıklama Sokratik sorudur (mimari §8.2), sınır listesi öğrenciye gitmemeli.
 **Doğrulama:** statik dev eval 0/96 örnekte bulgu değişmedi (geçici sonuç dosyası silindi); ruff/format/mypy temiz; `pytest -m "not live"` → 3000 geçti, 14 atlandı.
+**Denetim (kod-denetci, 2026-10-06) ve düzeltmeler:**
+- Ö2 (yanlış pozitif): örtük kapanış biçimlendirme öğelerini (`a b big code em font i nobr s small strike strong tt u`) da geçip yığından atıyordu; tarayıcı bunları yeniden kurduğu için sonraki `</b>`/`</em>` geçerliyken "eşsiz" raporlanıyordu ve katalog notundaki "yeniden kurma modellenmez, sessiz kalır" ile çelişiyordu. Bu öğeler `_PHRASING`'den çıkarıldı (arama durur, main davranışı); `formatting_reconstruction.html` negatif fixture'ı + `test_formatting_elements_are_not_passed`.
+- Ö3: örtük kapanışla düşen öğe açılış satırında "kapanmamış" diye soruluyordu; asıl neden kapanışı tetikleyen etiket. Yeni `implied` türü tetikleyen satırda `IMPLIED_DESCRIPTION` ile raporlanır.
+- Küçük: dosya sonunda yarım etiket ayrı `unfinished` türü ve `>` sorusu (`<img src="a.png"` artık "nerede kapanıyor?" diye sorulmuyor); `p`/`li` araması ilk eşte durur; katalog testi güçlendirildi.
 
 ## Faz 55 — Notlar (Tier 0 ayrıştırma ve maskeleme sağlamlığı; ADR-0024)
 **Yapılanlar:**

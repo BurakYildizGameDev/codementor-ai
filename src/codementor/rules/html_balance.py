@@ -7,7 +7,8 @@ sözdizimi hatası değil, bulgu olarak raporlanır (ADR-0015 notu). HTML5'in ta
 algoritması değil, sade bir örtük kapanış tablosu kullanılır: emin olunmayan durumda kaçırma.
 
 Faz 56 kapsamı: dosya sonunda bitmemiş açılış (`<div`); örtük kapanışta açık `p`/`li` öğesi
-yığının tepesinde değilse yalnız satır içi öğelerin altında aranır (`<p><span>a<div>`);
+yığının tepesinde değilse biçimlendirme olmayan satır içi öğelerin (`span`, `label`…) altında
+aranır (`<p><span>a<div>`) ve bulgu kapanışı tetikleyen etiketin satırında verilir;
 DOCTYPE'sız (quirks) belgede `table` açık `p`'yi kapatmaz. Bilinen sınırlar: biçimlendirme
 öğelerinin yeniden kurulması (adoption agency), `form`/`button` kapsam ayrıntıları, tabloya
 yanlış konan içeriğin dışarı taşınması (foster parenting) ve eski DOCTYPE'ların modu
@@ -106,38 +107,26 @@ _CLOSES_P = frozenset(
         "ul",
     }
 )
-# Örtük kapanışın aşağı inerek arayabildiği satır içi öğeler (HTML5 "special" değiller)
+# Örtük kapanışın aşağı inerek arayabildiği satır içi öğeler. HTML5 biçimlendirme öğeleri
+# (`a`, `b`, `em`, `strong`, `i`, `u`, `font`…) bilinçli olarak yok: tarayıcı onları sonraki
+# metinde yeniden kurar (adoption agency) ve sonraki `</b>` geçerli olur; kural sessiz kalır
 _PHRASING = frozenset(
     {
-        "a",
         "abbr",
-        "b",
         "bdi",
         "bdo",
-        "big",
         "cite",
-        "code",
         "data",
         "dfn",
-        "em",
-        "font",
-        "i",
         "kbd",
         "label",
         "mark",
-        "nobr",
         "q",
-        "s",
         "samp",
-        "small",
         "span",
-        "strike",
-        "strong",
         "sub",
         "sup",
         "time",
-        "tt",
-        "u",
         "var",
     }
 )
@@ -185,7 +174,7 @@ _FOREIGN = ("svg", "math")  # içlerinde `<x/>` gerçekten kendini kapatır
 @dataclass(frozen=True)
 class Imbalance:
     line: int
-    kind: Literal["unclosed", "stray"]
+    kind: Literal["unclosed", "stray", "implied", "unfinished"]
     tag: str
 
 
@@ -238,12 +227,16 @@ class _Balance(HTMLParser):
             name = self.stack[index][0]
             if name in closes:
                 target = index
+                if passable:  # `p`/`li` en yakın eşini kapatır; tablo dizileri sürer
+                    break
             elif name not in passable:
                 break
+        dropped = False
         while target >= 0 and len(self.stack) > target:
-            name, line = self._pop()
-            if name not in closes and name not in OPTIONAL_END:
-                self.found.append(Imbalance(line, "unclosed", name))
+            name, _ = self._pop()
+            dropped = dropped or (name not in closes and name not in OPTIONAL_END)
+        if dropped:  # kaynak, kapanmamış öğe değil onu kapattıran etiket: o satırda sor
+            self.found.append(Imbalance(self.getpos()[0], "implied", tag))
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self._close_implied(tag)
@@ -280,7 +273,7 @@ class _Balance(HTMLParser):
         # `feed` bitmemiş açılışı (`<div class="a`) tamponda bırakır; `close` onu metin sayar
         unfinished = None if self.cdata_elem else _UNFINISHED_TAG.match(self.rawdata)
         if unfinished:
-            self.found.append(Imbalance(self.getpos()[0], "unclosed", unfinished[1].lower()))
+            self.found.append(Imbalance(self.getpos()[0], "unfinished", unfinished[1].lower()))
         self.close()
         self.found += [
             Imbalance(line, "unclosed", name)
@@ -311,6 +304,14 @@ class UnbalancedTag(Rule):
         "Bu kapanış etiketinin açılışı nerede? Tarayıcı eşi olmayan bir kapanışla "
         "karşılaşınca ne yapıyor olabilir?"
     )
+    IMPLIED_DESCRIPTION = (
+        "Bu etiket açıldığında tarayıcı, yukarıda hâlâ açık olan bir öğeyi kendisi kapatıyor. "
+        "Hangi öğe açık kalmıştı ve bu etiket gerçekten onun içinde mi olmalıydı?"
+    )
+    UNFINISHED_DESCRIPTION = (
+        "Bu etiket dosya sonunda yarım kalmış görünüyor. Açılış etiketinin sonu nerede; "
+        "tarayıcı bu yarım satırı nasıl okuyor olabilir?"
+    )
     MIXED_DESCRIPTION = (
         "Bu satırda hem kapanmadan kalan hem de açılışı olmayan bir etiket var. Hangi kapanış "
         "hangi açılışa ait; tarayıcı bu satırı senin yazdığın gibi mi okuyor?"
@@ -318,7 +319,8 @@ class UnbalancedTag(Rule):
     catalog_note = (
         "Kapanmayan öğe, eşi olmayan kapanış, iç içe karışan etiketler ve dosya sonunda "
         "bitmemiş açılış (`<div`). İsteğe bağlı kapanışlar (`p`, `li`, tablo bölümleri…), "
-        "örtük kapanış (`<p>` blok öğeyle, satır içi öğelerin altından da), tablo hücresi "
+        "örtük kapanış (`<p>` blok öğeyle; `span` gibi satır içi öğelerin altından da, bulgu "
+        "tetikleyen satırda), tablo hücresi "
         "kapsamı ve DOCTYPE'sız (quirks) belgede `table`'ın `p`'yi kapatmaması dikkate alınır. "
         "Aynı satırdaki farklı türde ihlaller tek bulguda birlikte anlatılır. Bilinen sınırlar: "
         "HTML5 ağaç kurma algoritmasının tamamı değil; biçimlendirme öğelerinin yeniden "
@@ -342,4 +344,9 @@ class UnbalancedTag(Rule):
     def _description(self, kinds: set[str]) -> str | None:
         if len(kinds) > 1:
             return self.MIXED_DESCRIPTION
-        return self.STRAY_DESCRIPTION if kinds == {"stray"} else None
+        (kind,) = kinds
+        return {
+            "stray": self.STRAY_DESCRIPTION,
+            "implied": self.IMPLIED_DESCRIPTION,
+            "unfinished": self.UNFINISHED_DESCRIPTION,
+        }.get(kind)

@@ -52,7 +52,7 @@ def test_hr_closes_paragraph() -> None:
 def test_unfinished_start_tag_at_eof_is_reported() -> None:
     assert set(imbalances("<main>\n<div class='a'")) == {
         Imbalance(1, "unclosed", "main"),
-        Imbalance(2, "unclosed", "div"),
+        Imbalance(2, "unfinished", "div"),
     }
 
 
@@ -62,10 +62,10 @@ def test_unfinished_tag_inside_script_is_text() -> None:
 
 
 def test_implied_close_searches_below_inline_elements() -> None:
-    """`<p><span>a<div>`: div açık `p`'yi span'in altından da kapatır; span kapanmamıştır."""
+    """`<p><span>a<div>`: div açık `p`'yi span'in altından da kapatır; bulgu div satırında."""
     found = imbalances("<p><span>a\n<div>b</div>\n</span>\n</p>\n")
     assert found == [
-        Imbalance(1, "unclosed", "span"),
+        Imbalance(2, "implied", "div"),
         Imbalance(3, "stray", "span"),
         Imbalance(4, "stray", "p"),
     ]
@@ -77,7 +77,7 @@ def test_implied_close_stops_at_scope_element() -> None:
 
 
 def test_li_closes_previous_item_through_div() -> None:
-    assert imbalances("<ul>\n<li><div>a\n<li>b\n</ul>\n") == [Imbalance(2, "unclosed", "div")]
+    assert imbalances("<ul>\n<li><div>a\n<li>b\n</ul>\n") == [Imbalance(3, "implied", "li")]
 
 
 def test_table_closes_p_only_in_standards_mode() -> None:
@@ -112,4 +112,26 @@ def test_catalog_shows_scope_note_without_changing_question() -> None:
 
     catalog = render_catalog()
     assert f"*Kapsam ve sınırlar:* {UnbalancedTag.catalog_note}" in catalog
-    assert "sınır" not in UnbalancedTag.description
+    assert UnbalancedTag.description.endswith("?")
+    assert "Bilinen sınırlar" not in UnbalancedTag.description
+    question = f"### HTML-STD-003 — Dengesiz etiket\n\n{UnbalancedTag.description}\n"
+    assert question in catalog
+
+
+def test_formatting_elements_are_not_passed() -> None:
+    """Denetim Ö2: tarayıcı `b`/`em`/`a`'yı yeniden kurar; sonraki kapanış eşsiz değildir."""
+    assert imbalances("<ul>\n<li><b>bold\n<li>also</b>\n</ul>\n") == []
+    assert imbalances("<!DOCTYPE html>\n<p><em>Not:\n<p>devam</em>\n") == []
+    # `a` biçimlendirme öğesi: arama durur, `p` açık kalır (main ile aynı, sessiz)
+    assert imbalances("<!DOCTYPE html>\n<p><a href='#'>\n<div>card</div>\n</a></p>\n") == []
+
+
+def test_implied_and_unfinished_use_own_questions() -> None:
+    """Denetim Ö3 ve küçük bulgu: örtük kapanış tetikleyen satırda, yarım etiket `>` sorusuyla."""
+    implied = run_text("<main>\n<p><span>a\n<div>b</div>\n</main>\n", Language.HTML).findings
+    (finding,) = [f for f in implied if f.rule_id == "HTML-STD-003"]
+    assert (finding.line_start, finding.description) == (3, UnbalancedTag.IMPLIED_DESCRIPTION)
+
+    unfinished = run_text('<p>a</p>\n<img src="a.png"\n', Language.HTML).findings
+    (finding,) = [f for f in unfinished if f.rule_id == "HTML-STD-003"]
+    assert (finding.line_start, finding.description) == (2, UnbalancedTag.UNFINISHED_DESCRIPTION)
