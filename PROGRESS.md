@@ -905,24 +905,25 @@ süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölç�
   - Başlık alanına "Tümünü temizle" butonu eklendi (boşken devre dışı).
   - Her satıra satırı açmadan çalışan "Sil" butonu eklendi; tıklama olayının satır açma ile çakışması engellendi.
 - `desktop/app.py`:
-  - `delete_history(analysis_id)`: DB kaydını ve diskteki kaynak kodunu siler, açık analiz bu ise sonuçları ve raporu sıfırlar, geçmişi yeniler ve toast verir.
-  - `clear_history()`: `askyesno` onayının ardından tüm analizleri ve kaynak dosyalarını temizler, açık ekranı sıfırlar, geçmişi yeniler ve toast verir.
+  - `delete_history(analysis_id)`: DB kaydını ve diskteki kaynak kodunu siler, açık analiz bu ise (`_shown_analysis_id` eşleşmesinde, eski uyumsuz raporlar dâhil) sonuçları ve raporu sıfırlar, geçmişi yeniler ve toast verir.
+  - `clear_history()`: `self.confirm` onayı (`askyesno`) ardından tüm analizleri, oturumları (`clear_sessions`) ve kaynak kodlarını temizler, açık ekranı sıfırlar, geçmişi yeniler ve toast verir (`Geçmiş temizlendi (N analiz).`).
 - `docs/mimari.md` ve `docs/GUNCELLEMELER.md` güncellendi.
 - Testler:
   - `tests/unit/test_storage.py`: `delete_analysis` (başarılı/bulunamadı), `clear_analyses`, `clear_sessions` testleri.
   - `tests/desktop/test_runtime.py`: `delete_source` (başarılı, traversal koruması), `clear_sources` testleri.
   - `tests/api/test_routes.py`: `DELETE /v1/analyses/{id}` (204, 404, geçersiz ULID 404) testleri.
   - `tests/api/test_errors_and_app.py`: CORS preflight `DELETE` metodu izni testi.
-  - `tests/desktop/test_app.py`: `delete_history` ve `clear_history` (onaylı/onaysız, açık analiz sıfırlama), `HistoryView` buton geri çağrı testleri. Toplam 3078 test yeşil.
+  - `tests/desktop/test_app.py`: `delete_history` ve `clear_history` (onaylı/onaysız, açık analiz ve oturum sıfırlama, uyumsuz eski analiz silme), `HistoryView` buton geri çağrı testleri. Toplam 3079 test yeşil.
 **Alınan kararlar (ve neden):**
 - Güvenlik: `delete_source` kimliği doğrudan dosya sistemine bağladığından `analysis_id.isalnum()` kuralıyla path traversal engellendi.
 - API tutarlılığı: `DELETE /v1/analyses/{id}` varlığı sızdırmamak adına geçersiz ULID'lerde de 404 döner (Faz 27 standardı).
-- Kullanıcı deneyimi: Masaüstünde tek analiz silme pratiklik için anında silinir; "Tümünü temizle" ise geri alınamaz veri kaybını önlemek için onay diyaloğu (`askyesno`) gösterir.
+- Kullanıcı deneyimi: Masaüstünde tek analiz silme pratiklik için anında silinir; "Tümünü temizle" ise geri alınamaz veri kaybını önlemek için onay diyaloğu (`self.confirm`) gösterir ve oturum merdivenlerini de sıfırlar.
 **Doğrulama çıktısı:**
-- `uv run ruff check . && uv run ruff format --check .` (temiz, 419 dosya)
+- `uv run ruff check . && uv run ruff format --check .` (temiz, 421 dosya)
 - `uv run mypy src/` (0 hata, 198 kaynak dosya)
-- `uv run pytest -m "not live"` (3078 passed, 14 skipped, 6 deselected; 132 sn)
+- `uv run pytest -m "not live"` (3079 passed, 14 skipped, 6 deselected; 114 sn)
 - `npm --prefix web run typecheck && npm --prefix web run build` (hatasız derlendi)
+- `faz-denetim` denetim protokolü koşuldu ve "BİRLEŞTİRİLEBİLİR" olarak onaylandı.
 
 ## Faz 61 — Notlar (ipucu merdiveni yalnız sayılan denemelerle ilerler; ADR-0026)
 **Yapılanlar:**
