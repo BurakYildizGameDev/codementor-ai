@@ -49,6 +49,7 @@ Sıra önceliğe göredir. Her faz `UYGULAMA_PLANI.md` protokolüyle uygulanır 
 ### Faz 60 — Güncel exe ve sürüm uyumu (öncelik: yüksek)
 
 **Amaç:** Kullanıcı hangi sürümü çalıştırdığını görsün; sürümler arası geçmiş çökmesin.
+Uygulama ayrıntısı: [DEVIR_FAZ60_62.md](DEVIR_FAZ60_62.md) (Faz 60-62 GLM'e devredildi).
 
 - [ ] Güncel `main`'den exe'yi yeniden derle (`uv run python build_exe.py --both`) ya da CI'nın
       `CodeMentor-win64` artefaktını kullan; 64 görev, agy ve geçmiş açma ile doğrula
@@ -57,8 +58,8 @@ Sıra önceliğe göredir. Her faz `UYGULAMA_PLANI.md` protokolüyle uygulanır 
 - [ ] Kayıtlı rapor okunamazsa çökme yok: geçmişte "bu rapor farklı bir sürümle oluşturuldu"
       mesajı ve kodun yine açılması; okuma, bilinmeyen alanları yok sayan ayrı bir yolla
       (API'nin katı şeması değişmez)
-- [ ] Exe'de referans çözüm olmaması (`reference_solution_unreadable`, `private/` bilerek
-      pakette yok) her analizde uyarı yazmasın: bir kez, bilgi düzeyinde
+- [x] ~~Exe'de referans çözüm olmaması her analizde uyarı yazmasın~~ → Faz 31'de zaten
+      çözülmüş (`load_reference`: dosya yoksa `log.debug`); logdaki uyarı eski exe'dendi
 - [ ] Testler: eski/yeni şemalı rapor geçmişten açılır; sürüm bilgisi testli
 
 ### Faz 61 — İpucu seviyesi adaleti (öncelik: yüksek, hata)
