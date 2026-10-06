@@ -1827,6 +1827,47 @@ olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın ka
 
 **Commit:** `fix(faz-57): C-MEM-003 kullanım öncesi null denetimi`
 
+### Faz 58 — Aralıklı düşen toolchain kurulum testleri (YAPILACAK)
+
+**Dal:** `faz/58-toolchain-test-kararlilik` · **Mimari:** §15, ADR-0018
+
+**Amaç:** `tests/unit/test_toolchain_install.py` tam test koşusunda aralıklı düşüyor (Faz 57'de bir
+koşuda 4 test, ör. `test_reinstall_atomic`), tek başına her zaman geçiyor. CI'da rastgele kırmızı
+güveni sarsar. Önce nedeni bul, sonra kökten düzelt; yeniden deneme ya da `skip` ile gizleme yok.
+
+- [ ] Hatayı yeniden üret: tam paketi ve dosyayı rastgele sırayla/tekrarla koş, düşen testlerin
+      hata metnini kaydet; hangi testle birlikte koşunca düştüğünü daralt
+- [ ] Kök nedeni belirle (ortak geçici dizin, sabit yol, global durum/ortam değişkeni, Windows'ta
+      dosya kilidi ya da atomik yeniden adlandırma yarışı) ve PROGRESS'e kanıtıyla yaz
+- [ ] Düzeltmeyi test yalıtımında yap (`tmp_path`, `monkeypatch`); üretim kodunda gerçek bir yarış
+      varsa üretim kodunu düzelt ve ona ayrı test ekle
+- [ ] Doğrulama: dosya 50 kez tekrar ve tam paket 3 kez art arda yeşil; CI'da Ubuntu ve Windows yeşil
+
+**Commit:** `fix(faz-58): toolchain kurulum testlerinde aralıklı hata`
+
+### Faz 59 — Tier 0 ayrıştırmasını alt süreçte süre sınırıyla yalıtma (YAPILACAK)
+
+**Dal:** `faz/59-tier0-alt-surec` · **Mimari:** §4.3, §12 · **ADR:** 0024'ü güncelleyen yeni ADR
+
+**Amaç:** ADR-0024'te kabul edilen risk: 40 KB'lık kasıtlı C# girdisi (`a<`×20000) tree-sitter
+ayrıştırmasında bir analiz iş parçacığını ~12 s meşgul ediyor; tree-sitter 0.25.2'de süreç içi
+iptal yok. Araç paylaşılan bir sunucuda çalışacaksa ayrıştırma sert süre sınırıyla
+öldürülebilir bir alt süreçte koşmalı. Docker kullanılmaz.
+
+- [ ] Tasarım ve ADR: alt süreç modeli (süreç başına iş mi, sıcak işçi havuzu mu), Windows'ta
+      süreç açma maliyeti, ağaç nesnesinin süreçler arası taşınamaması (alt süreç bulgu/tanı
+      döndürür, ağaç değil) ve hangi yolların yalıtılacağı (yalnız Tier 0 mı, `extract_facts` da mı)
+- [ ] Süre sınırı ve açma/kapama `codementor.toml`'dan gelir (koda gömülmez); varsayılan yerel
+      kullanımda davranışı ve hızı değiştirmez
+- [ ] Süre aşımında alt süreç ağacıyla birlikte öldürülür (mevcut süreç ağacı öldürme altyapısı),
+      kullanıcıya Türkçe ve anlaşılır bir tanı döner; analiz bozulmuş rapor olarak sürer, çökmez
+- [ ] Testler: C# `a<` girdisi süre sınırında kesilir (testte kısa sınır), normal girdide sonuç
+      süreç içi koşuyla birebir aynı, alt süreç çökmesi/öldürülmesi ana süreci etkilemez;
+      `test_tier0_budget.py` C# vakasını artık kapsar
+- [ ] Ölçüm: geçerli girdide ek gecikme (p50/p95) PROGRESS'e yazılır; statik dev eval bulguları değişmez
+
+**Commit:** `feat(faz-59): Tier 0 ayrıştırmasını alt süreçte süre sınırıyla yalıt`
+
 ---
 
 ## 7. PROGRESS.md Şablonu
