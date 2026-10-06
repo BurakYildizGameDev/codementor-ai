@@ -899,6 +899,11 @@ süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölç�
 - `if (a) {…} else { *a }` gibi denetimin yanlış dalındaki kullanım ayırt edilmez (denetim kullanımı kapsıyor sayılır); `if (flag && !a) return;` gibi koşullu korumalar da denetim sayılır. İkisi de kaçırma yönünde muhafazakâr.
 - Takma ad yönlü (`b = a` → `a`'nın takma adı `b`) ve kullanımdan önce kurulmuş olmalı: ilk sürümde çift yönlü ve sırasızdı, golden bağlı liste örneğinde (`cur->next = n` + önceki `cur->next != NULL`) 17. satır bulgusunu yanlışlıkla gizledi; düzeltilip `alias_after_use` fixture'ı eklendi.
 **Doğrulama:** statik dev eval 0/96 örnekte bulgu değişmedi (geçici dosya silindi); golden prompt'lar aynı; ruff/format/mypy temiz; `pytest -m "not live"` → 3008 geçti, 14 atlandı. (Bir tam koşuda `test_toolchain_install.py`'den 4 test aralıklı düştü; tek başına ve değişiklik olmadan 38/38 geçiyor, sonraki tam koşu yeşil — izlenecek.)
+**Denetim (kod-denetci, 2026-10-06) ve düzeltmeler:**
+- K1 (karesel süre, §12): `_statement` her denetimde `.parent` ile yukarı tırmanıyordu; tree-sitter `.parent`'ı kökten arayarak bulduğu için derin ağaçta karesel (`if(` + `!p&&`×8000: 56 s, main 0,18 s). Deyim, blok ve döngü bağlamı artık gezinti yığınında taşınıyor (`_Context`), `.parent` hiç çağrılmıyor: 0,17 s. Derin `&&` zinciri, döngü koşulu zinciri ve derin blok + çok denetim girdileri `test_linear_time_large_input`'a eklendi.
+- Ö1 (yanlış pozitif): `else if` zincirindeki denetim (iç `if` en dış `if` sayılır), etiketli deyim (`check: if (!p) return;`; etiket şeffaf) ve yeniden deneme döngüsü (`while (1) { p = malloc(n); if (p) break; } p[0]`; tahsisi içeren döngüdeki denetim, kullanım döngüden sonraysa sayılır) artık bastırıyor. `else_if_label_retry.c` negatif fixture'ı.
+- Bilinen kaçırma (doğrulanmadı, muhafazakâr yön): `while (p != NULL) { p = malloc(n); p[0] = 1; }` gibi döngü koşulu yeni tahsise taşınıp denetim sayılabilir.
+- Tam koşu: bir koşuda 2 test aralıklı düştü, sonraki iki koşu yeşil (3015 geçti); büyük olasılıkla yine `test_toolchain_install.py` (Sonraya'daki not).
 
 ## Faz 56 — Notlar (HTML-STD-003 kenar durumları)
 **Yapılanlar:**

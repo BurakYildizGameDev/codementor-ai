@@ -360,6 +360,31 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
             Language.C,
             Engine.NONE,
         ),
+        # Faz 57 denetimi K1: `.parent` tırmanışı derin ağaçta karesel (32 KB'ta 56 s idi)
+        (
+            "#include <stdlib.h>\nvoid f(void){int *p=0;\nif("
+            + "!p&&" * 8000
+            + "1);p=malloc(1);*p=1;}\n",
+            Language.C,
+            Engine.NONE,
+        ),
+        (
+            "#include <stdlib.h>\nvoid f(void){int *p=0;\nwhile("
+            + "!p&&" * 4500
+            + "1){p=malloc(1);}*p=1;}\n",
+            Language.C,
+            Engine.NONE,
+        ),
+        (
+            "#include <stdlib.h>\nvoid f(void){int *p=0;\n"
+            + "if(1){" * 2000
+            + "p=malloc(1);"
+            + "if(!p);" * 3000
+            + "}" * 2000
+            + "*p=1;}\n",
+            Language.C,
+            Engine.NONE,
+        ),
     ],
     ids=[
         "c-malloc",
@@ -388,6 +413,9 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
         "html-bang-and-slash",
         "c-checks-then-allocs",
         "c-allocs-then-uses",
+        "c-deep-and-chain",
+        "c-loop-condition-chain",
+        "c-deep-blocks-many-checks",
     ],
 )
 def test_linear_time_large_input(text: str, language: Language, engine: Engine) -> None:

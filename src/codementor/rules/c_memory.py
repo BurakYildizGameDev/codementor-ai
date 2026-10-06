@@ -5,6 +5,8 @@ C-MEM-001 `c.py`'de; buradaki kurallar onun yardımcılarını (`unwrap_call`, `
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 from tree_sitter import Node
 
 from codementor.analysis._symbols import declarator_name, line, operator_of, text
@@ -39,7 +41,6 @@ _STATEMENTS = frozenset(
     }
 )
 _LOOPS = frozenset({"while_statement", "for_statement", "do_statement"})
-_MAX_CLIMB = 32  # denetimden deyime tırmanma sınırı (derin ifadede doğrusal kalsın)
 _MAX_CARRY = 8  # yeni tahsise taşınan döngü koşulu denetimi sayısı
 
 
@@ -107,6 +108,23 @@ class ReallocSelfAssign(Rule):
         return found
 
 
+class _Context(NamedTuple):
+    """Bir düğümün en yakın deyimi, deyimin durduğu blok ve en içteki döngü (Faz 57).
+
+    Gezinti yığınında taşınır; `.parent` çağrılmaz (tree-sitter'da kökten arar, derin ağaçta
+    karesel olurdu — denetim K1).
+    """
+
+    statement: Node | None
+    scope: Node | None
+    loop: Node | None
+
+
+class _Check(NamedTuple):
+    node: Node
+    context: _Context
+
+
 class _NullChecks:
     """Bir fonksiyonda tahsis edilen, kullanılan ve NULL'a karşı denetlenen adlar.
 
@@ -121,20 +139,22 @@ class _NullChecks:
     def __init__(self, fn: Node) -> None:
         self.allocs: dict[str, list[Node]] = {}
         self.uses: dict[str, list[Node]] = {}
-        self.checks: dict[str, list[Node]] = {}
+        self.checks: dict[str, list[_Check]] = {}
         self.helper_checked: set[str] = set()
         self.aliases: dict[str, list[tuple[str, Node]]] = {}
-        stack = [fn]
-        while stack:  # ön sıra: düğümler belge sırasıyla ziyaret edilir
-            node = stack.pop()
+        # (düğüm, bağlamı, alt deyimlerin bloğu); ön sıra: belge sırasıyla ziyaret
+        stack: list[tuple[Node, _Context, Node]] = [(fn, _Context(None, None, None), fn)]
+        while stack:
+            node, context, holder = stack.pop()
             if node.type == "sizeof_expression":
                 continue
-            self._visit(node)
-            stack.extend(reversed(node.named_children))
+            self._visit(node, context)
+            children = [_child(node, context, holder, c) for c in node.named_children]
+            stack.extend(reversed(children))
         # adın son denetiminin bitişi (takma ad kararında O(1))
-        self.last_check = {k: max(c.end_byte for c in cs) for k, cs in self.checks.items()}
+        self.last_check = {k: max(c.node.end_byte for c in cs) for k, cs in self.checks.items()}
 
-    def _visit(self, node: Node) -> None:
+    def _visit(self, node: Node, context: _Context) -> None:
         kind = node.type
         if kind == "init_declarator":
             name = declarator_name(node.child_by_field_name("declarator"))
@@ -142,13 +162,13 @@ class _NullChecks:
         elif kind == "assignment_expression" and operator_of(node) == "=":
             self._bind(node.child_by_field_name("left"), node.child_by_field_name("right"))
         elif kind in _CONDITIONS:
-            self._check(node.child_by_field_name("condition"))
+            self._check(node.child_by_field_name("condition"), context)
         elif kind == "unary_expression" and operator_of(node) == "!":
-            self._check(node.child_by_field_name("argument"))
+            self._check(node.child_by_field_name("argument"), context)
         elif kind == "binary_expression":
-            self._binary(node)
+            self._binary(node, context)
         elif kind == "call_expression":
-            self._call(node)
+            self._call(node, context)
         elif (
             kind == "subscript_expression"
             or (kind == "pointer_expression" and operator_of(node) == "*")
@@ -166,20 +186,20 @@ class _NullChecks:
             # `b = a`: `a`'nın tahsisi `b` üzerinden de denetlenebilir
             self.aliases.setdefault(source, []).append((key, value))
 
-    def _check(self, node: Node | None) -> None:
+    def _check(self, node: Node | None, context: _Context) -> None:
         if node is not None and (key := _key(node)) is not None:
-            self.checks.setdefault(key, []).append(node)
+            self.checks.setdefault(key, []).append(_Check(node, context))
 
     def _use(self, node: Node | None) -> None:
         if node is not None and (key := _key(node)) is not None:
             self.uses.setdefault(key, []).append(node)
 
-    def _binary(self, node: Node) -> None:
+    def _binary(self, node: Node, context: _Context) -> None:
         op = operator_of(node)
         left, right = node.child_by_field_name("left"), node.child_by_field_name("right")
         if op in ("&&", "||"):
-            self._check(left)
-            self._check(right)
+            self._check(left, context)
+            self._check(right, context)
         elif op in ("==", "!="):
             for side, other in ((left, right), (right, left)):
                 # kısa düğüm sınırı: uzun ifadenin metni alınmaz
@@ -190,16 +210,16 @@ class _NullChecks:
                     and other.end_byte - other.start_byte <= len("nullptr")
                     and text(other) in _NULLS
                 ):
-                    self._check(side)
+                    self._check(side, context)
 
-    def _call(self, node: Node) -> None:
+    def _call(self, node: Node, context: _Context) -> None:
         callee = callee_name(node)
         args = node.child_by_field_name("arguments")
         if args is None:
             return
         if callee == "assert":
             for arg in args.named_children:
-                self._check(arg)
+                self._check(arg, context)
         elif callee in NON_OWNING:
             for arg in args.named_children:
                 self._use(arg)
@@ -238,65 +258,71 @@ class _NullChecks:
         uses = self.uses.get(key, [])
         if not uses or self._uncertain(key):
             return []
-        events = sorted(
-            [(c.start_byte, 0, c) for c in self.allocs[key]]
-            + [(c.end_byte, 1, c) for c in self.checks.get(key, [])]
-            + [(u.start_byte, 2, u) for u in uses],
+        events: list[tuple[int, int, Node, _Check | None]] = sorted(
+            [(c.start_byte, 0, c, None) for c in self.allocs[key]]
+            + [(c.node.end_byte, 1, c.node, c) for c in self.checks.get(key, [])]
+            + [(u.start_byte, 2, u, None) for u in uses],
             key=lambda event: (event[0], event[1]),
         )
         found: list[int] = []
         alloc: Node | None = None
-        window: list[Node] = []
-        statements: dict[int, Node | None] = {}
-        for _, kind, node in events:
+        window: list[_Check] = []
+        for _, kind, node, check in events:
             if kind == 0:
                 # tahsisi çevreleyen döngünün koşulu (`while (!p) p = malloc(..)`) geçerli kalır
-                carried = [c for c in window if _loop_around(c, node, statements)]
+                carried = [c for c in window if _loop_condition_around(c, node)]
                 alloc, window = node, carried[:_MAX_CARRY]
-            elif kind == 1:
-                window.append(node)
+            elif check is not None:
+                window.append(check)
             elif alloc is not None:
-                if not any(_guards(c, alloc, node, statements) for c in window):
+                if not any(_guards(c, alloc, node) for c in window):
                     found.append(line(alloc))
                 alloc = None  # yalnız ilk kullanım belirleyicidir
         return found
 
 
-def _statement(node: Node, cache: dict[int, Node | None]) -> Node | None:
-    """Denetimin ait olduğu en yakın deyim (`if`, ifade deyimi, `return` ...)."""
-    if id(node) in cache:
-        return cache[id(node)]
-    found: Node | None = None
-    current: Node | None = node
-    for _ in range(_MAX_CLIMB):
-        if current is None or current.type in _STATEMENTS:
-            found = current
-            break
-        current = current.parent
-    cache[id(node)] = found
-    return found
+def _child(
+    parent: Node, context: _Context, holder: Node, child: Node
+) -> tuple[Node, _Context, Node]:
+    """Çocuğun bağlamı ve alt deyimlerinin bloğu.
+
+    `else if` zincirindeki iç `if` en dıştaki `if` ile aynı deyim sayılır; etiket
+    (`hata: if (..)`) şeffaftır, etiketli deyim etiketin bloğunda durur.
+    """
+    child_holder = holder if child.type == "labeled_statement" else child
+    if child.type not in _STATEMENTS or (
+        child.type == "if_statement" and parent.type == "else_clause"
+    ):
+        return child, context, child_holder
+    loop = child if child.type in _LOOPS else context.loop
+    return child, _Context(child, holder, loop), child_holder
 
 
 def _contains(outer: Node, inner: Node) -> bool:
     return outer.start_byte <= inner.start_byte and inner.end_byte <= outer.end_byte
 
 
-def _loop_around(check: Node, alloc: Node, cache: dict[int, Node | None]) -> bool:
-    statement = _statement(check, cache)
+def _loop_condition_around(check: _Check, alloc: Node) -> bool:
+    statement = check.context.statement
     return statement is not None and statement.type in _LOOPS and _contains(statement, alloc)
 
 
-def _guards(check: Node, alloc: Node, use: Node, cache: dict[int, Node | None]) -> bool:
+def _guards(check: _Check, alloc: Node, use: Node) -> bool:
     """`check` tahsisten sonra (ya da onu çevreleyen döngünün koşulunda) ve kullanımın yolunda mı.
 
-    Deyim bulunamazsa (çok derin ifade) muhafazakâr davranılır: denetim sayılır.
+    Yol: denetimin deyimini içeren blok kullanımı kapsar ya da denetim, tahsisi de içeren bir
+    döngünün içinde olup kullanım döngüden sonradır (`while (1) { p = malloc(n); if (p)
+    break; }`). Deyim bilinmiyorsa muhafazakâr davranılır: denetim sayılır.
     """
-    statement = _statement(check, cache)
-    if statement is None:
+    statement, scope, loop = check.context
+    if statement is None or scope is None:
         return True
-    after = check.end_byte > alloc.start_byte or _loop_around(check, alloc, cache)
-    scope = statement.parent
-    return after and (scope is None or _contains(scope, use))
+    after = check.node.end_byte > alloc.start_byte or _loop_condition_around(check, alloc)
+    if not after:
+        return False
+    if _contains(scope, use):
+        return True
+    return loop is not None and _contains(loop, alloc) and use.start_byte >= loop.end_byte
 
 
 @register_rule
