@@ -3,6 +3,8 @@ name = "codementor"
 version = "0.1.0"
 description = "Kodu düzeltmeyen, denetleyip Sokratik sorular üreten hibrit kod mentorluk motoru"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.8",

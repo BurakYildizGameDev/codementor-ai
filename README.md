@@ -12,6 +12,7 @@ sorunu kendisinin bulmasına yönelten sorular sorar.
 ![mypy strict](https://img.shields.io/badge/mypy-strict-2A6DB2)
 ![tests](https://img.shields.io/badge/testler-3000%2B-success)
 ![Docker yok](https://img.shields.io/badge/Docker-gerekmez-lightgrey)
+[![Lisans: MIT](https://img.shields.io/badge/lisans-MIT-blue)](LICENSE)
 
 C · C++ · C# · Unity · Unreal · Python · HTML · CSS
 
@@ -456,3 +457,5 @@ kod denetimi ajanından geçti ve bulunan hatalar birleştirmeden önce düzelti
 Belgeler: [mimari](docs/mimari.md) · [ADR'ler](docs/adr/) · [uygulama planı](docs/UYGULAMA_PLANI.md) ·
 [eval bulguları](docs/eval-findings.md) · [kural kataloğu](docs/rules-catalog.md) ·
 [ilerleme](PROGRESS.md) · [Faz 0-16 özeti](docs/YAPILANLAR.md)
+
+Lisans: [MIT](LICENSE).
