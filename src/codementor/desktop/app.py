@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from tkinter import filedialog, messagebox
 from typing import Any
@@ -45,6 +46,7 @@ from codementor.storage.cache import (
     list_analyses,
 )
 from codementor.storage.db import AnalysisRow, resolve_db_path
+from codementor.storage.sessions import clear_sessions
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 POLL_MS = 60
@@ -85,6 +87,8 @@ class App(ctk.CTk):  # type: ignore[misc]
         self._last_code = ""
         self._last_question_id: str | None = None
         self._last_counted: bool | None = None
+        self._shown_analysis_id: str | None = None
+        self.confirm: Callable[..., bool] = messagebox.askyesno
 
         self.title("CodeMentor AI")
         self._place_window()
@@ -297,11 +301,13 @@ class App(ctk.CTk):  # type: ignore[misc]
         view.show_progress(self.tracker)
         if message.kind == "result" and isinstance(message.payload, AnalysisReport):
             report = message.payload
+            self._shown_analysis_id = report.analysis_id
             keep = self.core.settings.storage.max_analyses
             runtime.save_source(report.analysis_id, self._last_code, self.prefs_dir, keep=keep)
             self._last_counted = not report.meta.early_exit and not report.meta.degraded
             view.show_report(report)
         else:
+            self._shown_analysis_id = None
             self._last_counted = None
             view.show_error(str(message.payload))
 
@@ -346,6 +352,7 @@ class App(ctk.CTk):  # type: ignore[misc]
     def open_history(self, analysis_id: str) -> None:
         report = get_analysis(self.core.database(), analysis_id)
         if report is not None:
+            self._shown_analysis_id = analysis_id
             view = self.analyze_view
             view.select(report.language, report.engine, report.question_id)
             code = runtime.load_source(analysis_id, self.prefs_dir)
@@ -362,6 +369,7 @@ class App(ctk.CTk):  # type: ignore[misc]
             self.toast("Bu analiz artık bulunamıyor.")
             return
 
+        self._shown_analysis_id = analysis_id
         view = self.analyze_view
         try:
             lang = Language(row.language)
@@ -391,29 +399,29 @@ class App(ctk.CTk):  # type: ignore[misc]
         if not deleted_db and not deleted_file:
             self.toast("Analiz bulunamadı.")
             return
-        if (
-            self.analyze_view.report is not None
-            and self.analyze_view.report.analysis_id == analysis_id
-        ):
+        if self._shown_analysis_id == analysis_id:
+            self._shown_analysis_id = None
             self.analyze_view.report = None
             self.analyze_view.reset_results()
         self.history_view.refresh()
         self.toast("Analiz geçmişten silindi.")
 
     def clear_history(self) -> None:
-        """Tüm analiz geçmişini ve saklanan kodları temizler (Faz 62)."""
-        if not messagebox.askyesno(
+        """Tüm analiz geçmişini, saklanan kodları ve oturumları temizler (Faz 62)."""
+        if not self.confirm(
             "Geçmişi Temizle",
-            "Tüm analiz geçmişi ve saklanan kodlar silinsin mi?\nBu işlem geri alınamaz.",
+            "Tüm analiz geçmişi, saklanan kodlar ve ipucu ilerlemen silinecek. Emin misin?",
             parent=self,
         ):
             return
-        clear_analyses(self.core.database())
+        count = clear_analyses(self.core.database())
+        clear_sessions(self.core.database())
         runtime.clear_sources(self.prefs_dir)
+        self._shown_analysis_id = None
         self.analyze_view.report = None
         self.analyze_view.reset_results()
         self.history_view.refresh()
-        self.toast("Tüm analiz geçmişi temizlendi.")
+        self.toast(f"Geçmiş temizlendi ({count} analiz).")
 
     # --- Ayarlar ve ortam ---------------------------------------------------------------
 

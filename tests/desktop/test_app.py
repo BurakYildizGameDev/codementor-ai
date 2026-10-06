@@ -29,7 +29,7 @@ from codementor.models.request import AnalysisRequest
 from codementor.models.validation import DownloadProgress
 from codementor.providers.base import RetryPolicy
 from codementor.providers.fake import FakeProvider, FakeReply
-from codementor.storage import cache
+from codementor.storage import cache, sessions
 from codementor.storage.db import AnalysisRow
 from codementor.validation.toolchain_install import InstallCancelledError, ToolchainInstallError
 from tests.desktop.conftest import StallingProvider
@@ -157,6 +157,7 @@ def test_delete_history_removes_record_and_resets_active_report(app: App, prefs_
     report = app.analyze_view.report
     assert report is not None
     analysis_id = report.analysis_id
+    assert app._shown_analysis_id == analysis_id
 
     # DB ve diskte mevcut
     assert cache.get_analysis(app.core.database(), analysis_id) is not None
@@ -167,35 +168,90 @@ def test_delete_history_removes_record_and_resets_active_report(app: App, prefs_
     assert cache.get_analysis(app.core.database(), analysis_id) is None
     assert runtime.load_source(analysis_id, prefs_dir) is None
     assert app.analyze_view.report is None
+    assert app._shown_analysis_id is None
 
     # Zaten silinmiş analizi tekrar silme
     app.delete_history(analysis_id)
 
 
-def test_clear_history_confirmation_and_cleanup(
-    app: App, prefs_dir: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Faz 62: clear_history onay verilirse tüm geçmişi ve saklanan kodları temizler."""
-    import tkinter.messagebox as mb
-
+def test_clear_history_confirmation_and_cleanup(app: App, prefs_dir: Path) -> None:
+    """Faz 62: clear_history onay verilirse tüm geçmişi, saklanan kodları ve oturumları temizler."""
     app.analyze_view.editor.set(LINKED_LIST, Language.C)
     analyze(app)
     report = app.analyze_view.report
     assert report is not None
     analysis_id = report.analysis_id
 
-    # 1. Onay verilmezse silinmez
-    monkeypatch.setattr(mb, "askyesno", lambda *args, **kwargs: False)
+    # Oturum denemesi de ekle
+    sessions.reserve_attempt(app.core.database(), "s1", "q1")
+
+    # 1. Onay verilmezse silinmez (enjekte edilebilir self.confirm)
+    prompts: list[tuple[str, str]] = []
+
+    def reject(title: str, message: str, **_kwargs: Any) -> bool:
+        prompts.append((title, message))
+        return False
+
+    app.confirm = reject
     app.clear_history()
+    assert len(prompts) == 1
+    assert "Emin misin?" in prompts[0][1]
     assert cache.get_analysis(app.core.database(), analysis_id) is not None
     assert runtime.load_source(analysis_id, prefs_dir) is not None
+    assert sessions.next_attempt(app.core.database(), "s1", "q1") == 2
 
     # 2. Onay verilirse temizlenir
-    monkeypatch.setattr(mb, "askyesno", lambda *args, **kwargs: True)
+    def accept(title: str, message: str, **_kwargs: Any) -> bool:
+        prompts.append((title, message))
+        return True
+
+    app.confirm = accept
     app.clear_history()
     assert cache.get_analysis(app.core.database(), analysis_id) is None
     assert runtime.load_source(analysis_id, prefs_dir) is None
     assert app.analyze_view.report is None
+    assert app._shown_analysis_id is None
+    # Oturumlar da silindi:
+    assert sessions.next_attempt(app.core.database(), "s1", "q1") == 1
+    assert "Geçmiş temizlendi (1 analiz)." in _toast(app)
+
+
+def test_delete_history_incompatible_report_resets_shown_analysis(
+    app: App, prefs_dir: Path
+) -> None:
+    """Faz 62: Uyumsuz eski rapor ekranda açıkken silinirse gösterim sıfırlanır."""
+    analysis_id = "01J62TESTINCOMPATIBLE000001"
+    row = AnalysisRow(
+        id=analysis_id,
+        created_at=datetime.now(UTC),
+        cache_key="key_incompat_del",
+        language="c",
+        engine="standalone",
+        question_id=None,
+        session_id=None,
+        provider="fake",
+        model="fake",
+        early_exit=False,
+        degraded=False,
+        tokens_in=10,
+        tokens_out=20,
+        latency_ms=100,
+        report_json='{"eski": "format"}',
+    )
+    db = app.core.database()
+    with db.session() as session:
+        session.add(row)
+        session.commit()
+    runtime.save_source(analysis_id, "int a = 1;\n", prefs_dir)
+
+    app.open_history(analysis_id)
+    assert app._shown_analysis_id == analysis_id
+    assert app.analyze_view.report is None  # şema uyumsuz
+
+    app.delete_history(analysis_id)
+    assert app._shown_analysis_id is None
+    assert cache.get_row(db, analysis_id) is None
+    assert runtime.load_source(analysis_id, prefs_dir) is None
 
 
 def test_history_view_buttons_trigger_callbacks(app: App) -> None:
