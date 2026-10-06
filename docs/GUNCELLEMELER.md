@@ -78,14 +78,14 @@ Uygulama ayrıntısı: [DEVIR_FAZ60_62.md](DEVIR_FAZ60_62.md) (Faz 60-62 GLM'e d
 
 **Amaç:** Öğrenci geçmişini ve kayıtlı kodunu silebilsin (gizlilik).
 
-- [ ] Depolama: tek analiz ve tüm geçmiş silme; ilgili oturum kaydı ve
+- [x] Depolama: tek analiz ve tüm geçmiş silme; ilgili oturum kaydı ve
       `~/.codementor/desktop-sources/*.txt` kod dosyaları da silinir
-- [ ] Masaüstü: satır başına sil, "Tüm geçmişi temizle" (onaylı); silinen analiz açıksa ekran
+- [x] Masaüstü: satır başına sil, "Tüm geçmişi temizle" (onaylı); silinen analiz açıksa ekran
       temizlenir
-- [ ] API: `DELETE /v1/analyses/{id}` ve toplu silme (API anahtarı açıksa korumalı); web
+- [x] API: `DELETE /v1/analyses/{id}` ve toplu silme (API anahtarı açıksa korumalı); web
       arayüzünde aynı düğmeler
-- [ ] Önbellek tutarlılığı: silinen analiz önbellekten dönmez
-- [ ] Testler: depolama, API, masaüstü görünüm modeli
+- [x] Önbellek tutarlılığı: silinen analiz önbellekten dönmez
+- [x] Testler: depolama, API, masaüstü görünüm modeli
 
 ### Faz 63 — Antigravity ve Haiku canlı doğrulaması (öncelik: orta)
 

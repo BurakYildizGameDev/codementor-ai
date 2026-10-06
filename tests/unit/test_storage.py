@@ -245,3 +245,52 @@ def test_hint_level_never_moves_back(db: Database) -> None:
         row = session.get(SessionRow, ("s", "q"))
     assert row is not None
     assert row.current_hint_level == 2
+
+
+def test_delete_analysis_success_and_missing(db: Database) -> None:
+    """Faz 62: delete_analysis kaydı siler; bulunamazsa False döner."""
+    report = _report()
+    cache.save_analysis(db, report, key="k1", session_id="s1", latency_ms=10)
+    assert cache.get_analysis(db, report.analysis_id) is not None
+
+    # Silme başarılı
+    assert cache.delete_analysis(db, report.analysis_id) is True
+    assert cache.get_analysis(db, report.analysis_id) is None
+    assert cache.get_row(db, report.analysis_id) is None
+
+    # Olmayan id
+    assert cache.delete_analysis(db, report.analysis_id) is False
+    assert cache.delete_analysis(db, "olmayan_id") is False
+
+
+def test_clear_analyses_removes_all_records(db: Database) -> None:
+    """Faz 62: clear_analyses tüm analizleri siler ve silinen sayıyı döner."""
+    base = _report()
+    r1 = base.model_copy(update={"analysis_id": new_ulid()})
+    r2 = base.model_copy(update={"analysis_id": new_ulid()})
+    cache.save_analysis(db, r1, key="k1", session_id="s1", latency_ms=5)
+    cache.save_analysis(db, r2, key="k2", session_id="s2", latency_ms=5)
+    assert len(cache.list_analyses(db)) == 2
+
+    count = cache.clear_analyses(db)
+    assert count == 2
+    assert cache.list_analyses(db) == []
+    assert cache.clear_analyses(db) == 0
+
+
+def test_clear_sessions_removes_all_sessions(db: Database) -> None:
+    """Faz 62: clear_sessions tüm oturumları siler ve silinen sayıyı döner."""
+    from sqlmodel import select
+
+    sessions.reserve_attempt(db, "s1", "q1")
+    sessions.reserve_attempt(db, "s2", "q2")
+    with db.session() as session:
+        rows = session.exec(select(SessionRow)).all()
+        assert len(rows) == 2
+
+    deleted = sessions.clear_sessions(db)
+    assert deleted == 2
+    with db.session() as session:
+        rows = session.exec(select(SessionRow)).all()
+        assert len(rows) == 0
+    assert sessions.clear_sessions(db) == 0

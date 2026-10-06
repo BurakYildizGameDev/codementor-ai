@@ -10,7 +10,7 @@ from functools import lru_cache
 from importlib.resources import files
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Query, Request
+from fastapi import APIRouter, Body, Query, Request, status
 from fastapi.responses import JSONResponse, PlainTextResponse, Response, StreamingResponse
 from starlette.background import BackgroundTask
 
@@ -34,7 +34,7 @@ from codementor.questions.bank import QuestionNotFoundError
 from codementor.report.markdown import to_markdown
 from codementor.report.sarif import to_sarif
 from codementor.rules.catalog import rule_catalog
-from codementor.storage.cache import get_analysis
+from codementor.storage.cache import delete_analysis, get_analysis
 from codementor.validation.toolchain import compiler_statuses, get_toolchain
 
 SARIF_MEDIA_TYPE = "application/sarif+json"
@@ -211,6 +211,23 @@ def get_markdown(request: Request, analysis_id: str) -> PlainTextResponse:
     """Kayıtlı raporun Markdown dışa aktarımı (Faz 26; kod içermez)."""
     report = _stored(request, analysis_id)
     return PlainTextResponse(to_markdown(report), media_type=MARKDOWN_MEDIA_TYPE)
+
+
+@router.delete(
+    "/v1/analyses/{analysis_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={204: {"description": "Analiz silindi."}, **_problems(404)},
+    tags=["analiz"],
+)
+def delete_stored(request: Request, analysis_id: str) -> Response:
+    """Kayıtlı analizi siler (Faz 62)."""
+    valid = re.fullmatch(ULID_PATTERN, analysis_id) is not None
+    if not valid:
+        raise ApiProblemError(404, f"'{analysis_id}' kimlikli analiz bulunamadı.")
+    deleted = delete_analysis(_state(request).database(), analysis_id)
+    if not deleted:
+        raise ApiProblemError(404, f"'{analysis_id}' kimlikli analiz bulunamadı.")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/v1/questions", response_model=list[QuestionPublic], tags=["sorular"])

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from sqlalchemy import Table, update
 from sqlalchemy.dialects.sqlite import insert
+from sqlmodel import delete
 
 from codementor.storage.db import Database, SessionRow, utcnow
 
@@ -97,3 +98,11 @@ def record_attempt(
         row.updated_at = utcnow()
         session.add(row)
         session.commit()
+
+
+def clear_sessions(db: Database) -> int:
+    """Tüm oturum kayıtlarını siler (Faz 62); silinen oturum sayısını döner."""
+    with db.session() as session:
+        result = session.exec(delete(SessionRow))
+        session.commit()
+        return int(result.rowcount)

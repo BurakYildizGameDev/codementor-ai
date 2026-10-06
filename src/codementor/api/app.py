@@ -46,7 +46,7 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.api.cors_origins,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["content-type", API_KEY_HEADER],
     )
     # en son eklenen en dışta çalışır: Host ve gövde sınırı her şeyden önce (Faz 47)

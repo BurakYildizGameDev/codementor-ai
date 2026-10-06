@@ -168,3 +168,32 @@ def load_source(analysis_id: str, directory: Path | None = None) -> str | None:
         return path.read_text(encoding="utf-8")
     except OSError:
         return None
+
+
+def delete_source(analysis_id: str, directory: Path | None = None) -> bool:
+    """Saklanan kodu siler (Faz 62). Kimlik yalnızca alfasayısal karakterler içerebilir."""
+    if not analysis_id.isalnum():
+        return False
+    path = (directory or user_dir()) / SOURCES_DIR / f"{analysis_id}.txt"
+    try:
+        if path.is_file():
+            path.unlink()
+            return True
+        return False
+    except OSError:
+        return False
+
+
+def clear_sources(directory: Path | None = None) -> int:
+    """Tüm saklanan kodları siler (Faz 62); silinen dosya sayısını döner."""
+    folder = (directory or user_dir()) / SOURCES_DIR
+    try:
+        files = list(folder.glob("*.txt"))
+    except OSError:
+        return 0
+    count = 0
+    for path in files:
+        with contextlib.suppress(OSError):
+            path.unlink(missing_ok=True)
+            count += 1
+    return count

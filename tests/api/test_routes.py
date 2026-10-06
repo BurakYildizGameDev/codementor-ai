@@ -97,6 +97,34 @@ async def test_stored_report_and_sarif(client_for: ClientFactory, fake: FakeFact
     assert report["findings"][0]["id"] in markdown.text
 
 
+async def test_delete_stored_analysis(client_for: ClientFactory, fake: FakeFactory) -> None:
+    """Faz 62: DELETE /v1/analyses/{id} 204 döner ve kaydı siler; sonraki istekler 404."""
+    client = client_for(fake(analysis_reply(), socratic_reply()))
+    report = (await client.post("/v1/analyze", json=BODY)).json()
+    analysis_id = report["analysis_id"]
+
+    # Kayıt mevcut
+    assert (await client.get(f"/v1/analyses/{analysis_id}")).status_code == 200
+
+    # Silme 204
+    delete_resp = await client.delete(f"/v1/analyses/{analysis_id}")
+    assert delete_resp.status_code == 204
+    assert delete_resp.text == ""
+
+    # Tekrar sorgulanınca 404
+    assert (await client.get(f"/v1/analyses/{analysis_id}")).status_code == 404
+
+    # Tekrar silinmek istenirse 404
+    again_resp = await client.delete(f"/v1/analyses/{analysis_id}")
+    assert again_resp.status_code == 404
+    assert again_resp.headers["content-type"] == PROBLEM
+
+    # Format dışı ULID 404
+    invalid_resp = await client.delete("/v1/analyses/gecersiz_id")
+    assert invalid_resp.status_code == 404
+    assert invalid_resp.headers["content-type"] == PROBLEM
+
+
 @pytest.mark.parametrize(
     "path",
     [

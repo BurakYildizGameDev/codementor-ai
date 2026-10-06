@@ -1007,6 +1007,7 @@ Temel yol: `/v1`. Tüm yanıtlar JSON; hatalar RFC 7807 (`application/problem+js
 | `GET` | `/v1/analyses/{id}` | Kayıtlı raporu getir |
 | `GET` | `/v1/analyses/{id}/sarif` | SARIF dışa aktarım |
 | `GET` | `/v1/analyses/{id}/markdown` | Markdown dışa aktarım (Faz 26) |
+| `DELETE` | `/v1/analyses/{id}` | Kayıtlı analizi sil (Faz 62) |
 | `GET` | `/v1/questions` | Filtre: `language`, `engine`, `difficulty` |
 | `GET` | `/v1/questions/{id}` | Soru detayı (referans çözüm **hariç**) |
 | `GET` | `/v1/providers` | Etkin sağlayıcılar ve erişilebilirlik durumu |

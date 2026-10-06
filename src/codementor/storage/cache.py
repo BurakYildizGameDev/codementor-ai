@@ -145,3 +145,22 @@ def save_analysis(
             session.flush()
             session.exec(delete(AnalysisRow).where(col(AnalysisRow.id).not_in(keep)))
         session.commit()
+
+
+def delete_analysis(db: Database, analysis_id: str) -> bool:
+    """Kimlikle analizi siler (Faz 62). Bulunup silindiyse True, yoksa False döner."""
+    with db.session() as session:
+        row = session.get(AnalysisRow, analysis_id)
+        if row is None:
+            return False
+        session.delete(row)
+        session.commit()
+        return True
+
+
+def clear_analyses(db: Database) -> int:
+    """Tüm analiz kayıtlarını siler (Faz 62); silinen satır sayısını döner."""
+    with db.session() as session:
+        result = session.exec(delete(AnalysisRow))
+        session.commit()
+        return int(result.rowcount)

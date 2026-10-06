@@ -52,6 +52,7 @@
 | 59 | ✅ (ADR-0025) | faz/59-tier0-alt-surec | 2026-10-06 | Claude Code / kod-denetci |
 | 60 | ✅ | faz/60-surum-uyumu | 2026-10-06 | Antigravity / — |
 | 61 | ✅ (ADR-0026) | faz/61-ipucu-merdiveni | 2026-10-07 | Antigravity / — |
+| 62 | ✅ | faz/62-gecmis-silme | 2026-10-07 | Antigravity / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -891,6 +892,37 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 **Bu fazda öğrendiğim:** Doğrulama geçişi precision'ı prompt kurallarının yapamadığı ölçüde
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
+
+## Faz 62 — Notlar (geçmişi ve saklanan kodu silme)
+**Yapılanlar:**
+- `storage/cache.py`: `delete_analysis(db, analysis_id) -> bool` ve `clear_analyses(db) -> int` fonksiyonları eklendi.
+- `storage/sessions.py`: `clear_sessions(db) -> int` fonksiyonu eklendi.
+- `desktop/runtime.py`: Path traversal korumalı (`isalnum()`) `delete_source(analysis_id, directory)` ve `clear_sources(directory)` fonksiyonları eklendi.
+- `api/routes.py`: `DELETE /v1/analyses/{analysis_id}` rotası eklendi (başarılıda 204 No Content, bulunamadığında veya biçim dışı ULID'de 404 Problem+JSON).
+- `api/app.py`: CORS `allow_methods` listesine `"DELETE"` eklendi.
+- `desktop/views/history_view.py`:
+  - `HistoryView`'e `on_delete` ve `on_clear` geri çağrıları bağlandı.
+  - Başlık alanına "Tümünü temizle" butonu eklendi (boşken devre dışı).
+  - Her satıra satırı açmadan çalışan "Sil" butonu eklendi; tıklama olayının satır açma ile çakışması engellendi.
+- `desktop/app.py`:
+  - `delete_history(analysis_id)`: DB kaydını ve diskteki kaynak kodunu siler, açık analiz bu ise sonuçları ve raporu sıfırlar, geçmişi yeniler ve toast verir.
+  - `clear_history()`: `askyesno` onayının ardından tüm analizleri ve kaynak dosyalarını temizler, açık ekranı sıfırlar, geçmişi yeniler ve toast verir.
+- `docs/mimari.md` ve `docs/GUNCELLEMELER.md` güncellendi.
+- Testler:
+  - `tests/unit/test_storage.py`: `delete_analysis` (başarılı/bulunamadı), `clear_analyses`, `clear_sessions` testleri.
+  - `tests/desktop/test_runtime.py`: `delete_source` (başarılı, traversal koruması), `clear_sources` testleri.
+  - `tests/api/test_routes.py`: `DELETE /v1/analyses/{id}` (204, 404, geçersiz ULID 404) testleri.
+  - `tests/api/test_errors_and_app.py`: CORS preflight `DELETE` metodu izni testi.
+  - `tests/desktop/test_app.py`: `delete_history` ve `clear_history` (onaylı/onaysız, açık analiz sıfırlama), `HistoryView` buton geri çağrı testleri. Toplam 3078 test yeşil.
+**Alınan kararlar (ve neden):**
+- Güvenlik: `delete_source` kimliği doğrudan dosya sistemine bağladığından `analysis_id.isalnum()` kuralıyla path traversal engellendi.
+- API tutarlılığı: `DELETE /v1/analyses/{id}` varlığı sızdırmamak adına geçersiz ULID'lerde de 404 döner (Faz 27 standardı).
+- Kullanıcı deneyimi: Masaüstünde tek analiz silme pratiklik için anında silinir; "Tümünü temizle" ise geri alınamaz veri kaybını önlemek için onay diyaloğu (`askyesno`) gösterir.
+**Doğrulama çıktısı:**
+- `uv run ruff check . && uv run ruff format --check .` (temiz, 419 dosya)
+- `uv run mypy src/` (0 hata, 198 kaynak dosya)
+- `uv run pytest -m "not live"` (3078 passed, 14 skipped, 6 deselected; 132 sn)
+- `npm --prefix web run typecheck && npm --prefix web run build` (hatasız derlendi)
 
 ## Faz 61 — Notlar (ipucu merdiveni yalnız sayılan denemelerle ilerler; ADR-0026)
 **Yapılanlar:**

@@ -151,3 +151,35 @@ def test_save_source_prunes_with_keep(tmp_path: Path) -> None:
     runtime.save_source("A3", "kod", tmp_path, keep=2)
     names = sorted(p.name for p in (tmp_path / runtime.SOURCES_DIR).iterdir())
     assert names == ["A2.txt", "A3.txt"]
+
+
+def test_delete_source(tmp_path: Path) -> None:
+    """Faz 62: delete_source dosyayı siler; olmayan ya da geçersiz id False döner."""
+    runtime.save_source("01VALIDID", "print(1)", tmp_path)
+    assert runtime.load_source("01VALIDID", tmp_path) == "print(1)"
+
+    # Başarılı silme
+    assert runtime.delete_source("01VALIDID", tmp_path) is True
+    assert runtime.load_source("01VALIDID", tmp_path) is None
+
+    # Zaten silinmiş
+    assert runtime.delete_source("01VALIDID", tmp_path) is False
+
+    # Path traversal koruması (. / \ vb.)
+    assert runtime.delete_source("../outside", tmp_path) is False
+    assert runtime.delete_source("foo/bar", tmp_path) is False
+    assert runtime.delete_source("foo\\bar", tmp_path) is False
+    assert runtime.delete_source("foo.txt", tmp_path) is False
+
+
+def test_clear_sources(tmp_path: Path) -> None:
+    """Faz 62: clear_sources tüm .txt kaynak dosyalarını siler ve sayısını döner."""
+    runtime.save_source("A1", "kod1", tmp_path)
+    runtime.save_source("A2", "kod2", tmp_path)
+    sources_dir = tmp_path / runtime.SOURCES_DIR
+    assert len(list(sources_dir.glob("*.txt"))) == 2
+
+    count = runtime.clear_sources(tmp_path)
+    assert count == 2
+    assert len(list(sources_dir.glob("*.txt"))) == 0
+    assert runtime.clear_sources(tmp_path) == 0

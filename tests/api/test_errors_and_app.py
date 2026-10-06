@@ -99,6 +99,18 @@ async def test_cors_only_configured_origin(client_for: ClientFactory) -> None:
     assert "access-control-allow-origin" not in denied.headers
 
 
+async def test_cors_allows_delete_method(client_for: ClientFactory) -> None:
+    """Faz 62: CORS preflight DELETE metoduna izin verir."""
+    client = client_for()
+    response = await client.options(
+        "/v1/analyses/01J9ZK4M8Q3W6Y2T5R7N1B0C9D",
+        headers={"Origin": "http://localhost:5173", "Access-Control-Request-Method": "DELETE"},
+    )
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"
+    allowed_methods = response.headers.get("access-control-allow-methods", "")
+    assert "DELETE" in allowed_methods
+
+
 async def test_openapi_has_examples(client_for: ClientFactory) -> None:
     client = client_for()
     spec = (await client.get("/openapi.json")).json()

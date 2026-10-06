@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import customtkinter as ctk
 import pytest
 
 from codementor.api.state import ApiState
@@ -28,6 +29,7 @@ from codementor.models.request import AnalysisRequest
 from codementor.models.validation import DownloadProgress
 from codementor.providers.base import RetryPolicy
 from codementor.providers.fake import FakeProvider, FakeReply
+from codementor.storage import cache
 from codementor.storage.db import AnalysisRow
 from codementor.validation.toolchain_install import InstallCancelledError, ToolchainInstallError
 from tests.desktop.conftest import StallingProvider
@@ -146,6 +148,92 @@ def test_history_reopens_report_with_code(app: App) -> None:
     assert app.current_view == "analyze"
     assert app.analyze_view.editor.get() == LINKED_LIST
     assert app.analyze_view.report == report
+
+
+def test_delete_history_removes_record_and_resets_active_report(app: App, prefs_dir: Path) -> None:
+    """Faz 62: delete_history DB kaydını ve saklanan kodu siler; açık raporu sıfırlar."""
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    analyze(app)
+    report = app.analyze_view.report
+    assert report is not None
+    analysis_id = report.analysis_id
+
+    # DB ve diskte mevcut
+    assert cache.get_analysis(app.core.database(), analysis_id) is not None
+    assert runtime.load_source(analysis_id, prefs_dir) == LINKED_LIST
+
+    # Sil
+    app.delete_history(analysis_id)
+    assert cache.get_analysis(app.core.database(), analysis_id) is None
+    assert runtime.load_source(analysis_id, prefs_dir) is None
+    assert app.analyze_view.report is None
+
+    # Zaten silinmiş analizi tekrar silme
+    app.delete_history(analysis_id)
+
+
+def test_clear_history_confirmation_and_cleanup(
+    app: App, prefs_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz 62: clear_history onay verilirse tüm geçmişi ve saklanan kodları temizler."""
+    import tkinter.messagebox as mb
+
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    analyze(app)
+    report = app.analyze_view.report
+    assert report is not None
+    analysis_id = report.analysis_id
+
+    # 1. Onay verilmezse silinmez
+    monkeypatch.setattr(mb, "askyesno", lambda *args, **kwargs: False)
+    app.clear_history()
+    assert cache.get_analysis(app.core.database(), analysis_id) is not None
+    assert runtime.load_source(analysis_id, prefs_dir) is not None
+
+    # 2. Onay verilirse temizlenir
+    monkeypatch.setattr(mb, "askyesno", lambda *args, **kwargs: True)
+    app.clear_history()
+    assert cache.get_analysis(app.core.database(), analysis_id) is None
+    assert runtime.load_source(analysis_id, prefs_dir) is None
+    assert app.analyze_view.report is None
+
+
+def test_history_view_buttons_trigger_callbacks(app: App) -> None:
+    """Faz 62: HistoryView sil butonu on_delete çağırır; Tümünü temizle on_clear çağırır."""
+    deleted: list[str] = []
+    cleared = False
+
+    def on_del(aid: str) -> None:
+        deleted.append(aid)
+
+    def on_clr() -> None:
+        nonlocal cleared
+        cleared = True
+
+    app.history_view._on_delete = on_del
+    app.history_view._on_clear = on_clr
+
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    analyze(app)
+    report = app.analyze_view.report
+    assert report is not None
+
+    app.navigate("history")
+    # "Tümünü temizle" butonuna tıkla
+    app.history_view.clear_btn.invoke()
+    assert cleared is True
+
+    # Satırdaki "Sil" butonunu bul ve tıkla
+    del_btns = [
+        child
+        for w in app.history_view.list.winfo_children()
+        if isinstance(w, ctk.CTkFrame)
+        for child in w.winfo_children()
+        if isinstance(child, ctk.CTkButton) and child.cget("text") == "Sil"
+    ]
+    assert len(del_btns) == 1
+    del_btns[0].invoke()
+    assert deleted == [report.analysis_id]
 
 
 def test_question_bank_starts_task(app: App) -> None:

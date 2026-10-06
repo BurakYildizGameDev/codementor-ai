@@ -22,20 +22,51 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
         master: Any,
         load: Callable[[], list[AnalysisRow]],
         on_open: Callable[[str], None],
+        on_delete: Callable[[str], None] | None = None,
+        on_clear: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(master, fg_color="transparent")
         self._load = load
         self._on_open = on_open
+        self._on_delete = on_delete
+        self._on_clear = on_clear
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
-        page_header(self, "Geçmiş", "Son analizlerin; açmak için bir satıra tıkla.").grid(
-            row=0, column=0, sticky="w", pady=(0, 16)
+
+        header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 16))
+        header_frame.grid_columnconfigure(0, weight=1)
+
+        page_header(header_frame, "Geçmiş", "Son analizlerin; açmak için bir satıra tıkla.").grid(
+            row=0, column=0, sticky="w"
         )
+        self.clear_btn = ctk.CTkButton(
+            header_frame,
+            text="Tümünü temizle",
+            font=theme.font(12),
+            fg_color="transparent",
+            text_color=theme.MUTED,
+            hover_color=theme.SURFACE_2,
+            border_width=1,
+            border_color=theme.BORDER,
+            height=28,
+            command=self._handle_clear,
+        )
+        self.clear_btn.grid(row=0, column=1, sticky="e")
+
         self.list = ctk.CTkScrollableFrame(
             self, fg_color="transparent", scrollbar_button_color=theme.SURFACE_3
         )
         self.list.grid(row=1, column=0, sticky="nsew")
         self.list.grid_columnconfigure(0, weight=1)
+
+    def _handle_clear(self) -> None:
+        if self._on_clear is not None:
+            self._on_clear()
+
+    def _handle_delete(self, analysis_id: str) -> None:
+        if self._on_delete is not None:
+            self._on_delete(analysis_id)
 
     def refresh(self) -> None:
         clear(self.list)
@@ -44,6 +75,7 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
         except Exception:  # veritabanı açılamazsa ekran yine açılır
             rows = []
         if not rows:
+            self.clear_btn.configure(state="disabled")
             ctk.CTkLabel(
                 self.list,
                 text="Henüz analiz yok. İlk denetimin burada görünecek.",
@@ -51,6 +83,7 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
                 text_color=theme.MUTED,
             ).grid(row=0, column=0, pady=40)
             return
+        self.clear_btn.configure(state="normal")
         for i, row in enumerate(rows):
             self._row(i, row)
 
@@ -86,7 +119,7 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
             anchor="w",
         ).grid(row=0, column=2, sticky="w")
         meta = ctk.CTkFrame(item, fg_color="transparent", width=1, height=1)
-        meta.grid(row=0, column=3, sticky="e", padx=18)
+        meta.grid(row=0, column=3, sticky="e", padx=10)
         if row.degraded:
             Pill(meta, "yalnız statik", theme.WARN).pack(side="left", padx=(0, 6))
         if row.early_exit:
@@ -98,13 +131,31 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
             text_color=theme.MUTED,
         ).pack(side="left")
 
+        del_btn = ctk.CTkButton(
+            item,
+            text="Sil",
+            font=theme.font(11),
+            fg_color="transparent",
+            text_color=theme.MUTED,
+            hover_color=theme.SURFACE_3,
+            border_width=1,
+            border_color=theme.BORDER,
+            width=42,
+            height=24,
+            command=lambda aid=row.id: self._handle_delete(aid),
+        )
+        del_btn.grid(row=0, column=4, padx=(0, 14), sticky="e")
+
         def open_row(_event: Any = None, analysis_id: str = row.id) -> None:
             self._on_open(analysis_id)
 
         def hover(on: bool) -> None:
             item.configure(border_color=theme.BORDER_STRONG if on else theme.BORDER)
 
-        for widget in (item, *item.winfo_children(), *meta.winfo_children()):
+        clickable = [
+            w for w in (item, *item.winfo_children(), *meta.winfo_children()) if w is not del_btn
+        ]
+        for widget in clickable:
             widget.bind("<Button-1>", open_row, add="+")
             widget.bind("<Enter>", lambda _e: hover(True), add="+")
             widget.bind("<Leave>", lambda _e: hover(False), add="+")

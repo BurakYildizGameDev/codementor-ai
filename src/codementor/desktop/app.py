@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from typing import Any
 
 import customtkinter as ctk
@@ -37,7 +37,13 @@ from codementor.models.questions import QuestionPublic
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.providers.factory import PROVIDER_NAMES
-from codementor.storage.cache import get_analysis, get_row, list_analyses
+from codementor.storage.cache import (
+    clear_analyses,
+    delete_analysis,
+    get_analysis,
+    get_row,
+    list_analyses,
+)
 from codementor.storage.db import AnalysisRow, resolve_db_path
 
 ASSETS = Path(__file__).resolve().parent / "assets"
@@ -130,7 +136,13 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.analyze_view.editor.set(SAMPLES[self.prefs.language], self.prefs.language)
         self.files.enable_drop(self.analyze_view.editor.text)
         self.questions_view = QuestionsView(stage, self._filtered_questions, self.start_question)
-        self.history_view = HistoryView(stage, self._history_rows, self.open_history)
+        self.history_view = HistoryView(
+            stage,
+            self._history_rows,
+            self.open_history,
+            on_delete=self.delete_history,
+            on_clear=self.clear_history,
+        )
         self.settings_view = ConnectionsView(
             stage,
             self.connections.actions(),
@@ -371,6 +383,37 @@ class App(ctk.CTk):  # type: ignore[misc]
             "Kodu editöre açtım; yeniden denetleyebilirsin."
         )
         self.navigate("analyze")
+
+    def delete_history(self, analysis_id: str) -> None:
+        """Kayıtlı bir analizi ve saklanan kodunu siler (Faz 62)."""
+        deleted_db = delete_analysis(self.core.database(), analysis_id)
+        deleted_file = runtime.delete_source(analysis_id, self.prefs_dir)
+        if not deleted_db and not deleted_file:
+            self.toast("Analiz bulunamadı.")
+            return
+        if (
+            self.analyze_view.report is not None
+            and self.analyze_view.report.analysis_id == analysis_id
+        ):
+            self.analyze_view.report = None
+            self.analyze_view.reset_results()
+        self.history_view.refresh()
+        self.toast("Analiz geçmişten silindi.")
+
+    def clear_history(self) -> None:
+        """Tüm analiz geçmişini ve saklanan kodları temizler (Faz 62)."""
+        if not messagebox.askyesno(
+            "Geçmişi Temizle",
+            "Tüm analiz geçmişi ve saklanan kodlar silinsin mi?\nBu işlem geri alınamaz.",
+            parent=self,
+        ):
+            return
+        clear_analyses(self.core.database())
+        runtime.clear_sources(self.prefs_dir)
+        self.analyze_view.report = None
+        self.analyze_view.reset_results()
+        self.history_view.refresh()
+        self.toast("Tüm analiz geçmişi temizlendi.")
 
     # --- Ayarlar ve ortam ---------------------------------------------------------------
 
