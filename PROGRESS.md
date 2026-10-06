@@ -45,7 +45,8 @@
 | 52 | ✅ (denetim düzeltmesiyle) | faz/52-kural-oneri | 2026-10-05 | Mimo (Cline) / Claude Code |
 | 53 | ✅ (birleştirme kullanıcıda) | faz/53-54-kapsama-bolumleme | 2026-10-05 | Mimo (Cline) / Claude Code |
 | 54 | ✅ | faz/53-54-kapsama-bolumleme | 2026-10-05 | Mimo (Cline) / Claude Code |
-| 55 | ✅ (ADR-0024) | faz/55-tier0-saglamlik | 2026-10-06 | Mimo (Cline) / — |
+| 55 | ✅ (ADR-0024) | faz/55-tier0-saglamlik | 2026-10-06 | GLM (Cline) / Claude Code |
+| 56 | ✅ | faz/56-html-std003-kenarlar | 2026-10-06 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -886,6 +887,18 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 56 — Notlar (HTML-STD-003 kenar durumları)
+**Yapılanlar:**
+- `rules/html_balance.py`: dosya sonunda bitmemiş açılış (`<div class="a`) raporlanır; `feed` sonrası tamponda kalan `<harf…` aranır, script/style gibi metin kipinde aranmaz. Örtük kapanış artık yalnız yığının tepesine bakmıyor: blok açılışı açık `p`'yi satır içi öğelerin (`span`, `b`, `a`…) altından, `li`/`dt`/`dd` önceki öğeyi bunlara ek olarak `div`/`address`/`p` altından da kapatır; aradaki kapanmamış öğeler raporlanır. Arama en fazla 64 öğe derine iner (kötü niyetli girdide doğrusal). DOCTYPE'sız ya da eski (`PUBLIC`) DOCTYPE'lı belgede `table` açık `p`'yi kapatmaz (quirks modu; emin olunmayan yönde sessiz).
+- Aynı satır: motor `(rule_id, satır)` başına tek bulgu tutar; kural artık satırdaki türleri birleştirir, hem kapanmayan hem eşsiz etiket varsa `MIXED_DESCRIPTION` sorusu ikisini birden anlatır.
+- Katalog: `Rule.catalog_note` (yalnız `docs/rules-catalog.md`; öğrenciye giden soru ve `/v1/rules` şeması değişmedi) — HTML-STD-003 kapsam ve bilinen sınırlar notu.
+- Testler: 4 pozitif (`unfinished_start_tag_at_eof`, `p_implied_close_below_inline`, `p_closed_by_table_standards`, `mixed_kinds_same_line`) + 2 negatif (`p_table_quirks_mode`, `implied_close_scopes`) fixture; `test_html_balance.py`'ye 9 test (bitmemiş açılış, script içi `a<b`, satır içi altından örtük kapanış, `button` kapsamı, `li` `div` altından, standart/quirks/eski DOCTYPE, aynı satır karışık tür, doğrusal süre, katalog notu).
+**Alınan kararlar (ve neden):**
+- Aynı satır birleştirmesi motorda değil kuralda: motorun "kural başına satırda tek bulgu" değişmezi eval eşleşmesini ve bulgu numaralarını etkilemesin.
+- Quirks kararı muhafazakâr: yalnız `<!DOCTYPE html>` standart moddur; eski DOCTYPE'larda `table`→`p` kapanışı uygulanmaz (yanlış pozitif yerine kaçırma).
+- Kapsam notu açıklamaya değil ayrı alana: açıklama Sokratik sorudur (mimari §8.2), sınır listesi öğrenciye gitmemeli.
+**Doğrulama:** statik dev eval 0/96 örnekte bulgu değişmedi (geçici sonuç dosyası silindi); ruff/format/mypy temiz; `pytest -m "not live"` → 3000 geçti, 14 atlandı.
+
 ## Faz 55 — Notlar (Tier 0 ayrıştırma ve maskeleme sağlamlığı; ADR-0024)
 **Yapılanlar:**
 - **C++ raw string maskeleme** (`analysis/lexical.py`): `_RAW_PREFIXES` (`R`, `LR`, `uR`, `UR`, `u8R`) ve `_MAX_DELIM = 16`; `_string_end` d-char sınırlı kapanışı (`)delim"`) arar; önekten önceki karakter `_WORD_CHARS` içindeyse (`FOO_R"(…)"`) tanımlayıcı sayılır, maskeleme yok; kapanmamış raw string dosya sonuna kadar maskelenir (fail-closed); maske sözleşmesi (uzunluk/satır sonları korunur, içerik boşluk) aynen. Testler `test_lexical.py`: 9 parametreli vaka (önekler, `R"x(a)"b)x"` özel delim, çok satırlı, kapanmamış, `FOO_R`, `R` değişken adı), delim uzunluk sınırı, iç `)delim` parantezleri, `#include` sonrası içerik, hypothesis özelliği (uzunluk/satır sonu değişmez), 3 düşman-zaman testi (40 KB kapanmamış/çok satırlı/delim bombardımanı).
@@ -1160,7 +1173,8 @@ az bilgi kaybettiren bir precision aracıdır.
 - Faz 21'den kalan işler Faz 32'de kısmen kapandı: C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray` alanları ve CS-PERF-001 `IList` çözüldü. Açık: C-MEM-003 akış duyarlılığı (Faz 57), döngüde `std::string +`/C# `string +=` karesel ipucu (Sonraya).
 - ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
 - ~~Faz 18: Tier 0 `</div>` kör noktası~~ → Faz 20'de HTML-STD-003 ile bulgu olarak.
-- Faz 20: HTML-STD-003 kaçırmaları (Faz 56): dosya sonunda bitmemiş `<div`, `<p><span>a<div>` (örtük kapanış yalnız yığın tepesine bakıyor), DOCTYPE'sız belgede `table`/`p` kapanış davranışı, aynı satırdaki farklı ihlallerin birleştirilmesi ve katalog açıklaması.
+- ~~Faz 20: HTML-STD-003 kaçırmaları (Faz 56): dosya sonunda bitmemiş `<div`, `<p><span>a<div>`, DOCTYPE'sız belgede `table`/`p`, aynı satırdaki farklı ihlaller, katalog açıklaması.~~ → Faz 56'da çözüldü.
+- HTML-STD-003: adoption agency (biçimlendirme öğesi yeniden kurulumu), foster parenting ve `form`/`button` kapsam ayrıntıları modellenmiyor (Faz 56 bilinen sınır).
 - ~~Kural motoru: bulgu sayısına üst sınır yok (600 satırlık kötü niyetli girdi 600 bulgu üretip prompt'a gidebilir).~~ → Faz 31.
 - ~~Faz 18: `codementor eval check-drafts` Windows konsolunda (cp1254) çöküyor~~ → Faz 27 (konsol UTF-8).
 - Faz 18: eski veri seti etiketlerine Faz 17 bulguları (`c-008` 4. satır `memory_safety` C-MEM-003, `csharp-009` 11. satır `garbage_collection` CS-ALLOC-002) eklenmeli mi? (test etiketleri de etkilenebilir; kullanıcı kararı)
@@ -1233,7 +1247,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-06):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı dev 78/96/86, karışıklık 7 → 2). Faz 52-54 Mimo (Cline) ile yapıldı, Claude Code denetleyip düzeltti (`faz/53-54-kapsama-bolumleme`; "Faz 52-54 — Denetim"). Faz 55 tamamlandı (`faz/55-tier0-saglamlik`; ADR-0024, D2 ve raw string çözüldü). Zincirin (`faz/36` … `faz/55`) main'e birleştirilmesi ve push kullanıcı onayı bekliyor. Sıradaki Faz 56-57; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-06):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı dev 78/96/86, karışıklık 7 → 2). Faz 52-54 Mimo (Cline) ile yapıldı, Claude Code denetleyip düzeltti (`faz/53-54-kapsama-bolumleme`; "Faz 52-54 — Denetim"). Faz 55 tamamlandı ve main'e birleşti (GLM ile; Claude Code denetimi D2 yanlış `;` ipucunu düzeltti). Faz 56 tamamlandı (`faz/56-html-std003-kenarlar`). Sıradaki Faz 57; push Faz 57 sonrası.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1275,7 +1289,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    birleştirilmesi açık (kullanıcı kararı).
 27. ~~**Faz 54 — Büyük dosyaların bölünmesi:**~~ Yapıldı (2026-10-05; tüm `src/` ≤ 400 satır). 4 modül bölündü (davranış değişmeden).
 28. ~~**Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.~~ Yapıldı (2026-10-06; ADR-0024).
-29. **Faz 56 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.
+29. ~~**Faz 56 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.~~ Yapıldı (2026-10-06).
 30. **Faz 57 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`

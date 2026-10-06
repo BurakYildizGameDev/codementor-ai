@@ -169,6 +169,8 @@ class Rule:
     # Faz 52: varsayılan tür; öneri üreten kural bunu override eder, kurallar bulgu bazında aşabilir
     default_kind: ClassVar[FindingKind] = FindingKind.ISSUE
     confidence: ClassVar[float] = 0.9
+    # Faz 56: yalnız `docs/rules-catalog.md`'de görünen kapsam/sınır notu (öğrenciye gitmez)
+    catalog_note: ClassVar[str] = ""
 
     def check(self, ctx: RuleContext) -> list[Finding]:
         """Bulgular (satır sırası önemsiz; motor sıralar ve numaralar)."""

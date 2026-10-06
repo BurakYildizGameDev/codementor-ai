@@ -1795,19 +1795,19 @@ ve `mask_non_code`'un C++ raw string literal (`R"(...)"`) içeriğini doğru mas
 
 **Commit:** `fix(faz-55): Tier 0 ayrıştırma ve C++ raw string sınırları`
 
-### Faz 56 — HTML-STD-003 kenar durumları (YAPILACAK)
+### Faz 56 — HTML-STD-003 kenar durumları (YAPILDI 2026-10-06)
 
 **Dal:** `faz/56-html-std003-kenarlar` · **Mimari:** §4.3, §12
 
 **Amaç:** Faz 20'de eklenen HTML etiket dengesi kuralının bilinen parser ve bulgu birleştirme
 boşluklarını kapatmak. Bunlar PROGRESS "Sonraya"da somut kaçırma örnekleri olarak kayıtlı.
 
-- [ ] Dosya sonunda bitmemiş açılış etiketi (`<div`) ve örtük kapanışta yığının üstünden
+- [x] Dosya sonunda bitmemiş açılış etiketi (`<div`) ve örtük kapanışta yığının üstünden
       aşağıdaki uygun elemanların aranması (`<p><span>a<div>`) için pozitif/negatif fixture
-- [ ] DOCTYPE'sız belge bağlamında `table`/`p` kapanış kurallarını doğrulayan fixture
-- [ ] Aynı satırdaki tekrarlı bulgular birleştirilirken farklı hata türlerinin ikisinin de
+- [x] DOCTYPE'sız belge bağlamında `table`/`p` kapanış kurallarını doğrulayan fixture
+- [x] Aynı satırdaki tekrarlı bulgular birleştirilirken farklı hata türlerinin ikisinin de
       korunmasını sağla; tek satır için unique filtresi bağımsız ihlali gizlemesin
-- [ ] Katalog açıklamalarını kuralın gerçek kapsamı ve bilinen sınırlarıyla güncelle
+- [x] Katalog açıklamalarını kuralın gerçek kapsamı ve bilinen sınırlarıyla güncelle
 
 **Commit:** `fix(faz-56): HTML-STD-003 kenar durumlarını kapsa`
 

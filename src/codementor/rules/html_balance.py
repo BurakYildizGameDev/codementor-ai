@@ -5,10 +5,18 @@ değil, `<div><span>x</div>` hiç işaretlenmez); bu yüzden kural ağaç yerine
 `html.parser` ile kendi açık etiket yığınını tutar. Tarayıcılar hoşgörülü olduğundan bu bir
 sözdizimi hatası değil, bulgu olarak raporlanır (ADR-0015 notu). HTML5'in tam ağaç kurma
 algoritması değil, sade bir örtük kapanış tablosu kullanılır: emin olunmayan durumda kaçırma.
+
+Faz 56 kapsamı: dosya sonunda bitmemiş açılış (`<div`); örtük kapanışta açık `p`/`li` öğesi
+yığının tepesinde değilse yalnız satır içi öğelerin altında aranır (`<p><span>a<div>`);
+DOCTYPE'sız (quirks) belgede `table` açık `p`'yi kapatmaz. Bilinen sınırlar: biçimlendirme
+öğelerinin yeniden kurulması (adoption agency), `form`/`button` kapsam ayrıntıları, tabloya
+yanlış konan içeriğin dışarı taşınması (foster parenting) ve eski DOCTYPE'ların modu
+modellenmez; bu durumlarda kural sessiz kalır.
 """
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from html.parser import HTMLParser
@@ -98,6 +106,45 @@ _CLOSES_P = frozenset(
         "ul",
     }
 )
+# Örtük kapanışın aşağı inerek arayabildiği satır içi öğeler (HTML5 "special" değiller)
+_PHRASING = frozenset(
+    {
+        "a",
+        "abbr",
+        "b",
+        "bdi",
+        "bdo",
+        "big",
+        "cite",
+        "code",
+        "data",
+        "dfn",
+        "em",
+        "font",
+        "i",
+        "kbd",
+        "label",
+        "mark",
+        "nobr",
+        "q",
+        "s",
+        "samp",
+        "small",
+        "span",
+        "strike",
+        "strong",
+        "sub",
+        "sup",
+        "time",
+        "tt",
+        "u",
+        "var",
+    }
+)
+# `li`/`dt`/`dd` önceki öğeyi `address`, `div`, `p` altından da kapatır (list item kapsamı)
+_LIST_PASSABLE = _PHRASING | {"address", "div", "p"}
+_SCAN_LIMIT = 64  # örtük kapanış aramasının derinliği: kötü niyetli girdide doğrusal kalır
+_UNFINISHED_TAG = re.compile(r"<([a-zA-Z][^\s/>]*)")
 _TABLE_SECTIONS = frozenset({"thead", "tbody", "tfoot", "tr", "td", "th"})
 # açılan etiket → yığının tepesinde bulununca örtük kapattığı öğeler
 _IMPLICIT: dict[str, frozenset[str]] = {
@@ -114,6 +161,11 @@ _IMPLICIT: dict[str, frozenset[str]] = {
     "option": frozenset({"option"}),
     "optgroup": frozenset({"option", "optgroup"}),
     "body": frozenset({"head"}),
+}
+# açılan etiket → örtük kapanışın aşağı inerken atlayabildiği öğeler (yoksa yalnız tepe)
+_PASSABLE: dict[str, frozenset[str]] = {
+    **dict.fromkeys(_CLOSES_P, _PHRASING),
+    **dict.fromkeys(("li", "dt", "dd"), _LIST_PASSABLE),
 }
 
 
@@ -148,6 +200,7 @@ class _Balance(HTMLParser):
         self.hard_bounds: list[int] = []
         self.cell_bounds: list[int] = []
         self.found: list[Imbalance] = []
+        self.standards = False  # `<!DOCTYPE html>` görüldü mü (yoksa quirks modu)
 
     def _push(self, tag: str) -> None:
         index = len(self.stack)
@@ -168,10 +221,32 @@ class _Balance(HTMLParser):
             self.cell_bounds.pop()
         return tag, line
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_decl(self, decl: str) -> None:
+        # Yalnız modern `<!DOCTYPE html>` standart moddur; eski DOCTYPE'larda emin değiliz
+        words = decl.lower().split()
+        self.standards = words[:2] == ["doctype", "html"] and "public" not in words
+
+    def _close_implied(self, tag: str) -> None:
+        """`tag` açılırken örtük kapanan öğeleri çıkarır; aradaki satır içi öğeler kapanmamıştır."""
         closes = _IMPLICIT.get(tag)  # boş `hr` de açık `p`'yi kapatır
-        while closes and self.stack and self.stack[-1][0] in closes:
-            self._pop()
+        if not closes or (tag == "table" and not self.standards):
+            return  # quirks modunda `table` açık `p`'yi kapatmaz
+        passable = _PASSABLE.get(tag, frozenset())
+        target = -1
+        floor = max(len(self.stack) - _SCAN_LIMIT, 0)
+        for index in range(len(self.stack) - 1, floor - 1, -1):
+            name = self.stack[index][0]
+            if name in closes:
+                target = index
+            elif name not in passable:
+                break
+        while target >= 0 and len(self.stack) > target:
+            name, line = self._pop()
+            if name not in closes and name not in OPTIONAL_END:
+                self.found.append(Imbalance(line, "unclosed", name))
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._close_implied(tag)
         if tag in VOID:
             return
         self._push(tag)
@@ -202,6 +277,10 @@ class _Balance(HTMLParser):
                 self.found.append(Imbalance(line, "unclosed", name))
 
     def finish(self) -> list[Imbalance]:
+        # `feed` bitmemiş açılışı (`<div class="a`) tamponda bırakır; `close` onu metin sayar
+        unfinished = None if self.cdata_elem else _UNFINISHED_TAG.match(self.rawdata)
+        if unfinished:
+            self.found.append(Imbalance(self.getpos()[0], "unclosed", unfinished[1].lower()))
         self.close()
         self.found += [
             Imbalance(line, "unclosed", name)
@@ -232,16 +311,35 @@ class UnbalancedTag(Rule):
         "Bu kapanış etiketinin açılışı nerede? Tarayıcı eşi olmayan bir kapanışla "
         "karşılaşınca ne yapıyor olabilir?"
     )
+    MIXED_DESCRIPTION = (
+        "Bu satırda hem kapanmadan kalan hem de açılışı olmayan bir etiket var. Hangi kapanış "
+        "hangi açılışa ait; tarayıcı bu satırı senin yazdığın gibi mi okuyor?"
+    )
+    catalog_note = (
+        "Kapanmayan öğe, eşi olmayan kapanış, iç içe karışan etiketler ve dosya sonunda "
+        "bitmemiş açılış (`<div`). İsteğe bağlı kapanışlar (`p`, `li`, tablo bölümleri…), "
+        "örtük kapanış (`<p>` blok öğeyle, satır içi öğelerin altından da), tablo hücresi "
+        "kapsamı ve DOCTYPE'sız (quirks) belgede `table`'ın `p`'yi kapatmaması dikkate alınır. "
+        "Aynı satırdaki farklı türde ihlaller tek bulguda birlikte anlatılır. Bilinen sınırlar: "
+        "HTML5 ağaç kurma algoritmasının tamamı değil; biçimlendirme öğelerinin yeniden "
+        "kurulması, tabloya yanlış konan içeriğin dışarı taşınması ve eski DOCTYPE'ların modu "
+        "modellenmez — emin olunmayan durumda kural sessiz kalır."
+    )
     languages = frozenset({Language.HTML})
     category = AuditCategory.DESIGN
     default_severity = Severity.MEDIUM
 
     def check(self, ctx: RuleContext) -> list[Finding]:
+        # Motor satır başına kural başına tek bulgu tutar (Faz 56): türler satırda birleşir
+        kinds: dict[int, set[str]] = defaultdict(set)
+        for item in imbalances(ctx.parsed.text):
+            kinds[item.line].add(item.kind)
         return [
-            self.finding(
-                ctx,
-                item.line,
-                description=self.STRAY_DESCRIPTION if item.kind == "stray" else None,
-            )
-            for item in imbalances(ctx.parsed.text)
+            self.finding(ctx, line, description=self._description(kinds[line]))
+            for line in sorted(kinds)
         ]
+
+    def _description(self, kinds: set[str]) -> str | None:
+        if len(kinds) > 1:
+            return self.MIXED_DESCRIPTION
+        return self.STRAY_DESCRIPTION if kinds == {"stray"} else None

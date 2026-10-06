@@ -44,3 +44,72 @@ def test_self_closing_syntax_ignored_only_for_void_and_foreign() -> None:
 def test_hr_closes_paragraph() -> None:
     """Denetim D1: `hr` boş öğe olsa da açık `p`'yi kapatır; sonraki `</p>` eşsizdir."""
     assert imbalances("<p>a\n<hr>\n</p>\n") == [Imbalance(3, "stray", "p")]
+
+
+# ------------------------------------------------------------ Faz 56: kenar durumları
+
+
+def test_unfinished_start_tag_at_eof_is_reported() -> None:
+    assert set(imbalances("<main>\n<div class='a'")) == {
+        Imbalance(1, "unclosed", "main"),
+        Imbalance(2, "unclosed", "div"),
+    }
+
+
+def test_unfinished_tag_inside_script_is_text() -> None:
+    """Script içeriğindeki `a<b` etiket değildir; yalnız kapanmamış script raporlanır."""
+    assert imbalances("<script>\nif (a<b") == [Imbalance(1, "unclosed", "script")]
+
+
+def test_implied_close_searches_below_inline_elements() -> None:
+    """`<p><span>a<div>`: div açık `p`'yi span'in altından da kapatır; span kapanmamıştır."""
+    found = imbalances("<p><span>a\n<div>b</div>\n</span>\n</p>\n")
+    assert found == [
+        Imbalance(1, "unclosed", "span"),
+        Imbalance(3, "stray", "span"),
+        Imbalance(4, "stray", "p"),
+    ]
+
+
+def test_implied_close_stops_at_scope_element() -> None:
+    """`button` gibi satır içi olmayan öğe aramayı durdurur (muhafazakâr)."""
+    assert imbalances("<p><button>a<div>b</div></button></p>\n") == []
+
+
+def test_li_closes_previous_item_through_div() -> None:
+    assert imbalances("<ul>\n<li><div>a\n<li>b\n</ul>\n") == [Imbalance(2, "unclosed", "div")]
+
+
+def test_table_closes_p_only_in_standards_mode() -> None:
+    source = "<p>a\n<table><tr><td>x</td></tr></table>\n</p>\n"
+    assert imbalances(source) == []  # DOCTYPE yok: quirks modunda table `p`'yi kapatmaz
+    assert imbalances("<!DOCTYPE html>\n" + source) == [Imbalance(4, "stray", "p")]
+    legacy = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">\n'
+    assert imbalances(legacy + source) == []  # eski DOCTYPE: emin değiliz, kaçır
+
+
+def test_same_line_mixed_kinds_reported_together() -> None:
+    """Aynı satırdaki kapanmayan ve eşsiz etiket tek bulguda ikisini de anlatır."""
+    findings = run_text("<main>\n<div><span>a</div></b>\n</main>\n", Language.HTML).findings
+    (finding,) = [f for f in findings if f.rule_id == "HTML-STD-003"]
+    assert finding.line_start == 2
+    assert finding.description == UnbalancedTag.MIXED_DESCRIPTION
+
+
+def test_implied_close_scan_is_linear() -> None:
+    """Her `hr` aynı uzun satır içi zinciri yeniden taramamalı (mimari §12)."""
+    import time
+
+    source = "<p><button>" + "<b>" * 4000 + "<hr>" * 6000
+    start = time.perf_counter()
+    imbalances(source)
+    assert time.perf_counter() - start < 1.0
+
+
+def test_catalog_shows_scope_note_without_changing_question() -> None:
+    """Kapsam/sınır notu yalnız katalogda; öğrenciye giden soru değişmez."""
+    from codementor.rules.catalog import render_catalog
+
+    catalog = render_catalog()
+    assert f"*Kapsam ve sınırlar:* {UnbalancedTag.catalog_note}" in catalog
+    assert "sınır" not in UnbalancedTag.description

@@ -136,6 +136,8 @@ Tarayıcı bu belgeyi hangi kurallara göre çizeceğine nasıl karar veriyor? B
 
 Bu etiket nerede kapanıyor? Kapanışı tarayıcı kendisi tahmin ederse sayfanın yapısı senin düşündüğünle aynı kalır mı?
 
+*Kapsam ve sınırlar:* Kapanmayan öğe, eşi olmayan kapanış, iç içe karışan etiketler ve dosya sonunda bitmemiş açılış (`<div`). İsteğe bağlı kapanışlar (`p`, `li`, tablo bölümleri…), örtük kapanış (`<p>` blok öğeyle, satır içi öğelerin altından da), tablo hücresi kapsamı ve DOCTYPE'sız (quirks) belgede `table`'ın `p`'yi kapatmaması dikkate alınır. Aynı satırdaki farklı türde ihlaller tek bulguda birlikte anlatılır. Bilinen sınırlar: HTML5 ağaç kurma algoritmasının tamamı değil; biçimlendirme öğelerinin yeniden kurulması, tabloya yanlış konan içeriğin dışarı taşınması ve eski DOCTYPE'ların modu modellenmez — emin olunmayan durumda kural sessiz kalır.
+
 ### PY-DESIGN-001 — Değiştirilebilir varsayılan argüman
 
 Varsayılan değer fonksiyon tanımlanırken bir kez oluşturulur. Fonksiyonu iki kez çağırdığında ikinci çağrı birincinin bıraktığı nesneyi mi görüyor?

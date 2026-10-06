@@ -59,7 +59,10 @@ def render_catalog() -> str:
         f"| {r.category} | {r.severity} | {kind_label(r)} |"
         for r in rules
     ]
+    notes = {rule.id: rule.catalog_note for rule in all_rules()}
     lines += ["", "## Açıklamalar", ""]
     for r in rules:
         lines += [f"### {r.id} — {r.title}", "", r.description, ""]
+        if notes.get(r.id):
+            lines += [f"*Kapsam ve sınırlar:* {notes[r.id]}", ""]
     return "\n".join(lines).rstrip() + "\n"
