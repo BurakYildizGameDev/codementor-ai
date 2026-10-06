@@ -28,14 +28,20 @@ gerçek bir hizmet dışı bırakma riski.
    mevcut `runner.run_process` kullanılır: kod yalnız stdin ile gider, boş geçici çalışma
    dizini, temiz ortam, zaman aşımında süreç ağacı öldürülür, POSIX'te `RLIMIT_AS`,
    Windows'ta Job Object bellek sınırı. Süre ve bellek `tier0_timeout_s` (varsayılan 5) ve
-   `tier0_memory_mb` (varsayılan 1024) ile yapılandırmadan gelir. Docker yok.
+   `tier0_memory_mb` (varsayılan 1024, en az 256: Linux'ta `RLIMIT_AS` sanal alanı sayar) ile yapılandırmadan gelir. Docker yok. İstemci iptali alt sürece bağlanmaz; işçi en fazla `tier0_timeout_s` yaşar.
 2. **Varsayılan kapalı.** Araç yerelde tek kullanıcıyla çalışır; her analize ~280 ms eklemek
    yerel kullanımı yavaşlatır. Paylaşılan sunucuda açılmalıdır (`codementor.toml` notu).
 3. **Fail-closed.** Süre aşımı, bellek sınırı (Windows'ta erişim ihlali olarak görünür, ayırt
    edilemez), çökme, iptal, kesilmiş ya da bozuk çıktı **error** tanısına çevrilir. Politika
    (§5.2.4) analizi erken bitirir; statik aşama aynı girdiyi süreç içinde yeniden
-   ayrıştırmaz, LLM çağrılmaz. Öğrenciye satır göstermeyen ayrı bir Sokratik şablon gider
-   (`data/mentor_templates.yaml`, `match: "sözdizimi denetimi"`).
+   ayrıştırmaz, LLM çağrılmaz. Rapora "eksik" uyarısı eklenir. Bu, plandaki "bozulmuş
+   rapor olarak sürer" maddesinden bilinçli sapmadır: statik aşama aynı girdiyi süreç içinde
+   yeniden ayrıştıracağı için sürdürmek riski geri getirirdi. Öğrenciye satır göstermeyen ayrı
+   Sokratik şablonlar gider (`data/mentor_templates.yaml`); şablonlar `prefix: true` ile yalnız
+   mesaj başında eşleşir, böylece tanıya giren kullanıcı kodu onları tetikleyemez. Alt süreç
+   hiç başlatılamazsa (çalıştırılabilir yok, Job Object kurulamadı) mesaj kodu değil
+   yapılandırmayı işaret eder ve `log.error` yazılır. Durdurma tanısı `tool="tree-sitter"`,
+   `line=1` taşır (model satır ister); SARIF'te 1. satırda görünür (bilinen sınır).
 4. **Yalnız tanılar taşınır.** Ağaç süreçler arasında taşınamaz; işçi `Tier0Result` JSON'u
    döndürür. Akışlar bayt düzeyinde UTF-8'dir (Windows borusu yerel kod sayfasıyla açılır).
 5. **Exe'de desteklenmez.** PyInstaller exe'sinde `python -m` yoktur; masaüstü uygulaması tek

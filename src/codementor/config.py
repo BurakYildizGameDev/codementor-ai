@@ -87,7 +87,8 @@ class ValidationSettings(BaseModel):
     # tek kullanıcı; süreç açma maliyeti); paylaşılan sunucuda açılmalı. Exe'de desteklenmez.
     tier0_isolation: bool = False
     tier0_timeout_s: float = Field(default=5, gt=0)
-    tier0_memory_mb: int = Field(default=1024, ge=64)
+    # Linux'ta RLIMIT_AS sanal alanı sayar: Python + grammar'lar için 256 MB alt sınır
+    tier0_memory_mb: int = Field(default=1024, ge=256)
 
 
 class PipelineSettings(BaseModel):

@@ -232,7 +232,7 @@ Amaç: Sözdizimi hatalı kodu **LLM'e göndermeden** yakalamak ve kullanıcıya
 
 - `tree-sitter-c`, `tree-sitter-cpp`, `tree-sitter-c-sharp` gramerleri.
 - Ağaçta `ERROR` veya `MISSING` düğümü varsa satır/kolon ile birlikte tanı üretilir.
-- Milisaniyeler içinde çalışır, harici süreç gerektirmez.
+- Milisaniyeler içinde çalışır, harici süreç gerektirmez. Paylaşılan sunucuda `validation.tier0_isolation` ile süre/bellek sınırlı alt süreçte koşturulabilir (varsayılan kapalı; ADR-0025).
 - **Sınırlama:** tree-sitter hata toleranslıdır ve anlamsal hataları (tanımsız değişken, tip uyuşmazlığı) görmez. Bu yüzden Tier 1 vardır.
 
 #### 5.2.2 Tier 1 — Yerel derleyici (opsiyonel, kuruluysa varsayılan açık)
@@ -292,6 +292,7 @@ Derleyici "yalnızca sözdizimi" modunda bile saldırı yüzeyidir (ör. `#inclu
 | Tier 1 Unreal stub hatası | Devam, `WARNING` |
 | Yalnızca derleyici uyarıları | Devam, `WARNING`, uyarılar bulgulara eklenir |
 | Tier 1 zaman aşımı / derleyici yok / include koruması | Devam, `SKIPPED` |
+| Tier 0 yalıtımı süre/bellek sınırında durdu ya da başlatılamadı (ADR-0025) | **Erken çıkış** (fail-closed; satırsız şablon soru, rapora "eksik" uyarısı) |
 
 Erken çıkış raporu da Sokratik tondadır ama **LLM kullanmaz** (şablonlar `data/mentor_templates.yaml`; zarif bozulmadaki şablon sorular da oradadır): tanıya göre şablon mesajlar (ör. "14. satırda bir ifade `;` ile bitmiyor gibi görünüyor. Derleyici bu satırdan sonra neyi bekliyor olabilir?").
 
@@ -1255,7 +1256,7 @@ codementor-ai/
 │   ├── paths.py       kaynak kökü, göreli yol çözümü (Faz 23, ADR-0016)
 │   ├── models/        enums.py  request.py  facts.py  findings.py  llm_output.py  report.py  bigo.py
 │   ├── ingest/        normalize.py  detect.py
-│   ├── validation/    tier0.py  tier1.py  toolchain.py  runner.py  include_guard.py  diagnostics.py  policy.py
+│   ├── validation/    tier0.py  tier0_isolation.py  tier0_worker.py  tier1.py  toolchain.py  runner.py  include_guard.py  diagnostics.py  policy.py
 │   ├── analysis/      parsers.py  extractor.py  complexity_hint.py  call_costs.py
 │   │   └── queries/   c/*.scm  cpp/*.scm  csharp/*.scm
 │   ├── rules/         base.py  registry.py  c.py  cpp.py  csharp.py  unity.py  unreal.py

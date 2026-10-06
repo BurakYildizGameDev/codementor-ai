@@ -30,8 +30,9 @@ def load_templates(path: Path) -> MentorTemplates:
 
 
 def _early_exit_question(templates: MentorTemplates, diagnostic: Diagnostic) -> str:
+    message = diagnostic.message
     for template in templates.early_exit:
-        if template.match in diagnostic.message:
+        if message.startswith(template.match) if template.prefix else template.match in message:
             return template.question.format(line=diagnostic.line, message=diagnostic.message)
     return templates.early_exit_default.format(line=diagnostic.line, message=diagnostic.message)
 

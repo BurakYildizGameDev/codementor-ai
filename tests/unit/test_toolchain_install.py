@@ -461,3 +461,62 @@ def test_persistent_rename_lock_keeps_previous_install(
     assert exe.read_bytes() == b"v1"  # önceki kurulum yerinde
     assert installed_zig(settings.toolchain_dir / "zig") == exe
     assert _leftovers(settings) == []
+
+
+def test_rename_retry_is_bounded_and_only_for_permission(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Denetim: yeniden deneme sınırlı; başka OSError ve Windows dışı hemen düşer."""
+    calls: list[str] = []
+
+    def failing(error: OSError) -> object:
+        def rename(self: Path, target: str | os.PathLike[str]) -> Path:
+            calls.append(self.name)
+            raise error
+
+        return rename
+
+    monkeypatch.setattr(toolchain_install, "_RENAME_DELAYS_S", (0.0,) * 4)
+    monkeypatch.setattr(toolchain_install, "_RETRY_RENAME", True)
+    monkeypatch.setattr(Path, "rename", failing(PermissionError(13, "kilit")))
+    with pytest.raises(PermissionError):
+        toolchain_install._rename(tmp_path / "a", tmp_path / "b")
+    assert len(calls) == 5  # 4 bekleme + son deneme
+
+    calls.clear()
+    monkeypatch.setattr(Path, "rename", failing(FileNotFoundError(2, "yok")))
+    with pytest.raises(FileNotFoundError):
+        toolchain_install._rename(tmp_path / "a", tmp_path / "b")
+    assert len(calls) == 1
+
+    calls.clear()
+    monkeypatch.setattr(toolchain_install, "_RETRY_RENAME", False)
+    monkeypatch.setattr(Path, "rename", failing(PermissionError(13, "kilit")))
+    with pytest.raises(PermissionError):
+        toolchain_install._rename(tmp_path / "a", tmp_path / "b")
+    assert len(calls) == 1
+
+
+@respx.mock
+def test_leftover_restore_failure_keeps_only_install(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Denetim Ö4: `.zig-old-*` tek geçerli kurulumsa geri taşınamasa bile silinmez."""
+    payload = _wheel(marker=b"v1")
+    respx.get(URL).mock(return_value=httpx.Response(200, content=payload))
+    settings = _settings(tmp_path, payload)
+    _install(settings)
+    old = settings.toolchain_dir / ".zig-old-deadbeef"
+    (settings.toolchain_dir / "zig").rename(old)  # iki taşıma arasında çökmüş gibi
+
+    real = Path.rename
+
+    def locked(self: Path, target: str | os.PathLike[str]) -> Path:
+        if self.name.startswith(".zig-old-"):
+            raise PermissionError(13, "Erişim engellendi")
+        return real(self, target)
+
+    monkeypatch.setattr(Path, "rename", locked)
+    monkeypatch.setattr(toolchain_install, "_RENAME_DELAYS_S", (0.0,) * 2)
+    toolchain_install._clean_leftovers(settings.toolchain_dir)
+    assert installed_zig(old) is not None  # kurulum yerinde, silinmedi

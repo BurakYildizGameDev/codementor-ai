@@ -64,6 +64,9 @@ class EarlyExitTemplate(StrictModel):
 
     match: str = Field(min_length=1)
     question: str = Field(min_length=1)
+    # Faz 59: true ise mesaj `match` ile başlamalı; kullanıcı kodundan parça taşıyan tanılar
+    # (`Beklenmeyen sözdizimi: '…'`) sistem şablonlarını ele geçiremesin
+    prefix: bool = False
 
 
 class CategoryTemplate(StrictModel):

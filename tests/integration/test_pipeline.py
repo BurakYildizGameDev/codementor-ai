@@ -336,6 +336,9 @@ async def test_tier0_isolation_stop_ends_analysis_early(
     (diagnostic,) = report.compilation.diagnostics
     assert "süre sınırını aştı" in diagnostic.message
     assert report.findings == []  # statik aşama aynı girdiyi yeniden ayrıştırmadı
+    assert any(
+        "eksik" in w for w in report.meta.warnings
+    )  # denetim Ö3: rapor eksik olduğunu söyler
     assert report.socratic is not None
     (question,) = report.socratic.guiding_questions
     assert "süre ya da bellek sınırını" in question

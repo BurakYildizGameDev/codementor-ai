@@ -240,9 +240,10 @@ def _clean_leftovers(toolchain_dir: Path) -> None:
     if not final.exists():
         for old in reversed(olds):
             if installed_zig(old) is not None:
+                # Geri taşınamasa da silinmez: tek geçerli kurulum odur (Faz 58 denetimi)
+                olds.remove(old)
                 with contextlib.suppress(OSError):
-                    old.rename(final)
-                    olds.remove(old)
+                    _rename(old, final)
                 break
     for path in [*toolchain_dir.glob(".zig-staging-*"), *olds]:
         shutil.rmtree(path, ignore_errors=True)

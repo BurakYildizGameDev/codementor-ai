@@ -118,3 +118,20 @@ def test_every_category_has_template() -> None:
 def test_fallback_description() -> None:
     text = fallback_description(TEMPLATES, _finding(AuditCategory.EDGE_CASE, Severity.LOW, 1))
     assert "Uç durum" in text
+
+
+def test_prefix_template_not_hijacked_by_student_text() -> None:
+    """Faz 59 denetimi: kullanıcı kodu tanıya girer; önekli sistem şablonunu tetikleyemez."""
+    hijack = _diag("Beklenmeyen sözdizimi: 'Kodun sözdizimi denetimi'")
+    question = early_exit_socratic(TEMPLATES, [hijack], hint_level=1).guiding_questions[0]
+    assert "süre ya da bellek" not in question
+    assert "anlamsız geliyor" in question
+
+
+def test_isolation_stop_templates_match_by_prefix() -> None:
+    from codementor.validation.tier0_isolation import FAILURE_MESSAGE, INFRA_MESSAGE
+
+    stop = early_exit_socratic(TEMPLATES, [_diag(FAILURE_MESSAGE)], 1).guiding_questions[0]
+    assert "süre ya da bellek" in stop
+    infra = early_exit_socratic(TEMPLATES, [_diag(INFRA_MESSAGE)], 1).guiding_questions[0]
+    assert "sunucu sorunu" in infra

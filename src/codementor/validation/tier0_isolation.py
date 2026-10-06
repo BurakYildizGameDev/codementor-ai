@@ -29,6 +29,12 @@ TIMEOUT_MESSAGE = (
     "Kodun sözdizimi denetimi {seconds} saniyelik süre sınırını aştı; analiz durduruldu. "
     "Kod olağandışı derecede karmaşık görünüyor; daha küçük bir parçayla yeniden dene."
 )
+# Alt süreç hiç başlatılamadı (çalıştırılabilir yok, Job Object kurulamadı): kod suçlanmaz
+INFRA_MESSAGE = (
+    "Sözdizimi denetimi bu sunucuda başlatılamadı; bu senin kodunla ilgili değil, bir "
+    "yapılandırma sorunu. Analiz durduruldu; daha sonra yeniden dene."
+)
+STOP_WARNING = "Kodun sözdizimi denetimi güvenlik sınırında durduruldu; bu rapor eksik."
 # Bellek sınırı aşımı Windows'ta erişim ihlali olarak görünür, ayırt edilemez: ortak mesaj
 FAILURE_MESSAGE = (
     "Kodun sözdizimi denetimi tamamlanamadı (bellek sınırı ya da beklenmeyen bir hata); "
@@ -37,6 +43,7 @@ FAILURE_MESSAGE = (
 )
 
 log = get_logger("codementor.tier0")
+_frozen_warned = False  # exe uyarısı her analizde değil, bir kez
 
 
 def is_frozen() -> bool:
@@ -54,7 +61,10 @@ def check_syntax(code: NormalizedCode, settings: ValidationSettings) -> Tier0Res
     if not settings.tier0_isolation:
         return run_tier0(code)
     if is_frozen():
-        log.warning("tier0_isolation_unsupported", reason="frozen")
+        global _frozen_warned
+        if not _frozen_warned:
+            log.warning("tier0_isolation_unsupported", reason="frozen")
+            _frozen_warned = True
         return run_tier0(code)
     limits = ProcessLimits(timeout_s=settings.tier0_timeout_s, memory_mb=settings.tier0_memory_mb)
     result = run_process(worker_argv(), code.model_dump_json(), limits)
@@ -65,21 +75,33 @@ def _parse(result: ProcessResult, timeout_s: float) -> Tier0Result:
     if result.timed_out:
         log.warning("tier0_timeout", timeout_s=timeout_s)
         return _stopped(TIMEOUT_MESSAGE.format(seconds=f"{timeout_s:g}"))
-    if result.error or result.cancelled or result.truncated or result.returncode != 0:
+    if result.error:
+        log.error("tier0_worker_unavailable", error=result.error)
+        return _stopped(INFRA_MESSAGE)
+    if result.cancelled or result.truncated or result.returncode != 0:
+        # stderr kullanıcı kodundan parça taşıyabilir: yalnız son satırın başı loglanır
+        tail = result.stderr.strip().splitlines()[-1][:120] if result.stderr.strip() else ""
         log.warning(
             "tier0_worker_failed",
-            error=result.error,
             returncode=result.returncode,
             cancelled=result.cancelled,
             truncated=result.truncated,
-            stderr=result.stderr[-500:],
+            stderr_tail=tail,
         )
         return _stopped(FAILURE_MESSAGE)
     try:
         return Tier0Result.model_validate_json(result.stdout)
     except ValidationError:
-        log.warning("tier0_worker_bad_output", stdout=result.stdout[:200])
+        log.warning("tier0_worker_bad_output", stdout_bytes=len(result.stdout))
         return _stopped(FAILURE_MESSAGE)
+
+
+def stopped(result: Tier0Result) -> bool:
+    """Sonuç, yalıtımın durdurma tanısı mı (süre, bellek, çökme ya da altyapı)."""
+    return any(
+        d.message in (FAILURE_MESSAGE, INFRA_MESSAGE) or d.message.startswith("Kodun sözdizimi")
+        for d in result.diagnostics
+    )
 
 
 def _stopped(message: str) -> Tier0Result:

@@ -42,7 +42,7 @@ from codementor.storage import cache, sessions
 from codementor.storage.db import Database
 from codementor.validation.policy import decide
 from codementor.validation.runner import Runner, run_process
-from codementor.validation.tier0_isolation import check_syntax
+from codementor.validation.tier0_isolation import STOP_WARNING, check_syntax, stopped
 from codementor.validation.tier1 import run_tier1
 
 ProviderFactory = Callable[[str], LLMProvider]
@@ -294,6 +294,8 @@ class Orchestrator:
         with timer.stage("tier0"):
             # Faz 59: yapılandırmaya göre süre/bellek sınırlı alt süreçte (ADR-0025)
             tier0 = await asyncio.to_thread(check_syntax, code, settings.validation)
+        if stopped(tier0):  # erken çıkış eksik bir rapordur; kullanıcı bilsin
+            run.warnings.append(STOP_WARNING)
         tier1 = None
         if tier0.has_errors:
             timer.skip("tier1", "Tier 0 hatası")

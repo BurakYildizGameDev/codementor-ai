@@ -1860,7 +1860,7 @@ iptal yok. Araç paylaşılan bir sunucuda çalışacaksa ayrıştırma sert sü
 - [x] Süre sınırı ve açma/kapama `codementor.toml`'dan gelir (koda gömülmez); varsayılan yerel
       kullanımda davranışı ve hızı değiştirmez
 - [x] Süre aşımında alt süreç ağacıyla birlikte öldürülür (mevcut süreç ağacı öldürme altyapısı),
-      kullanıcıya Türkçe ve anlaşılır bir tanı döner; analiz bozulmuş rapor olarak sürer, çökmez
+      kullanıcıya Türkçe ve anlaşılır bir tanı döner; analiz çökmez. (Uygulamada bozulmuş rapor yerine erken çıkış + "eksik" uyarısı: statik aşama girdiyi yeniden ayrıştırırdı; ADR-0025)
 - [x] Testler: C# `a<` girdisi süre sınırında kesilir (testte kısa sınır), normal girdide sonuç
       süreç içi koşuyla birebir aynı, alt süreç çökmesi/öldürülmesi ana süreci etkilemez;
       `test_tier0_budget.py` C# vakasını artık kapsar

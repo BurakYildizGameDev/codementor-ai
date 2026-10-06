@@ -11,6 +11,7 @@ import sys
 import time
 
 import pytest
+from pydantic import ValidationError
 
 from codementor.config import ValidationSettings
 from codementor.ingest.normalize import normalize
@@ -22,8 +23,10 @@ from codementor.validation.runner import ProcessLimits, ProcessResult
 from codementor.validation.tier0 import run_tier0
 from codementor.validation.tier0_isolation import (
     FAILURE_MESSAGE,
+    INFRA_MESSAGE,
     TIMEOUT_MESSAGE,
     check_syntax,
+    stopped,
 )
 
 
@@ -32,7 +35,7 @@ def _code(text: str, language: Language = Language.C) -> NormalizedCode:
 
 
 def _isolated(**overrides: object) -> ValidationSettings:
-    return ValidationSettings(tier0_isolation=True, **overrides)  # type: ignore[arg-type]
+    return ValidationSettings.model_validate({"tier0_isolation": True, **overrides})
 
 
 def _fake(result: ProcessResult, seen: list[ProcessLimits] | None = None) -> object:
@@ -54,8 +57,11 @@ def _fake(result: ProcessResult, seen: list[ProcessLimits] | None = None) -> obj
         ("int main(void) { return 0; }\n", Language.C),
         ("def f(:\n    pass\n", Language.PYTHON),
         ("<div>\n<p>Merhaba</p>\n", Language.HTML),
+        # Türkçe karakter (kolon karakter cinsinden) ve tanı üst sınırı (`truncated`)
+        ('const char *s = "çğışöü"; int ğ = 1\nint y = 2;\n', Language.C),
+        ("int main(void) {\n" + "    int x = 1\n" * 40 + "    return 0;\n}\n", Language.C),
     ],
-    ids=["c-missing-semicolon", "c-valid", "python-error", "html"],
+    ids=["c-missing-semicolon", "c-valid", "python-error", "html", "turkish", "truncated"],
 )
 def test_isolated_result_matches_in_process(text: str, language: Language) -> None:
     code = _code(text, language)
@@ -70,10 +76,11 @@ def test_pathological_csharp_hits_memory_cap() -> None:
     code = _code(_CSHARP_BOMB, Language.CSHARP)
     start = time.perf_counter()
     result = check_syntax(code, _isolated(tier0_timeout_s=5))
-    assert time.perf_counter() - start < 5
+    assert time.perf_counter() - start < 5 + 3  # bellek ya da süre sınırı + süreç payı
     (diagnostic,) = result.diagnostics
     assert diagnostic.severity == "error"  # erken çıkış: statik aşama yeniden ayrıştırmaz
     assert diagnostic.message in (FAILURE_MESSAGE, TIMEOUT_MESSAGE.format(seconds=5))
+    assert stopped(result)
 
 
 def test_pathological_csharp_is_cut_at_timeout() -> None:
@@ -122,21 +129,22 @@ def test_limits_come_from_settings(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.parametrize(
     "result",
     [
-        ProcessResult(None, "", "", error="çalıştırılabilir bulunamadı"),
         ProcessResult(3, "", "Segmentation fault"),
         ProcessResult(0, "{bozuk json", ""),
         ProcessResult(0, '{"diagnostics": []}', "", truncated=True),
         ProcessResult(None, "", "", cancelled=True),
     ],
-    ids=["launch-error", "crash", "bad-json", "truncated", "cancelled"],
+    ids=["crash", "bad-json", "truncated", "cancelled"],
 )
 def test_worker_failure_fails_closed(
     monkeypatch: pytest.MonkeyPatch, result: ProcessResult
 ) -> None:
     """Alt süreç çökse ya da bozuk çıktı verse de ana süreç çökmez, analiz güvenle durur."""
     monkeypatch.setattr(tier0_isolation, "run_process", _fake(result))
-    (diagnostic,) = check_syntax(_code("int x;\n"), _isolated()).diagnostics
+    result = check_syntax(_code("int x;\n"), _isolated())
+    (diagnostic,) = result.diagnostics
     assert (diagnostic.severity, diagnostic.message) == ("error", FAILURE_MESSAGE)
+    assert stopped(result)
 
 
 def test_timeout_result_uses_timeout_message(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -166,3 +174,38 @@ def test_worker_main_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
     result = Tier0Result.model_validate_json(raw.getvalue().decode("utf-8"))
     assert result == run_tier0(code)
     assert any("ı" in d.message for d in result.diagnostics)  # Türkçe karakter bozulmadı
+
+
+# ---------------------------------------------------------------- denetim düzeltmeleri
+
+
+def test_launch_error_does_not_blame_student_code(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Denetim Ö2: alt süreç hiç başlamadıysa mesaj kodu değil yapılandırmayı işaret eder."""
+    failed = ProcessResult(None, "", "", error="çalıştırılabilir bulunamadı")
+    monkeypatch.setattr(tier0_isolation, "run_process", _fake(failed))
+    result = check_syntax(_code("int x;\n"), _isolated())
+    (diagnostic,) = result.diagnostics
+    assert (diagnostic.severity, diagnostic.message) == ("error", INFRA_MESSAGE)
+    assert "kodunla ilgili değil" in diagnostic.message
+    assert stopped(result)
+
+
+def test_memory_floor_rejects_unusable_limit() -> None:
+    """Denetim Ö2: Linux'ta `RLIMIT_AS` 64 MB'ta Python bile açılmaz; alt sınır 256."""
+    with pytest.raises(ValidationError):
+        ValidationSettings.model_validate({"tier0_memory_mb": 128})
+
+
+def test_regular_tier0_errors_are_not_stops() -> None:
+    assert not stopped(run_tier0(_code("int main(void) { return 0 }\n")))
+
+
+def test_failure_log_omits_user_code(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Denetim küçük 3: stderr/stdout kullanıcı kodundan parça taşıyabilir; loga girmez."""
+    leak = "input_value={'text': 'GIZLI_KULLANICI_KODU " + "x" * 300 + "'}\nValidationError"
+    for result in (ProcessResult(1, "", leak), ProcessResult(0, "GIZLI_KULLANICI_KODU{", "")):
+        monkeypatch.setattr(tier0_isolation, "run_process", _fake(result))
+        check_syntax(_code("int x;\n"), _isolated())
+    assert "GIZLI_KULLANICI_KODU" not in capsys.readouterr().err
