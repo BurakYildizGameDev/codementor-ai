@@ -47,6 +47,7 @@
 | 54 | ✅ | faz/53-54-kapsama-bolumleme | 2026-10-05 | Mimo (Cline) / Claude Code |
 | 55 | ✅ (ADR-0024) | faz/55-tier0-saglamlik | 2026-10-06 | GLM (Cline) / Claude Code |
 | 56 | ✅ | faz/56-html-std003-kenarlar | 2026-10-06 | Claude Code / kod-denetci |
+| 57 | ✅ | faz/57-c-mem003-akis | 2026-10-06 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -887,6 +888,18 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 57 — Notlar (C-MEM-003 akış sıralı null denetimi)
+**Yapılanlar:**
+- `rules/c_memory.py` `_NullChecks`: tahsis, açık denetim (`if`/`while`/`for`/`do` koşulu, üçlü koşul, `!p`, `p == NULL`, `&&`/`||`, `assert`) ve kullanım düğümleri konumlarıyla tutulur. Her tahsisin **ilk kullanımı** için denetim sayılması koşulları: (1) tahsisten sonra biter (`if ((p = malloc(n)) == NULL)` dahil) ya da tahsisi çevreleyen döngünün koşuludur (`while (!p) p = malloc(..)`); (2) kullanımdan önce gelir; (3) denetimin deyimini içeren blok kullanımı da kapsar (başka dalda kalan `if (verbose) { if (!a) … }` saymaz).
+- Belirsiz durumlarda eski sırasız davranış korunur: kullanıcı fonksiyonuna geçirme (`check_ptr(v)` kullanımdan sonra bile) bastırır; takma ad (`b = a; if (!b)`) kullanımdan önce kurulmuş ve sonrasında denetlenmişse bastırır.
+- Tek sıralı tarama (denetimler bitiş konumuna göre sıralı, her denetim tek pencerede): ilk sürümde 1100 denetim + 1300 tahsis/kullanım girdisi 5,2 sn sürüyordu, 0,15 sn'ye indi; iki girdi `test_linear_time_large_input`'a eklendi.
+- Fixture: 4 pozitif (`check_after_use` — `if`/`assert` kullanımdan sonra; `guard_on_other_path` — başka dalda denetim + önceden denetlenip sonra tahsis edilen tembel başlatma; `unrelated_guard`; `alias_after_use`) + 2 negatif (`guard_before_use_flow` — erken dönüş, `&&` kısa devre, üçlü, iç blok + `goto`, döngü koşulu; `alias_and_helper_uncertain`).
+**Alınan kararlar (ve neden):**
+- Yalnız ilk kullanım belirleyicidir: ilk kullanım denetimsizse tahsis zaten başarısızlıkta çöker; sonraki denetimler bunu kurtarmaz.
+- `if (a) {…} else { *a }` gibi denetimin yanlış dalındaki kullanım ayırt edilmez (denetim kullanımı kapsıyor sayılır); `if (flag && !a) return;` gibi koşullu korumalar da denetim sayılır. İkisi de kaçırma yönünde muhafazakâr.
+- Takma ad yönlü (`b = a` → `a`'nın takma adı `b`) ve kullanımdan önce kurulmuş olmalı: ilk sürümde çift yönlü ve sırasızdı, golden bağlı liste örneğinde (`cur->next = n` + önceki `cur->next != NULL`) 17. satır bulgusunu yanlışlıkla gizledi; düzeltilip `alias_after_use` fixture'ı eklendi.
+**Doğrulama:** statik dev eval 0/96 örnekte bulgu değişmedi (geçici dosya silindi); golden prompt'lar aynı; ruff/format/mypy temiz; `pytest -m "not live"` → 3008 geçti, 14 atlandı. (Bir tam koşuda `test_toolchain_install.py`'den 4 test aralıklı düştü; tek başına ve değişiklik olmadan 38/38 geçiyor, sonraki tam koşu yeşil — izlenecek.)
+
 ## Faz 56 — Notlar (HTML-STD-003 kenar durumları)
 **Yapılanlar:**
 - `rules/html_balance.py`: dosya sonunda bitmemiş açılış (`<div class="a`) raporlanır; `feed` sonrası tamponda kalan `<harf…` aranır, script/style gibi metin kipinde aranmaz. Örtük kapanış artık yalnız yığının tepesine bakmıyor: blok açılışı açık `p`'yi satır içi öğelerin (`span`, `b`, `a`…) altından, `li`/`dt`/`dd` önceki öğeyi bunlara ek olarak `div`/`address`/`p` altından da kapatır; aradaki kapanmamış öğeler raporlanır. Arama en fazla 64 öğe derine iner (kötü niyetli girdide doğrusal). DOCTYPE'sız ya da eski (`PUBLIC`) DOCTYPE'lı belgede `table` açık `p`'yi kapatmaz (quirks modu; emin olunmayan yönde sessiz).
@@ -1170,7 +1183,7 @@ az bilgi kaybettiren bir precision aracıdır.
 - ~~Faz 21: `rules_version` yalnız `rules/*.py` hash'i; `analysis/` ve `data/call_costs.yaml` değişiklikleri önbellek anahtarına yansımıyor (bayat önbellek riski).~~ → Faz 31.
 - ~~Faz 21: `log.exception` izi sınırsız ve CLI'da WARNING düzeyinde stderr'e basılır; kural istisna mesajı kullanıcı kodu parçası içerebilir (§12) — iz DEBUG'a ya da kısaltılmış mesaja alınabilir. `captured_logs` teardown'u önceki yapılandırmayı değil varsayılanı geri yükler.~~ → Faz 31.
 - Faz 21: `file_value_types` ad çakışması (`struct Hit` + başka ad alanında `class Hit`) nadir yanlış negatif; yalnız arayüzden türeyen `class A : IFoo` sıcak sayılır (muhafazakâr).
-- Faz 21'den kalan işler Faz 32'de kısmen kapandı: C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray` alanları ve CS-PERF-001 `IList` çözüldü. Açık: C-MEM-003 akış duyarlılığı (Faz 57), döngüde `std::string +`/C# `string +=` karesel ipucu (Sonraya).
+- Faz 21'den kalan işler Faz 32'de kısmen kapandı: C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray` alanları ve CS-PERF-001 `IList` çözüldü. ~~C-MEM-003 akış duyarlılığı~~ (Faz 57'de çözüldü). Açık: döngüde `std::string +`/C# `string +=` karesel ipucu (Sonraya).
 - ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
 - ~~Faz 18: Tier 0 `</div>` kör noktası~~ → Faz 20'de HTML-STD-003 ile bulgu olarak.
 - ~~Faz 20: HTML-STD-003 kaçırmaları (Faz 56): dosya sonunda bitmemiş `<div`, `<p><span>a<div>`, DOCTYPE'sız belgede `table`/`p`, aynı satırdaki farklı ihlaller, katalog açıklaması.~~ → Faz 56'da çözüldü.
@@ -1207,7 +1220,8 @@ az bilgi kaybettiren bir precision aracıdır.
 - `#pragma` makro genişletmeli biçimleri (`#pragma MACRO`) ve `#line` şu an serbest; derleyici kaynak okumadığı için risk düşük, ama include korumasına izin listesi eklenebilir.
 - gcc kolonları "display" birimli, clang bayt; Tier 0 karakter. Unicode içeren satırlarda kolonlar farklı olabilir (`-fdiagnostics-column-unit=byte` gcc ≥ 11).
 - ~~Faz 6'da ertelenen 10 statik kural~~ → Faz 17'de yapıldı (2026-10-01).
-- Faz 17: C-MEM-003 denetimin kullanımdan sonra yapıldığını görmüyor (akış duyarlılığı yok); UNITY-GC-001 closure bastırması satır bazlı.
+- ~~Faz 17: C-MEM-003 denetimin kullanımdan sonra yapıldığını görmüyor~~ (Faz 57'de çözüldü; yanlış dal ve koşullu koruma ayırt edilmiyor). UNITY-GC-001 closure bastırması satır bazlı.
+- `test_toolchain_install.py` tam koşuda bir kez 4 testle aralıklı düştü (Faz 57); tek başına yeşil. Tekrarlarsa paylaşılan geçici dizin/yarış incelenmeli.
 - C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi (`print_arr(arr, n)`) sahiplik aktarımı sayılıyor (sık kaçırma); çağrılan fonksiyon aynı dosyadaysa ve `free`/saklama yoksa bulgu verilebilir. Aynı değişkene iki kez `malloc`, gölgeleme ve `realloc` de bilinçli sınırlar.
 - UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı için `new Hit(3)` yanlış bulgu (değer tipi); Faz 5 `CSHARP_VALUE_TYPES` dosyadaki struct adlarıyla genişletilebilir.
 - UE-GC-001: `TArray<AActor*>`/`TMap<..., UObject*>` kapsayıcı alanları kaçırılıyor; UCLASS olmayan sınıfta (`FPlain`) öneri `UPROPERTY` değil `TStrongObjectPtr`/`FGCObject` olmalı.
@@ -1247,7 +1261,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-06):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı dev 78/96/86, karışıklık 7 → 2). Faz 52-54 Mimo (Cline) ile yapıldı, Claude Code denetleyip düzeltti (`faz/53-54-kapsama-bolumleme`; "Faz 52-54 — Denetim"). Faz 55 tamamlandı ve main'e birleşti (GLM ile; Claude Code denetimi D2 yanlış `;` ipucunu düzeltti). Faz 56 tamamlandı (`faz/56-html-std003-kenarlar`). Sıradaki Faz 57; push Faz 57 sonrası.
+**Kaldığımız yer (2026-10-06):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı dev 78/96/86, karışıklık 7 → 2). Faz 52-54 Mimo (Cline) ile yapıldı, Claude Code denetleyip düzeltti (`faz/53-54-kapsama-bolumleme`; "Faz 52-54 — Denetim"). Faz 55 tamamlandı ve main'e birleşti (GLM ile; Claude Code denetimi D2 yanlış `;` ipucunu düzeltti). Faz 56 (`faz/56-html-std003-kenarlar`) ve Faz 57 (`faz/57-c-mem003-akis`) tamamlandı; kod-denetci denetimi ve main'e birleştirme + push sırada.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1290,7 +1304,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 27. ~~**Faz 54 — Büyük dosyaların bölünmesi:**~~ Yapıldı (2026-10-05; tüm `src/` ≤ 400 satır). 4 modül bölündü (davranış değişmeden).
 28. ~~**Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.~~ Yapıldı (2026-10-06; ADR-0024).
 29. ~~**Faz 56 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.~~ Yapıldı (2026-10-06).
-30. **Faz 57 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.
+30. ~~**Faz 57 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.~~ Yapıldı (2026-10-06).
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,

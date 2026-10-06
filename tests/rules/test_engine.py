@@ -343,6 +343,23 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
             Language.HTML,
             Engine.NONE,
         ),
+        # Faz 57: C-MEM-003 akış sırası — her tahsis önceki tüm denetimleri taramamalı (5.2 s idi)
+        (
+            "#include <stdlib.h>\nvoid f(void){int *p=0;\n"
+            + "if(!p)return;" * 1100
+            + "p=malloc(1);*p=1;" * 1300
+            + "}\n",
+            Language.C,
+            Engine.NONE,
+        ),
+        (
+            "#include <stdlib.h>\nvoid f(void){int *p=0;\n"
+            + "p=malloc(1);" * 1600
+            + "*p=1;" * 2000
+            + "}\n",
+            Language.C,
+            Engine.NONE,
+        ),
     ],
     ids=[
         "c-malloc",
@@ -369,6 +386,8 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
         "html-cell-bounds",
         "html-unterminated-comment",
         "html-bang-and-slash",
+        "c-checks-then-allocs",
+        "c-allocs-then-uses",
     ],
 )
 def test_linear_time_large_input(text: str, language: Language, engine: Engine) -> None:

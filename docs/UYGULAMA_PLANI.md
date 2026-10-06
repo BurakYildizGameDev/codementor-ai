@@ -1811,7 +1811,7 @@ boşluklarını kapatmak. Bunlar PROGRESS "Sonraya"da somut kaçırma örnekleri
 
 **Commit:** `fix(faz-56): HTML-STD-003 kenar durumlarını kapsa`
 
-### Faz 57 — C-MEM-003 akış sıralı null denetimi (YAPILACAK)
+### Faz 57 — C-MEM-003 akış sıralı null denetimi (YAPILDI 2026-10-06)
 
 **Dal:** `faz/57-c-mem003-akis` · **Mimari:** §4.3, §12
 
@@ -1819,10 +1819,10 @@ boşluklarını kapatmak. Bunlar PROGRESS "Sonraya"da somut kaçırma örnekleri
 ayırt etmiyor. Kuralı fonksiyon içi ve muhafazakâr tutarak denetimin kullanım öncesi olup
 olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın kapsamında değildir.
 
-- [ ] Aynı blokta ve ilgili kontrol akışında kullanım öncesi null guard bulguyu bastırır
-- [ ] Dereference öncesi olmayan, yalnız başka bir yolda bulunan veya alakasız değişkeni
+- [x] Aynı blokta ve ilgili kontrol akışında kullanım öncesi null guard bulguyu bastırır
+- [x] Dereference öncesi olmayan, yalnız başka bir yolda bulunan veya alakasız değişkeni
       denetleyen guard bulguyu bastırmaz
-- [ ] Pointer alias ve helper fonksiyon sınırları belirsizse mevcut muhafazakâr davranışı
+- [x] Pointer alias ve helper fonksiyon sınırları belirsizse mevcut muhafazakâr davranışı
       koru; her davranış pozitif/negatif fixture ile sabitlenir
 
 **Commit:** `fix(faz-57): C-MEM-003 kullanım öncesi null denetimi`
