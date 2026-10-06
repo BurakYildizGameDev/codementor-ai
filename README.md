@@ -1,25 +1,117 @@
+<div align="center">
+
 # CodeMentor AI
 
-**Kodu düzeltmeyen, denetleyip Sokratik sorular soran kod mentorluk motoru.** C, C++, C#
-(Unity, Unreal), Python, HTML ve CSS kodunu statik analiz (tree-sitter + deterministik kurallar + isteğe bağlı yerel
-derleyici) ve bir LLM ile birlikte inceler. Çözümü vermez; öğrenciyi sorunu kendisinin
-bulmasına yönelten sorular ve kademeli ipuçları üretir.
+**Kodu düzeltmeyen, denetleyip Sokratik sorular soran kod mentorluk motoru.**
+
+Statik analiz + yerel derleyici + LLM: hatayı bulur, cevabı vermez; öğrenciyi
+sorunu kendisinin bulmasına yönelten sorular sorar.
+
+[![CI](https://github.com/BurakYildizGameDev/codementor-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/BurakYildizGameDev/codementor-ai/actions/workflows/ci.yml)
+![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)
+![mypy strict](https://img.shields.io/badge/mypy-strict-2A6DB2)
+![tests](https://img.shields.io/badge/testler-3000%2B-success)
+![Docker yok](https://img.shields.io/badge/Docker-gerekmez-lightgrey)
+
+C · C++ · C# · Unity · Unreal · Python · HTML · CSS
 
 ![Masaüstü uygulaması: işaretli bulgu satırları, analiz akışı, Sokratik mentor kartı](docs/img/desktop-live.png)
 
-<sub>Masaüstü uygulamasında gerçek bir analiz (claude_cli, `claude-opus-5-5`, 34.5 sn): bellek
+<sub>Masaüstü uygulamasında gerçek bir analiz (`claude_cli`, `claude-opus-5-5`, 34,5 sn): bellek
 sızıntısı ve sıfıra bölme satırları yüksek, 8. satır orta önemde işaretli; mentor cevabı değil
 soruyu veriyor. Web arayüzü: [docs/img/web-live.png](docs/img/web-live.png).</sub>
 
+</div>
+
+---
+
+## Bir bakışta
+
+| | |
+|---|---|
+| **Diller** | C, C++, C#, Python, HTML, CSS + Unity ve Unreal motor bağlamı |
+| **Statik kurallar** | 34 deterministik kural ([katalog](docs/rules-catalog.md)) |
+| **Ön doğrulama** | tree-sitter (her zaman) + gcc / clang / Roslyn (kuruluysa; yoksa tek tıkla zig) |
+| **LLM** | Claude Code CLI (varsayılan), Codex, Anthropic API, Ollama, Gemini |
+| **Eval** | 166 elle etiketlenmiş örnek, dev/test ayrımlı (dev 96 / test 70) |
+| **Arayüzler** | Windows masaüstü (.exe), web (React), CLI, REST API + SSE |
+| **Çıktılar** | JSON · Markdown · SARIF · Rich terminal paneli |
+| **Kalite** | 3.000+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 25 ADR |
+
+## İçindekiler
+
+- [Neden?](#neden) · [Örnek](#öğrenci-ne-görüyor) · [Nasıl çalışır?](#nasıl-çalışır)
+- [Mühendislik kararları](#mühendislik-kararları) · [Sonuçlar](#sonuçlar)
+- [Hızlı başlangıç](#hızlı-başlangıç) · [Masaüstü uygulaması](#masaüstü-uygulaması)
+- [Sağlayıcılar](#sağlayıcılar) · [Güvenlik](#güvenlik) · [Sınırlamalar](#sınırlamalar)
+- [Geliştirme](#geliştirme) · [Yol haritası](#yol-haritası)
+
 ## Neden?
 
-- **Çözüm yerine soru.** LLM çıktısı doğrudan öğrenciye gitmez: bulgular satır kanıtıyla
-  doğrulanır, Sokratik sorular bir sızıntı korumasından geçer. Sızıntı eval'de ölçülür.
-- **Deterministik temel.** Sözdizimi hataları, bilinen bellek/GC/motor hataları ve karmaşıklık
-  ipucu LLM'e gitmeden statik olarak bulunur. LLM yanıt vermezse rapor yine döner
-  (`meta.degraded`).
-- **Ölçülmüş iddialar.** 166 elle etiketlenmiş örnekle dev/test ayrımlı eval (dev 96 / test 70); aşağıdaki tablolar
-  `eval/results/` dosyalarından üretilir.
+Bir LLM'e "kodumda ne yanlış?" diye sorulduğunda genellikle düzeltilmiş kodu verir. Öğrenci
+hatayı görmeden ödevi teslim eder; öğrenme kaybolur. CodeMentor bu akışı tersine çevirir:
+
+- **Çözüm yerine soru.** LLM çıktısı öğrenciye doğrudan gitmez. Bulgular satır kanıtıyla
+  doğrulanır, Sokratik sorular bir **sızıntı korumasından** geçer; çözüm sızdıran soru yeniden
+  üretilir. Sızıntı eval'de ölçülür (%0).
+- **Deterministik temel.** Sözdizimi hataları, bilinen bellek / GC / motor hataları ve Big-O
+  ipucu LLM'e gitmeden statik olarak bulunur. Sözdizimi hatasında **LLM hiç çağrılmaz**; LLM
+  yanıt vermezse rapor statik analizle yine döner.
+- **Kademeli ipucu.** Aynı oturumda her "bir ipucu daha" seviyeyi yükseltir (1 → 3):
+  önce kavram, sonra satır, en sonda yön. Cevap hiçbir seviyede verilmez.
+- **Ölçülmüş iddialar.** Her prompt ve kural değişikliği etiketli bir eval setiyle ölçülür;
+  aşağıdaki tablolar sonuç dosyalarından üretilir ve bir test onları denetler.
+
+## Öğrenci ne görüyor?
+
+Aşağıdaki çıktılar gerçek koşulardan alındı (LLM gerektirmeyen iki yol). LLM'li tam bir
+analizin ekran görüntüsü yukarıda.
+
+**1. Sözdizimi hatası: erken çıkış, LLM çağrısı yok (~1 ms)**
+
+```c
+int main(void) {
+    int toplam = 0          // 4. satır
+    for (int i = 0; i <= 10; i++) {
+```
+
+`codementor analyze ornek.c --format md` çıktısından (başlık ve künye satırları çıkarıldı):
+
+```markdown
+- **Derleme:** başarısız
+- **Not:** kod derlenmediği için analiz derleme aşamasında durdu.
+
+## Derleme tanıları
+- 4. satır (error): Burada noktalı virgül (;) eksik görünüyor.
+
+## Mentor soruları
+İpucu seviyesi: 1
+1. 4. satırda bir ifade `;` ile bitmiyor gibi görünüyor. Derleyici bu satırdan sonra neyi
+   bekliyor olabilir?
+
+> Sonraki adım: Önce ilk hatayı düzelt; sonraki hatalar çoğu zaman onun sonucudur.
+> Kod derlendiğinde analiz devam edecek.
+```
+
+Kod düzeltilmez; `;` yazılmaz. Öğrenciye neye bakacağı söylenir.
+
+**2. Statik kural: bağlı listede denetlenmeyen tahsis**
+
+```c
+void push_back(Node **head, int value) {
+    Node *n = malloc(sizeof(Node));   // 17. satır
+    n->value = value;
+```
+
+```text
+C-MEM-003 (orta) 17. satır
+`malloc`/`calloc`/`realloc` bellek ayıramazsa NULL döndürür. Bu işaretçi denetlenmeden
+kullanılıyor; tahsis başarısız olursa bu satırdan sonra ne olur?
+```
+
+Kural açıklamaları bile soru biçimindedir. Ardından LLM geçişi statik olguları (çağrı grafiği,
+döngü derinliği, Big-O ipucu) görerek ek bulgular üretir; her bulgu satır kanıtıyla doğrulanır
+ve mentorluk geçişi bunları sorulara çevirir.
 
 ## Nasıl çalışır?
 
@@ -38,124 +130,73 @@ flowchart LR
     EE --> K6
 ```
 
-Ayrıntı: [docs/mimari.md](docs/mimari.md). Kararlar: [docs/adr/](docs/adr/).
+| Katman | Ne yapar |
+|---|---|
+| **K0 Giriş** | Satır sonu/kodlama normalizasyonu, dil ve motor tespiti, boyut sınırı |
+| **K1 Ön doğrulama** | Tier 0: tree-sitter `ERROR`/`MISSING` → Türkçe tanı. Tier 1: gcc/clang `-fsyntax-only`, Roslyn; kod **çalıştırılmaz** |
+| **K2 Statik analiz** | tree-sitter sorgularıyla olgular (döngüler, çağrılar, tahsisler), Big-O ipucu, 34 kural |
+| **K3 Prompt** | Numaralı kod, olgular, dile/motora özgü kontrol listesi, few-shot; kod `<user_code>` içinde veri olarak |
+| **K4 LLM** | İki geçiş (analiz → mentorluk), şema onarımı, isteğe bağlı bulgu doğrulama geçişi |
+| **K5 Doğrulama** | JSON şeması, satır kanıtı, statik ipucuyla Big-O uyumu, sızıntı koruması |
+| **K6 Rapor** | Tek şema; JSON, Markdown, SARIF 2.1.0, web ve masaüstü görünümü |
 
-## Masaüstü uygulaması (Windows .exe)
+Ayrıntı: [docs/mimari.md](docs/mimari.md).
 
-`CodeMentor.exe`'yi çift tıkla açman yeterli: Python, Node.js ya da tarayıcı gerekmez
-(ADR-0013). Gereken tek şey bir LLM sağlayıcısı; varsayılan, oturum açılmış
-[Claude Code](https://claude.com/claude-code) CLI'ı (`claude` PATH'te olmalı). Sol alttaki rozet
-sağlayıcının hazır olup olmadığını gösterir.
+## Mühendislik kararları
 
-- **Analiz:** kodu yaz, aç (`.c .h .cpp .hpp .cs .py .html .css`) ya da örnek yükle; dil/motor seç, isteğe bağlı
-  bir görev seç, **Denetle** (Ctrl+Enter). Analiz akışı 6 adımda canlı izlenir; bulgu satırları
-  editörde önem rengiyle boyanır, karta tıklayınca satıra gidilir.
-- **Sokratik mentor:** ana kavram, yönlendirici sorular ve sonraki adım. **Bir ipucu daha**
-  aynı oturumla yeniden denetler ve ipucu seviyesini (1→3) artırır; **Baştan başla** sıfırlar.
-- **Soru bankası:** 64 görev; her dil/motorda (C, C++, C#, Unity, Unreal, Python, HTML, CSS)
-  çok kolaydan zora 8 görev, dil ve zorluk filtresiyle; seçilen görev editörün üstünde hedefiyle
-  görünür.
-- **Geçmiş:** önceki analizler kodlarıyla yeniden açılır; raporlar Markdown/SARIF/JSON olarak
-  dışa aktarılır.
-- **Bağlantılar:** Claude Code, Antigravity (agy), Codex, Ollama, Anthropic, OpenAI ve DeepSeek
-  için birer kart. Model seçimi (Ollama'da kurulu modeller, agy ve Codex'te hesabındaki modeller
-  listelenir),
-  **Oturum aç** (CLI'nın kendi girişini yeni pencerede açar), API anahtarı (Windows Kimlik
-  Bilgisi Yöneticisi'nde saklanır, dosyaya yazılmaz), **Bağlantıyı dene** ve **Varsayılan yap**.
-  Analiz ekranındaki rozet hangi model ile çalıştığını gösterir (ADR-0014). **Seçimleri
-  codementor.toml'a yaz** düğmesi model ve varsayılan sağlayıcıyı yapılandırmaya işler (yorumlar
-  korunur, anahtar yazılmaz); böylece CLI ve API de aynı modeli kullanır.
-- **Editör:** Ctrl+F ile arama (Enter / Shift+Enter gezinir, Esc kapatır), **Son ▾** menüsünde
-  son açılan dosyalar, dosyayı editöre sürükleyip bırakarak açma.
+Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 25 kayıt). Öne çıkanlar:
 
-Derlemek için (Windows, depo kökünde):
+- **Hibrit, LLM sarmalayıcısı değil.** Deterministik katman, yanıtların bir kısmını LLM'siz
+  verir (sözdizimi hatalarında erken çıkış precision/recall %100) ve LLM'e olgu sağlar: olgular
+  prompt'tan çıkarılınca Big-O birebir doğruluk %96'dan %85'e düşüyor (ablasyon).
+- **Kullanıcı kodu güvenilmeyen veridir.** Kod hiçbir zaman çalıştırılmaz; derleyiciye yalnız
+  stdin ile gider, boş geçici dizinde, temizlenmiş ortamla, POSIX rlimit / Windows Job Object
+  sınırlarıyla. `#include "/etc/passwd"` gibi yollar Tier 1'e gitmeden reddedilir. Prompt
+  injection fixture'ları eval'in %12,5'idir; direnç %100.
+- **Docker yok, yine de yalıtım var** (ADR-0009). Paylaşılan sunucu için Tier 0 ayrıştırması
+  süre ve bellek sınırlı alt süreçte koşturulabilir (ADR-0025): kasıtlı bir C# girdisinin süreç
+  içinde ~10 sn ve ~4,2 GB tükettiği ölçüldü, alt süreçte ~1 sn'de durur.
+- **Zarif bozulma.** Sağlayıcı yoksa, zaman aşımı olursa ya da şema iki denemede tutmazsa
+  rapor statik analiz ve şablon sorularla döner (`meta.degraded`); analiz asla boş dönmez.
+- **Sağlayıcıdan bağımsız.** Model adları ve anahtarlar yalnız yapılandırmada; CLI ajanları
+  araçları kapalı, prompt stdin'den koşar (ADR-0012, ADR-0017). Testler ağa çıkmaz
+  (`FakeProvider`); gerçek API testleri `@pytest.mark.live` ile ayrıdır.
+- **Doğrusal zaman sözü.** 40 KB'lık kötü niyetli girdiler (iç içe yapılar, binlerce denetim,
+  derin etiket yığınları) her kural için performans testinde; karesel davranış test kırar.
 
-```bash
-uv sync
-make roslyn-check-sc                 # isteğe bağlı: dotnet gerektirmeyen C# denetleyicisi (+~15 MB)
-uv run python build_exe.py --both    # dist/CodeMentor.exe (~37 MB) + dist/CodeMentor-0.1.0-win64.zip
-uv run python -m codementor.desktop  # derlemeden çalıştırmak için
-```
+## Sonuçlar
 
-Sağlayıcı ve model ayarlarını **Bağlantılar** ekranından yaparsın; ileri ayarlar için exe'nin
-yanına bir `codementor.toml` koyarsan paketteki varsayılan yerine o kullanılır. Veritabanı, tercihler ve log `~/.codementor`
-altındadır. Hazır exe ve zip, GitHub Actions'taki her `main` koşusunda `CodeMentor-win64`
-artefaktı olarak indirilebilir.
+166 elle etiketlenmiş örnek: dev 96 / test 70; %25'i sözdizimi hatalı, %12,5'i prompt
+injection içerir. Bulgu eşleşmesi: aynı kategori + satır farkı ≤ 2. Prompt'lar dev'de
+geliştirildi; test bölümü dokunulmadan tutuldu.
 
-Yapılandırmadaki göreli yollar çalışma dizinine bağlı değildir: `codementor.toml`'daki yol
-toml'un bulunduğu dizine, varsayılanlar paketin kendi `data/` ve `prompts/` dizinlerine göre
-çözülür (ADR-0016). Bu yüzden `codementor` komutu her dizinden çalışır.
-
-## Hızlı başlangıç (Docker gerekmez)
-
-Gerekenler: Python 3.12 + [uv](https://docs.astral.sh/uv/), Node.js 20+ ve bir LLM sağlayıcısı
-(varsayılan: oturum açılmış [Claude Code](https://claude.com/claude-code) CLI'ı, `claude`).
-İsteğe bağlı: gcc/clang (C/C++/Unreal Tier 1) ve .NET SDK (C# Tier 1, `make roslyn-check`).
-Derleyici yoksa Tier 1 atlanır, analiz yine çalışır. Derleyicin yoksa
-`uv run codementor toolchain install zig` zig'i (~100 MB, sha256 doğrulamalı) `~/.codementor`
-altına kurar; masaüstünde aynısı Bağlantılar → "Derleyiciyi indir" düğmesidir. Exe, C# için
-dotnet gerektirmeyen gömülü Roslyn'le gelir (ADR-0018). Durum: `codementor toolchain status`.
-
-```bash
-git clone https://github.com/BurakYildizGameDev/codementor-ai.git
-cd codementor-ai
-uv sync
-uv run codementor serve            # API: http://127.0.0.1:8000/docs
-
-# ikinci terminalde
-cd web
-npm install
-npm run dev                        # arayüz: http://127.0.0.1:5173
-```
-
-Hazırlık denetimi: `curl http://127.0.0.1:8000/health/ready` (sağlayıcı ve bulunan derleyiciler).
-Komutlar herhangi bir dizinden çalışır (Faz 23, ADR-0016); `codementor.toml` çalışma dizininde
-ya da `CODEMENTOR_CONFIG_FILE` ile verilir.
-
-![Web arayüzü: sağlayıcı/mod seçimi, analiz, bulguya gitme, raporu indirme](docs/img/web-demo.gif)
-
-<sub>Web arayüzünde sağlayıcı ve mod seçilir; rapor gelince bulgular editörde işaretlenir,
-bulguya tıklayınca satıra gidilir, rapor JSON / Markdown / SARIF olarak indirilir. Monaco
-editörü ayrı parçada tembel yüklenir. GIF e2e karelerinden üretilir:
-`cd web && npx playwright test -g GIF` ardından `uv run python tools/make_demo_gif.py`.</sub>
-
-API'yi yerel ağ dışına açacaksan isteğe bağlı anahtar tanımla: `codementor.toml`'da
-`[api] api_key_env = "CODEMENTOR_API_KEY"` ve ortamda `CODEMENTOR_API_KEY=<anahtar>`; bu durumda
-`/v1/*` istekleri `X-API-Key` başlığı ister (`/health` açık kalır). Web arayüzü anahtar
-göndermez; yerel kullanım içindir.
-
-Komut satırından:
-
-```bash
-uv run codementor analyze kod.c                       # Rich panel
-uv run codementor analyze kod.cs --engine unity --format sarif --out rapor.sarif
-uv run codementor questions list
-```
-
-### Sağlayıcılar
-
-`codementor.toml` içinde `[providers] default = "..."`. Model adları yalnızca yapılandırmada
-tutulur (ADR-0008).
-
-| Sağlayıcı | Kurulum | Not |
+| Ölçüm | Claude Opus (`claude_cli`) | Yalnızca statik (LLM yok) |
 |---|---|---|
-| `claude_cli` (varsayılan) | `claude` CLI'ında oturum aç | API anahtarı gerekmez; araçları kapalı, prompt stdin'den (ADR-0012). Tüm eval ölçümleri bu sağlayıcıyla yapıldı (Claude satırları). |
-| `codex` | `codex login` (ChatGPT), `[providers.codex] model` (ör. `gpt-6-luna`), `allow_tool_agent = true` | API anahtarı gerekmez; salt okunur sandbox, kullanıcı ayarları yok sayılır, prompt stdin'den (ADR-0017). Alternatif ölçüm: `gpt-6-luna` dev 96 satırları ayrıdır, Claude ölçümleriyle karıştırılmaz |
-| `anthropic` | `ANTHROPIC_API_KEY`, `[providers.anthropic] model` | Yapılandırılmış çıktı (ADR-0011) |
-| `ollama` (yerel) | [Ollama](https://ollama.com) kur, `ollama pull qwen2.5-coder:7b`, `default = "ollama"` | Tamamen çevrimdışı; kalite modele bağlı, **eval'de ölçülmedi** |
-| `gemini` (deneysel) | `GEMINI_API_KEY`, `[providers.gemini] model` (ör. `gemini-3.8-flash`) | OpenAI uyumlu uç, katı şema (ADR-0020). Canlı doğrulanmadı, eval'de ölçülmedi |
-| `agy` (deneysel) | Antigravity CLI'ında oturum aç, `allow_tool_agent = true` | Araçları kapatılamıyor (ADR-0012); eval'de ölçülmedi |
+| Denetim P / R / F1, dev 96 | **78 / 96 / 86** (Faz 51, güncel prompt) | 100 / 55 / 71 |
+| Denetim P / R / F1, test 70 | 27 / 92 / 42 (Faz 12 prompt'u, 49 örnek) | 94 / 55 / 69 |
+| Erken çıkış P / R | %100 / %100 | %100 / %100 |
+| Big-O birebir / sınıf (test) | %91–94 / %94–97 | %97 / %97 |
+| Çözüm sızıntısı | %0 | — |
+| Prompt injection direnci | %100 | — |
+| Gecikme p50 | ~16–24 sn (iki geçiş) | ~0,1 sn |
 
-> OpenAI ve DeepSeek sağlayıcıları 2026-10-03'te kaldırıldı (ADR-0021): canlı doğrulanamıyordu.
+Okuma notları:
 
-## Eval sonuçları
+- **İş bölümü net:** statik kurallar az ama kesin bulur (precision %94–100); LLM recall'ı
+  %55'ten %92–96'ya taşır. İkisi birlikte bulunur, biri diğerinin yerine geçmez.
+- **Precision'ın hikâyesi:** ilk prompt'ta LLM etiketlenmemiş küçük gözlemler ekliyordu
+  (precision %27). Dev'de "sorun" ölçütü, kategori tanımları, ayrı bir bulgu doğrulama geçişi
+  (ADR-0019) ve kategori tutarlılığıyla dev precision'ı %27'den %78'e çıktı, recall korundu
+  (bu arada dev seti de 31'den 96 örneğe büyüdü). Test bölümü bu iyileştirmelerden sonra
+  yeniden koşulmadı; tablodaki test satırı bilinçli olarak eski ölçümdür.
+- **Küçük veri:** test bölümünde bir örnek ~2–3 puan eder. Sonuçlar yön göstericidir.
 
-166 elle etiketlenmiş örnek (**dev 96 / test 70**; dil/motor başına dev/test: C 13/9,
-C++ 12/10, C♯ 12/10, Python 11/7, HTML 11/7, CSS 9/7, Unity 14/10, Unreal 14/10;
-%25 sözdizimi hatalı, %12,5 prompt injection). Prompt'lar dev'de **ayarlanmadı**; test
-bölümü en sonda **bir kez** koşuldu.
-Bulgu eşleşmesi: aynı kategori + satır farkı ≤ 2. Model: `claude-opus-5-5` (`claude_cli`),
-önbellek kapalı.
+<details>
+<summary><b>Tüm eval tabloları (sonuç dosyalarından üretilir, test ile denetlenir)</b></summary>
+
+Tablolar `uv run codementor eval compare eval/results/*_test.json` (ve `*_dev.json`)
+çıktısıdır; `tests/unit/eval/test_readme_table.py` sonuç dosyalarıyla birebir olduklarını
+denetler. "Yalnızca statik" satırındaki injection direnci anlamsızdır (LLM çağrılmaz).
 
 > Not (Faz 21): "Yalnızca statik" satırları güncel kurallarla ve Faz 21'de iki bulgu eklenmiş
 > dev etiketleriyle yeniden koşuldu; LLM satırları Faz 12'deki kurallar ve etiketlerle hesaplandı
@@ -222,17 +263,18 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 <!-- eval-table:dev:end -->
 
-> Faz 36 (2026-10-04): Claude Opus parçaları 1/4 + 2/4 (48 örnek) kayıtlı metrikte 75 / 83 / 78; `unity-104` etiketi güncellenince 75 / 81 / 78. Claude parçaları 3/4 + 4/4 henüz koşulmadı. Kullanıcı talimatıyla Codex `gpt-6-luna` aynı promptla dört parçayı koştu: 96 örnekte 79 / 77 / 78, bir öneri. Sağlayıcılar farklı olduğundan sonuçlar birleştirilmez; ortak 46 örnekteki 75 / 73 / 74 kıyası Faz 36'nın nedensel etkisini göstermez. Ayrıntı: `docs/eval-findings.md` §11.
-
-> Dev genişletmesi (2026-10-04): dev 46 → 96 örnek (50 yeni; Unity/Unreal 8'er, diğerleri 4-6). Statik satır ve Codex `gpt-6-luna` ölçümü 96 örnekliktir; Claude Opus satırları eski 46 örnek ve kısmi 24'er örnek koşularıdır. Yeni örneklerin statik Big-O'su etiketle birebir. Ayrıntı: `docs/eval-findings.md` §10–11.
-
 > En güncel dev ölçümü (Faz 51, 2026-10-05): **Claude 96 örnek — Denetim P / R / F1 = 78 / 96 / 86** (karışıklık 7 → 2). Ayrıntı: `PROGRESS.md` "Faz 51 — Notlar".
 
-> Faz 34/35B (2026-10-03): 46 örneklik satırlar güncel dev setidir (C ailesi + Python/HTML/CSS). `verify` = bulgu doğrulama geçişi (artık varsayılan açık, ADR-0019): precision 69 → 79, recall aynı. İkinci model Claude Haiku 4.5 (düşünme kapalı). Few-shot 0/1/2 arasında fark yok. Ayrıntı: `docs/eval-findings.md` §9.
+> Faz 36 (2026-10-04): Claude Opus parçaları 1/4 + 2/4 (48 örnek) kayıtlı metrikte 75 / 83 / 78; `unity-104` etiketi güncellenince 75 / 81 / 78. Codex `gpt-6-luna` aynı promptla dört parçayı koştu: 96 örnekte 79 / 77 / 78. Sağlayıcılar farklı olduğundan sonuçlar birleştirilmez. Ayrıntı: `docs/eval-findings.md` §11.
 
-> Faz 22B (2026-10-02): son two_pass satırı yeni prompt'tur (`v1+fdc16030`: "sorun" ölçütü, kategori tanımları, en fazla 6 bulgu, Python few-shot). Dev etiketlerine 7 örnekte soru gereksinimi bulguları eklendi; statik satır güncel etiketlerle yeniden koşuldu, eski LLM satırları kayıtlı (eski etiketli) metriklerini korur. Güncel etiketlerle eski two_pass: P / R / F1 34 / 80 / 48. Ayrıntı: `docs/eval-findings.md` §7.
+> Dev genişletmesi (2026-10-04): dev 46 → 96 örnek. Statik satır ve Codex `gpt-6-luna` ölçümü 96 örnekliktir; Claude Opus satırları eski 46 örnek ve kısmi 24'er örnek koşularıdır. Ayrıntı: `docs/eval-findings.md` §10–11.
 
-**Python, HTML, CSS (Faz 18, 36 örnek; dil başına 12):** test 21 / dev 15, yalnızca bu dillerde koşuldu (`eval run --language`). Dil başına döküm ve yorum: `docs/eval-findings.md` §4.
+> Faz 34/35B (2026-10-03): `verify` = bulgu doğrulama geçişi (artık varsayılan açık, ADR-0019): precision 69 → 79, recall aynı. İkinci model Claude Haiku 4.5 (düşünme kapalı). Few-shot 0/1/2 arasında fark yok. Ayrıntı: `docs/eval-findings.md` §9.
+
+> Faz 22B (2026-10-02): `v1+fdc16030` prompt'u ("sorun" ölçütü, kategori tanımları, en fazla 6 bulgu, Python few-shot). Ayrıntı: `docs/eval-findings.md` §7.
+
+**Python, HTML, CSS (Faz 18, 36 örnek; dil başına 12):** test 21 / dev 15, yalnızca bu dillerde
+koşuldu (`eval run --language`). Dil başına döküm: `docs/eval-findings.md` §4.
 
 <!-- eval-table:test-diller:start -->
 | Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
@@ -257,55 +299,128 @@ Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 
 > Son two_pass satırı Faz 22B prompt'udur (`v1+fdc16030`).
 
-Tablolar `uv run codementor eval compare eval/results/*_test.json` (ve `*_dev.json`) çıktısıdır;
-`tests/unit/eval/test_readme_table.py` sonuç dosyalarıyla birebir olduklarını denetler.
-"Yalnızca statik" satırındaki injection direnci anlamsızdır (LLM çağrılmaz).
+</details>
 
-Okuma notları (ayrıntı: [docs/eval-findings.md](docs/eval-findings.md)):
+## Hızlı başlangıç
 
-- **LLM'in katkısı recall'da:** statik kurallar beklenen bulguların %42'sini (test) kesin doğrulukla
-  bulur; LLM ile %92–94. Kategori yok sayıldığında LLM test'teki 36 bulgunun 36'sını buluyor.
-- **Precision düşük (%27–32):** LLM etiketlenmemiş küçük gözlemler de ekliyor (`edge_case`,
-  `design`, `input_handling`). Orta ve üstü önemde %35–37.
-- **Statik olgular Big-O'ya katkı veriyor:** olgular prompt'tan çıkarılınca dev'de birebir doğruluk
-  %96 → %85.
-- **Erken çıkış:** test'teki 49 örneğin 15'i (%31) LLM çağrılmadan yanıtlandı; erken çıkış
-  kararlarının precision ve recall'u %100.
-- **two_pass vs single_pass:** kalite farkı ölçülmedi; single_pass ~%35–45 daha hızlı ama sızıntı
-  koruması ~1,5 kat daha sık devreye giriyor. Varsayılan two_pass (ADR-0003).
+### Seçenek 1: Masaüstü uygulaması (Windows)
+
+GitHub Actions'taki her `main` koşusunun `CodeMentor-win64` artefaktından `CodeMentor.exe`'yi
+indir ve çift tıkla. Python, Node.js ya da tarayıcı gerekmez (ADR-0013). Gereken tek şey bir
+LLM sağlayıcısı: varsayılan, oturum açılmış [Claude Code](https://claude.com/claude-code) CLI'ı.
+
+### Seçenek 2: Web arayüzü + API
+
+Gerekenler: Python 3.12 + [uv](https://docs.astral.sh/uv/), Node.js 20+, bir LLM sağlayıcısı.
+
+```bash
+git clone https://github.com/BurakYildizGameDev/codementor-ai.git
+cd codementor-ai
+uv sync
+uv run codementor serve            # API: http://127.0.0.1:8000/docs
+
+# ikinci terminalde
+cd web && npm install && npm run dev   # arayüz: http://127.0.0.1:5173
+```
+
+![Web arayüzü: sağlayıcı/mod seçimi, analiz, bulguya gitme, raporu indirme](docs/img/web-demo.gif)
+
+<sub>Rapor gelince bulgular editörde işaretlenir, bulguya tıklayınca satıra gidilir, rapor JSON /
+Markdown / SARIF olarak indirilir. GIF e2e karelerinden üretilir:
+`cd web && npx playwright test -g GIF` ardından `uv run python tools/make_demo_gif.py`.</sub>
+
+### Seçenek 3: Komut satırı
+
+```bash
+uv run codementor analyze kod.c                                   # Rich panel
+uv run codementor analyze kod.cs --engine unity --format sarif --out rapor.sarif
+uv run codementor questions list                                  # 64 görevlik soru bankası
+uv run codementor rules list                                      # 34 statik kural
+```
+
+**Derleyici (isteğe bağlı):** gcc/clang (C/C++/Unreal Tier 1) ve .NET SDK (C# Tier 1,
+`make roslyn-check`). Yoksa Tier 1 atlanır, analiz yine çalışır; ya da
+`uv run codementor toolchain install zig` zig'i (~100 MB, sha256 doğrulamalı) `~/.codementor`
+altına kurar (ADR-0018). Durum: `codementor toolchain status`, hazırlık:
+`curl http://127.0.0.1:8000/health/ready`.
+
+Komutlar her dizinden çalışır: `codementor.toml` çalışma dizininde ya da
+`CODEMENTOR_CONFIG_FILE` ile verilir, içindeki göreli yollar toml'un dizinine göre çözülür
+(ADR-0016).
+
+## Masaüstü uygulaması
+
+- **Analiz:** kodu yaz, aç (`.c .h .cpp .hpp .cs .py .html .css`) ya da örnek yükle; dil/motor
+  seç, isteğe bağlı bir görev seç, **Denetle** (Ctrl+Enter). Analiz akışı 6 adımda canlı izlenir;
+  bulgu satırları editörde önem rengiyle boyanır, karta tıklayınca satıra gidilir.
+- **Sokratik mentor:** ana kavram, yönlendirici sorular ve sonraki adım. **Bir ipucu daha**
+  aynı oturumla yeniden denetler ve ipucu seviyesini (1 → 3) artırır; **Baştan başla** sıfırlar.
+- **Soru bankası:** 64 görev; her dil/motorda çok kolaydan zora 8 görev, dil ve zorluk filtresiyle.
+- **Geçmiş:** önceki analizler kodlarıyla yeniden açılır; raporlar Markdown / SARIF / JSON olarak
+  dışa aktarılır.
+- **Bağlantılar:** her sağlayıcı için bir kart: model seçimi, **Oturum aç**, API anahtarı
+  (Windows Kimlik Bilgisi Yöneticisi'nde, dosyaya yazılmaz), **Bağlantıyı dene**, **Varsayılan
+  yap**, **Derleyiciyi indir** (zig). Seçimler tek tuşla `codementor.toml`'a yazılır (yorumlar
+  korunur); CLI ve API de aynı modeli kullanır (ADR-0014).
+- **Editör:** Ctrl+F arama, **Son ▾** menüsünde son dosyalar, sürükle-bırak ile açma.
+
+Derlemek için (Windows, depo kökünde):
+
+```bash
+uv sync
+make roslyn-check-sc                 # isteğe bağlı: dotnet gerektirmeyen C# denetleyicisi (+~15 MB)
+uv run python build_exe.py --both    # dist/CodeMentor.exe (~37 MB) + dist/CodeMentor-0.1.0-win64.zip
+uv run python -m codementor.desktop  # derlemeden çalıştırmak için
+```
+
+Exe'nin yanına bir `codementor.toml` koyarsan paketteki varsayılan yerine o kullanılır.
+Veritabanı, tercihler ve log `~/.codementor` altındadır.
+
+## Sağlayıcılar
+
+`codementor.toml` içinde `[providers] default = "..."`. Model adları yalnızca yapılandırmada
+tutulur (ADR-0008).
+
+| Sağlayıcı | Kurulum | Not |
+|---|---|---|
+| `claude_cli` (varsayılan) | `claude` CLI'ında oturum aç | API anahtarı gerekmez; araçları kapalı, prompt stdin'den (ADR-0012). Tüm Claude eval ölçümleri bununla yapıldı. |
+| `codex` | `codex login`, `[providers.codex] model` (ör. `gpt-6-luna`), `allow_tool_agent = true` | API anahtarı gerekmez; salt okunur sandbox, prompt stdin'den (ADR-0017). Dev 96'da ayrıca ölçüldü. |
+| `anthropic` | `ANTHROPIC_API_KEY`, `[providers.anthropic] model` | Yapılandırılmış çıktı (ADR-0011) |
+| `ollama` (yerel) | [Ollama](https://ollama.com) kur, `ollama pull qwen2.5-coder:7b`, `default = "ollama"` | Tamamen çevrimdışı; kalite modele bağlı, **eval'de ölçülmedi** |
+| `gemini` (deneysel) | `GEMINI_API_KEY`, `[providers.gemini] model` | OpenAI uyumlu uç, katı şema (ADR-0020). Canlı doğrulanmadı |
+| `agy` (deneysel) | Antigravity CLI'ında oturum aç, `allow_tool_agent = true` | Araçları kapatılamıyor (ADR-0012); eval'de ölçülmedi |
+
+> OpenAI ve DeepSeek sağlayıcıları 2026-10-03'te kaldırıldı (ADR-0021): canlı doğrulanamıyordu.
+
+## Güvenlik
+
+- **Varsayılan yerel.** API yalnızca `127.0.0.1`'e bağlanır; başka adrese bağlanırsa `serve`
+  uyarır. Host başlığı izin listesi, gövde boyutu sınırı, eşzamanlı analiz sınırı (4) ve analiz
+  başına toplam süre sınırı vardır; istek isteği Tier 1'i kapatabilir ama açamaz (ADR-0023).
+- **İsteğe bağlı API anahtarı:** `codementor.toml`'da `[api] api_key_env = "CODEMENTOR_API_KEY"`
+  ve ortamda `CODEMENTOR_API_KEY=<anahtar>`; bu durumda `/v1/*` istekleri `X-API-Key` başlığı
+  ister (`/health` açık kalır). Web arayüzü anahtar göndermez; yerel kullanım içindir.
+- **Paylaşılan sunucuda** ayrıca `[validation] tier0_isolation = true` açılmalı (ADR-0025).
+  İstek/dakika hız sınırı yoktur.
+- **Bağımlılıklar:** `uv.lock` sabit; CI'da `pip-audit --strict` ve `npm audit`. İndirilen
+  derleyici yalnız yapılandırmadaki https adresinden, sha256 doğrulanarak, güvenli açma ile kurulur.
 
 ## Sınırlamalar
 
-- **Unreal yalnızca stub başlıkla derlenir** (`data/stubs/ue_stubs.h`). Motor başlıkları olmadan
-  tam derleme yapılamaz; stub kaynaklı hatalar uyarıya düşürülür (ADR-0007). C#/Unity'de Tier 1
-  yalnızca Roslyn sözdizimi ayrıştırmasıdır; tür/anlam denetimi ve Unity motor derlemesi yok.
-- **Tier 1 derleyici isteğe bağlıdır.** gcc/clang/.NET yoksa yalnızca tree-sitter denetimi yapılır.
-  Windows'ta clang varsayılan olarak MSVC hedefler; Unreal stub denetimi atlanabilir.
-- **Kod çalıştırılmaz** (ADR-0005): Big-O statik ipucu + LLM gerekçesidir, ölçülmüş çalışma süresi
-  değildir.
-- **Eval iki modelle ve küçük veriyle yapıldı.** Ana sonuçlar `claude-opus-5-5` içindir; dev
-  bölümünde ayrıca Claude Haiku 4.5 ölçüldü (F1 ~58, Opus 84). Yerel modeller (Ollama), Gemini ve
-  Anthropic API ölçülmedi. Test bölümü küçük olduğundan bir örnek yaklaşık 2–3 puan eder.
-- **Precision düşük:** LLM gerçek ama etiketlenmemiş küçük sorunları da raporluyor; öğrenciye çok
-  sayıda düşük önemli bulgu gidebilir.
-- **Sızıntı koruması sezgiseldir** (n-gram + işaret listesi). Eval'deki %0 sızıntı ölçülen işaretler
+- **Unreal yalnızca stub başlıkla derlenir** (`data/stubs/ue_stubs.h`); stub kaynaklı hatalar
+  uyarıya düşürülür (ADR-0007). C#/Unity'de Tier 1 yalnızca Roslyn sözdizimi ayrıştırmasıdır.
+- **Kod çalıştırılmaz** (ADR-0005): Big-O statik ipucu + LLM gerekçesidir, ölçülmüş çalışma
+  süresi değildir.
+- **Eval küçük ve iki model ağırlıklı.** Ana sonuçlar `claude-opus-5-5` içindir; Claude Haiku 4.5
+  ve Codex `gpt-6-luna` dev'de ayrıca ölçüldü. Ollama, Gemini ve Anthropic API ölçülmedi.
+- **Statik kurallar muhafazakârdır:** emin olunmayan durumda susar (ör. HTML'de tarayıcının
+  biçimlendirme öğelerini yeniden kurması, C'de yanlış daldaki null denetimi). Bilinen sınırlar
+  [kural kataloğunda](docs/rules-catalog.md) yazılıdır.
+- **Sızıntı koruması sezgiseldir** (n-gram + işaret listesi). Eval'deki %0 ölçülen işaretler
   içindir; başka biçimde sızmış bir çözümü kaçırabilir.
-- **Statik kural kapsamı:** v1 planındaki 20 C ailesi kuralının 10'u + 13 Python/HTML/CSS kuralı (katalog: `codementor rules list`,
-  [docs/rules-catalog.md](docs/rules-catalog.md)).
-- **API'de kimlik doğrulama ve hız sınırı yok.** Varsayılan olarak yalnızca `127.0.0.1`'e bağlanır;
-  başka adrese bağlanırsa `serve` uyarır. Paylaşılan sunucuda çalıştırmayın.
+- **HTML/CSS'te** karmaşıklık analizi yapılmaz; HTML'de kapanmamış etiketler sözdizimi hatası
+  değil, bulgu (HTML-STD-003) olarak raporlanır.
 - **Docker paketi yok** (ADR-0009): kurulum `uv` + `npm` ile yereldir.
-- **Python, HTML ve CSS eval'i küçük** (dil başına 12 örnek, Faz 18; bkz. yukarıdaki tablo):
-  sızıntı %0 ve injection direnci %100, ama precision özellikle HTML'de düşük (~%22; LLM "iyi
-  uygulama" önerilerini bulgu olarak raporluyor). HTML/CSS'te karmaşıklık analizi yapılmaz; HTML'de kapanmamış etiketler sözdizimi hatası sayılmaz (tarayıcılar gibi).
-
-## Yol haritası
-
-- **v1.1:** kalan statik kurallar; cppcheck/clang-tidy entegrasyonu; precision iyileştirmesi
-  (düşük önemli bulguları ayrı göstermek); imzalı Windows kurulum paketi; LLM-as-judge ile Sokratik kalite
-  puanı; yerel modellerin (Ollama) eval'i.
-- **v2.0:** yalıtılmış ortamda ampirik karmaşıklık ölçümü; test senaryosu tabanlı doğruluk;
-  VS Code eklentisi (SARIF + canlı analiz); Rust ve Go.
 
 ## Geliştirme
 
@@ -319,6 +434,25 @@ CODEMENTOR_E2E_LIVE=1 npx playwright test live   # web/ içinde; gerçek API ve 
 uv run codementor eval run --split dev --provider claude_cli --mode two_pass
 ```
 
-Belgeler: [mimari](docs/mimari.md) · [uygulama planı](docs/UYGULAMA_PLANI.md) ·
+**Test disiplini:** ~25 bin satır test (~27 bin satır kaynak koda karşı): birim, entegrasyon,
+golden prompt anlık görüntüleri, hypothesis özellik testleri, her kural için pozitif/negatif
+fixture'lar, 40 KB kötü niyetli girdiyle doğrusal zaman testleri, Playwright e2e. Testler ağa
+çıkmaz; CI Ubuntu ve Windows'ta koşar, her `main` koşusu exe'yi de derler.
+
+**Nasıl geliştirildi:** proje 59 fazda, her faz ayrı dalda, kabul kriterleri ve testlerle
+geliştirildi ([uygulama planı](docs/UYGULAMA_PLANI.md), [ilerleme günlüğü](PROGRESS.md)).
+Mimariden her sapma bir ADR'dir. Kodlama ajanlarıyla çalışıldı; fazların çoğu bağımsız bir
+kod denetimi ajanından geçti ve bulunan hatalar birleştirmeden önce düzeltildi.
+
+## Yol haritası
+
+- **v1.1:** cppcheck / clang-tidy entegrasyonu; düşük önemli bulguları ayrı göstermek; imzalı
+  Windows kurulum paketi; LLM-as-judge ile Sokratik kalite puanı; yerel modellerin (Ollama) eval'i.
+- **v2.0:** yalıtılmış ortamda ampirik karmaşıklık ölçümü; test senaryosu tabanlı doğruluk;
+  VS Code eklentisi (SARIF + canlı analiz); Rust ve Go.
+
+---
+
+Belgeler: [mimari](docs/mimari.md) · [ADR'ler](docs/adr/) · [uygulama planı](docs/UYGULAMA_PLANI.md) ·
 [eval bulguları](docs/eval-findings.md) · [kural kataloğu](docs/rules-catalog.md) ·
-[ilerleme](PROGRESS.md)
+[ilerleme](PROGRESS.md) · [Faz 0-16 özeti](docs/YAPILANLAR.md)
