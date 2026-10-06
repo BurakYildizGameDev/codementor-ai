@@ -24,6 +24,7 @@ import shutil
 import stat
 import sys
 import threading
+import time
 import uuid
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -44,6 +45,11 @@ LOCK_FILE = ".install.lock"
 _MB = 1024 * 1024
 _CHUNK = 64 * 1024
 _PROGRESS_STEP = 512 * 1024  # bu kadar baytta bir ilerleme olayı
+# Windows'ta virüs tarayıcısı/indeksleyici yeni açılan `zig.exe`'yi kısa süre açık tutar; o
+# sırada dizin taşıma WinError 5/32 (PermissionError) verir (Faz 58). Geçici kilit kısa
+# aralıklarla yeniden denenir (en fazla ~3 sn); kalıcı hata yine Türkçe mesajla döner.
+_RETRY_RENAME = os.name == "nt"
+_RENAME_DELAYS_S = (0.05, 0.1, 0.2, 0.4, 0.8, 1.6)
 
 Verify = Callable[[Path], bool]
 
@@ -190,23 +196,34 @@ def _make_executable(path: Path) -> None:
         path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
+def _rename(source: Path, target: Path) -> None:
+    """`source.rename(target)`; Windows'taki geçici dosya kilidinde kısa beklemelerle yineler."""
+    for delay in _RENAME_DELAYS_S if _RETRY_RENAME else ():
+        try:
+            source.rename(target)
+            return
+        except PermissionError:
+            time.sleep(delay)
+    source.rename(target)
+
+
 def _replace(staging: Path, final: Path) -> None:
     """Staging'i `final`'ın yerine taşır; eski kurulum en son silinir."""
     old: Path | None = None
     if final.exists():
         old = final.with_name(f".zig-old-{uuid.uuid4().hex[:8]}")
         try:
-            final.rename(old)
+            _rename(final, old)
         except OSError as exc:
             raise ToolchainInstallError(
                 "Kurulu derleyici şu an kullanımda; uygulamayı yeniden başlatıp tekrar dene."
             ) from exc
     try:
-        staging.rename(final)
+        _rename(staging, final)
     except OSError as exc:
         if old is not None:
             with contextlib.suppress(OSError):
-                old.rename(final)
+                _rename(old, final)
         raise ToolchainInstallError("Derleyici kurulum dizinine taşınamadı.") from exc
     if old is not None:
         shutil.rmtree(old, ignore_errors=True)

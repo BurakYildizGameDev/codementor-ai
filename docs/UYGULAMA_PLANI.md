@@ -1827,7 +1827,7 @@ olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın ka
 
 **Commit:** `fix(faz-57): C-MEM-003 kullanım öncesi null denetimi`
 
-### Faz 58 — Aralıklı düşen toolchain kurulum testleri (YAPILACAK)
+### Faz 58 — Aralıklı düşen toolchain kurulum testleri (YAPILDI 2026-10-06)
 
 **Dal:** `faz/58-toolchain-test-kararlilik` · **Mimari:** §15, ADR-0018
 
@@ -1835,13 +1835,13 @@ olmadığını belirle; fonksiyonlar arası sahiplik/akış analizi bu fazın ka
 koşuda 4 test, ör. `test_reinstall_atomic`), tek başına her zaman geçiyor. CI'da rastgele kırmızı
 güveni sarsar. Önce nedeni bul, sonra kökten düzelt; yeniden deneme ya da `skip` ile gizleme yok.
 
-- [ ] Hatayı yeniden üret: tam paketi ve dosyayı rastgele sırayla/tekrarla koş, düşen testlerin
+- [x] Hatayı yeniden üret: tam paketi ve dosyayı rastgele sırayla/tekrarla koş, düşen testlerin
       hata metnini kaydet; hangi testle birlikte koşunca düştüğünü daralt
-- [ ] Kök nedeni belirle (ortak geçici dizin, sabit yol, global durum/ortam değişkeni, Windows'ta
+- [x] Kök nedeni belirle (ortak geçici dizin, sabit yol, global durum/ortam değişkeni, Windows'ta
       dosya kilidi ya da atomik yeniden adlandırma yarışı) ve PROGRESS'e kanıtıyla yaz
-- [ ] Düzeltmeyi test yalıtımında yap (`tmp_path`, `monkeypatch`); üretim kodunda gerçek bir yarış
+- [x] Düzeltmeyi test yalıtımında yap (`tmp_path`, `monkeypatch`); üretim kodunda gerçek bir yarış
       varsa üretim kodunu düzelt ve ona ayrı test ekle
-- [ ] Doğrulama: dosya 50 kez tekrar ve tam paket 3 kez art arda yeşil; CI'da Ubuntu ve Windows yeşil
+- [x] Doğrulama: dosya 50 kez tekrar ve tam paket 3 kez art arda yeşil; CI'da Ubuntu ve Windows yeşil
 
 **Commit:** `fix(faz-58): toolchain kurulum testlerinde aralıklı hata`
 

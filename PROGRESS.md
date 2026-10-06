@@ -48,6 +48,7 @@
 | 55 | ✅ (ADR-0024) | faz/55-tier0-saglamlik | 2026-10-06 | GLM (Cline) / Claude Code |
 | 56 | ✅ | faz/56-html-std003-kenarlar | 2026-10-06 | Claude Code / kod-denetci |
 | 57 | ✅ | faz/57-c-mem003-akis | 2026-10-06 | Claude Code / kod-denetci |
+| 58 | ✅ | faz/58-toolchain-test-kararlilik | 2026-10-06 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -888,6 +889,12 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 58 — Notlar (aralıklı düşen toolchain kurulum testleri)
+**Kök neden (kanıt):** tam paket 3 kez koşuldu, birinde `test_interrupted_download_then_retry` düştü: `toolchain_install.py` `_replace` içinde `staging.rename(final)` → `PermissionError: [WinError 5] Erişim engellendi: '…\tc\.zig-staging-…' -> '…\tc\zig'`. Testler `tmp_path` kullandığı için yalıtım sorunu yok; Windows'ta virüs tarayıcısı/indeksleyici yeni yazılan `zig.exe`'yi kısa süre açık tutuyor ve o sırada içeren dizin taşınamıyor. Yük altında (tam paket) tarama uzadığı için aralıklı. Bu yalnız test sorunu değil: gerçek kullanıcıda da "Derleyici kurulum dizinine taşınamadı" hatası çıkabilirdi.
+**Yapılanlar:** `_rename`: Windows'ta `PermissionError` (WinError 5/32) alınınca 0,05 → 1,6 sn artan aralıklarla 6 kez yeniden dener (en fazla ~3 sn), sonra son deneme; kalıcı hata eskisi gibi Türkçe `ToolchainInstallError`. `_replace`'in üç taşıması da bunu kullanır. POSIX'te davranış değişmedi (`_RETRY_RENAME`). Yeniden deneme/`skip` testte değil üretim kodunda; testler gizlenmedi.
+**Testler:** `test_transient_rename_lock_is_retried` (2 geçici kilitten sonra kurulum başarılı, artık yok), `test_persistent_rename_lock_keeps_previous_install` (kalıcı kilitte Türkçe hata, önceki kurulum yerinde, artık yok); ikisi de `_RETRY_RENAME`'i açtığı için Linux CI'da da koşar.
+**Doğrulama:** `test_toolchain_install.py` 50 koşuda 0 hata; tam paket arka arkaya 3 koşu 3017 geçti / 14 atlandı; ruff/format/mypy temiz.
+
 ## Faz 57 — Notlar (C-MEM-003 akış sıralı null denetimi)
 **Yapılanlar:**
 - `rules/c_memory.py` `_NullChecks`: tahsis, açık denetim (`if`/`while`/`for`/`do` koşulu, üçlü koşul, `!p`, `p == NULL`, `&&`/`||`, `assert`) ve kullanım düğümleri konumlarıyla tutulur. Her tahsisin **ilk kullanımı** için denetim sayılması koşulları: (1) tahsisten sonra biter (`if ((p = malloc(n)) == NULL)` dahil) ya da tahsisi çevreleyen döngünün koşuludur (`while (!p) p = malloc(..)`); (2) kullanımdan önce gelir; (3) denetimin deyimini içeren blok kullanımı da kapsar (başka dalda kalan `if (verbose) { if (!a) … }` saymaz).
@@ -1230,7 +1237,7 @@ az bilgi kaybettiren bir precision aracıdır.
 - gcc kolonları "display" birimli, clang bayt; Tier 0 karakter. Unicode içeren satırlarda kolonlar farklı olabilir (`-fdiagnostics-column-unit=byte` gcc ≥ 11).
 - ~~Faz 6'da ertelenen 10 statik kural~~ → Faz 17'de yapıldı (2026-10-01).
 - ~~Faz 17: C-MEM-003 denetimin kullanımdan sonra yapıldığını görmüyor~~ (Faz 57'de çözüldü; yanlış dal ve koşullu koruma ayırt edilmiyor). UNITY-GC-001 closure bastırması satır bazlı.
-- `test_toolchain_install.py` tam koşuda bir kez 4 testle aralıklı düştü (Faz 57); tek başına yeşil. Tekrarlarsa paylaşılan geçici dizin/yarış incelenmeli. → Faz 58 olarak planlandı.
+- `test_toolchain_install.py` tam koşuda bir kez 4 testle aralıklı düştü (Faz 57); tek başına yeşil. Tekrarlarsa paylaşılan geçici dizin/yarış incelenmeli. → Faz 58'de çözüldü (Windows tarayıcı kilidi; `_rename` yeniden denemesi).
 - C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi (`print_arr(arr, n)`) sahiplik aktarımı sayılıyor (sık kaçırma); çağrılan fonksiyon aynı dosyadaysa ve `free`/saklama yoksa bulgu verilebilir. Aynı değişkene iki kez `malloc`, gölgeleme ve `realloc` de bilinçli sınırlar.
 - UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı için `new Hit(3)` yanlış bulgu (değer tipi); Faz 5 `CSHARP_VALUE_TYPES` dosyadaki struct adlarıyla genişletilebilir.
 - UE-GC-001: `TArray<AActor*>`/`TMap<..., UObject*>` kapsayıcı alanları kaçırılıyor; UCLASS olmayan sınıfta (`FPlain`) öneri `UPROPERTY` değil `TStrongObjectPtr`/`FGCObject` olmalı.
@@ -1314,7 +1321,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 28. ~~**Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.~~ Yapıldı (2026-10-06; ADR-0024).
 29. ~~**Faz 56 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.~~ Yapıldı (2026-10-06).
 30. ~~**Faz 57 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.~~ Yapıldı (2026-10-06).
-31. **Faz 58 — Aralıklı düşen toolchain kurulum testleri:** neden bul, test yalıtımıyla kökten düzelt.
+31. ~~**Faz 58 — Aralıklı düşen toolchain kurulum testleri:** neden bul, test yalıtımıyla kökten düzelt.~~ Yapıldı (2026-10-06; neden Windows tarayıcı kilidi, düzeltme üretim kodunda).
 32. **Faz 59 — Tier 0 ayrıştırmasını alt süreçte yalıtma:** ADR-0024 riskini (C# ~12 s) sert süre sınırıyla kapat; yeni ADR.
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`

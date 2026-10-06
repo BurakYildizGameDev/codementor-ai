@@ -410,3 +410,54 @@ def test_default_verify_probes_c_and_cpp(tmp_path: Path, monkeypatch: pytest.Mon
         install_zig(settings, platform=PLATFORM)
     assert probed == ["c", "c++"]
     assert installed_zig(settings.toolchain_dir / "zig") is None
+
+
+# ------------------------------------------- Faz 58: Windows'ta geçici dizin kilidi
+
+
+def _flaky_staging_rename(monkeypatch: pytest.MonkeyPatch, failures: int) -> list[int]:
+    """Staging taşımasını `failures` kez WinError 5 benzeri hatayla düşürür (tarayıcı kilidi)."""
+    real = Path.rename
+    left = [failures]
+
+    def rename(self: Path, target: str | os.PathLike[str]) -> Path:
+        if self.name.startswith(".zig-staging-") and left[0]:
+            left[0] -= 1
+            raise PermissionError(13, "Erişim engellendi")
+        return real(self, target)
+
+    monkeypatch.setattr(Path, "rename", rename)
+    monkeypatch.setattr(toolchain_install, "_RETRY_RENAME", True)
+    monkeypatch.setattr(toolchain_install, "_RENAME_DELAYS_S", (0.0,) * 4)
+    return left
+
+
+@respx.mock
+def test_transient_rename_lock_is_retried(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Yeni açılan zig.exe'yi tarayıcı kısa süre tutunca taşıma geçici olarak reddedilir."""
+    payload = _wheel()
+    respx.get(URL).mock(return_value=httpx.Response(200, content=payload))
+    left = _flaky_staging_rename(monkeypatch, failures=2)
+    settings = _settings(tmp_path, payload)
+    exe = _install(settings)
+    assert left == [0]
+    assert exe.read_bytes() == b"v1"
+    assert _leftovers(settings) == []
+
+
+@respx.mock
+def test_persistent_rename_lock_keeps_previous_install(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first, second = _wheel(marker=b"v1"), _wheel(marker=b"v2")
+    respx.get(URL).mock(return_value=httpx.Response(200, content=first))
+    exe = _install(_settings(tmp_path, first))
+
+    respx.get(URL).mock(return_value=httpx.Response(200, content=second))
+    _flaky_staging_rename(monkeypatch, failures=100)
+    settings = _settings(tmp_path, second)
+    with pytest.raises(ToolchainInstallError, match="taşınamadı"):
+        _install(settings)
+    assert exe.read_bytes() == b"v1"  # önceki kurulum yerinde
+    assert installed_zig(settings.toolchain_dir / "zig") == exe
+    assert _leftovers(settings) == []
