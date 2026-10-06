@@ -7,6 +7,7 @@ from typing import Any
 
 import customtkinter as ctk
 
+from codementor.buildinfo import build_info, describe
 from codementor.desktop import theme
 from codementor.desktop.connections import PROVIDERS
 from codementor.desktop.views.questions_view import page_header
@@ -80,21 +81,29 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
         where = Card(area, title="Konumlar")
         where.grid(row=row, column=1, sticky="nsew", pady=(0, theme.GAP))
         where.body.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(
+            where.body,
+            text=f"Sürüm: {describe(build_info())}",
+            font=theme.font(11),
+            text_color=theme.MUTED,
+            anchor="w",
+        ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 8))
         for i, (label, path) in enumerate(locations):
+            r = 1 + 2 * i
             ctk.CTkLabel(
                 where.body,
                 text=label,
                 font=theme.font(12, "bold"),
                 text_color=theme.TEXT_SOFT,
                 anchor="w",
-            ).grid(row=2 * i, column=0, sticky="w", pady=(6 if i else 0, 0))
+            ).grid(row=r, column=0, sticky="w", pady=(6 if i else 0, 0))
             ctk.CTkLabel(
                 where.body,
                 text=path,
                 font=ctk.CTkFont(*theme.code_font(11)),
                 text_color=theme.MUTED,
                 anchor="w",
-            ).grid(row=2 * i + 1, column=0, sticky="ew")
+            ).grid(row=r + 1, column=0, sticky="ew")
             ctk.CTkButton(
                 where.body,
                 text="Aç",
@@ -106,7 +115,8 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
                 text_color=theme.TEXT_SOFT,
                 font=theme.font(12),
                 command=lambda p=path: open_folder(p),
-            ).grid(row=2 * i, column=1, rowspan=2, padx=(10, 0))
+            ).grid(row=r, column=1, rowspan=2, padx=(10, 0))
+        btn_row = 1 + 2 * len(locations)
         if write_config is not None:  # Faz 24: CLI/API de aynı modeli kullansın
             self.write_config_button = ctk.CTkButton(
                 where.body,
@@ -120,8 +130,9 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
                 command=write_config,
             )
             self.write_config_button.grid(
-                row=2 * len(locations), column=0, columnspan=2, sticky="w", pady=(14, 0)
+                row=btn_row, column=0, columnspan=2, sticky="w", pady=(14, 0)
             )
+            btn_row += 1
         if reload_config is not None:  # Faz 33: elle düzenlenen toml'u yeniden başlatmadan uygula
             self.reload_config_button = ctk.CTkButton(
                 where.body,
@@ -135,7 +146,7 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
                 command=reload_config,
             )
             self.reload_config_button.grid(
-                row=2 * len(locations) + 1, column=0, columnspan=2, sticky="w", pady=(8, 0)
+                row=btn_row, column=0, columnspan=2, sticky="w", pady=(8, 0)
             )
 
     def _build_download(

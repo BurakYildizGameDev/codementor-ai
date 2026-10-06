@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import zipfile
 from pathlib import Path
@@ -90,3 +91,33 @@ def test_source_digest_written_and_bundled(tmp_path: Path) -> None:
     assert written.read_text(encoding="utf-8") == source_digest()
     data = [args[i + 1] for i, arg in enumerate(args) if arg == "--add-data"]
     assert any(d.startswith(str(written)) and d.endswith("codementor/pipeline") for d in data)
+
+
+def test_build_info_written_and_bundled(tmp_path: Path) -> None:
+    """Faz 60: build_info.json derleme anında yazılır ve pakette data altına eklenir."""
+    args = build_exe.pyinstaller_args(onefile=True, console=False, work=tmp_path)
+    written = tmp_path / "build_info.json"
+    assert written.is_file()
+    payload = json.loads(written.read_text(encoding="utf-8"))
+    assert payload["version"] == build_exe.project_version()
+    assert payload["source"] == "exe"
+    assert "built_at" in payload
+    data = [args[i + 1] for i, arg in enumerate(args) if arg == "--add-data"]
+    assert any(
+        d.startswith(str(written)) and (d.endswith(";data") or d.endswith(":data")) for d in data
+    )
+
+
+def test_build_info_git_failure_sets_commit_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz 60: git hatası olduğunda commit=None olur ve derleme durmaz."""
+
+    def fake_run(*_a: object, **_k: object) -> None:
+        raise build_exe.subprocess.SubprocessError("git bulunamadı")
+
+    monkeypatch.setattr(build_exe.subprocess, "run", fake_run)
+    written = build_exe.build_info_file(tmp_path)
+    payload = json.loads(written.read_text(encoding="utf-8"))
+    assert payload["commit"] is None
+    assert payload["source"] == "exe"

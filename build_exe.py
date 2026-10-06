@@ -20,11 +20,13 @@ Kullanıcı exe'nin yanına kendi `codementor.toml`'unu koyarsa o kullanılır (
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 import subprocess
 import sys
 import zipfile
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -128,6 +130,37 @@ def source_digest_file(work: Path) -> Path:
     return target
 
 
+def git_commit_short() -> str | None:
+    """Mevcut commit özeti (`git rev-parse --short HEAD`); hata veya git yoksa None."""
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=ROOT,
+        )
+        commit = proc.stdout.strip()
+        return commit if commit else None
+    except (subprocess.SubprocessError, OSError):
+        return None
+
+
+def build_info_file(work: Path) -> Path:
+    """Derleme anındaki sürüm ve commit bilgisini `build_info.json` olarak yazar."""
+    commit = git_commit_short()
+    built_at = datetime.now(UTC).isoformat()
+    payload = {
+        "version": project_version(),
+        "commit": commit,
+        "built_at": built_at,
+        "source": "exe",
+    }
+    target = work / "build_info.json"
+    target.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    return target
+
+
 def pyinstaller_args(onefile: bool, console: bool, work: Path) -> list[str]:
     """PyInstaller komut satırı (test edilebilsin diye ayrı)."""
     sep = ";" if sys.platform == "win32" else ":"
@@ -155,7 +188,11 @@ def pyinstaller_args(onefile: bool, console: bool, work: Path) -> list[str]:
     ]
     if onefile:
         args += ["--splash", str(ASSETS / "splash.png")]
-    data = [*DATA, (source_digest_file(work), "codementor/pipeline")]
+    data = [
+        *DATA,
+        (source_digest_file(work), "codementor/pipeline"),
+        (build_info_file(work), "data"),
+    ]
     if ROSLYN_SC.is_file():
         data.append((ROSLYN_SC, "tools/roslyn-check/sc"))
     elif ROSLYN_OUT.is_dir():

@@ -9,6 +9,7 @@ import threading
 import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,7 @@ from codementor.models.provider import ProviderStatus
 from codementor.models.validation import DownloadProgress
 from codementor.providers.base import RetryPolicy
 from codementor.providers.fake import FakeProvider, FakeReply
+from codementor.storage.db import AnalysisRow
 from codementor.validation.toolchain_install import InstallCancelledError, ToolchainInstallError
 from tests.desktop.conftest import StallingProvider
 from tests.integration.conftest import LINKED_LIST
@@ -671,3 +673,113 @@ def test_finding_list_groups_suggestions(app: App) -> None:
     assert findings.suggestion_body.grid_info()
     findings.show([make(1, "issue")], [])
     assert findings.suggestion_toggle is None
+
+
+# --- Faz 60: geçmişte uyumsuz rapor --------------------------------------------------------
+
+
+def test_open_history_missing_record_shows_not_found_toast(app: App) -> None:
+    """Faz 60: Kayıt hiç yoksa 'Bu analiz artık bulunamıyor.' mesajı gösterilir."""
+    app.open_history("01JNONEXISTENT9999999999999")
+    assert "Bu analiz artık bulunamıyor." in _toast(app)
+
+
+def test_open_history_incompatible_report_loads_code_and_clears_results(app: App) -> None:
+    """Faz 60: Rapor şeması uyumsuzsa kod açılır, sonuçlar temizlenir ve uyarı toast'ı verilir."""
+    analysis_id = "01J60TESTINCOMPATIBLE000001"
+    row = AnalysisRow(
+        id=analysis_id,
+        created_at=datetime.now(UTC),
+        cache_key="key_incompat_1",
+        language="c",
+        engine="standalone",
+        question_id=None,
+        session_id=None,
+        provider="fake",
+        model="fake",
+        early_exit=False,
+        degraded=False,
+        tokens_in=10,
+        tokens_out=20,
+        latency_ms=100,
+        report_json='{"bilinmeyen_veya_eski": "format"}',
+    )
+    db = app.core.database()
+    with db.session() as session:
+        session.add(row)
+        session.commit()
+
+    test_code = "int x = 42;\n"
+    runtime.save_source(analysis_id, test_code, app.prefs_dir)
+
+    app.open_history(analysis_id)
+    assert app.current_view == "analyze"
+    assert app.analyze_view.editor.get() == test_code
+    assert app.analyze_view.language == Language.C
+    assert app.analyze_view.report is None
+    assert "farklı bir CodeMentor sürümüyle" in _toast(app)
+
+
+def test_open_history_incompatible_report_missing_source_falls_back(app: App) -> None:
+    """Faz 60 Olumsuz test: Uyumsuz kaydın kodu saklanmamışsa 'kod saklanmamış' yazılır, çökmez."""
+    analysis_id = "01J60TESTINCOMPATIBLE000002"
+    row = AnalysisRow(
+        id=analysis_id,
+        created_at=datetime.now(UTC),
+        cache_key="key_incompat_2",
+        language="cpp",
+        engine="standalone",
+        question_id=None,
+        session_id=None,
+        provider="fake",
+        model="fake",
+        early_exit=False,
+        degraded=False,
+        tokens_in=10,
+        tokens_out=20,
+        latency_ms=100,
+        report_json='{"eski": "sema"}',
+    )
+    db = app.core.database()
+    with db.session() as session:
+        session.add(row)
+        session.commit()
+
+    # Kaynak dosya kasıtlı olarak oluşturulmadı
+    app.open_history(analysis_id)
+    assert app.current_view == "analyze"
+    assert "saklanmamış" in app.analyze_view.editor.get()
+    assert app.analyze_view.language == Language.CPP
+    assert "farklı bir CodeMentor sürümüyle" in _toast(app)
+
+
+def test_open_history_incompatible_report_invalid_language_preserves_selection(app: App) -> None:
+    """Faz 60 Olumsuz test: Kayıttaki dil tanınmıyorsa mevcut dil seçimi korunur, çökmez."""
+    prev_lang = app.analyze_view.language
+    analysis_id = "01J60TESTINCOMPATIBLE000003"
+    row = AnalysisRow(
+        id=analysis_id,
+        created_at=datetime.now(UTC),
+        cache_key="key_incompat_3",
+        language="taninmayan_dil_xyz",
+        engine="taninmayan_motor_xyz",
+        question_id=None,
+        session_id=None,
+        provider="fake",
+        model="fake",
+        early_exit=False,
+        degraded=False,
+        tokens_in=10,
+        tokens_out=20,
+        latency_ms=100,
+        report_json='{"eski": "sema"}',
+    )
+    db = app.core.database()
+    with db.session() as session:
+        session.add(row)
+        session.commit()
+
+    app.open_history(analysis_id)
+    assert app.current_view == "analyze"
+    assert app.analyze_view.language == prev_lang
+    assert "farklı bir CodeMentor sürümüyle" in _toast(app)

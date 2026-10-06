@@ -37,7 +37,7 @@ from codementor.models.questions import QuestionPublic
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest
 from codementor.providers.factory import PROVIDER_NAMES
-from codementor.storage.cache import get_analysis, list_analyses
+from codementor.storage.cache import get_analysis, get_row, list_analyses
 from codementor.storage.db import AnalysisRow, resolve_db_path
 
 ASSETS = Path(__file__).resolve().parent / "assets"
@@ -318,17 +318,43 @@ class App(ctk.CTk):  # type: ignore[misc]
 
     def open_history(self, analysis_id: str) -> None:
         report = get_analysis(self.core.database(), analysis_id)
-        if report is None:
+        if report is not None:
+            view = self.analyze_view
+            view.select(report.language, report.engine, report.question_id)
+            code = runtime.load_source(analysis_id, self.prefs_dir)
+            view.editor.set(code or "// Bu analizin kodu saklanmamış.\n", report.language)
+            self.tracker.reset()
+            self.tracker.finish()
+            view.reset_results()
+            view.show_report(report)
+            self.navigate("analyze")
+            return
+
+        row = get_row(self.core.database(), analysis_id)
+        if row is None:
             self.toast("Bu analiz artık bulunamıyor.")
             return
+
         view = self.analyze_view
-        view.select(report.language, report.engine, report.question_id)
+        try:
+            lang = Language(row.language)
+        except ValueError:
+            lang = view.language
+        try:
+            eng = Engine(row.engine)
+        except ValueError:
+            eng = view.engine
+
+        view.select(lang, eng, row.question_id)
         code = runtime.load_source(analysis_id, self.prefs_dir)
-        view.editor.set(code or "// Bu analizin kodu saklanmamış.\n", report.language)
+        view.editor.set(code or "// Bu analizin kodu saklanmamış.\n", lang)
         self.tracker.reset()
         self.tracker.finish()
         view.reset_results()
-        view.show_report(report)
+        self.toast(
+            "Bu rapor farklı bir CodeMentor sürümüyle oluşturulduğu için gösterilemiyor. "
+            "Kodu editöre açtım; yeniden denetleyebilirsin."
+        )
         self.navigate("analyze")
 
     # --- Ayarlar ve ortam ---------------------------------------------------------------

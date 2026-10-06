@@ -50,6 +50,7 @@
 | 57 | ✅ | faz/57-c-mem003-akis | 2026-10-06 | Claude Code / kod-denetci |
 | 58 | ✅ | faz/58-toolchain-test-kararlilik | 2026-10-06 | Claude Code / — |
 | 59 | ✅ (ADR-0025) | faz/59-tier0-alt-surec | 2026-10-06 | Claude Code / kod-denetci |
+| 60 | ✅ | faz/60-surum-uyumu | 2026-10-06 | Antigravity / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -889,6 +890,27 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 **Bu fazda öğrendiğim:** Doğrulama geçişi precision'ı prompt kurallarının yapamadığı ölçüde
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
+
+## Faz 60 — Notlar (sürüm bilgisi ve sürümler arası geçmiş uyumu)
+**Yapılanlar:**
+- `models/build.py`: `BuildInfo(StrictModel)` (`version`, `commit`, `built_at`, `source: Literal["exe", "kaynak"]`).
+- `buildinfo.py`: `build_info()`, `describe()`, `format_cli_version()`. Exe paketinde `data/build_info.json`, kaynakta fallback; çalışma anında asla git çağrılmaz; `@functools.lru_cache(maxsize=1)` ile önbellekli.
+- `build_exe.py`: `build_info_file` ile derleme öncesi `build/build_info.json` üretimi (`git rev-parse --short HEAD`, hata durumunda `commit=None`, UTC ISO zamanı) ve `--add-data` ile `data/` hedefiyle pakete eklenmesi.
+- `cli/main.py`: `codementor --version` çıktısı `codementor 0.1.0 (kaynaktan)` veya `codementor 0.1.0 (commit, tarih, exe)` olarak biçimlendirildi.
+- `desktop/widgets/sidebar.py`: Sol gezinme çubuğunda sağlayıcı durumu altında `describe(build_info())` gösterildi.
+- `desktop/views/connections_view.py`: Bağlantılar ekranındaki Konumlar kartına "Sürüm: ..." satırı eklendi.
+- `storage/cache.py`: `get_row(db, analysis_id) -> AnalysisRow | None` eklendi; oturum kapandıktan sonra üst veri alanlarına erişimde `DetachedInstanceError` oluşmaması için `session.expunge(row)` kullanıldı.
+- `desktop/app.py`: `open_history` metodunda rapor şema uyumsuzluğu nedeniyle çözülemediğinde (`get_analysis` None) ancak satır mevcutsa (`get_row`), kod editöre yüklenir, sonuç alanı temizlenir, dil/motor güvenle seçilir (dönüştürülemezse mevcut seçim korunur) ve kullanıcıya bilgilendirici toast ("Bu rapor farklı bir CodeMentor sürümüyle oluşturulduğu için gösterilemiyor...") verilir.
+- Testler: `tests/unit/test_buildinfo.py` (8 birim test: kaynak/exe modu, bozuk JSON/tip hatası olumsuz testleri, describe ve CLI formatları), `tests/desktop/test_build_exe.py` (build_info paketleme ve git hatası testleri), `tests/unit/test_smoke.py`, `tests/unit/test_storage.py` (`get_row` testi), `tests/desktop/test_app.py` (uyumsuz rapor, kodsuz uyumsuz rapor, geçersiz dil durumları). Toplam 3060 test yeşil.
+**Alınan kararlar (ve neden):**
+- `build_info()` bozuk veya eksik JSON durumunda çökmez; `log.warning("build_info_unreadable")` loglayarak kaynak bilgisine döner.
+- `get_row()` nesneyi `session.expunge(row)` ile oturumdan ayırır; böylece `with db.session()` kapandıktan sonra `row.language`, `row.engine` gibi alanlar okunurken SQLAlchemy `DetachedInstanceError` fırlatmaz.
+**Değiştirilen mevcut testler ve neden:**
+- `tests/unit/test_smoke.py`: `test_version_flag_prints_version` CLI çıktısındaki yeni `(kaynaktan)` ekini de doğrular.
+**Doğrulama çıktısı:**
+- `uv run ruff check . && uv run ruff format --check .` (temiz, 418 dosya)
+- `uv run mypy src/` (0 hata, 198 kaynak dosya)
+- `uv run pytest -m "not live"` (3060 passed, 14 skipped, 6 deselected; 103 sn)
 
 ## Faz 59 — Notlar (Tier 0 ayrıştırmasının alt süreçte yalıtılması; ADR-0025)
 **Yapılanlar:**

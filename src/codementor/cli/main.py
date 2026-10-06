@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from codementor import __version__
+from codementor.buildinfo import build_info, format_cli_version
 from codementor.cli.analyze import analyze
 from codementor.cli.encoding import ensure_utf8_console
 from codementor.cli.eval import eval_app
@@ -23,7 +23,7 @@ app = typer.Typer(name="codementor", no_args_is_help=True, add_completion=False)
 
 def _version_callback(value: bool) -> None:
     if value:
-        typer.echo(f"codementor {__version__}")
+        typer.echo(format_cli_version(build_info()))
         raise typer.Exit()
 
 

@@ -201,6 +201,17 @@ def test_incompatible_report_json_is_none_and_logged(
     assert [e["analysis_id"] for e in events] == [old_id]
 
 
+def test_get_row_returns_raw_record_even_when_incompatible(db: Database) -> None:
+    """Faz 60: get_row, rapor JSON'ı uyumsuz olsa bile satırı döndürür."""
+    old_id = new_ulid()
+    _store_raw(db, old_id, "eski_key", '{"schema_version": "0.1"}')
+    row = cache.get_row(db, old_id)
+    assert row is not None
+    assert row.id == old_id
+    assert row.cache_key == "eski_key"
+    assert cache.get_row(db, "olmayan_id") is None
+
+
 def test_find_cached_skips_incompatible(db: Database) -> None:
     _store_raw(db, new_ulid(), "k", "{bozuk json")
     assert cache.find_cached(db, "k") is None

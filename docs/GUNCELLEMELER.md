@@ -53,14 +53,14 @@ Uygulama ayrıntısı: [DEVIR_FAZ60_62.md](DEVIR_FAZ60_62.md) (Faz 60-62 GLM'e d
 
 - [ ] Güncel `main`'den exe'yi yeniden derle (`uv run python build_exe.py --both`) ya da CI'nın
       `CodeMentor-win64` artefaktını kullan; 64 görev, agy ve geçmiş açma ile doğrula
-- [ ] Uygulama sürümünü ve derleme tarihini/commit'ini göster (durum çubuğu + Bağlantılar);
+- [x] Uygulama sürümünü ve derleme tarihini/commit'ini göster (durum çubuğu + Bağlantılar);
       CLI'da `codementor --version` aynı bilgiyi versin
-- [ ] Kayıtlı rapor okunamazsa çökme yok: geçmişte "bu rapor farklı bir sürümle oluşturuldu"
+- [x] Kayıtlı rapor okunamazsa çökme yok: geçmişte "bu rapor farklı bir sürümle oluşturuldu"
       mesajı ve kodun yine açılması; okuma, bilinmeyen alanları yok sayan ayrı bir yolla
       (API'nin katı şeması değişmez)
 - [x] ~~Exe'de referans çözüm olmaması her analizde uyarı yazmasın~~ → Faz 31'de zaten
       çözülmüş (`load_reference`: dosya yoksa `log.debug`); logdaki uyarı eski exe'dendi
-- [ ] Testler: eski/yeni şemalı rapor geçmişten açılır; sürüm bilgisi testli
+- [x] Testler: eski/yeni şemalı rapor geçmişten açılır; sürüm bilgisi testli
 
 ### Faz 61 — İpucu seviyesi adaleti (öncelik: yüksek, hata)
 

@@ -86,6 +86,15 @@ def get_analysis(db: Database, analysis_id: str) -> AnalysisReport | None:
     return _decode(row)
 
 
+def get_row(db: Database, analysis_id: str) -> AnalysisRow | None:
+    """Kimlikle ham analiz satırı (şema uyumsuzsa bile üst veri okunabilir)."""
+    with db.session() as session:
+        row = session.get(AnalysisRow, analysis_id)
+        if row is not None:
+            session.expunge(row)
+        return row
+
+
 def list_analyses(db: Database, limit: int = 50) -> list[AnalysisRow]:
     """En yeni kayıtlı analizler (masaüstü geçmiş ekranı); rapor gövdesi ayrıca çözülür."""
     with db.session() as session:

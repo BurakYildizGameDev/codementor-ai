@@ -9,7 +9,7 @@ from typing import Any
 import customtkinter as ctk
 from PIL import Image
 
-from codementor import __version__
+from codementor.buildinfo import build_info, describe
 from codementor.desktop import theme
 
 NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
@@ -104,7 +104,11 @@ class Sidebar(ctk.CTkFrame):  # type: ignore[misc]
         )
         self.status_detail.grid(row=1, column=1, sticky="ew", padx=(0, 10))
         ctk.CTkLabel(
-            footer, text=f"v{__version__}", font=theme.font(10), text_color=theme.FAINT, height=14
+            footer,
+            text=describe(build_info()),
+            font=theme.font(10),
+            text_color=theme.FAINT,
+            height=14,
         ).grid(row=2, column=1, sticky="w", pady=(0, 10))
 
     def on_status_click(self, callback: Callable[[], None]) -> None:
