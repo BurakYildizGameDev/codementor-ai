@@ -29,6 +29,10 @@ _SEMICOLON_HINT = "Burada noktalı virgül (;) eksik olabilir."
 # `;` ipucu yalnızca bu dillerde anlamlı (Faz 55 D2; Python/CSS'te deyim sonu `;` değil)
 _SEMICOLON_LANGUAGES = frozenset({Language.C, Language.CPP, Language.CSHARP})
 _ANON_STATEMENT_END = frozenset({")", "]"})  # çağrı/indeks sonu: ardından `;` makul
+# `)` bu sözcüklerin başlığını kapatıyorsa ardından gövde gelir, `;` değil
+_CONTROL_KEYWORDS = frozenset(
+    {"if", "while", "for", "switch", "foreach", "catch", "using", "lock", "fixed"}
+)
 
 _MISSING_NAMES = {
     ";": "noktalı virgül (;)",
@@ -156,11 +160,29 @@ class _CodeTokens:
             n.start_byte <= last.start_byte and last.end_byte <= n.end_byte for n in dropped
         ):
             return None
-        if last.type not in _ANON_STATEMENT_END:
+        if last.type in _ANON_STATEMENT_END:
+            if last.type == ")" and self._control_header(len(self.leaves) - 1):
+                return None  # `if (x)` / `while (x)` sonrası `;` boş deyim olur, öneri yanıltır
+        else:
             text = (last.text or b"").decode("utf-8", errors="replace")
             if not text or not (text[-1].isalnum() or text[-1] in "_\"'"):
                 return None
+            if not last.is_named and text.isidentifier():
+                return None  # anahtar sözcük (`else`, `return`, `public` ...) deyim sonu değil
         return last.end_point.row, last.end_point.column
+
+    def _control_header(self, close: int) -> bool:
+        """`close` indeksindeki `)` bir denetim başlığını (`if (...)`, `for (...)`) kapatıyor mu."""
+        depth = 0
+        for k in range(close, -1, -1):
+            kind = self.leaves[k].type
+            if kind == ")":
+                depth += 1
+            elif kind == "(":
+                depth -= 1
+                if depth == 0:
+                    return k > 0 and self.leaves[k - 1].type in _CONTROL_KEYWORDS
+        return False
 
 
 def _unclosed_diagnostic(lines: list[str], open_rows: list[int]) -> Diagnostic:

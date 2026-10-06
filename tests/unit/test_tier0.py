@@ -183,6 +183,26 @@ def test_unclosed_block_dangling_operator_has_no_semicolon_hint() -> None:
     assert not any("noktalı virgül" in d.message for d in result.diagnostics)
 
 
+@pytest.mark.parametrize(
+    ("language", "text"),
+    [
+        (Language.C, "int main(void) {\n    if (x > 0)\n"),
+        (Language.C, "int main(void) {\n    while (f(x))\n"),
+        (Language.C, "int main(void) {\n    for (int i = 0; i < 3; i++)\n"),
+        (Language.C, "int main(void) {\n    if (x) y = 1;\n    else\n"),
+        (Language.C, "int main(void) {\n    return\n"),
+        (Language.CPP, "class A {\npublic\n"),
+        (Language.CSHARP, "class A {\n  void F() {\n    foreach (var v in xs)\n"),
+    ],
+)
+def test_unclosed_block_control_header_has_no_semicolon_hint(language: Language, text: str) -> None:
+    """Denetim başlığı/anahtar sözcük sonrası `;` önerilmez (`if (x);` boş deyim olur)."""
+    code = _code(text, language)
+    result = run_tier0(code)
+    assert not any("noktalı virgül" in d.message for d in result.diagnostics)
+    assert any("kapanmamış" in d.message for d in result.diagnostics)
+
+
 def test_unclosed_css_block_has_no_semicolon_hint() -> None:
     """CSS'te son deklarasyonda `;` zorunlu değildir; ipucu C ailesine özgüdür."""
     code = _code("a {\n  color: red\n", Language.CSS)
