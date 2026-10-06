@@ -11,6 +11,12 @@ roslyn_check_dll = "tools/roslyn-check/out/RoslynCheck.dll"   # make roslyn-chec
 # roslyn_check_exe: self-contained aracın yolu (varsayılan tools/roslyn-check/sc; make roslyn-check-sc)
 # toolchain_dir: indirilen derleyicilerin dizini (varsayılan ~/.codementor/toolchain)
 toolchain_priority = "path_first"   # path_first: önce PATH'teki gcc/clang/dotnet | bundled_first
+# Tier 0 ayrıştırmasını süre sınırlı alt süreçte koş (Faz 59, ADR-0025). Paylaşılan sunucuda
+# açın: kötü niyetli girdi bir iş parçacığını saniyelerce meşgul edemez. Yerelde kapalı
+# kalabilir (her analizde süreç açma maliyeti). Exe'de desteklenmez, süreç içinde koşar.
+tier0_isolation = false
+tier0_timeout_s = 5
+tier0_memory_mb = 1024
 
 # Derleyicisi olmayanlar için indirilebilir zig (C/C++/Unreal Tier 1; Faz 29, ADR-0018).
 # Kaynak: PyPI `ziglang` wheel'i (zip). Sürüm değişirse URL ve sha256 birlikte güncellenir.

@@ -1,8 +1,9 @@
 """Tier 0 en kötü durum ayrıştırma süresi gerileme testleri (Faz 55, ADR-0024).
 
 Ölçülen sınırlı girdiler `run_tier0` için < 1,5 s eşikle sabitlenir. C# gramerinin
-`a<`×20000 girdisinde ~11,9 s sürdüğü (parse'ın kendisi) ADR-0024 kararıyla kabul
-edilmiş bilinen risktir; süresi nedeniyle bilinçli olarak bu testin kapsamı dışıdır.
+`a<`×20000 girdisinde süreç içinde ~10-12 s ve ~4,2 GB sürdüğü (parse'ın kendisi) ADR-0024'te
+kabul edilmişti; Faz 59'dan beri `validation.tier0_isolation` açıkken alt süreçte süre ve
+bellek sınırıyla durdurulur (ADR-0025) ve bu dosyada o yolla sabitlenir.
 """
 
 from __future__ import annotations
@@ -73,3 +74,16 @@ def test_valid_cpp_near_limit_parses_clean() -> None:
     code = normalize(text, LanguageHint(language=Language.CPP))
     result = run_tier0(code)
     assert result.diagnostics == [], [d.message for d in result.diagnostics]
+
+
+def test_csharp_bomb_bounded_with_isolation() -> None:
+    """ADR-0025: süreç içinde ~10 s / ~4 GB olan C# `a<` girdisi yalıtımla hızla durur."""
+    from codementor.config import ValidationSettings
+    from codementor.validation.tier0_isolation import check_syntax
+
+    code = normalize("a<" * 20000, LanguageHint(language=Language.CSHARP))
+    settings = ValidationSettings(tier0_isolation=True, tier0_timeout_s=2)
+    start = time.perf_counter()
+    result = check_syntax(code, settings)
+    assert time.perf_counter() - start < _deadline(6.0)
+    assert result.has_errors  # erken çıkış: boru hattı bu girdiyi bir daha ayrıştırmaz

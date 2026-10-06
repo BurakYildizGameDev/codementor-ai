@@ -28,7 +28,7 @@ async def test_heavy_stages_run_off_event_loop(
 ) -> None:
     loop_thread = threading.get_ident()
     seen: dict[str, int] = {}
-    real_tier0, real_static = orchestrator_module.run_tier0, stages.run_static
+    real_tier0, real_static = orchestrator_module.check_syntax, stages.run_static
 
     def slow_tier0(*args: Any, **kwargs: Any) -> Any:
         seen["tier0"] = threading.get_ident()
@@ -40,7 +40,7 @@ async def test_heavy_stages_run_off_event_loop(
         time.sleep(SLOW_S)
         return real_static(*args, **kwargs)
 
-    monkeypatch.setattr(orchestrator_module, "run_tier0", slow_tier0)
+    monkeypatch.setattr(orchestrator_module, "check_syntax", slow_tier0)
     monkeypatch.setattr(stages, "run_static", slow_static)
     events: list[str] = []
     bus = EventBus()

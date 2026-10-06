@@ -311,3 +311,32 @@ async def test_only_suggestions_uses_no_findings_branch(
     prompt = _prompt_b(provider)
     assert SUGGESTION_TEXT not in prompt
     assert "Doğrulanmış bulgu yok" in prompt
+
+
+async def test_tier0_isolation_stop_ends_analysis_early(
+    settings: Settings, db: Database, fake: FakeFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz 59: alt süreçteki Tier 0 süre sınırını aşarsa analiz erken biter, LLM çağrılmaz."""
+    from codementor.validation import tier0_isolation
+    from codementor.validation.runner import ProcessResult
+
+    monkeypatch.setattr(
+        tier0_isolation,
+        "run_process",
+        lambda *_args: ProcessResult(None, "", "", timed_out=True),
+    )
+    validation = settings.validation.model_copy(update={"tier0_isolation": True})
+    provider = fake()
+    report = await orchestrator(
+        settings.model_copy(update={"validation": validation}), db, provider
+    ).analyze(_request())
+    assert provider.calls == []
+    assert report.meta.early_exit
+    assert report.compilation.status is CompilationStatus.FAILED
+    (diagnostic,) = report.compilation.diagnostics
+    assert "süre sınırını aştı" in diagnostic.message
+    assert report.findings == []  # statik aşama aynı girdiyi yeniden ayrıştırmadı
+    assert report.socratic is not None
+    (question,) = report.socratic.guiding_questions
+    assert "süre ya da bellek sınırını" in question
+    assert "satır" not in question  # sorun bir satırda değil

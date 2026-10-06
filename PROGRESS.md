@@ -49,6 +49,7 @@
 | 56 | ✅ | faz/56-html-std003-kenarlar | 2026-10-06 | Claude Code / kod-denetci |
 | 57 | ✅ | faz/57-c-mem003-akis | 2026-10-06 | Claude Code / kod-denetci |
 | 58 | ✅ | faz/58-toolchain-test-kararlilik | 2026-10-06 | Claude Code / — |
+| 59 | ✅ (ADR-0025) | faz/59-tier0-alt-surec | 2026-10-06 | Claude Code / kod-denetci |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -889,6 +890,16 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 59 — Notlar (Tier 0 ayrıştırmasının alt süreçte yalıtılması; ADR-0025)
+**Yapılanlar:**
+- `validation/tier0_worker.py` (stdin `NormalizedCode` JSON → stdout `Tier0Result` JSON; akışlar bayt düzeyinde UTF-8) ve `validation/tier0_isolation.py` `check_syntax`: `validation.tier0_isolation` açıkken işçi `runner.run_process` ile koşar (süre, bellek, süreç ağacı öldürme, temiz ortam, boş çalışma dizini). Orkestratör `run_tier0` yerine `check_syntax`'ı çağırır.
+- Yapılandırma: `tier0_isolation` (varsayılan false), `tier0_timeout_s` (5), `tier0_memory_mb` (1024); `codementor.toml`'da açıklamalı.
+- Süre aşımı / bellek sınırı / çökme / iptal / kesilmiş ya da bozuk çıktı → tek **error** tanısı → politika erken çıkış; statik aşama ve LLM koşmaz. `mentor_templates.yaml`'a satır göstermeyen "süre ya da bellek sınırı" Sokratik şablonu eklendi.
+- Exe'de (`sys.frozen`) yalıtım yok: uyarı loglanır, süreç içinde koşulur.
+**Ölçüm (Windows 11, 2026-10-06):** C# `a<`×20000 süreç içinde ~10 sn ve **~4,2 GB tepe bellek** — ADR-0024 bunu yalnız süre riski sanıyordu; 4 eşzamanlı analizle ~17 GB. Alt süreçte 1024 MB sınırında ~1 sn'de ölür; 8192 MB + 1 sn süreyle süre sınırında öldürülür. Geçerli kodda ek gecikme p50 278 ms / p95 296 ms (süreç içi 0,1 ms) → varsayılan kapalı.
+**Testler:** `tests/unit/test_tier0_isolation.py` (gerçek alt süreçle süreç içi sonuçla birebir eşdeğerlik ×4 dil, bellek sınırı, süre sınırı, varsayılan kapalı, exe geri dönüşü, sınırlar yapılandırmadan, 5 hata yolu fail-closed, Türkçe karakterli işçi gidiş-dönüşü), `test_tier0_budget.py` C# vakası artık kapsamda, `tests/integration/test_pipeline.py` erken çıkış + LLM çağrısı yok + satırsız soru.
+**Alınan kararlar (ve neden):** varsayılan kapalı (yerel tek kullanıcı, ~280 ms); her analizde yeni süreç (havuz karmaşıklığı şimdilik gereksiz; Sonraya); fail-closed (sunucuda güvenli yön); yalnız Tier 0 yalıtıldı (Tier 0 hatasında boru hattı zaten erken çıkar, `extract_facts` bu girdiye erişemez).
+
 ## Faz 58 — Notlar (aralıklı düşen toolchain kurulum testleri)
 **Kök neden (kanıt):** tam paket 3 kez koşuldu, birinde `test_interrupted_download_then_retry` düştü: `toolchain_install.py` `_replace` içinde `staging.rename(final)` → `PermissionError: [WinError 5] Erişim engellendi: '…\tc\.zig-staging-…' -> '…\tc\zig'`. Testler `tmp_path` kullandığı için yalıtım sorunu yok; Windows'ta virüs tarayıcısı/indeksleyici yeni yazılan `zig.exe`'yi kısa süre açık tutuyor ve o sırada içeren dizin taşınamıyor. Yük altında (tam paket) tarama uzadığı için aralıklı. Bu yalnız test sorunu değil: gerçek kullanıcıda da "Derleyici kurulum dizinine taşınamadı" hatası çıkabilirdi.
 **Yapılanlar:** `_rename`: Windows'ta `PermissionError` (WinError 5/32) alınınca 0,05 → 1,6 sn artan aralıklarla 6 kez yeniden dener (en fazla ~3 sn), sonra son deneme; kalıcı hata eskisi gibi Türkçe `ToolchainInstallError`. `_replace`'in üç taşıması da bunu kullanır. POSIX'te davranış değişmedi (`_RETRY_RENAME`). Yeniden deneme/`skip` testte değil üretim kodunda; testler gizlenmedi.
@@ -1224,7 +1235,8 @@ az bilgi kaybettiren bir precision aracıdır.
 - ~~`mask_non_code` C++ raw string (`R"(...)"`) içindeki tırnak/yorum/ayraçları doğru maskelemiyor (Faz 55).~~ → Faz 55'te çözüldü (delimiter sınırlı maskeleme).
 - C# 11 raw string (`"""…"""`) maskelemesi (Faz 55'te kapsam dışı bırakıldı).
 - `mask_non_code` dil bilgisi almıyor: Python'da `R"(…"` C++ ham metni sanılabilir (Faz 55 denetimi).
-- Tier 0 parse'ı sert zaman aşımıyla alt süreçte izole etmek (ADR-0024 sonucu) → Faz 59 olarak planlandı.
+- ~~Tier 0 parse'ı sert zaman aşımıyla alt süreçte izole etmek (ADR-0024 sonucu)~~ → Faz 59'da yapıldı (ADR-0025; varsayılan kapalı).
+- Tier 0 yalıtımında sıcak işçi havuzu (her analizde ~280 ms süreç açma maliyeti; yüksek yükte) (Faz 59).
 - ~~`data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.~~ → Faz 23
 - ~~Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.~~ → Faz 23
 - ~~`.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.~~ → Faz 23
@@ -1322,7 +1334,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 29. ~~**Faz 56 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.~~ Yapıldı (2026-10-06).
 30. ~~**Faz 57 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.~~ Yapıldı (2026-10-06).
 31. ~~**Faz 58 — Aralıklı düşen toolchain kurulum testleri:** neden bul, test yalıtımıyla kökten düzelt.~~ Yapıldı (2026-10-06; neden Windows tarayıcı kilidi, düzeltme üretim kodunda).
-32. **Faz 59 — Tier 0 ayrıştırmasını alt süreçte yalıtma:** ADR-0024 riskini (C# ~12 s) sert süre sınırıyla kapat; yeni ADR.
+32. ~~**Faz 59 — Tier 0 ayrıştırmasını alt süreçte yalıtma:** ADR-0024 riskini (C# ~12 s) sert süre sınırıyla kapat; yeni ADR.~~ Yapıldı (2026-10-06; ADR-0025).
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,

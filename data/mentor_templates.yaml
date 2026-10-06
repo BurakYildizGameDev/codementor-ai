@@ -4,6 +4,9 @@ version: 1
 
 # Tanı mesajında `match` geçen ilk şablon kullanılır (Tier 0 ve derleyici mesajları).
 early_exit:
+  # Faz 59 (ADR-0025): Tier 0 alt süreci süre/bellek sınırında durduruldu; satır anlamsız
+  - match: "sözdizimi denetimi"
+    question: "Kodun denetimi süre ya da bellek sınırını aştığı için analiz durdu. Bu çoğu zaman çok uzun ya da olağandışı biçimde tekrar eden, iç içe geçmiş bir yapıdan kaynaklanır; kodunda böyle bir bölüm var mı, onu ayırıp daha küçük bir parçayla deneyebilir misin?"
   - match: "noktalı virgül"
     question: "{line}. satırda bir ifade `;` ile bitmiyor gibi görünüyor. Derleyici bu satırdan sonra neyi bekliyor olabilir?"
   - match: "expected ';'"

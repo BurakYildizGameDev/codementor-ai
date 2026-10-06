@@ -1,6 +1,6 @@
 # ADR-0024: Tier 0 ayrıştırma süre sınırı
 
-**Tarih:** 2026-10-06 · **Durum:** Kabul edildi ·
+**Tarih:** 2026-10-06 · **Durum:** Kabul edildi; ADR-0025 ile güncellendi (isteğe bağlı alt süreç yalıtımı) ·
 **Etkilenen bölümler:** mimari §4.3, §12; plan Faz 55
 
 ## Bağlam

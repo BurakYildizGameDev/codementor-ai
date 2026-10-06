@@ -1845,26 +1845,26 @@ güveni sarsar. Önce nedeni bul, sonra kökten düzelt; yeniden deneme ya da `s
 
 **Commit:** `fix(faz-58): toolchain kurulum testlerinde aralıklı hata`
 
-### Faz 59 — Tier 0 ayrıştırmasını alt süreçte süre sınırıyla yalıtma (YAPILACAK)
+### Faz 59 — Tier 0 ayrıştırmasını alt süreçte süre sınırıyla yalıtma (YAPILDI 2026-10-06)
 
-**Dal:** `faz/59-tier0-alt-surec` · **Mimari:** §4.3, §12 · **ADR:** 0024'ü güncelleyen yeni ADR
+**Dal:** `faz/59-tier0-alt-surec` · **Mimari:** §4.3, §12 · **ADR:** 0025 (0024'ü günceller)
 
 **Amaç:** ADR-0024'te kabul edilen risk: 40 KB'lık kasıtlı C# girdisi (`a<`×20000) tree-sitter
 ayrıştırmasında bir analiz iş parçacığını ~12 s meşgul ediyor; tree-sitter 0.25.2'de süreç içi
 iptal yok. Araç paylaşılan bir sunucuda çalışacaksa ayrıştırma sert süre sınırıyla
 öldürülebilir bir alt süreçte koşmalı. Docker kullanılmaz.
 
-- [ ] Tasarım ve ADR: alt süreç modeli (süreç başına iş mi, sıcak işçi havuzu mu), Windows'ta
+- [x] Tasarım ve ADR: alt süreç modeli (süreç başına iş mi, sıcak işçi havuzu mu), Windows'ta
       süreç açma maliyeti, ağaç nesnesinin süreçler arası taşınamaması (alt süreç bulgu/tanı
       döndürür, ağaç değil) ve hangi yolların yalıtılacağı (yalnız Tier 0 mı, `extract_facts` da mı)
-- [ ] Süre sınırı ve açma/kapama `codementor.toml`'dan gelir (koda gömülmez); varsayılan yerel
+- [x] Süre sınırı ve açma/kapama `codementor.toml`'dan gelir (koda gömülmez); varsayılan yerel
       kullanımda davranışı ve hızı değiştirmez
-- [ ] Süre aşımında alt süreç ağacıyla birlikte öldürülür (mevcut süreç ağacı öldürme altyapısı),
+- [x] Süre aşımında alt süreç ağacıyla birlikte öldürülür (mevcut süreç ağacı öldürme altyapısı),
       kullanıcıya Türkçe ve anlaşılır bir tanı döner; analiz bozulmuş rapor olarak sürer, çökmez
-- [ ] Testler: C# `a<` girdisi süre sınırında kesilir (testte kısa sınır), normal girdide sonuç
+- [x] Testler: C# `a<` girdisi süre sınırında kesilir (testte kısa sınır), normal girdide sonuç
       süreç içi koşuyla birebir aynı, alt süreç çökmesi/öldürülmesi ana süreci etkilemez;
       `test_tier0_budget.py` C# vakasını artık kapsar
-- [ ] Ölçüm: geçerli girdide ek gecikme (p50/p95) PROGRESS'e yazılır; statik dev eval bulguları değişmez
+- [x] Ölçüm: geçerli girdide ek gecikme (p50/p95) PROGRESS'e yazılır; statik dev eval bulguları değişmez
 
 **Commit:** `feat(faz-59): Tier 0 ayrıştırmasını alt süreçte süre sınırıyla yalıt`
 

@@ -83,6 +83,11 @@ class ValidationSettings(BaseModel):
     toolchain_dir: Path = Field(default_factory=lambda: _default_toolchain_dir())
     toolchain_priority: Literal["path_first", "bundled_first"] = "path_first"
     zig: ZigSettings = Field(default_factory=ZigSettings)
+    # Faz 59 (ADR-0025): Tier 0 ayrıştırması süre sınırlı alt süreçte. Varsayılan kapalı (yerel
+    # tek kullanıcı; süreç açma maliyeti); paylaşılan sunucuda açılmalı. Exe'de desteklenmez.
+    tier0_isolation: bool = False
+    tier0_timeout_s: float = Field(default=5, gt=0)
+    tier0_memory_mb: int = Field(default=1024, ge=64)
 
 
 class PipelineSettings(BaseModel):

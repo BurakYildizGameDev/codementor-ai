@@ -30,14 +30,14 @@ async def test_analysis_logs_carry_analysis_id_and_stage(
     monkeypatch: pytest.MonkeyPatch,
     captured_logs: Callable[[], list[dict[str, Any]]],
 ) -> None:
-    original = orchestrator_module.run_tier0
+    original = orchestrator_module.check_syntax
     log = get_logger("codementor.test")
 
     def logging_tier0(*args: Any, **kwargs: Any) -> Any:
         log.info("tier0_logu")  # `with timer.stage("tier0")` içinde, iş parçacığında koşar
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(orchestrator_module, "run_tier0", logging_tier0)
+    monkeypatch.setattr(orchestrator_module, "check_syntax", logging_tier0)
     provider = fake(analysis_reply(), socratic_reply())
     request = AnalysisRequest(code=LINKED_LIST, language=Language.C)
     report = await orchestrator(settings, None, provider).analyze(request)
