@@ -130,3 +130,34 @@ def test_valid_fixtures_have_no_false_positives() -> None:
     root = Path(__file__).resolve().parents[1] / "fixtures" / "tier0"
     for path in [*root.glob("c/valid/*"), *root.glob("cpp/valid/*")]:
         assert check_includes(path.read_text(encoding="utf-8")) == [], path.name
+
+
+# ------------------------------------------------- C++ ham metin gerilemesi (Faz 55)
+
+
+def test_raw_string_does_not_hide_absolute_include() -> None:
+    """Ham metin maskelemesi doğru olsa da koruma ham (maskesiz) metinde taranır;
+    kapanan ham metinden sonraki mutlak yol include'u reddedilmeye devam eder."""
+    code = 'const char* s = R"(\n/*\n)";\n#include "/etc/passwd"\n// */\nint main(){return 0;}\n'
+    (reason,) = check_includes(code)
+    assert "4" in reason
+    assert "mutlak yol" in reason
+
+
+def test_include_inside_raw_string_still_rejected() -> None:
+    """Fail-closed: ham metin İÇİNDEKİ `#include` da reddedilir (Tier 1 atlanır).
+
+    Derleyici o satırı string olarak görür; ancak maskeleyicinin ham metin
+    ayrımında bir hata olsa bile koruma maskelenmemiş metinde arandığından
+    güvenli yönde hata verir.
+    """
+    code = 'const char* s = R"(\n#include "/etc/passwd"\n)";\nint main(){return 0;}\n'
+    (reason,) = check_includes(code)
+    assert "2" in reason
+    assert "mutlak yol" in reason
+
+
+def test_safe_include_inside_raw_string_allowed() -> None:
+    """Ham metin içindeki güvenli görünümlü include yanlış pozitif üretmez."""
+    code = 'const char* s = R"(#include <stdio.h>\n)";\nint main(){return 0;}\n'
+    assert check_includes(code) == []

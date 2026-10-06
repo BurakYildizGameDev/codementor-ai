@@ -4,7 +4,8 @@ Ağaçtaki `ERROR` ve `MISSING` düğümleri 1 tabanlı satır/kolonlu `Diagnost
 çevrilir. Kolonlar **karakter** cinsindendir (tree-sitter bayt verir; Türkçe
 karakterli satırlarda kayma olmasın). Dosya sonunda kapanmamış bir blok,
 tree-sitter'ın blok başına yerleştirdiği dev ERROR düğümü yerine son satırda
-anlaşılır bir mesajla raporlanır.
+anlaşılır bir mesajla raporlanır; özet, blok hatasıyla aynı ERROR düğümüne
+sarılan bağımsız bir `;` eksikliğini gizlemez (Faz 55 D2).
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from tree_sitter import Node
 
 from codementor.analysis.parsers import ParsedSource, iter_nodes, parse
 from codementor.ingest.normalize import split_lines
+from codementor.models.enums import Language
 from codementor.models.findings import Diagnostic
 from codementor.models.request import NormalizedCode
 from codementor.models.validation import Tier0Result
@@ -24,6 +26,9 @@ MAX_DIAGNOSTICS = 20
 _SNIPPET_CHARS = 40
 _STATEMENT_ENDS = frozenset({";", "{", "}", ":", ","})
 _SEMICOLON_HINT = "Burada noktalı virgül (;) eksik olabilir."
+# `;` ipucu yalnızca bu dillerde anlamlı (Faz 55 D2; Python/CSS'te deyim sonu `;` değil)
+_SEMICOLON_LANGUAGES = frozenset({Language.C, Language.CPP, Language.CSHARP})
+_ANON_STATEMENT_END = frozenset({")", "]"})  # çağrı/indeks sonu: ardından `;` makul
 
 _MISSING_NAMES = {
     ";": "noktalı virgül (;)",
@@ -136,6 +141,27 @@ class _CodeTokens:
                 return point.row, point.column
         return None
 
+    def trailing_semicolon_gap(self, dropped: list[Node]) -> tuple[int, int] | None:
+        """Kapanmamış blok özeti için atılan ERROR düğümleri son deyimi yuttuysa `;` konumu.
+
+        Faz 55 D2: `int main() { int x = 1` gibi girdide tree-sitter eksik `;`'yi
+        blok hatasıyla tek ERROR düğümünde birleştirir; özet bu düğümü düşürür.
+        Son kod yaprağı bir ifadenin doğal sonuysa (tanımlayıcı, sabit, tırnak;
+        ya da çağrı/indeks sonu `)`/`]`) eksik `;` de ayrı tanı olarak döner.
+        """
+        if not self.leaves or not dropped:
+            return None
+        last = self.leaves[-1]
+        if not any(
+            n.start_byte <= last.start_byte and last.end_byte <= n.end_byte for n in dropped
+        ):
+            return None
+        if last.type not in _ANON_STATEMENT_END:
+            text = (last.text or b"").decode("utf-8", errors="replace")
+            if not text or not (text[-1].isalnum() or text[-1] in "_\"'"):
+                return None
+        return last.end_point.row, last.end_point.column
+
 
 def _unclosed_diagnostic(lines: list[str], open_rows: list[int]) -> Diagnostic:
     last = max((i for i, line in enumerate(lines) if line.strip()), default=0)
@@ -157,17 +183,24 @@ def run_tier0(code: NormalizedCode) -> Tier0Result:
     lines = split_lines(parsed.text)
     errors = _error_nodes(root)
     tokens = _CodeTokens(root)
+    semicolon_language = code.language in _SEMICOLON_LANGUAGES
 
     summary: Diagnostic | None = None
+    trailing: tuple[int, int] | None = None
     open_rows = _unclosed_brace_rows(root)
     if open_rows and any(n.end_byte >= tokens.last_end for n in errors):
-        # Kapanmamış blok: dosya sonuna uzanan hata düğümleri yerine tek, yerinde bir mesaj
+        # Kapanmamış blok: dosya sonuna uzayan hata düğümleri yerine tek, yerinde bir mesaj
+        dropped = [n for n in errors if n.end_byte >= tokens.last_end]
         errors = [n for n in errors if n.end_byte < tokens.last_end]
         summary = _unclosed_diagnostic(lines, open_rows)
+        if semicolon_language:  # Faz 55 D2: yutulan ERROR bağımsız `;` eksikliği taşır
+            trailing = tokens.trailing_semicolon_gap(dropped)
 
     found: list[Diagnostic] = []
+    if trailing is not None:
+        found.append(_diagnostic(_position(lines, *trailing), _SEMICOLON_HINT))
     for node in errors:
-        gap = None if node.is_missing else tokens.semicolon_gap(node)
+        gap = None if node.is_missing or not semicolon_language else tokens.semicolon_gap(node)
         if gap is not None:
             found.append(_diagnostic(_position(lines, *gap), _SEMICOLON_HINT))
             continue

@@ -149,6 +149,47 @@ def test_unclosed_block_reported_at_end(language: Language, code: str, opened: s
     assert opened in last.message
 
 
+@pytest.mark.parametrize("language", [Language.C, Language.CPP])
+def test_unclosed_block_with_trailing_missing_semicolon(language: Language) -> None:
+    """Faz 55 D2: kapanmamış blok özeti, son deyimdeki eksik `;`yi yutuyordu."""
+    code = _code("int main(void) {\n    int x = 1\n", language)
+    result = run_tier0(code)
+    messages = [d.message for d in result.diagnostics]
+    assert "kapanmamış" in messages[-1], messages
+    hint = next(d for d in result.diagnostics if "noktalı virgül" in d.message)
+    assert (hint.line, hint.column) == (2, len("    int x = 1") + 1)
+
+
+def test_unclosed_block_with_trailing_call_missing_semicolon() -> None:
+    """Faz 55 D2: son deyim bir çağrıysa (`)` sonu) da eksik `;` önerilir."""
+    code = _code("int main(void) {\n    f()\n", Language.C)
+    result = run_tier0(code)
+    hint = next(d for d in result.diagnostics if "noktalı virgül" in d.message)
+    assert (hint.line, hint.column) == (2, len("    f()") + 1)
+    assert any("kapanmamış" in d.message for d in result.diagnostics)
+
+
+def test_unclosed_block_clean_tail_has_no_semicolon_hint() -> None:
+    """Son deyim `;` ile bitiyorsa özetin yanına `;` ipucu eklenmez."""
+    code = _code("int main(void) {\n    int x = 1;\n", Language.C)
+    result = run_tier0(code)
+    assert not any("noktalı virgül" in d.message for d in result.diagnostics)
+
+
+def test_unclosed_block_dangling_operator_has_no_semicolon_hint() -> None:
+    """Son yaprak işleçse (ifade yarıda kalmışsa) `;` önerilmez."""
+    code = _code("int main(void) {\n    int x =\n", Language.C)
+    result = run_tier0(code)
+    assert not any("noktalı virgül" in d.message for d in result.diagnostics)
+
+
+def test_unclosed_css_block_has_no_semicolon_hint() -> None:
+    """CSS'te son deklarasyonda `;` zorunlu değildir; ipucu C ailesine özgüdür."""
+    code = _code("a {\n  color: red\n", Language.CSS)
+    result = run_tier0(code)
+    assert not any("noktalı virgül" in d.message for d in result.diagnostics)
+
+
 @pytest.mark.parametrize(
     ("name", "opened"),
     [
