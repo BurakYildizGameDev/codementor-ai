@@ -1342,6 +1342,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
 30. ~~**Faz 57 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.~~ Yapıldı (2026-10-06).
 31. ~~**Faz 58 — Aralıklı düşen toolchain kurulum testleri:** neden bul, test yalıtımıyla kökten düzelt.~~ Yapıldı (2026-10-06; neden Windows tarayıcı kilidi, düzeltme üretim kodunda).
 32. ~~**Faz 59 — Tier 0 ayrıştırmasını alt süreçte yalıtma:** ADR-0024 riskini (C# ~12 s) sert süre sınırıyla kapat; yeni ADR.~~ Yapıldı (2026-10-06; ADR-0025).
+33. **Faz 60-66 — Kullanıcı testlerinden güncellemeler:** eski exe, ipucu merdiveni hatası, geçmiş silme, agy/Haiku canlı doğrulama, yerel model ölçümü ve kalite korumaları, yerel hız. Plan ve kanıtlar: `docs/GUNCELLEMELER.md`.
 
 **Kullanıcı işleri:** (a) [Faz 30 kararıyla Claude yazacak] yeni 4 sorunun referans çözümleri `private/solutions/`
 (`py-easy-word-count.py`, `py-medium-two-sum.py`, `html-easy-profile-card.html`,
