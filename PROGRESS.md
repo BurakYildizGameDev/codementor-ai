@@ -45,6 +45,7 @@
 | 52 | ✅ (denetim düzeltmesiyle) | faz/52-kural-oneri | 2026-10-05 | Mimo (Cline) / Claude Code |
 | 53 | ✅ (birleştirme kullanıcıda) | faz/53-54-kapsama-bolumleme | 2026-10-05 | Mimo (Cline) / Claude Code |
 | 54 | ✅ | faz/53-54-kapsama-bolumleme | 2026-10-05 | Mimo (Cline) / Claude Code |
+| 55 | ✅ (ADR-0024) | faz/55-tier0-saglamlik | 2026-10-06 | Mimo (Cline) / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -885,6 +886,36 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Faz 55 — Notlar (Tier 0 ayrıştırma ve maskeleme sağlamlığı; ADR-0024)
+**Yapılanlar:**
+- **C++ raw string maskeleme** (`analysis/lexical.py`): `_RAW_PREFIXES` (`R`, `LR`, `uR`, `UR`, `u8R`) ve `_MAX_DELIM = 16`; `_string_end` d-char sınırlı kapanışı (`)delim"`) arar; önekten önceki karakter `_WORD_CHARS` içindeyse (`FOO_R"(…)"`) tanımlayıcı sayılır, maskeleme yok; kapanmamış raw string dosya sonuna kadar maskelenir (fail-closed); maske sözleşmesi (uzunluk/satır sonları korunur, içerik boşluk) aynen. Testler `test_lexical.py`: 9 parametreli vaka (önekler, `R"x(a)"b)x"` özel delim, çok satırlı, kapanmamış, `FOO_R`, `R` değişken adı), delim uzunluk sınırı, iç `)delim` parantezleri, `#include` sonrası içerik, hypothesis özelliği (uzunluk/satır sonu değişmez), 3 düşman-zaman testi (40 KB kapanmamış/çok satırlı/delim bombardımanı).
+- **include_guard güvenlik gerilemesi** (`test_include_guard.py`, 3 test): raw string içindeki `#include "/etc/passwd"` reddedilir (fail-closed korunur), güvenli `<…>` raw string içinde de reddedilir, raw string sonrası gerçek `#include` hâlâ yakalanır.
+- **D2** (`validation/tier0.py`): `trailing_semicolon_gap()` — kapanmamış blokta tree-sitter'ın yuttuğu son deyimin eksik `;`'si özet mesajına satır/kolon ipucu olarak eklenir; ipucu `_SEMICOLON_LANGUAGES` (C/C++/C#) ile sınırlı; `MAX_DIAGNOSTICS` ve "özet asla düşmez" kuralı korunur. 6 test: C/C++ parametreli deyim, `f()` çağrı sonu, temiz kuyruk (ipucu yok), dangling işleç (ipucu yok), CSS (dil sınırı).
+- **§2.1 ölçüm + ADR-0024** (`docs/adr/0024-tier0-sure-siniri.md`): tree-sitter 0.25.2'de süreç içi iptal kullanılamaz (okuma geri çağrısı + `progress_callback` segfault, `timeout_micros` deprecate); boyut/eşzamanlılık/süre sınırları değişmez; C# gramer yavaşlaması kabul edildi (kullanıcı kararı). Mimari §12 "Kaynak tüketimi" satırına atıf eklendi.
+- **Gerileme testi** `tests/unit/test_tier0_budget.py`: ölçülen 4 kötü girdi `run_tier0 < 1,5 s` (`_deadline` kalıbı, kapsamada 4× tolerans) + ≈39 KB/600 satır geçerli C++ hatasız ayrışır; C# `a<` vakası bilinçli olarak kapsam dışı (ADR-0024 karar 4).
+- **Statik davranış değişmedi:** `uv run codementor eval run --split dev --static-only` (96 örnek, token harcamaz) önceki en son statik dev sonuç dosyasıyla örnek örnek karşılaştırıldı: **0/96 değişti**; doğrulama sonuç dosyası tutulmadı, README eval tabloları aynı (`test_readme_eval_table` geçer).
+**Alınan kararlar (ve neden):**
+- C# gramer bombası (`a<`×20000, `run_tier0` ~11,9 s) **bilinen kabul edilmiş risk** (ADR-0024 karar 3; kullanıcı onayı 2026-10-06): süreç çökmez, API eşzamanlılık sınırı 4, araç yerel; alt süreç izolasyonu maliyeti bu faz için orantısız.
+- Raw string + include_guard etkileşimi fail-closed bırakıldı (devir §2.2.5'te "reddetmek kabul edilebilir"): davranış testle sabitlendi, değiştirilmedi.
+- D2 `;` ipucu dile sınırlı: Python/CSS/HTML'de `;` deyim sonlandırıcısı değil, yanlış ipucu üretirdi.
+- Plandaki "zaman sınırı aşılırsa kısmi olgu üretme" geçersiz: bu yolda süre sınırı yok (ADR-0024 karar 5).
+**Ölçüm tablosu (§2.1; 2026-10-06, Windows 11, Python 3.12, tek makine; scratch betikler `%TEMP%\faz55_*.py`, repoya girmedi):**
+
+| Girdi (600 satır / 40 KB sınırları içinde) | `run_tier0` | `extract_facts` |
+|---|---|---|
+| C# `a<`×20000 (40 KB) | ~11,9 s (hepsi parse; **erişilebilir**, ADR-0024) | erişilmedi (yavaş) |
+| HTML `<div>`×6666 (40 KB, kapanmamış) | 564 ms | hızlı |
+| C++ `a<`×20000 | 279 ms | hızlı |
+| CSS `{`×40000 | 52 ms | hızlı |
+| C `(`×40000 | 24 ms | ~5,5-7,6 s (hatalı ağaçta sorgu; boru hattında **erişilemez**, Tier 0 hatada erken çıkar) |
+| Geçerli derin iç içe (40 KB dengeli) | hızlı | 118-182 ms |
+| Geçerli C++ ≈39 KB/600 satır | 4,8 ms | hızlı |
+
+**Doğrulama (2026-10-06):** `uv run ruff check .` → All checks passed!; `uv run ruff format --check .` → 409 files already formatted; `uv run mypy src/` → Success: no issues found in 194 source files; `uv run pytest -m "not live"` → 2978 passed, 14 skipped, 6 deselected in 107.67s. Commit `89ebd8f` (`git diff --stat main...HEAD`: 6 dosya, +325/-3).
+**Değiştirilen mevcut testler:** yok — `git diff main...HEAD -- tests/` yalnız ekleme içerir (31/87/41/75 satır; silme 0).
+**Açık sorular:** C# 11 raw string (`"""…"""`) maskelemesi kapsam dışı bırakıldı (Sonraya); tree-sitter ≥ 0.26'ya geçişte iptal mekanizmaları ve gramer performansı yeniden ölçülmeli (ADR-0024 sonuçları); ölçüm tek makinede — CI'da mutlak süreler farklı olabilir (eşik 1,5 s marjlı).
+**Bu fazda öğrendiğim:** tree-sitter'ın Python bağlamasında "iptal edilebilir ayrıştırma" API'leri ya etkisiz (bytestring'de `progress_callback`) ya çökertici (okuma geri çağrısıyla birlikte); sağlam iptal için tek yol alt süreç izolasyonu ve onun maliyeti, marjinal riskle orantılı değil. Lexer'da yeni bir literal sözdizimi eklerken önceki karakter bağlamı (`_WORD_CHARS`) önek ile tanımlayıcıyı ayırt etmenin anahtarı.
+
 ## Faz 52-54 — Denetim (Claude Code, 2026-10-05)
 Faz 52-54 başka bir ajanla (Mimo, Cline) uygulandı; Claude Code teslimi denetledi. Dört komut yeşildi (2933 geçti), ama şunlar düzeltildi:
 - **CPP-OWN-001 sızıntıyı gizliyordu:** eşleşme yalnız (kapsam, aile) idi; `a = new[]; b = new[]; delete[] b;` kodunda `a` da öneri oluyordu. Artık anahtar (kapsam, aile, **sahip adı**): `T* p = new T`, `p = new T`, `this->p = new T`, `: p(new T)` ile `delete (this->)p` eşleşir; ada atanmayan tahsis (`return new T`) ya da eşi olmayan `delete` `issue` kalır. Kural olgular yerine ağaçtan okur (`memory.scm` zaten tüm `new_expression`/`delete_expression` düğümlerini yakalıyor, küme aynı).
@@ -1140,9 +1171,11 @@ az bilgi kaybettiren bir precision aracıdır.
 - ~~Faz 19: Tier 1 derleyici/çalıştırma sürecine iptal olayı iletilmiyor~~ → Faz 24 (durdurulan analizde Tier 1 kendi zaman aşımına kadar sürebilir; arayüz bu sırada yeni analizi bildirimle reddeder).
 - ~~Faz 14: editörde arama (Ctrl+F), son dosyalar menüsü, sürükle-bırak ile dosya açma (tkinterdnd2).~~ → Faz 24
 - Faz 14: onefile açılışı arşiv çözme nedeniyle birkaç saniye; hızlı açılış için onedir zip önerilir.
-- ~~Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı; 40 KB girdide yüzlerce ms ölçülmüştü.~~ → Faz 55'e taşındı: güvenli sınır/iptal, sınır testi.
-- Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özete dönüşüyor; bağımsız gerçek hata ayrıca raporlanmayabilir (D2; Faz 55).
-- `mask_non_code` C++ raw string (`R"(...)"`) içindeki tırnak/yorum/ayraçları doğru maskelemiyor (Faz 55).
+- ~~Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı; 40 KB girdide yüzlerce ms ölçülmüştü.~~ → Faz 55'te kapatıldı (ADR-0024): süreç içi iptal 0.25.2'de kullanılamıyor; boyut/eşzamanlılık sınırları + gerileme testiyle idare, C# gramer yavaşlaması kabul edildi.
+- ~~Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özete dönüşüyor; bağımsız gerçek hata ayrıca raporlanmayabilir (D2; Faz 55).~~ → Faz 55'te çözüldü (`trailing_semicolon_gap`).
+- ~~`mask_non_code` C++ raw string (`R"(...)"`) içindeki tırnak/yorum/ayraçları doğru maskelemiyor (Faz 55).~~ → Faz 55'te çözüldü (delimiter sınırlı maskeleme).
+- C# 11 raw string (`"""…"""`) maskelemesi (Faz 55'te kapsam dışı bırakıldı).
+- Tier 0 parse'ı sert zaman aşımıyla alt süreçte izole etmek (ADR-0024 sonucu; gerekirse ayrı faz).
 - ~~`data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.~~ → Faz 23
 - ~~Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.~~ → Faz 23
 - ~~`.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.~~ → Faz 23
@@ -1194,7 +1227,7 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Yapılacaklar — yol haritası (2026-10-01, Faz 0-19 bitti)
 Ayrıntılar "Sonraya" listesinde. Sıra önerilir; her faz dar tutulur.
 
-**Kaldığımız yer (2026-10-05):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı dev 78/96/86, karışıklık 7 → 2). Faz 52-54 Mimo (Cline) ile yapıldı, Claude Code denetleyip düzeltti (`faz/53-54-kapsama-bolumleme`; "Faz 52-54 — Denetim"). Zincirin (`faz/36` … `faz/54`) main'e birleştirilmesi ve push kullanıcı onayı bekliyor. Sıradaki Faz 55, sonra 56-57; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
+**Kaldığımız yer (2026-10-06):** Faz 0-39 tamamlandı (`faz/39-dogrulama-performans`); Claude Opus 96 ölçümü bitti (77/88/82, `docs/FAZ36_OLCUM_DURUMU.md` §7). Faz 47 tamamlandı (`faz/47-api-guven-siniri`), Faz 48 tamamlandı (`faz/48-rol-siniri-sure`), Faz 49 tamamlandı (`faz/49-depolama-tutarlilik`), Faz 50 tamamlandı (`faz/50-dil-kodlama-ci`), Faz 51 tamamlandı (`faz/51-kategori`; canlı dev 78/96/86, karışıklık 7 → 2). Faz 52-54 Mimo (Cline) ile yapıldı, Claude Code denetleyip düzeltti (`faz/53-54-kapsama-bolumleme`; "Faz 52-54 — Denetim"). Faz 55 tamamlandı (`faz/55-tier0-saglamlik`; ADR-0024, D2 ve raw string çözüldü). Zincirin (`faz/36` … `faz/55`) main'e birleştirilmesi ve push kullanıcı onayı bekliyor. Sıradaki Faz 56-57; ayrıntılar `docs/UYGULAMA_PLANI.md` içinde.
 Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası — 2026-10-02"):
 1. ~~**Faz 22 Aşama B — precision**~~ Yapıldı (C ailesi F1 48 → 75; eval-findings §7). Sıradaki: Faz 28.
 2. **Faz 28 — Sağlayıcılar:** Çevrimdışı kısım bitti (belgelere karşı denetim, Gemini ADR-0020; aşağıdaki Faz 28 notları). Eski not: Codex yapıldı (ADR-0017); agy argv düzeltildi (stream-json stdin). Kalan: agy canlı doğrulaması (hesapta tur yanıtsız; kullanıcının etkileşimli `agy` denemesi), API anahtarı gelince Gemini API ve OpenAI/DeepSeek teşhisi.
@@ -1235,7 +1268,7 @@ Yeni sıra (ayrıntılı iş listeleri `docs/UYGULAMA_PLANI.md` "Yol haritası �
    kapsama raporu, README eval girişi, statik koşuların güncel etiketle yenilenmesi; `faz/36` dalının main'e
    birleştirilmesi açık (kullanıcı kararı).
 27. ~~**Faz 54 — Büyük dosyaların bölünmesi:**~~ Yapıldı (2026-10-05; tüm `src/` ≤ 400 satır). 4 modül bölündü (davranış değişmeden).
-28. **Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.
+28. ~~**Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı:** süre sınırı, raw string ve D2.~~ Yapıldı (2026-10-06; ADR-0024).
 29. **Faz 56 — HTML-STD-003 kenar durumları:** bilinen HTML/parser kaçırmaları ve aynı satır bulguları.
 30. **Faz 57 — C-MEM-003 akış sıralı null denetimi:** fonksiyon içi kullanım öncesi guard.
 

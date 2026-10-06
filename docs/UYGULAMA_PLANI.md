@@ -1768,22 +1768,30 @@ kısmi koşularıyla Codex'in ayrı 96 örneklik alternatifini açıkça ayırma
 
 **Commit:** `refactor(faz-54): 400 satırı aşan modüllerin bölünmesi`
 
-### Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı (YAPILACAK)
+### Faz 55 — Tier 0 ayrıştırma ve maskeleme sağlamlığı (YAPILDI 2026-10-06)
 
-**Dal:** `faz/55-tier0-saglamlik` · **Mimari:** §4.3, §12
+**Dal:** `faz/55-tier0-saglamlik` · **Mimari:** §4.3, §12 · **ADR:** 0024
 
 **Amaç:** Kullanıcı kodu güvenilmeyen girdidir. PROGRESS "Sonraya"da hâlâ kaydı olan iki girdi
 sınırı riski: 40 KB'a yakın kötü niyetli C++ girdisinde Tier 0 ayrıştırmanın yüzlerce ms sürmesi
 ve `mask_non_code`'un C++ raw string literal (`R"(...)"`) içeriğini doğru maskelememesi.
 
-- [ ] Pinned tree-sitter sürümünde parse işini güvenli biçimde sınırlama/iptal etme yöntemini doğrula;
+- [~] Pinned tree-sitter sürümünde parse işini güvenli biçimde sınırlama/iptal etme yöntemini doğrula;
       mevcut 40 KB / 600 satır üst sınırını gevşetme. Zaman sınırı aşılırsa kısmi olgu üretme.
-- [ ] Pathological fixture ile süre sınırı ve normal sınıra yakın geçerli kod için gerileme testi
-- [ ] Kapanmamış blok özeti ile dosya sonundaki bağımsız gerçek ERROR düğümü birlikteyken
-      ikisini de doğru raporla (Tier 0 denetim D2)
-- [ ] C++ raw string literal maskelemesini delimiter biçimleriyle doğru yap; string içindeki sahte
+      → Doğrulandı: 0.25.2'de süreç içi iptal kullanılamaz (okuma geri çağrısı + `progress_callback`
+      segfault'a, `timeout_micros` deprecation uyarısına yol açıyor; ADR-0024). Sınır gevşetilmedi.
+      "Kısmi olgu üretme" geçersiz: bu yolda süre sınırı yok (ADR-0024 karar 5).
+- [x] Pathological fixture ile süre sınırı ve normal sınıra yakın geçerli kod için gerileme testi
+      → `tests/unit/test_tier0_budget.py`: 4 kötü girdi `run_tier0 < 1,5 s`, ≈39 KB geçerli C++
+      hatasız; C# `a<` vakası bilinçli olarak kapsam dışı (ADR-0024 karar 4)
+- [x] Kapanmamış blok özeti ile dosya sonundaki bağımsız gerçek ERROR düğümü birlikteyken
+      ikisini de doğru raporla (Tier 0 denetim D2) → `trailing_semicolon_gap()`, `;` ipucu
+      C/C++/C# ile sınırlı, 6 test
+- [x] C++ raw string literal maskelemesini delimiter biçimleriyle doğru yap; string içindeki sahte
       `"`, yorum ve ayraçlar kod olarak algılanmasın; pozitif/negatif fixture ekle
-- [ ] İptal/zaman aşımı sonucu mimari §4.3/§12 ile çelişiyorsa uygulamadan önce ADR taslağı hazırla
+      → 16 lexical + 3 include_guard güvenlik gerileme testi
+- [x] İptal/zaman aşımı sonucu mimari §4.3/§12 ile çelişiyorsa uygulamadan önce ADR taslağı hazırla
+      → ADR-0024 kabul edildi; §12 "Kaynak tüketimi" satırına atıf eklendi
 
 **Commit:** `fix(faz-55): Tier 0 ayrıştırma ve C++ raw string sınırları`
 
