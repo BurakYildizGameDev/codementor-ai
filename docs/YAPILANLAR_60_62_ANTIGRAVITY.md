@@ -115,8 +115,8 @@ Geliştirme süreci, projenin altın kurallarına uygun olarak ardışık git da
     - Her satıra "Sil" butonu eklendi. Buton tıklaması, satır tıklamasından (`open_row`) izole edildi; satır açılmadan doğrudan silme tetiklenir.
     - Başlık alanına "Tümünü temizle" butonu eklendi (kayıt yoksa devre dışı kalır).
   - `src/codementor/desktop/app.py`:
-    - `delete_history(analysis_id)`: DB ve diskten kaydı siler, liste ekranını yeniler, silinen analiz şu an analiz ekranında açıksa rapor ve sonuçları sıfırlar, toast mesajı verir.
-    - `clear_history()`: Kullanıcıya `messagebox.askyesno` onay diyaloğu sunar. Onay verilirse DB ve diskteki tüm verileri temizler, açık ekranı sıfırlar, geçmişi yeniler ve toast verir.
+    - `delete_history(analysis_id)`: DB ve diskten kaydı siler, liste ekranını yeniler; açık analiz bu ise (`_shown_analysis_id` ile eski uyumsuz raporlar dâhil) rapor ve sonuçları sıfırlar, toast verir.
+    - `clear_history()`: `self.confirm` enjekte edilebilir onay diyaloğu sunar (`Tüm analiz geçmişi, saklanan kodlar ve ipucu ilerlemen silinecek. Emin misin?`). Onay verilirse analizleri (`clear_analyses`), oturumları (`clear_sessions`) ve saklanan kodları (`clear_sources`) siler; açık ekranı sıfırlar, geçmişi yeniler ve toast verir (`Geçmiş temizlendi (N analiz).`).
 - **Dokümantasyon:**
   - `docs/mimari.md` §9 API tablosuna `DELETE /v1/analyses/{id}` eklendi.
 
@@ -125,7 +125,7 @@ Geliştirme süreci, projenin altın kurallarına uygun olarak ardışık git da
 - `tests/desktop/test_runtime.py`: `delete_source` (başarılı, bulunamadı, traversal koruması), `clear_sources`.
 - `tests/api/test_routes.py`: `DELETE /v1/analyses/{id}` (204, 404, geçersiz ULID 404).
 - `tests/api/test_errors_and_app.py`: CORS preflight `DELETE` metodu izni.
-- `tests/desktop/test_app.py`: `delete_history` ve `clear_history` (onaylı/onaysız, açık analiz sıfırlama), `HistoryView` buton geri çağrıları.
+- `tests/desktop/test_app.py`: `delete_history` ve `clear_history` (onaylı/onaysız, açık analiz ve oturum sıfırlama, uyumsuz eski rapor silme), `HistoryView` buton geri çağrıları. Toplam 3079 test yeşil.
 
 ---
 
@@ -141,7 +141,7 @@ Tüm aşamalarda projenin 4 temel denetim adımı eksiksiz olarak çalıştırı
 2. **Ruff Biçimlendirme:**
    ```bash
    uv run ruff format --check .
-   # Çıktı: 419 files already formatted
+   # Çıktı: 421 files already formatted
    ```
 3. **Mypy Tip Denetimi:**
    ```bash
@@ -151,17 +151,28 @@ Tüm aşamalarda projenin 4 temel denetim adımı eksiksiz olarak çalıştırı
 4. **Pytest Test Paketi (Ağsız):**
    ```bash
    uv run pytest -m "not live"
-   # Çıktı: 3078 passed, 14 skipped, 6 deselected in 132.86s
+   # Çıktı: 3079 passed, 14 skipped, 6 deselected in 114.90s
    ```
 5. **Web UI Tipleri ve Derleme:**
    ```bash
    npm --prefix web run typecheck && npm --prefix web run build
-   # Çıktı: ✓ built in 399ms
+   # Çıktı: ✓ built in 398ms
    ```
 
 ---
 
-## 6. Değiştirilen ve Eklenen Dosyaların Özeti
+## 6. Bağımsız Kod Denetimi ve Kapanan Bulgular (`faz-denetim`)
+
+Kullanıcının talebi ve doğrulamasıyla `faz-denetim` becerisi protokolü işletilmiş, şartnameyle karşılaştırmalı kod taraması yapılmıştır:
+
+1. **`clear_sessions` Entegrasyonu:** Masaüstünde tüm geçmiş temizlendiğinde veritabanındaki oturumların da sıfırlanması sağlandı.
+2. **`_shown_analysis_id` Takibi:** Ekranda açık olan analiz (özellikle eski uyumsuz şemalı raporlar dâhil) silindiğinde ekranın anında temizlenmesi sağlandı.
+3. **`self.confirm` Enjeksiyonu:** Testlerin gerçek onay fonksiyonunu taklit edebilmesi için onay mekanizması enjekte edilebilir hâle getirildi.
+4. **Metin ve Bildirim Doğrulaması:** Onay sorusu ve silinen kayıt sayısını belirten toast mesajı (`Geçmiş temizlendi (N analiz).`) şartnameye uyarlandı.
+
+---
+
+## 7. Değiştirilen ve Eklenen Dosyaların Özeti
 
 ```
 docs/
