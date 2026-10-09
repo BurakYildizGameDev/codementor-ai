@@ -76,13 +76,13 @@ class App(ctk.CTk):  # type: ignore[misc]
         if self.prefs.provider not in (None, *PROVIDER_NAMES):
             self.prefs = self.prefs.model_copy(update={"provider": None})
         self.settings: Settings = state.settings
+        self.tracker = StageTracker()
         self.apply_settings()
         if not self.prefs.session_id:
             self._new_session()
         self.bridge = Bridge()
         self.connections = ConnectionsController(self, key_store or KeyStore())
         self.files = FileController(self)
-        self.tracker = StageTracker()
         self._closing = False
         self._last_code = ""
         self._last_question_id: str | None = None
@@ -218,6 +218,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         """Arayüz seçimlerini (model, adres) ayarlara uygular; sonraki analizler bunu kullanır."""
         self.settings = apply_overrides(self.base_settings, self.prefs)
         self.core.settings = self.settings
+        self.tracker.slow_hint_s = self.settings.pipeline.slow_llm_hint_s
 
     def analyze(self, *, advance: bool | None = None) -> None:
         view = self.analyze_view
@@ -476,6 +477,8 @@ class App(ctk.CTk):  # type: ignore[misc]
             return
         for message in self.bridge.drain():
             self._on_message(message)
+        if self.analyze_view.busy:  # Faz 63: uzun LLM geçişinde "takılmadı" uyarısı
+            self.analyze_view.timeline.set_hint(self.tracker.slow_hint())
         self.after(POLL_MS, self._poll)
 
     def close(self) -> None:

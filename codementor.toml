@@ -55,6 +55,7 @@ max_repair_attempts = 1
 use_cache = true
 verify_findings = true       # Faz 35 (ADR-0019): LLM bulguları için ayrı doğrulama çağrısı
 analysis_timeout_s = 900     # Faz 48: toplam analiz süresi (sn); aşımda bozulmuş rapor
+slow_llm_hint_s = 60         # Faz 63: masaüstünde LLM geçişi bunu aşınca "takılmadı" uyarısı
 
 [storage]
 max_analyses = 2000           # Faz 49: en yeni N analiz tutulur (masaüstü kod dosyaları da); fazlası budanır

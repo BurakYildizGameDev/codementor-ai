@@ -101,6 +101,9 @@ class PipelineSettings(BaseModel):
     # Faz 48: bir analizin toplam süresi (sn). Aşılırsa LLM geçişleri iptal edilir (CLI alt
     # süreci öldürülür) ve rapor statik analizle bozulmuş döner; None sınırı kapatır
     analysis_timeout_s: float | None = Field(default=900, gt=0)
+    # Faz 63: masaüstünde bir LLM geçişi bu kadar saniyeyi aşınca "model hâlâ yazıyor, Durdur'a
+    # basıp başka model seçebilirsin" uyarısı gösterilir; None kapatır
+    slow_llm_hint_s: float | None = Field(default=60, gt=0)
 
 
 class DataSettings(BaseModel):

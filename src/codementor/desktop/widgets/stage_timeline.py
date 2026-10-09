@@ -64,6 +64,16 @@ class StageTimeline(Card):
             time = ctk.CTkLabel(grid, text="", font=theme.font(11), text_color=theme.FAINT)
             time.grid(row=r, column=col + 2, sticky="e", padx=(4, 18 if c == 0 else 0))
             self._rows.append((dot, name, time))
+        self.hint = ctk.CTkLabel(
+            self.body,
+            text="",
+            font=theme.font(11),
+            text_color=theme.GOLD,
+            anchor="w",
+            justify="left",
+            wraplength=520,
+        )
+        self._hint_text: str | None = None
         self._pulse_on = False
         self._pulse_job: str | None = None
         self._running: set[int] = set()
@@ -83,11 +93,24 @@ class StageTimeline(Card):
         self.bar.set(ratio)
         self.bar.configure(progress_color=theme.GOLD if busy or ratio < 1 else theme.OK)
         self.total.configure(text=format_ms(total_ms) if total_ms else "")
+        if not busy:
+            self.set_hint(None)
         if busy and self._pulse_job is None:
             self._pulse()
         elif not busy and self._pulse_job is not None:
             self.after_cancel(self._pulse_job)
             self._pulse_job = None
+
+    def set_hint(self, text: str | None) -> None:
+        """Yavaş model uyarısı (Faz 63); None gizler. Metin değişmediyse yeniden çizilmez."""
+        if text == self._hint_text:
+            return
+        self._hint_text = text
+        if text is None:
+            self.hint.grid_remove()
+        else:
+            self.hint.configure(text=text)
+            self.hint.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
 
     def _pulse(self) -> None:
         self._pulse_on = not self._pulse_on

@@ -53,6 +53,7 @@
 | 60 | ✅ | faz/60-surum-uyumu | 2026-10-06 | Antigravity / — |
 | 61 | ✅ (ADR-0026) | faz/61-ipucu-merdiveni | 2026-10-07 | Antigravity / — |
 | 62 | ✅ | faz/62-gecmis-silme | 2026-10-07 | Antigravity / — |
+| 63 | ✅ | faz/63-agy-haiku-canli | 2026-10-09 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -892,6 +893,42 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 **Bu fazda öğrendiğim:** Doğrulama geçişi precision'ı prompt kurallarının yapamadığı ölçüde
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
+
+## Faz 63 — Notlar (agy ve Haiku canlı doğrulaması)
+**Yapılanlar:**
+- `providers/agy_stream.py`: `first_json_object` (metindeki ilk JSON nesnesi; çit, önündeki metin
+  ve arkadaki araç izi atlanır), `first_response_text` (yalnız ilk `agent_response` adımının
+  `text_delta` parçaları).
+- `providers/cli_agent.py` `_agy`: önce `structured_output`, yoksa ilk JSON nesnesi, metin boşsa
+  akış parçaları. Boş yanıt / `print timeout` mesajlarına `AGY_STALL_HINT` (global MCP, `agy mcp list`).
+- Masaüstü: `StageTracker.slow_hint()` (LLM geçişi `pipeline.slow_llm_hint_s` = 60 sn'yi aşınca
+  uyarı; aşama başına sayılır), `StageTimeline.set_hint`, `App._poll` her döngüde günceller.
+- Belgeler: ADR-0012 "Güncelleme (Faz 63)", mimari agy satırı ve `[pipeline]` örneği, README
+  "agy yanıt vermiyorsa", `docs/GUNCELLEMELER.md` Faz 63.
+- Testler: `tests/providers/test_agy_stream.py` (7, gerçek agy 1.3.1 çıktısı fixture:
+  `fixtures/agy_stream_result.ndjson`), `test_cli_agent.py` (+6), `test_connections.py`
+  (`test_try_connection_agy_two_objects_succeeds`), `test_viewmodel.py` (+5), `test_app.py` (+2).
+**Canlı ölçümler (2026-10-09):**
+| Sağlayıcı / model | Örnek | Toplam | llm_a | llm_v | llm_b | Not |
+|---|---|---|---|---|---|---|
+| claude_cli / Haiku 4.5 (eski exe, masaüstü) | kullanıcı kodu | 118,6 sn | 43,0 | 59,6 | 15,7 | düşünme ayarsız |
+| claude_cli / Haiku 5.5 (düşünme varsayılan) | dev csharp-005 | 16,5 sn | 10,1 | — | 6,3 | doğrulanacak hata yok (öneri) |
+| claude_cli / Haiku 5.5 (`thinking_tokens=0`) | dev csharp-005 | 15,6 sn | 9,6 | — | 5,8 | fark ~1 sn → kod değişmedi |
+| agy / gemini-3.8-flash-medium | dev csharp-005 | 75,7 sn | 38,0 | — | 37,7 | `degraded=false`, onarım 0 |
+`pytest -m live -k "cli_agent_live and (claude_cli or agy)"`: 2 geçti. "Bağlantıyı dene":
+Haiku 5.5 1220 ms, agy 17903 ms.
+**Alınan kararlar (ve neden):**
+- agy takılmasının kök nedeni kodda değil, kullanıcının global MCP ayarında (Unity kapalıyken
+  `unity-mcp`); agy'de `--strict-mcp-config` yok ve `disabled: true` başsız modda yok sayılıyor →
+  yalnız yönlendirici mesaj + README. Kullanıcının isteğiyle `agy mcp remove unity-mcp` yapıldı.
+- İlk JSON nesnesini almak güvenli: şema doğrulaması (K5) ve onarım döngüsü değişmedi.
+- `--mode plan` agy'ye göre etkisiz ama zararsız; tutuldu, ADR'de belgelendi.
+- Haiku 5.5'te düşünme kapatmanın etkisi ölçülemeyecek kadar küçük; masaüstüne ayar eklenmedi.
+**Açık sorular / Sonraya:**
+- agy her çağrıda ~20-38 sn (CLI açılışı + ajan döngüsü); derin analiz 2-3 çağrı. Sıcak süreç
+  ya da tek çağrı modu (single_pass) agy için varsayılan olabilir mi? Ölçülmedi.
+- Unity projelerine `.agents/mcp_config.json` (proje bazlı MCP) kullanıcı kuracak; agy CLI'ın
+  bunu okuduğu canlı doğrulanmadı.
 
 ## Düzeltme — exe yanındaki toml soru bankasını ve analizi bozuyordu (ADR-0027, 2026-10-09)
 **Belirti:** Exe'de soru bankası boş, her analiz `CallCostError: Çağrı maliyeti dosyası bulunamadı:

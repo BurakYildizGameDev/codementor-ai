@@ -91,12 +91,15 @@ Uygulama ayrıntısı: [DEVIR_FAZ60_62.md](DEVIR_FAZ60_62.md) (Faz 60-62 GLM'e d
 
 **Amaç:** Güncel sürümde iki sağlayıcının gerçekten çalıştığını ölçerek kanıtlamak.
 
-- [ ] agy 1.2.17 ile tek bir canlı analiz (kullanıcı onayıyla, kota harcar); argv/stream-json
-      biçimi değiştiyse uyarla; `ADR-0012` notunu güncelle
-- [ ] `claude_cli` + Haiku 4.5: aşama sürelerini ölç (`llm_a`, `llm_v`, `llm_b`); uzun bekleme
-      sürerse nedenini bul (CLI açılışı, düşünme, şema onarımı, doğrulama geçişi)
-- [ ] Geçiş başına süre sınırı ve arayüzde "model yanıt vermiyor, iptal et / başka modele geç"
-- [ ] **Bağlantıyı dene** gerçek, küçük bir gidiş-dönüş yapıp süresini göstersin
+- [x] agy (1.3.1) ile canlı analiz: `degraded=false`, onarım 0, 77 sn. Kök neden global
+      unity-mcp (turu başlatmıyordu); yanıtta araç izi → ilk JSON nesnesi / `structured_output`.
+      `ADR-0012` güncellendi
+- [x] `claude_cli` + Haiku: 4.5 exe'de 118,6 sn (43 / 60 / 16); Haiku 5.5 15,6-16,5 sn, düşünme
+      ayarının etkisi ~1 sn (kod değişmedi). Öneri listesi Haiku 5.5'e geçti
+- [x] Geçiş başına süre sınırı zaten vardı (`timeout_s`, `analysis_timeout_s`); arayüze
+      `pipeline.slow_llm_hint_s` (60 sn) aşımında "takılmadı, Durdur'a basıp başka model seç" uyarısı
+- [x] **Bağlantıyı dene** zaten gerçek gidiş-dönüş yapıyordu; agy'nin çıktısıyla artık geçiyor
+      (canlı: Haiku 5.5 1,2 sn, agy 17,9 sn)
 
 ### Faz 64 — Yerel model ölçüm tabanı (öncelik: orta; Faz 65'ten önce)
 

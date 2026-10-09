@@ -235,6 +235,25 @@ async def test_try_connection_reports_success_and_failure(
 
 
 @pytest.mark.anyio
+async def test_try_connection_agy_two_objects_succeeds(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz 63: agy 1.3.1'in gerçek çıktısı (yanıt + kendiliğinden eklenen araç izi) geçer."""
+    from codementor.config import AgyConfig
+    from codementor.providers.cli_agent import CliAgentProvider
+
+    fixture = Path(__file__).parents[1] / "providers" / "fixtures" / "agy_stream_result.ndjson"
+    agy = CliAgentProvider(
+        "agy",
+        AgyConfig(command=EXE, model="gemini-3.8-flash-low", allow_tool_agent=True),
+        retry=RetryPolicy(max_retries=0),
+        runner=FakeRunner(fixture.read_text(encoding="utf-8")),
+    )
+    monkeypatch.setattr(connections, "build_provider", lambda *_a, **_k: agy)
+    assert (await try_connection("agy", settings)).startswith("Bağlantı çalışıyor")
+
+
+@pytest.mark.anyio
 async def test_agy_without_model_still_discovers_models(settings: Settings) -> None:
     cfg = cli_settings(settings, model="", allow_tool_agent=True)
     result = await probe("agy", cfg, runner=FakeRunner(AGY_ONE_MODEL))

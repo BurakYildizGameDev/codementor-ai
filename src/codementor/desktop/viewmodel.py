@@ -6,6 +6,8 @@ yalnızca buradaki sonuçları çizer, böylece davranış Tk olmadan test edili
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -57,22 +59,49 @@ class GroupView:
     duration_ms: int
 
 
+LLM_STAGES: frozenset[str] = frozenset({"llm_a", "llm_v", "llm_b"})
+
+
 @dataclass
 class StageTracker:
     """`StageEvent` akışını 6 adımlık zaman çizelgesine çevirir."""
 
     _status: dict[str, str] = field(default_factory=dict)
     _duration: dict[str, int] = field(default_factory=dict)
+    _started_at: dict[str, float] = field(default_factory=dict)
     finished: bool = False
+    # Faz 63: bir LLM geçişi bu kadar saniyeyi aşınca kullanıcıya "takılmadı" uyarısı; None kapalı
+    slow_hint_s: float | None = 60
+    clock: Callable[[], float] = time.monotonic
 
     def reset(self) -> None:
         self._status.clear()
         self._duration.clear()
+        self._started_at.clear()
         self.finished = False
 
     def apply(self, event: StageEvent) -> None:
         self._status[event.stage] = event.status
         self._duration[event.stage] = self._duration.get(event.stage, 0) + event.duration_ms
+        if event.status == "started":
+            self._started_at[event.stage] = self.clock()
+        else:
+            self._started_at.pop(event.stage, None)
+
+    def slow_hint(self) -> str | None:
+        """Koşan LLM geçişi `slow_hint_s`'i aştıysa beklemeyi açıklayan metin (Faz 63)."""
+        if self.slow_hint_s is None:
+            return None
+        running = [t for s, t in self._started_at.items() if s in LLM_STAGES]
+        if not running:
+            return None
+        elapsed = self.clock() - min(running)
+        if elapsed < self.slow_hint_s:
+            return None
+        return (
+            f"Model hâlâ yanıt yazıyor ({int(elapsed)} sn). Takılmadı; CLI ajanları yavaş "
+            "olabilir. Beklemek istemezsen Durdur'a basıp Bağlantılar'dan başka model seç."
+        )
 
     def finish(self) -> None:
         """Analiz bitti: hiç olay gelmeyen aşamalar (erken çıkış, önbellek) atlanmış sayılır."""

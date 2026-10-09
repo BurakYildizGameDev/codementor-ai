@@ -203,3 +203,69 @@ def test_report_headline_counts_errors_and_suggestions() -> None:
     )
     assert report_headline(report([suggestion(2)])).startswith("Hata yok · 1 öneri")
     assert report_headline(report([])).startswith("Hata yok ·")
+
+
+# --- Yavaş model uyarısı (Faz 63) --------------------------------------------------------------
+
+
+class Clock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def test_slow_hint_after_threshold_for_llm_stage() -> None:
+    clock = Clock()
+    tracker = StageTracker(clock=clock, slow_hint_s=60)
+    tracker.apply(event("llm_a", "started"))
+    clock.now += 59
+    assert tracker.slow_hint() is None
+    clock.now += 16
+    hint = tracker.slow_hint()
+    assert hint is not None
+    assert "75 sn" in hint
+    assert "Durdur" in hint
+
+
+def test_slow_hint_clears_when_llm_stage_completes() -> None:
+    clock = Clock()
+    tracker = StageTracker(clock=clock, slow_hint_s=60)
+    tracker.apply(event("llm_v", "started"))
+    clock.now += 120
+    tracker.apply(event("llm_v", "completed", 120_000))
+    assert tracker.slow_hint() is None
+
+
+def test_slow_hint_restarts_for_next_llm_stage() -> None:
+    clock = Clock()
+    tracker = StageTracker(clock=clock, slow_hint_s=60)
+    tracker.apply(event("llm_a", "started"))
+    clock.now += 50
+    tracker.apply(event("llm_a", "completed", 50_000))
+    tracker.apply(event("llm_b", "started"))
+    clock.now += 30
+    assert tracker.slow_hint() is None  # süre aşama başına sayılır, toplam değil
+
+
+def test_no_slow_hint_for_static_stages() -> None:
+    clock = Clock()
+    tracker = StageTracker(clock=clock, slow_hint_s=60)
+    tracker.apply(event("tier1", "started"))
+    clock.now += 600
+    assert tracker.slow_hint() is None
+
+
+def test_no_slow_hint_when_idle_reset_or_disabled() -> None:
+    clock = Clock()
+    assert StageTracker(clock=clock, slow_hint_s=60).slow_hint() is None
+    tracker = StageTracker(clock=clock, slow_hint_s=60)
+    tracker.apply(event("llm_a", "started"))
+    clock.now += 100
+    tracker.reset()
+    assert tracker.slow_hint() is None
+    disabled = StageTracker(clock=clock, slow_hint_s=None)
+    disabled.apply(event("llm_a", "started"))
+    clock.now += 1000
+    assert disabled.slow_hint() is None

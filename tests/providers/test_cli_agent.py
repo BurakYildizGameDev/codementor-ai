@@ -251,6 +251,54 @@ async def test_agy_empty_response_is_unavailable() -> None:
         await _run(_provider("agy", FakeRunner([ok(stdout)])))
 
 
+async def test_agy_print_timeout_message_mentions_mcp() -> None:
+    # Faz 63: global bir MCP sunucusu (unity-mcp) bağlanamayınca agy turu hiç başlatmıyor
+    stdout = agy_json(response="", num_turns=0)
+    stderr = "[agy] print timeout after 4m50s with turn in progress; returning partial output"
+    result = ProcessResult(returncode=0, stdout=stdout, stderr=stderr)
+    with pytest.raises(CliTimeoutError, match="agy mcp list"):
+        await _run(_provider("agy", FakeRunner([result])))
+
+
+async def test_agy_zero_turns_message_mentions_mcp() -> None:
+    stdout = agy_json(response="", num_turns=0)
+    with pytest.raises(ProviderUnavailableError, match="agy mcp list"):
+        await _run(_provider("agy", FakeRunner([ok(stdout)])))
+
+
+async def test_agy_two_json_objects_takes_first() -> None:
+    # agy 1.3.1 yanıttan sonra kendiliğinden ikinci tur açıp araç izi ekliyor (Faz 63)
+    response = json.dumps(ANSWER) + '\n{"toolAction":"Completing task","toolSummary":"Finish"}\n'
+    result = await _run(_provider("agy", FakeRunner([ok(agy_json(response=response))])))
+    assert result.parsed == ANSWER
+
+
+async def test_agy_structured_output_preferred() -> None:
+    other = {**ANSWER, "key_flaw_concept": "metin"}
+    stdout = agy_json(response=json.dumps(other), structured_output=ANSWER)
+    result = await _run(_provider("agy", FakeRunner([ok(stdout)])))
+    assert result.parsed == ANSWER
+    assert json.loads(result.raw_text) == ANSWER
+
+
+async def test_agy_non_dict_structured_output_ignored() -> None:
+    stdout = agy_json(structured_output="bozuk")
+    result = await _run(_provider("agy", FakeRunner([ok(stdout)])))
+    assert result.parsed == ANSWER
+
+
+async def test_agy_empty_response_recovered_from_text_deltas() -> None:
+    text = json.dumps(ANSWER)
+    deltas = [
+        {"step_index": 1, "step_type": "agent_response", "text_delta": text[:10]},
+        {"step_index": 1, "step_type": "agent_response", "text_delta": text[10:]},
+        {"step_index": 3, "step_type": "agent_response", "text_delta": '{"toolAction":"x"}'},
+    ]
+    steps = "".join(json.dumps({"event": "step_update", "step_update": d}) + "\n" for d in deltas)
+    result = await _run(_provider("agy", FakeRunner([ok(steps + agy_json(response=""))])))
+    assert result.parsed == ANSWER
+
+
 async def test_agy_non_result_last_event_rejected() -> None:
     stdout = json.dumps({"event": "init", "conversation_id": "c", "status": "SUCCESS"})
     with pytest.raises(ProviderRequestError, match="JSON çıktı alınamadı"):

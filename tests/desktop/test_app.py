@@ -992,3 +992,32 @@ def test_advance_hint_desktop_decisions(app: App, monkeypatch: pytest.MonkeyPatc
     app.analyze()
     assert len(captured) == 5
     assert captured[-1].options.advance_hint is None
+
+
+def test_slow_llm_hint_shown_while_busy_and_cleared_after(app: App) -> None:
+    """Faz 63: uzun LLM geçişinde "takılmadı, Durdur'a basabilirsin" uyarısı görünür."""
+    from codementor.models.pipeline import StageEvent
+
+    now = [100.0]
+    app.tracker.clock = lambda: now[0]
+    assert app.tracker.slow_hint_s == app.settings.pipeline.slow_llm_hint_s
+    timeline = app.analyze_view.timeline
+    app.analyze_view.set_busy(True)
+    app.tracker.apply(StageEvent(analysis_id="A", stage="llm_a", status="started"))
+    app._poll()
+    assert timeline._hint_text is None
+    now[0] += 90
+    app._poll()
+    assert timeline._hint_text is not None
+    assert "90 sn" in timeline._hint_text
+    app.analyze_view.set_busy(False)
+    app.analyze_view.show_progress(app.tracker)
+    assert timeline._hint_text is None
+
+
+def test_slow_llm_hint_threshold_from_settings(app: App) -> None:
+    app.base_settings = app.base_settings.model_copy(
+        update={"pipeline": app.base_settings.pipeline.model_copy(update={"slow_llm_hint_s": None})}
+    )
+    app.apply_settings()
+    assert app.tracker.slow_hint_s is None

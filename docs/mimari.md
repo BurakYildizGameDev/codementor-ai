@@ -479,7 +479,7 @@ class ProviderResult(BaseModel):
 | Gemini (deneysel) | OpenAI uyumlu uç (`/v1beta/openai`), katı `json_schema` (`openai_strict`: tüm alanlar zorunlu, `additionalProperties: false`); çıktı sınırı `max_tokens`, `seed` yok | ADR-0020; canlı doğrulanmadı. OpenAI ve DeepSeek sağlayıcıları ADR-0021 ile kaldırıldı |
 | Anthropic | Yerel JSON çıktısı: `output_config.format = {type: json_schema, schema}` (araç / `tool_choice` yok) | Güncel modeller zorunlu `tool_choice`'u ve `temperature`'ı reddeder; `temperature` yalnızca yapılandırmada verilirse gönderilir (ADR-0011) |
 | Claude Code CLI (`claude_cli`) | `claude -p --output-format json --json-schema`; araçlar kapalı (`--tools ""`), prompt stdin'den | API anahtarı yerine CLI oturumu; Faz 4 süreç çalıştırıcısı ile yalıtılır (ADR-0012) |
-| Antigravity CLI (`agy`) | `agy -p --output-format json --json-schema --sandbox` | Deneysel: araç kapatma bayrağı yok; paylaşılan sunucuda kapalı tutulmalı (ADR-0012) |
+| Antigravity CLI (`agy`) | `agy --input-format stream-json --output-format stream-json --json-schema --sandbox`, prompt stdin'den; yanıt `structured_output` ya da metindeki ilk JSON nesnesi (Faz 63) | Deneysel: araç kapatma bayrağı yok; paylaşılan sunucuda kapalı tutulmalı (ADR-0012) |
 | Codex CLI (`codex`) | `codex --no-daemon exec --json --output-schema --sandbox read-only --ignore-user-config`, prompt stdin'den | ChatGPT oturumu; dosya okuyabilen ajan, açık onay gerekir (ADR-0017) |
 | Fake | Fixture dosyasından yanıt döner | Testler ve CI için; ağ yok |
 
@@ -1330,6 +1330,7 @@ max_repair_attempts = 1
 use_cache = true
 verify_findings = true       # Faz 35 (ADR-0019): LLM bulguları için ayrı doğrulama çağrısı
 analysis_timeout_s = 900     # Faz 48: toplam analiz süresi; aşımda LLM iptal, bozulmuş rapor
+slow_llm_hint_s = 60         # Faz 63: masaüstünde LLM geçişi bunu aşınca "takılmadı" uyarısı
 
 [rules]
 disabled = []               # kural kimlikleri, ör. ["CPP-OWN-001"]

@@ -50,7 +50,13 @@ from codementor.providers._cli_common import (
 )
 from codementor.providers._common import as_int, as_text, elapsed_ms, require_model
 from codementor.providers._http import parse_json_object
-from codementor.providers.agy_stream import encode_stdin, print_timeout_s, result_event
+from codementor.providers.agy_stream import (
+    encode_stdin,
+    first_json_object,
+    first_response_text,
+    print_timeout_s,
+    result_event,
+)
 from codementor.providers.base import (
     ProviderConfigError,
     ProviderError,
@@ -79,6 +85,13 @@ __all__ = [
     "resolve_executable",
     "short_error",
 ]
+
+# Faz 63: Unity kapalıyken global unity-mcp bağlanamıyor ve agy turu hiç başlatmıyordu (0 tur,
+# boş yanıt). `disabled: true` başsız modda yok sayılıyor; sunucunun global ayardan çıkması gerekir.
+AGY_STALL_HINT = (
+    "global bir MCP sunucusu bağlanamıyor olabilir (`agy mcp list`); kullanmadığın sunucuyu "
+    "`agy mcp remove <ad>` ile kaldır ya da yalnız ilgili projenin .agents/mcp_config.json'una taşı"
+)
 
 CliKind = Literal["claude_cli", "agy"]
 
@@ -251,7 +264,7 @@ class CliAgentProvider:
             raise ProviderRequestError(self.name, f"JSON çıktı alınamadı ({detail})")
         if self.kind == "claude_cli":
             return self._claude(data, model, start)
-        return self._agy(data, model, start, result.stderr)
+        return self._agy(data, model, start, result.stdout, result.stderr)
 
     def _claude(self, data: Mapping[str, Any], model: str, start: float) -> ProviderResult:
         if data.get("is_error") or data.get("subtype") not in (None, "success"):
@@ -278,24 +291,31 @@ class CliAgentProvider:
         )
 
     def _agy(
-        self, data: Mapping[str, Any], model: str, start: float, stderr: str
+        self, data: Mapping[str, Any], model: str, start: float, stdout: str, stderr: str
     ) -> ProviderResult:
         status = as_text(data.get("status"))
         text = as_text(data.get("response"))
         if status and status != "SUCCESS":
             detail = short_error(as_text(data.get("error")) or status)
             raise ProviderRequestError(self.name, f"agy hatası: {detail}")
+        structured = data.get("structured_output")
+        if isinstance(structured, dict):  # agy 1.3+: şemaya göre hazır nesne (Faz 63)
+            text = json.dumps(structured, ensure_ascii=False)
+        elif not text.strip():
+            text = first_response_text(stdout)  # son metin boşsa akış parçalarından
         if not text.strip() and "print timeout" in stderr:
             # agy --print-timeout doldu: tur başladı ama model süre içinde yanıt vermedi
-            raise CliTimeoutError(self.name, "agy süre içinde yanıt vermedi")
+            raise CliTimeoutError(self.name, f"agy süre içinde yanıt vermedi; {AGY_STALL_HINT}")
         if not text.strip():
             raise ProviderUnavailableError(
-                self.name, "yanıt boş; `agy` oturumu açık mı? (etkileşimli `agy` ile giriş yapın)"
+                self.name,
+                "yanıt boş; `agy` oturumu açık mı? (etkileşimli `agy` ile giriş yapın) "
+                f"Oturum açıksa: {AGY_STALL_HINT}",
             )
         usage = _mapping(data.get("usage"))
         return ProviderResult(
             raw_text=text,
-            parsed=parse_json_object(text),
+            parsed=structured if isinstance(structured, dict) else first_json_object(text),
             usage=TokenUsage(
                 input_tokens=as_int(usage.get("input_tokens")),
                 output_tokens=as_int(usage.get("output_tokens")),

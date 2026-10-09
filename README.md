@@ -393,6 +393,12 @@ tutulur (ADR-0008).
 
 > OpenAI ve DeepSeek sağlayıcıları 2026-10-03'te kaldırıldı (ADR-0021): canlı doğrulanamıyordu.
 
+> **agy yanıt vermiyorsa** (analiz "Derin analiz"de bekleyip boş dönüyorsa): agy, global MCP
+> sunucularının hepsini her çağrıda başlatır; bağlanamayan biri (ör. Unity kapalıyken
+> `unity-mcp`) turu hiç başlatmaz. `agy mcp list` ile bak; kullanmadığın sunucuyu
+> `agy mcp remove <ad>` ile kaldır ya da yalnız ilgili projenin `.agents/mcp_config.json`'una
+> taşı. `agy mcp disable` yetmez: başsız modda yok sayılıyor (Faz 63, ADR-0012).
+
 ## Güvenlik
 
 - **Varsayılan yerel.** API yalnızca `127.0.0.1`'e bağlanır; başka adrese bağlanırsa `serve`

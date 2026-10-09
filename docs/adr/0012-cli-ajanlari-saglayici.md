@@ -69,6 +69,23 @@ Geliştirici bulut API anahtarı yerine abonelikli CLI ajanlarını kullanıyor:
 5. Model adı yapılandırmadan zorunludur (CLI varsayılanına bırakılmaz; rapor hangi modelin
    yanıt verdiğini bilmeli). Claude'da yanıt veren model `modelUsage` anahtarından okunur.
 
+**Güncelleme (Faz 63, 2026-10-09, agy 1.3.1 canlı gözlem):**
+- Kullanıcının **global MCP sunucuları** (`~/.gemini/config/mcp_config.json`) her `agy` çağrısında
+  başlatılır; bağlanamayan biri (Unity kapalıyken `unity-mcp`) turu hiç başlatmaz: `num_turns: 0`,
+  boş yanıt, `--print-timeout` dolar. Sunucu kaldırılınca aynı istek 5-7 sn'de döndü.
+  `agy mcp disable`'ın yazdığı `"disabled": true` başsız modda **yok sayılıyor**. agy'de
+  Claude'daki `--strict-mcp-config` karşılığı yok; bu yüzden kodla çözülemez, kullanıcı mesajı
+  ve README'de yönlendirilir (`AGY_STALL_HINT`).
+- `result` olayında `structured_output` gelir; tercih edilir. agy yanıttan sonra kendiliğinden
+  ikinci tur açıp `response` metnine araç izi ekleyebilir (`{"ok": true}
+{"toolAction": ...}`);
+  metinden **ilk** JSON nesnesi alınır, metin boşsa ilk `agent_response` adımının `text_delta`
+  parçaları birleştirilir. Şema doğrulaması (K5) değişmedi. Fixture:
+  `tests/providers/fixtures/agy_stream_result.ndjson`.
+- `--mode plan`, `--disable-slash-commands` ile birlikte agy'ye göre etkisiz ("has no effect")
+  ve izin modu `request-review` kalır. Bayrak zararsız olduğu için tutuldu; araç kapatma yine
+  yok, risk değerlendirmesi değişmedi.
+
 ## Sonuçlar
 
 - (+) API anahtarı olmadan, aboneliklerle geliştirme ve eval yapılabilir; fallback zincirine
