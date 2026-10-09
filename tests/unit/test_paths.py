@@ -40,3 +40,25 @@ def test_resolve_relative_keeps_absolute(tmp_path: Path) -> None:
     absolute = tmp_path / "x.yaml"
     assert paths.resolve_relative(absolute, Path("/baska")) == absolute
     assert paths.resolve_relative(Path("a/b.yaml"), tmp_path) == tmp_path / "a" / "b.yaml"
+
+
+def test_resolve_config_relative_prefers_toml_dir(tmp_path: Path) -> None:
+    (tmp_path / "data" / "questions").mkdir(parents=True)
+    resolved = paths.resolve_config_relative(Path("data/questions"), tmp_path)
+    assert resolved == tmp_path / "data" / "questions"
+
+
+def test_resolve_config_relative_falls_back_to_resource_root(tmp_path: Path) -> None:
+    """Exe'nin yanına kopyalanan varsayılan toml paket verisini göstermeye devam eder (ADR-0027)."""
+    resolved = paths.resolve_config_relative(Path("data/questions"), tmp_path)
+    assert resolved == REPO / "data" / "questions"
+
+
+def test_resolve_config_relative_missing_everywhere_stays_toml_dir(tmp_path: Path) -> None:
+    resolved = paths.resolve_config_relative(Path("yeni/codementor.db"), tmp_path)
+    assert resolved == tmp_path / "yeni" / "codementor.db"
+
+
+def test_resolve_config_relative_keeps_absolute(tmp_path: Path) -> None:
+    absolute = tmp_path / "yok.yaml"
+    assert paths.resolve_config_relative(absolute, Path("/baska")) == absolute

@@ -20,7 +20,7 @@ from pydantic_settings import (
     TomlConfigSettingsSource,
 )
 
-from codementor.paths import resolve_relative, resource_path
+from codementor.paths import resolve_config_relative, resource_path
 
 _EXE_SUFFIX = ".exe" if sys.platform == "win32" else ""
 CONFIG_FILE_ENV = "CODEMENTOR_CONFIG_FILE"
@@ -318,7 +318,7 @@ def _path_fields(settings_cls: type[BaseSettings]) -> dict[str, list[str]]:
 
 
 class _RelativeTomlSource(TomlConfigSettingsSource):
-    """`codementor.toml`'daki göreli yolları dosyanın dizinine göre çözer (ADR-0016)."""
+    """`codementor.toml`'daki göreli yolları dosyanın dizinine göre çözer (ADR-0016, ADR-0027)."""
 
     def __init__(self, settings_cls: type[BaseSettings], toml_file: Path) -> None:
         super().__init__(settings_cls, toml_file=toml_file)
@@ -331,7 +331,7 @@ class _RelativeTomlSource(TomlConfigSettingsSource):
             if not isinstance(values, dict):
                 continue
             data[section] = {
-                key: resolve_relative(Path(value), self._base)
+                key: resolve_config_relative(Path(value), self._base)
                 if key in names and isinstance(value, str)
                 else value
                 for key, value in values.items()

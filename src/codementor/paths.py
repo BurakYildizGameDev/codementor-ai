@@ -1,4 +1,4 @@
-"""Kaynak kökü ve göreli yol çözümü (ADR-0016).
+"""Kaynak kökü ve göreli yol çözümü (ADR-0016, ADR-0027).
 
 `data/`, `prompts/` ve varsayılan `codementor.toml` kaynak kökündedir:
 - exe (PyInstaller): `sys._MEIPASS`
@@ -6,7 +6,8 @@
 - kaynaktan/düzenlenebilir kurulum: depo kökü
 
 Yapılandırmadaki göreli yollar kaynağına göre çözülür: varsayılan → kaynak kökü,
-`codementor.toml` → dosyanın dizini, ortam değişkeni/CLI bayrağı → çalışma dizini.
+`codementor.toml` → dosyanın dizini (orada yoksa kaynak kökü), ortam değişkeni/CLI bayrağı →
+çalışma dizini.
 """
 
 from __future__ import annotations
@@ -43,3 +44,16 @@ def resource_path(relative: str) -> Path:
 def resolve_relative(path: Path, base: Path) -> Path:
     """Göreli `path`'i `base`'e göre çözer; mutlak yol olduğu gibi kalır."""
     return path if path.is_absolute() else base / path
+
+
+def resolve_config_relative(path: Path, base: Path) -> Path:
+    """`codementor.toml`'daki göreli yolu toml'un dizinine (`base`) göre çözer (ADR-0016).
+
+    O dizinde yoksa ama kaynak kökünde varsa kaynak köküne düşer (ADR-0027): exe'nin yanına
+    kopyalanan varsayılan toml'daki `data/...` yolları paket verisini göstermeye devam eder.
+    """
+    resolved = resolve_relative(path, base)
+    if path.is_absolute() or resolved.exists():
+        return resolved
+    bundled = resource_path(str(path))
+    return bundled if bundled.exists() else resolved

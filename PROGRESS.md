@@ -893,6 +893,17 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
 
+## Düzeltme — exe yanındaki toml soru bankasını ve analizi bozuyordu (ADR-0027, 2026-10-09)
+**Belirti:** Exe'de soru bankası boş, her analiz `CallCostError: Çağrı maliyeti dosyası bulunamadı:
+...\dist\data\call_costs.yaml` ile düşüyor; kullanıcı bunu "agy'ye bağlanılamıyor" diye gördü
+(agy'nin kendisi sağlam: `providers check` "hazır").
+**Kök neden:** "Seçimleri codementor.toml'a yaz" paketteki varsayılan toml'u exe'nin yanına
+kopyalıyor; içindeki göreli `data/...` yolları ADR-0016 gereği exe dizinine çözülüyordu.
+**Yapılan:** `paths.resolve_config_relative`: toml dizininde olmayan göreli yol kaynak kökünde
+varsa oraya düşer; `_RelativeTomlSource` bunu kullanır. Testler: `tests/unit/test_paths.py` (4),
+`tests/unit/test_config.py` (kopyalanmış varsayılan toml ile soru bankası/maliyet/stub bulunur).
+**Not:** `dist/` altındaki exe 2026-10-01 derlemesiydi (18 soru, Faz 60-62 yok); yeniden derlendi.
+
 ## Faz 62 — Notlar (geçmişi ve saklanan kodu silme)
 **Yapılanlar:**
 - `storage/cache.py`: `delete_analysis(db, analysis_id) -> bool` ve `clear_analyses(db) -> int` fonksiyonları eklendi.

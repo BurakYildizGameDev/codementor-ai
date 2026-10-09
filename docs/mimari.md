@@ -1300,7 +1300,9 @@ codementor-ai/
 **Yol çözümü (Faz 23, ADR-0016):** göreli bir yol, değerin geldiği yere göre çözülür. Varsayılan
 değer kaynak köküne (depo kökü, kurulu wheel'de `codementor/_resources`, exe'de `sys._MEIPASS`),
 `codementor.toml`'daki değer toml dosyasının dizinine, ortam değişkeni ya da CLI bayrağı çalışma
-dizinine göredir. Böylece uygulama proje dışından da çalışır.
+dizinine göredir. Böylece uygulama proje dışından da çalışır. toml'daki göreli yol toml'un
+dizininde yoksa ama kaynak kökünde varsa kaynak köküne düşülür (ADR-0027); exe'nin yanına kopyalanan
+varsayılan toml paket verisini göstermeye devam eder.
 
 ```toml
 # codementor.toml
@@ -1495,6 +1497,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0021 | OpenAI ve DeepSeek sağlayıcıları kaldırıldı | Canlı doğrulanamıyordu, bakım yükü; Gemini ve agy deneysel olarak kalır ([docs/adr/0021](adr/0021-openai-deepseek-kaldirildi.md)) |
 | ADR-0022 | Bulgularda hata ve öneri ayrımı | `kind`: `issue` / `suggestion`; öneriler katlı gösterilir, Sokratik sorulara ve eval puanına girmez ([docs/adr/0022](adr/0022-hata-oneri-ayrimi.md)) |
 | ADR-0023 | API güven sınırı | İstek Tier 1'i yalnız kapatır; Host doğrulaması; sağlayıcı izin listesi; girdi, gövde ve eşzamanlılık sınırları ([docs/adr/0023](adr/0023-api-guven-siniri.md)) |
+| ADR-0027 | toml yolu için kaynak kökü yedeği | Exe yanına kopyalanan varsayılan toml'daki `data/...` yolları paket verisine çözülür ([docs/adr/0027](adr/0027-toml-yolu-kaynak-koku-yedegi.md)) |
 
 ---
 

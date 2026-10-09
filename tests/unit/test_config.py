@@ -106,6 +106,25 @@ def test_toml_relative_paths_resolve_against_toml_dir(
     assert settings.data.checklists_dir == REPO / "data" / "checklists"
 
 
+def test_frozen_copied_default_toml_keeps_bundled_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exe'nin yanına kopyalanan varsayılan toml soru bankasını kaybettirmez (ADR-0027)."""
+    from codementor.questions import QuestionBank
+
+    install = tmp_path / "dist"
+    install.mkdir()
+    path = install / "codementor.toml"
+    path.write_text((REPO / "codementor.toml").read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(path))
+    monkeypatch.delenv("CODEMENTOR_DATA__QUESTIONS_DIR", raising=False)
+    settings = load_settings()
+    assert settings.data.questions_dir == REPO / "data" / "questions"
+    assert settings.data.call_costs_file.is_file()
+    assert settings.validation.stub_header.is_file()
+    assert len(QuestionBank.load(settings.data.questions_dir)) > 0
+
+
 def test_env_relative_path_stays_cwd_relative(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
