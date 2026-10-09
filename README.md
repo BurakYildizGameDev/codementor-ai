@@ -306,9 +306,11 @@ Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 
 ### Seçenek 1: Masaüstü uygulaması (Windows)
 
-GitHub Actions'taki her `main` koşusunun `CodeMentor-win64` artefaktından `CodeMentor.exe`'yi
-indir ve çift tıkla. Python, Node.js ya da tarayıcı gerekmez (ADR-0013). Gereken tek şey bir
-LLM sağlayıcısı: varsayılan, oturum açılmış [Claude Code](https://claude.com/claude-code) CLI'ı.
+[Releases](https://github.com/BurakYildizGameDev/codementor-ai/releases/latest) sayfasından
+`CodeMentor-0.1.0-win64.zip`'i indir, aç ve `CodeMentor.exe`'ye çift tıkla (imzasız olduğu için
+Windows SmartScreen uyarı verebilir: "Ek bilgi" → "Yine de çalıştır"). Her `main` koşusunun
+derlediği exe GitHub Actions'ta `CodeMentor-win64` artefaktı olarak da bulunur. Python, Node.js
+ya da tarayıcı gerekmez (ADR-0013). Gereken tek şey bir LLM sağlayıcısı: varsayılan, oturum açılmış [Claude Code](https://claude.com/claude-code) CLI'ı.
 
 ### Seçenek 2: Web arayüzü + API
 

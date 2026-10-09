@@ -952,8 +952,7 @@ Haiku 5.5 1220 ms, agy 17903 ms.
 - **Sonraya:** O5 `desktop/app.py` (~495 satır) ve `pipeline/orchestrator.py` (415) bölünmeli
   (geçmiş silme/açma → `history_controller.py`); L4 `build_exe.pyinstaller_args` yan etkisi
   (git + dosya yazma) ve "dirty" bilgisi; L5 `delete_source`/`load_source` kimlik doğrulaması
-  `isalnum` yerine ULID kalıbı. Kökteki `yapilanlar60-62antigravity.md` `docs/` kopyasıyla aynı;
-  silinmesi kullanıcı kararı.
+  `isalnum` yerine ULID kalıbı. Kökteki `yapilanlar60-62antigravity.md` (`docs/` kopyası) silindi.
 
 ## Düzeltme — exe yanındaki toml soru bankasını ve analizi bozuyordu (ADR-0027, 2026-10-09)
 **Belirti:** Exe'de soru bankası boş, her analiz `CallCostError: Çağrı maliyeti dosyası bulunamadı:
