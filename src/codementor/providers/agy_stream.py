@@ -61,19 +61,44 @@ def _events(stdout: str) -> list[dict[str, Any]]:
     return events
 
 
+def _top_level_braces(text: str) -> list[int]:
+    """Dış düzeydeki `{` konumları (dize içindeki ayraçlar sayılmaz)."""
+    starts: list[int] = []
+    depth = 0
+    in_string = escaped = False
+    for i, ch in enumerate(text):
+        if depth and in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+        elif depth and ch == '"':
+            in_string = True
+        elif ch == "{":
+            if depth == 0:
+                starts.append(i)
+            depth += 1
+        elif ch == "}" and depth:
+            depth -= 1
+    return starts
+
+
 def first_json_object(text: str) -> dict[str, Any] | None:
-    """Metindeki ilk JSON nesnesi (çit, önündeki metin ve arkadaki araç izi yok sayılır)."""
+    """Metindeki ilk dış düzey JSON nesnesi (çit, önündeki metin ve arkadaki araç izi atlanır).
+
+    Çözülemeyen (ör. yarım kalan) bir nesnenin **içine** girilmez: iç içe bir parça yanıt
+    sayılmasın (denetim O1).
+    """
     decoder = json.JSONDecoder()
-    index = text.find("{")
-    while index != -1:
+    for index in _top_level_braces(text):
         try:
             value, _end = decoder.raw_decode(text, index)
         except (ValueError, RecursionError):
-            index = text.find("{", index + 1)
             continue
         if isinstance(value, dict):
             return value
-        index = text.find("{", index + 1)
     return None
 
 

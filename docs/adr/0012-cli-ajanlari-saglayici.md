@@ -77,9 +77,10 @@ Geliştirici bulut API anahtarı yerine abonelikli CLI ajanlarını kullanıyor:
   Claude'daki `--strict-mcp-config` karşılığı yok; bu yüzden kodla çözülemez, kullanıcı mesajı
   ve README'de yönlendirilir (`AGY_STALL_HINT`).
 - `result` olayında `structured_output` gelir; tercih edilir. agy yanıttan sonra kendiliğinden
-  ikinci tur açıp `response` metnine araç izi ekleyebilir (`{"ok": true}
-{"toolAction": ...}`);
-  metinden **ilk** JSON nesnesi alınır, metin boşsa ilk `agent_response` adımının `text_delta`
+  ikinci tur açıp `response` metnine araç izi ekleyebilir (`{"ok": true}` ardından
+  `{"toolAction": ...}`);
+  metinden **ilk dış düzey** JSON nesnesi alınır (yarım kalan nesnenin içine girilmez; süre
+  dolduysa akış parçaları yanıt sayılmaz, denetim O1), metin boşsa ilk `agent_response` adımının `text_delta`
   parçaları birleştirilir. Şema doğrulaması (K5) değişmedi. Fixture:
   `tests/providers/fixtures/agy_stream_result.ndjson`.
 - `--mode plan`, `--disable-slash-commands` ile birlikte agy'ye göre etkisiz ("has no effect")

@@ -22,6 +22,11 @@ yol kaynak kökünde (`paths.resource_root()`) varsa kaynak kökü kullanılır.
 toml dizini kalır (ör. henüz oluşturulmamış veritabanı dosyası). Mutlak yollar değişmez.
 Uygulama: `codementor.paths.resolve_config_relative`, `_RelativeTomlSource`.
 
+**Yazılabilir yollar hariç (denetim O3):** uygulamanın yazdığı `storage.db_path` ve
+`validation.toolchain_dir` her zaman toml dizinine çözülür (`config.WRITABLE_PATHS`). Aksi halde
+paketteki aynı adlı bir dizine (ör. `tools/`) düşüp exe'nin her kapanışta silinen geçici
+dizinine indirme yapılabilirdi.
+
 ## Sonuçlar
 
 - Daha önce kopyalanıp bozulmuş toml'lar da kendiliğinden düzelir; kullanıcının dosya silmesi

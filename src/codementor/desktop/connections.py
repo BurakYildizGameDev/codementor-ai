@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Literal, Protocol
 
 import yaml
+from pydantic import ValidationError
 
 from codementor.config import ProvidersSettings, Settings
 from codementor.log import register_secret
@@ -317,6 +318,15 @@ def _probe_cli(
     return Probe(status.model_copy(update={"ready": allowed, "detail": detail}), models)
 
 
+def _is_ping(parsed: dict[str, Any]) -> bool:
+    """Yanıt gerçekten istenen `{"ok": ...}` nesnesi mi (ilgisiz JSON sayılmaz, denetim L1)."""
+    try:
+        ConnectionPing.model_validate(parsed)
+    except ValidationError:
+        return False
+    return True
+
+
 async def try_connection(name: str, settings: Settings) -> str:
     """Küçük gerçek bir istek gönderir; başarı ya da Türkçe hata metni döner.
 
@@ -334,7 +344,7 @@ async def try_connection(name: str, settings: Settings) -> str:
         )
     except ProviderError as exc:
         return f"Başarısız: {str(exc).removeprefix(f'{name}: ')}"
-    if result.parsed is None:
+    if result.parsed is None or not _is_ping(result.parsed):
         reason = result.finish_reason or "bilinmiyor"
         return (
             f"Başarısız: {result.model} yanıt verdi ama beklenen JSON değildi "

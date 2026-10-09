@@ -1021,3 +1021,88 @@ def test_slow_llm_hint_threshold_from_settings(app: App) -> None:
     )
     app.apply_settings()
     assert app.tracker.slow_hint_s is None
+
+
+def test_clear_history_while_analysis_running_is_blocked(app: App, prefs_dir: Path) -> None:
+    """Denetim O2: analiz sürerken temizleme reddedilir; aksi halde biten analiz oturumu ve
+    kaydı yeniden yazar, merdiven sıfırlanmamış olurdu."""
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    analyze(app)
+    report = app.analyze_view.report
+    assert report is not None
+    asked: list[str] = []
+
+    def accept(title: str, message: str, **_kwargs: Any) -> bool:
+        asked.append(message)
+        return True
+
+    app.confirm = accept
+    app.analyze_view.set_busy(True)
+    app.clear_history()
+    assert asked == []  # onay bile sorulmaz
+    assert cache.get_analysis(app.core.database(), report.analysis_id) is not None
+    assert "Durdur" in _toast(app)
+    app.analyze_view.set_busy(False)
+
+
+def test_clear_history_resets_last_attempt_state(app: App) -> None:
+    """Denetim O2: temizlikten sonra aynı kod yeni deneme sayılır ("sayıldı" durumu kalmaz)."""
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    analyze(app)
+    assert app._last_counted is not None
+    app.confirm = lambda *_a, **_k: True
+    app.clear_history()
+    assert app._last_counted is None
+    assert app._last_code == ""
+    assert app._last_question_id is None
+
+
+def test_degraded_report_is_not_counted_by_desktop(
+    app: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Denetim O4 (Faz 61): `_on_message` bozulmuş raporu "sayılmadı" sayar; aynı kodla
+    tekrar Denetle merdiveni ilerletmeyi engellemez (advance_hint=None)."""
+    import codementor.desktop.app as app_module
+
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    broken = FakeProvider(script=[FakeReply(error="500")], retry=RetryPolicy(max_retries=0))
+    monkeypatch.setattr(app.core, "provider_factory", lambda _name: broken)
+    analyze(app)
+    report = app.analyze_view.report
+    assert report is not None
+    assert report.meta.degraded is True
+    assert app._last_counted is False
+
+    captured: list[AnalysisRequest] = []
+
+    def fake_work(core: object, req: AnalysisRequest, cancel: object) -> object:
+        captured.append(req)
+        return lambda _emit: None
+
+    monkeypatch.setattr(app_module, "analysis_work", fake_work)
+    monkeypatch.setattr(app.bridge, "submit", lambda *_a, **_k: None)
+    app.analyze()
+    assert captured[-1].options.advance_hint is None
+
+
+def test_history_delete_click_does_not_open_row(app: App) -> None:
+    """Denetim O4 (Faz 62): "Sil"e tıklamak analizi açmaz; satırın kendisine tıklamak açar."""
+    opened: list[str] = []
+    deleted: list[str] = []
+    app.history_view._on_open = opened.append
+    app.history_view._on_delete = deleted.append
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    analyze(app)
+    app.navigate("history")
+    app.update()
+    item = next(w for w in app.history_view.list.winfo_children() if isinstance(w, ctk.CTkFrame))
+    del_btn = next(
+        c for c in item.winfo_children() if isinstance(c, ctk.CTkButton) and c.cget("text") == "Sil"
+    )
+    for target in (del_btn, *del_btn.winfo_children()):
+        target.event_generate("<Button-1>", x=2, y=2)
+    app.update()
+    assert opened == []
+    item._canvas.event_generate("<Button-1>", x=2, y=2)
+    app.update()
+    assert len(opened) == 1  # karşılaştırma: satır bağı gerçekten çalışıyor

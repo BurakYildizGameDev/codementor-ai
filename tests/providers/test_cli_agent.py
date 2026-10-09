@@ -299,6 +299,26 @@ async def test_agy_empty_response_recovered_from_text_deltas() -> None:
     assert result.parsed == ANSWER
 
 
+async def test_agy_print_timeout_with_partial_deltas_is_timeout() -> None:
+    """Denetim O1: süre dolunca yarım akış parçaları yanıt sayılmaz (onarım değil zaman aşımı)."""
+    partial = {"step_index": 1, "step_type": "agent_response", "text_delta": '{"a": [{"b": 1}'}
+    steps = json.dumps({"event": "step_update", "step_update": partial}) + "\n"
+    stderr = "[agy] print timeout after 4m50s with turn in progress; returning partial output"
+    stdout = steps + agy_json(response="", num_turns=1)
+    result = ProcessResult(returncode=0, stdout=stdout, stderr=stderr)
+    with pytest.raises(CliTimeoutError):
+        await _run(_provider("agy", FakeRunner([result])))
+
+
+async def test_agy_slow_model_timeout_does_not_blame_mcp() -> None:
+    """Denetim L2: tur başlamışsa (model yalnız yavaş) MCP yönlendirmesi gösterilmez."""
+    stderr = "[agy] print timeout after 4m50s with turn in progress; returning partial output"
+    result = ProcessResult(returncode=0, stdout=agy_json(response="", num_turns=1), stderr=stderr)
+    with pytest.raises(CliTimeoutError) as info:
+        await _run(_provider("agy", FakeRunner([result])))
+    assert "agy mcp list" not in str(info.value)
+
+
 async def test_agy_non_result_last_event_rejected() -> None:
     stdout = json.dumps({"event": "init", "conversation_id": "c", "status": "SUCCESS"})
     with pytest.raises(ProviderRequestError, match="JSON çıktı alınamadı"):

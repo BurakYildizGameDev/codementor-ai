@@ -409,6 +409,9 @@ class App(ctk.CTk):  # type: ignore[misc]
 
     def clear_history(self) -> None:
         """Tüm analiz geçmişini, saklanan kodları ve oturumları temizler (Faz 62)."""
+        if self.analyze_view.busy:  # biten analiz oturumu ve kaydı yeniden yazardı (denetim O2)
+            self.toast("Analiz sürerken geçmiş temizlenemez; önce Durdur'a bas.")
+            return
         if not self.confirm(
             "Geçmişi Temizle",
             "Tüm analiz geçmişi, saklanan kodlar ve ipucu ilerlemen silinecek. Emin misin?",
@@ -419,6 +422,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         clear_sessions(self.core.database())
         runtime.clear_sources(self.prefs_dir)
         self._shown_analysis_id = None
+        self._last_code, self._last_question_id, self._last_counted = "", None, None
         self.analyze_view.report = None
         self.analyze_view.reset_results()
         self.history_view.refresh()

@@ -125,6 +125,25 @@ def test_frozen_copied_default_toml_keeps_bundled_data(
     assert len(QuestionBank.load(settings.data.questions_dir)) > 0
 
 
+def test_config_writable_paths_never_fall_back_to_resource_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Denetim O3: indirme ve veritabanı yolları paketteki (salt okunur) köke çözülmez."""
+    config_dir = tmp_path / "dist"
+    config_dir.mkdir()
+    path = config_dir / "codementor.toml"
+    # depo kökünde `tools/` ve `data/` var: yedek uygulansaydı oraya çözülürlerdi
+    path.write_text(
+        '[validation]\ntoolchain_dir = "tools"\n\n[storage]\ndb_path = "data/questions"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(path))
+    monkeypatch.delenv("CODEMENTOR_STORAGE__DB_PATH", raising=False)
+    settings = load_settings()
+    assert settings.validation.toolchain_dir == config_dir / "tools"
+    assert settings.storage.db_path == config_dir / "data" / "questions"
+
+
 def test_env_relative_path_stays_cwd_relative(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

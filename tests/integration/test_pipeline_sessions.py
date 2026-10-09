@@ -225,6 +225,35 @@ async def test_advance_hint_false_preserves_attempt_and_hint_level(
     assert sessions.next_attempt(db, "oturum-no-adv", QUESTION) == 1
 
 
+async def test_advance_hint_false_with_existing_session_keeps_level_and_counter(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """Denetim O4 (Faz 61, K3): 2 sayılan denemeden sonra aynı kodla gönderim seviyeyi ve sayacı
+    değiştirmez (orchestrator'daki `next_attempt - 1` yolu)."""
+    orch = Orchestrator(settings, db, provider_factory=lambda _n: _fresh(fake, 0))
+    await orch.analyze(_request(cache=False))
+    second = await Orchestrator(settings, db, provider_factory=lambda _n: _fresh(fake, 0)).analyze(
+        _request(cache=False)
+    )
+    assert second.socratic is not None
+    level = second.socratic.hint_level
+    assert sessions.next_attempt(db, "oturum-1", QUESTION) == 3
+    same = AnalysisRequest(
+        code=LINKED_LIST,
+        language=Language.C,
+        question_id=QUESTION,
+        session_id="oturum-1",
+        options=AnalysisOptions(use_cache=False, advance_hint=False),
+    )
+    for _ in range(2):
+        rep = await Orchestrator(settings, db, provider_factory=lambda _n: _fresh(fake, 0)).analyze(
+            same
+        )
+        assert rep.socratic is not None
+        assert rep.socratic.hint_level == level
+        assert sessions.next_attempt(db, "oturum-1", QUESTION) == 3
+
+
 async def test_advance_hint_false_cancellation_does_not_corrupt_counter(
     settings: Settings, db: Database, fake: FakeFactory, monkeypatch: pytest.MonkeyPatch
 ) -> None:

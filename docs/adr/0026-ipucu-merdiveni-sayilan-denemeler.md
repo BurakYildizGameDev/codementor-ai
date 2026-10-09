@@ -42,6 +42,11 @@ altyapı hataları veya yazım hataları öğrencinin ipucu hakkını harcamamal
 
 ## Sonuçlar
 
+- **Bilinen sınır (denetim L8, Faz 49 tasarımı):** aynı oturum ve soruda eşzamanlı iki gönderimde
+  A deneme 3'ü, B deneme 4'ü ayırır; A bozulmuş dönerse `release_attempt(3)` sayaç artık 4
+  olduğu için bir şey yapmaz ve sayılmaması gereken bir deneme harcanır. Masaüstü aynı anda tek
+  analiz çalıştırdığından pratikte yalnız API'de görülür.
+
 - Sağlayıcı kesintileri, API kotaları veya sözdizimi hataları öğrencinin ipucu merdivenini
   tüketmez.
 - Geçmiş ve hata ayıklama kayıtları bozulmaz: analiz raporu her durumda veritabanına işlenir;

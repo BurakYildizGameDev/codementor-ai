@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -65,7 +67,10 @@ def test_build_info_reads_valid_exe_file(monkeypatch: pytest.MonkeyPatch, tmp_pa
     ],
 )
 def test_build_info_corrupt_file_falls_back_without_crashing(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, corrupt_content: str
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    corrupt_content: str,
+    captured_logs: Callable[[], list[dict[str, Any]]],
 ) -> None:
     """Olumsuz test: Bozuk dosya veya şema hatasında çökmez, kaynak bilgisi döner."""
     target = tmp_path / "data" / "build_info.json"
@@ -78,6 +83,10 @@ def test_build_info_corrupt_file_falls_back_without_crashing(
     assert info.commit is None
     assert info.built_at is None
     assert info.source == "kaynak"
+    # denetim O4/L3: uyarı loglanır ve hata türünü taşır
+    events = [e for e in captured_logs() if e.get("event") == "build_info_unreadable"]
+    assert len(events) == 1
+    assert events[0]["error"] in {"JSONDecodeError", "ValidationError"}
 
 
 def test_describe_source_and_exe() -> None:

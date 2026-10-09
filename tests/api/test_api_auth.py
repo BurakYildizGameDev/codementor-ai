@@ -6,6 +6,7 @@ import pytest
 
 from codementor.config import Settings
 from tests.api.conftest import ClientFactory
+from tests.integration.conftest import LINKED_LIST, FakeFactory, analysis_reply, socratic_reply
 
 pytestmark = pytest.mark.anyio
 
@@ -76,3 +77,23 @@ async def test_cors_preflight_allows_key_header(
     )
     assert response.status_code == 200
     assert "x-api-key" in response.headers["access-control-allow-headers"].lower()
+
+
+async def test_delete_without_key_rejected_and_record_kept(
+    client_for: ClientFactory,
+    settings: Settings,
+    fake: FakeFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Denetim O4 (Faz 62): anahtar tanımlıyken anahtarsız DELETE 401 döner ve kayıt silinmez."""
+    monkeypatch.setenv(KEY_ENV, KEY)
+    client = client_for(fake(analysis_reply(), socratic_reply()), cfg=_with_key(settings))
+    auth = {"X-API-Key": KEY}
+    body = {"code": LINKED_LIST, "question_id": "c-medium-linked-list"}
+    analysis_id = (await client.post("/v1/analyze", json=body, headers=auth)).json()["analysis_id"]
+    for headers in ({}, {"X-API-Key": "yanlis"}):
+        response = await client.delete(f"/v1/analyses/{analysis_id}", headers=headers)
+        assert response.status_code == 401
+    assert (await client.get(f"/v1/analyses/{analysis_id}", headers=auth)).status_code == 200
+    deleted = await client.delete(f"/v1/analyses/{analysis_id}", headers=auth)
+    assert deleted.status_code == 204

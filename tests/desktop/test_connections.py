@@ -405,3 +405,13 @@ def test_login_env_strips_api_keys(settings: Settings, monkeypatch: pytest.Monke
         assert name not in env
     assert env["PATH_DISINDA_KALAN"] == "kalir"
     assert "PATH" in env or "Path" in env
+
+
+@pytest.mark.anyio
+async def test_try_connection_unrelated_json_is_failure(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Denetim L1: yanıtta ilgisiz bir JSON nesnesi varsa bağlantı "çalışıyor" sayılmaz."""
+    other = FakeProvider(script=[FakeReply(data={"baska": 1})], retry=RetryPolicy(max_retries=0))
+    monkeypatch.setattr(connections, "build_provider", lambda *_a, **_k: other)
+    assert (await try_connection("agy", settings)).startswith("Başarısız")

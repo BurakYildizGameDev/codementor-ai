@@ -20,7 +20,7 @@ from pydantic_settings import (
     TomlConfigSettingsSource,
 )
 
-from codementor.paths import resolve_config_relative, resource_path
+from codementor.paths import resolve_config_relative, resolve_relative, resource_path
 
 _EXE_SUFFIX = ".exe" if sys.platform == "win32" else ""
 CONFIG_FILE_ENV = "CODEMENTOR_CONFIG_FILE"
@@ -320,6 +320,19 @@ def _path_fields(settings_cls: type[BaseSettings]) -> dict[str, list[str]]:
     return found
 
 
+# Uygulamanın yazdığı yollar: paketteki (exe'de geçici, salt okunur) köke asla düşmez (denetim O3)
+WRITABLE_PATHS: frozenset[tuple[str, str]] = frozenset(
+    {("storage", "db_path"), ("validation", "toolchain_dir")}
+)
+
+
+def _resolve_toml_path(section: str, key: str, value: str, base: Path) -> Path:
+    """toml'daki göreli yol: yazılabilirse toml dizinine, salt okunur kaynaksa ADR-0027'ye göre."""
+    if (section, key) in WRITABLE_PATHS:
+        return resolve_relative(Path(value), base)
+    return resolve_config_relative(Path(value), base)
+
+
 class _RelativeTomlSource(TomlConfigSettingsSource):
     """`codementor.toml`'daki göreli yolları dosyanın dizinine göre çözer (ADR-0016, ADR-0027)."""
 
@@ -334,7 +347,7 @@ class _RelativeTomlSource(TomlConfigSettingsSource):
             if not isinstance(values, dict):
                 continue
             data[section] = {
-                key: resolve_config_relative(Path(value), self._base)
+                key: _resolve_toml_path(section, key, value, self._base)
                 if key in names and isinstance(value, str)
                 else value
                 for key, value in values.items()

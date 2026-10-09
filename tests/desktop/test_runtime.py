@@ -183,3 +183,29 @@ def test_clear_sources(tmp_path: Path) -> None:
     assert count == 2
     assert len(list(sources_dir.glob("*.txt"))) == 0
     assert runtime.clear_sources(tmp_path) == 0
+
+
+def test_delete_source_traversal_leaves_outside_file(tmp_path: Path) -> None:
+    """Denetim O4: kaynak dizininin dışındaki gerçek bir dosya silinmez."""
+    user = tmp_path / "user"
+    (user / runtime.SOURCES_DIR).mkdir(parents=True)
+    outside = user / "outside.txt"
+    outside.write_text("kullanıcı verisi", encoding="utf-8")
+    assert runtime.delete_source("../outside", user) is False
+    assert runtime.delete_source(r"..\outside", user) is False
+    assert outside.read_text(encoding="utf-8") == "kullanıcı verisi"
+
+
+def test_clear_sources_keeps_other_files(tmp_path: Path) -> None:
+    """Denetim O4: yalnız kaynak dizinindeki .txt'ler silinir; başka dosyalar ve dışarısı kalır."""
+    runtime.save_source("A1", "kod", tmp_path)
+    sources_dir = tmp_path / runtime.SOURCES_DIR
+    (sources_dir / "notlar.md").write_text("x", encoding="utf-8")
+    (sources_dir / "alt").mkdir()
+    (sources_dir / "alt" / "B.txt").write_text("x", encoding="utf-8")
+    outside = tmp_path / "C.txt"
+    outside.write_text("x", encoding="utf-8")
+    assert runtime.clear_sources(tmp_path) == 1
+    assert (sources_dir / "notlar.md").exists()
+    assert (sources_dir / "alt" / "B.txt").exists()
+    assert outside.exists()

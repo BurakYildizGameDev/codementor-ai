@@ -930,6 +930,31 @@ Haiku 5.5 1220 ms, agy 17903 ms.
 - Unity projelerine `.agents/mcp_config.json` (proje bazlı MCP) kullanıcı kuracak; agy CLI'ın
   bunu okuduğu canlı doğrulanmadı.
 
+**Denetim (kod-denetci, 2026-10-10; Faz 60-63 + ADR-0027) ve düzeltmeler:** karar
+"düzeltmeyle birleştirilebilir"; Yüksek bulgu yok.
+- O1 (Faz 63): agy süresi dolunca yarım `text_delta` yanıt sayılıyor, `first_json_object` yarım
+  dış nesnenin içindeki nesneyi döndürüyordu (zaman aşımı yerine ~5 dk'lık onarım çağrısı) →
+  yalnız dış düzey `{`, süre dolduysa kurtarma yok. Testler:
+  `test_first_json_object_does_not_return_nested_of_truncated`,
+  `test_agy_print_timeout_with_partial_deltas_is_timeout`.
+- O2 (Faz 62): analiz sürerken "Tümünü temizle" biten analizin oturumu yeniden yazmasıyla
+  merdiveni sıfırlamıyordu → meşgulken reddedilir; `_last_*` durumu sıfırlanır.
+- O3 (ADR-0027): kaynak kökü yedeği yazılabilir yollara da uygulanıyordu → `db_path`,
+  `toolchain_dir` her zaman toml dizinine (`config.WRITABLE_PATHS`); ADR-0027'ye eklendi.
+- O4 (Faz 60-62 devir belgesindeki eksik/zayıf olumsuz testler): anahtarsız DELETE 401 ve kayıt
+  korunur, silinen analiz önbellekten dönmez, tek silme oturuma dokunmaz, temizlik sonrası yeni
+  kayıt, `clear_sources` başka dosyaları korur, traversal'da dıştaki gerçek dosya kalır, "Sil"
+  tıklaması satırı açmaz (bozuk kodda kırmızı olduğu doğrulandı), var olan oturumda
+  `advance_hint=False`, masaüstünde bozulmuş rapor "sayılmadı", bozuk `build_info` uyarısı.
+- L1 "Bağlantıyı dene" ilgisiz JSON'u kabul ediyordu → `ConnectionPing` doğrulaması. L2 MCP
+  yönlendirmesi yalnız `num_turns == 0`. L3 log'a hata türü. L6/L8 ADR-0023/0026 notları.
+  L7 ADR-0012 biçimi, ADR-0026 mimari tablosunda.
+- **Sonraya:** O5 `desktop/app.py` (~495 satır) ve `pipeline/orchestrator.py` (415) bölünmeli
+  (geçmiş silme/açma → `history_controller.py`); L4 `build_exe.pyinstaller_args` yan etkisi
+  (git + dosya yazma) ve "dirty" bilgisi; L5 `delete_source`/`load_source` kimlik doğrulaması
+  `isalnum` yerine ULID kalıbı. Kökteki `yapilanlar60-62antigravity.md` `docs/` kopyasıyla aynı;
+  silinmesi kullanıcı kararı.
+
 ## Düzeltme — exe yanındaki toml soru bankasını ve analizi bozuyordu (ADR-0027, 2026-10-09)
 **Belirti:** Exe'de soru bankası boş, her analiz `CallCostError: Çağrı maliyeti dosyası bulunamadı:
 ...\dist\data\call_costs.yaml` ile düşüyor; kullanıcı bunu "agy'ye bağlanılamıyor" diye gördü

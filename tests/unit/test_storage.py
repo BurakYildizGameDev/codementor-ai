@@ -294,3 +294,35 @@ def test_clear_sessions_removes_all_sessions(db: Database) -> None:
         rows = session.exec(select(SessionRow)).all()
         assert len(rows) == 0
     assert sessions.clear_sessions(db) == 0
+
+
+def test_deleted_analysis_not_served_from_cache(db: Database) -> None:
+    """Denetim O4: silinen analiz aynı önbellek anahtarıyla geri dönmez."""
+    report = _report()
+    cache.save_analysis(db, report, key="k", session_id=None, latency_ms=5)
+    assert cache.find_cached(db, "k") is not None
+    assert cache.delete_analysis(db, report.analysis_id) is True
+    assert cache.find_cached(db, "k") is None
+
+
+def test_single_delete_keeps_sessions(db: Database) -> None:
+    """Denetim O4: tek analiz silmek ipucu merdivenine (sessions) dokunmaz."""
+    sessions.reserve_attempt(db, "s1", "q1")
+    report = _report()
+    cache.save_analysis(db, report, key="k", session_id="s1", latency_ms=5)
+    cache.delete_analysis(db, report.analysis_id)
+    with db.session() as session:
+        row = session.get(SessionRow, ("s1", "q1"))
+    assert row is not None
+    assert row.attempt_count == 1
+
+
+def test_new_analysis_saved_after_clear(db: Database) -> None:
+    """Denetim O4: temizledikten sonra yeni analiz normal kaydedilir ve önbellekten döner."""
+    cache.save_analysis(db, _report(), key="eski", session_id=None, latency_ms=5)
+    cache.clear_analyses(db)
+    fresh = _report().model_copy(update={"analysis_id": new_ulid()})
+    cache.save_analysis(db, fresh, key="yeni", session_id=None, latency_ms=5)
+    assert cache.get_analysis(db, fresh.analysis_id) == fresh
+    assert cache.find_cached(db, "yeni") == fresh
+    assert len(cache.list_analyses(db)) == 1

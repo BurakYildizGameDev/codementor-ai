@@ -55,3 +55,14 @@ def test_text_deltas_of_first_agent_response_joined_in_order() -> None:
 def test_first_response_text_without_deltas_is_empty() -> None:
     result = json.dumps({"event": "result", "result": {"status": "SUCCESS", "response": ""}})
     assert first_response_text("[agy] bilgi\n" + result) == ""
+
+
+def test_first_json_object_does_not_return_nested_of_truncated() -> None:
+    """Denetim O1: yarım kalan dış nesnenin içindeki nesne "yanıt" sayılmaz."""
+    assert first_json_object('{"a": [{"b": 1}, {"c"') is None
+    assert first_json_object('{"findings": [{"id": "F1", "message": "x"}, {"id"') is None
+
+
+def test_first_json_object_skips_invalid_top_level_then_finds_next() -> None:
+    assert first_json_object('Not: {bozuk} sonra {"a": 1}') == {"a": 1}
+    assert first_json_object('{"s": "} { içinde"} ') == {"s": "} { içinde"}

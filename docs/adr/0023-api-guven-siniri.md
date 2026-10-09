@@ -47,6 +47,11 @@ aşabildiğini gösterdi:
 
 ## Sonuçlar
 
+- **Faz 62 notu (denetim L6):** `DELETE /v1/analyses/{id}` yıkıcı bir uçtur. API anahtarı
+  tanımlıysa korunur (`tests/api/test_api_auth.py::test_delete_without_key_rejected_and_record_kept`);
+  tanımlı değilse yerel makinedeki her istemci kayıt silebilir. Paylaşılan sunucuda anahtar
+  zorunlu tutulmalı.
+
 - Tarayıcıdaki bir sayfa ya da ağdaki bir istemci Tier 1'i açamaz, abonelik sağlayıcısı
   seçemez, devasa gövdeyle belleği dolduramaz.
 - Dışa açık sunucuda (`--host 0.0.0.0`) `api.allowed_hosts` doldurulmadıkça uzak istekler

@@ -29,8 +29,8 @@ def build_info() -> BuildInfo:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         return BuildInfo.model_validate(data)
-    except Exception:
-        log.warning("build_info_unreadable")
+    except Exception as exc:  # bozuk JSON ya da şema dışı alan: exe yine açılmalı
+        log.warning("build_info_unreadable", error=type(exc).__name__)
         return BuildInfo(
             version=__version__,
             commit=None,

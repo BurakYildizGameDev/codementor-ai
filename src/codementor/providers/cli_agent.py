@@ -298,19 +298,22 @@ class CliAgentProvider:
         if status and status != "SUCCESS":
             detail = short_error(as_text(data.get("error")) or status)
             raise ProviderRequestError(self.name, f"agy hatası: {detail}")
+        # Tur hiç başlamadıysa (0 tur) en olası neden bağlanamayan global MCP sunucusu (Faz 63)
+        hint = f"; {AGY_STALL_HINT}" if as_int(data.get("num_turns")) == 0 else ""
         structured = data.get("structured_output")
+        timed_out = "print timeout" in stderr
         if isinstance(structured, dict):  # agy 1.3+: şemaya göre hazır nesne (Faz 63)
             text = json.dumps(structured, ensure_ascii=False)
-        elif not text.strip():
-            text = first_response_text(stdout)  # son metin boşsa akış parçalarından
-        if not text.strip() and "print timeout" in stderr:
+        elif not text.strip() and not timed_out:
+            # son metin boşsa akış parçalarından; süre dolduysa parçalar yarımdır (denetim O1)
+            text = first_response_text(stdout)
+        if not text.strip() and timed_out:
             # agy --print-timeout doldu: tur başladı ama model süre içinde yanıt vermedi
-            raise CliTimeoutError(self.name, f"agy süre içinde yanıt vermedi; {AGY_STALL_HINT}")
+            raise CliTimeoutError(self.name, f"agy süre içinde yanıt vermedi{hint}")
         if not text.strip():
             raise ProviderUnavailableError(
                 self.name,
-                "yanıt boş; `agy` oturumu açık mı? (etkileşimli `agy` ile giriş yapın) "
-                f"Oturum açıksa: {AGY_STALL_HINT}",
+                "yanıt boş; `agy` oturumu açık mı? (etkileşimli `agy` ile giriş yapın)" + hint,
             )
         usage = _mapping(data.get("usage"))
         return ProviderResult(
