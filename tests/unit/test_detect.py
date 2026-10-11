@@ -189,3 +189,8 @@ def test_engine_none_hint_still_detects_language() -> None:
 def test_inconsistent_hint_rejected(language: Language, engine: Engine) -> None:
     with pytest.raises(ValueError, match="motoru"):
         LanguageHint(language=language, engine=engine)
+
+
+def test_detection_error_lists_every_supported_language() -> None:
+    message = str(LanguageDetectionError("deneme"))
+    assert all(lang.value in message for lang in Language)

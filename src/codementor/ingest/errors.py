@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
+from codementor.models.enums import Language
+
 SizeUnit = Literal["satır", "bayt", "karakter"]
 
 
@@ -48,5 +50,6 @@ class LanguageDetectionError(IngestError):
     def __init__(self, reason: str) -> None:
         super().__init__(
             f"Kodun dili belirlenemedi ({reason}). "
-            "Lütfen dili (c, cpp, csharp) ve varsa motoru (unity, unreal) belirtin."
+            f"Lütfen dili ({', '.join(lang.value for lang in Language)}) ve varsa motoru "
+            "(unity, unreal) belirtin."
         )

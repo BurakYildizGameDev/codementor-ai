@@ -23,6 +23,7 @@ from rich.markup import escape
 from codementor.config import Settings, load_settings
 from codementor.ingest.errors import InvalidEncodingError
 from codementor.ingest.normalize import decode_source
+from codementor.languages import language_for_file
 from codementor.models.enums import Engine, Language, PipelineMode, Severity
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisOptions, AnalysisRequest
@@ -55,6 +56,14 @@ def exit_code(report: AnalysisReport) -> int:
     if any(f.severity is Severity.HIGH for f in report.findings):
         return EXIT_HIGH_FINDINGS
     return EXIT_OK
+
+
+def language_from_path(path: Path) -> Language | None:
+    """`--language` verilmezse uzantıdan dil; `.h` C ile C++ arasında belirsiz olduğundan
+    içerik tespitine bırakılır (bilinmeyen uzantı da)."""
+    if path.suffix.lower() == ".h":
+        return None
+    return language_for_file(path)
 
 
 def render(report: AnalysisReport, fmt: OutputFormat, artifact: str) -> str:
@@ -137,7 +146,7 @@ def analyze(
     try:
         request = AnalysisRequest(
             code=source,
-            language=language,
+            language=language or language_from_path(path),
             engine=engine,
             question_id=question,
             session_id=session,

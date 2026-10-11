@@ -53,7 +53,13 @@ common_identifiers_file = "{(REPO / "data" / "leak_common_identifiers.yaml").as_
     monkeypatch.delenv("CODEMENTOR_DB_PATH", raising=False)
     calls: list[FakeProvider] = []
 
-    def invoke(code: str, *args: str, replies: list[dict[str, Any]] | None = None) -> Any:
+    def invoke(
+        code: str,
+        *args: str,
+        replies: list[dict[str, Any]] | None = None,
+        filename: str = "kod.c",
+        language: str | None = "c",
+    ) -> Any:
         provider = FakeProvider(
             script=[FakeReply(data=r) for r in replies or []], retry=RetryPolicy(max_retries=0)
         )
@@ -64,9 +70,10 @@ common_identifiers_file = "{(REPO / "data" / "leak_common_identifiers.yaml").as_
                 super().__init__(settings, db, provider_factory=lambda _n: provider)
 
         monkeypatch.setattr(analyze_module, "Orchestrator", FakeOrchestrator)
-        source = tmp_path / "kod.c"
+        source = tmp_path / filename
         source.write_text(code, encoding="utf-8")
-        return CliRunner().invoke(app, ["analyze", str(source), "--language", "c", *args])
+        hint = ["--language", language] if language else []
+        return CliRunner().invoke(app, ["analyze", str(source), *hint, *args])
 
     invoke.calls = calls  # type: ignore[attr-defined]
     return invoke
@@ -175,3 +182,31 @@ def test_cli_cp1254_file_fails_with_turkish_message(tmp_path: Path) -> None:
     assert result.exit_code == 3
     assert "UTF-8 değil" in result.output
     assert "\ufffd" not in result.output
+
+
+def test_language_from_extension_when_flag_missing(run: Any) -> None:
+    """İçerikten belirlenemeyen kısa kod `.c` uzantısıyla C sayılır (çıkış 3 değil)."""
+    result = run(BROKEN_C, "--format", "json", language=None)
+    assert result.exit_code == 2, result.output
+    assert json.loads(result.stdout)["language"] == "c"
+
+
+def test_explicit_language_overrides_extension(run: Any) -> None:
+    result = run(BROKEN_C, "--format", "json", filename="kod.py", language="c")
+    assert result.exit_code == 2, result.output
+    assert json.loads(result.stdout)["language"] == "c"
+
+
+def test_header_extension_left_to_content_detection(run: Any) -> None:
+    """`.h` C/C++ arasında belirsiz: C'ye zorlanmaz, içerik C++ ise cpp."""
+    code = "#include <vector>\nint main() {\n    std::vector<int> v\n    return 0;\n}\n"
+    result = run(code, "--format", "json", filename="kod.h", language=None)
+    assert result.exit_code == 2, result.output
+    assert json.loads(result.stdout)["language"] == "cpp"
+
+
+def test_unknown_extension_ambiguous_code_lists_all_languages(run: Any) -> None:
+    result = run(BROKEN_C, filename="kod.txt", language=None)
+    assert result.exit_code == 3
+    assert "belirlenemedi" in result.output
+    assert "python, html, css" in " ".join(result.output.split())
