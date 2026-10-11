@@ -1870,6 +1870,28 @@ iptal yok. Araç paylaşılan bir sunucuda çalışacaksa ayrıştırma sert sü
 
 ---
 
+## Yol haritası — 2026-10-12 (tam tarama sonrası, Faz A-J)
+
+Tam tarama (dört `kod-denetci` ajanı) sonrası fazlar **harfle** numaralanır; eski Faz 64-66
+(yerel modeller) Faz I'ya taşındı. Her fazın iş listesi, kabul kriterleri, testleri ve
+PROGRESS "Sonraya"dan dağıtılan açık maddeler tek kaynakta:
+[BulgularVeDuzeltilecekler.md §10](BulgularVeDuzeltilecekler.md#10-faz-planı-a-j).
+
+| Faz | Kapsam | Zaman |
+|---|---|---|
+| A | Güvenlik açıkları (include koruması, ReDoS, araç keşfi, referans çözüm) | 18 Ekim öncesi, **şart** |
+| B | Bulgu kaybı ve önbellek doğruluğu | 18 Ekim öncesi |
+| C | İpucu merdiveni, yapılandırma, CLI | 18 Ekim öncesi |
+| D | Public belgeler ve release | 18 Ekim öncesi |
+| E | Web: geçmiş, silme, güvenlik başlıkları | Sonra |
+| F | Masaüstü sağlamlık ve UX | Sonra |
+| G | Sağlayıcı sağlamlığı ve kod temizliği | Sonra |
+| H | Statik kurallar ve analiz doğruluğu | Sonra |
+| I | Yerel modeller ve eval (eski Faz 64-66) | Sonra |
+| J | Açık kalan diğer işler (havuz) | İhtiyaç oldukça |
+
+---
+
 ## 7. PROGRESS.md Şablonu
 
 ````markdown

