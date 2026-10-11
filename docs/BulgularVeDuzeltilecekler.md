@@ -710,16 +710,23 @@ uygulanır: plan modu → onay → test → `make check` → kabul kriterleri �
 **Amaç:** Public öncesi, kullanıcı kodunun sunucuyu kilitlemesini ve derleyici aracılığıyla host
 dosya sistemine dokunmasını kesin olarak engellemek.
 
-- [ ] **K1 — Include koruması:** yönerge araması maskelenmiş metinde de yapılır; `#/**/include`,
+- [x] **K1 — Include koruması:** yönerge araması maskelenmiş metinde de yapılır; `#/**/include`,
       `%:/**/include`, satırı bölen yorumlu biçim (`#/*\n*/include`) fail-closed reddedilir
-      (`validation/include_guard.py`)
-- [ ] **K2 — ReDoS:** `ingest/detect.py:133` deseni doğrusal hale gelir (kübik, saatler)
-- [ ] **K2 — Karesel desenler:** `detect.py`'deki `re.M` + `^\s*` desenleri (satır 82, 83, 76,
-      105, 106, 108, 115, 120, 132) `^[ \t]*` ve satır içi `[^…\n]` sınıflarıyla düzeltilir;
-      `analysis/_recursion.py:21`, `verify/lines.py:20`, `verify/proof.py:50` ve `analysis/`,
-      `rules/` içindeki diğer regex'ler en kötü girdiyle taranır
-- [ ] **K2 — Olay döngüsü:** `Orchestrator._ingest` (dil tespiti dahil) `asyncio.to_thread`'e
-      alınır; analiz süre sınırı bu aşamayı da kapsar
+      (`validation/include_guard.py`) — **Faz A1**
+- [x] **K2 — ReDoS:** `ingest/detect.py:133` deseni doğrusal hale gelir (kübik, saatler) — **Faz A1**
+- [x] **K2 — Karesel desenler:** `detect.py`'deki `re.M` + `^\s*` desenleri (Java deseni dahil,
+      testin yakaladığı 7.) `^[ \t]*` ve satır içi `[^…\n]` sınıflarıyla düzeltildi — **Faz A1**
+- [ ] **K2 — Kalan tarama:** `analysis/_recursion.py:21`, `verify/lines.py:20`,
+      `verify/proof.py:50` ve `analysis/`, `rules/` içindeki diğer regex'ler en kötü girdiyle
+      taranır (A1'de yapılmadı; kısa metinlere uygulandıkları için öncelik düşük)
+- [x] **K2 — Olay döngüsü:** `Orchestrator._ingest` iş parçacığında (`asyncio.to_thread`);
+      `test_offloop.py` kapsıyor — **Faz A1**. Not: süre sınırı (`analysis_timeout_s`) hâlâ yalnız
+      LLM geçişlerini kapsıyor; regex doğrusal olduğu için gerekmedi
+- [x] **Ek bulgu (Faz A1):** `detect.py`'de 13 desende `\b` yerine görünmez backspace (U+0008)
+      vardı (Faz 16, `abfeb08`'den beri). Python `import`/`elif`/`self.`/`print(`/`None`, HTML
+      `<html`/boş öğe/öznitelik, CSS `@kural`/`var(--`/birim sinyalleri **hiç eşleşmiyordu**.
+      Hepsi `\b` yapıldı; CSS birimi `(?!\w)` (`100%;` de eşleşsin). Kaynakta U+0008 kalmadığını
+      sınayan test eklendi
 - [ ] **Y1 — Araç keşfi:** çalışma dizinindeki çalıştırılabilir dosya derleyici olarak seçilmez
       (`validation/toolchain.py`); Windows'taki `NoDefaultCurrentDirectoryInExePath`
       davranışına bağlı kalınmaz. `providers/_cli_common.py` `_candidates()` mantığı ortak

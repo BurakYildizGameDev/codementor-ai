@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import pathlib
+import re
+import time
+
 import pytest
 
+from codementor.ingest import detect as detect_module
 from codementor.ingest.detect import detect
 from codementor.ingest.errors import LanguageDetectionError
 from codementor.models.enums import Engine, Language
@@ -194,3 +199,60 @@ def test_inconsistent_hint_rejected(language: Language, engine: Engine) -> None:
 def test_detection_error_lists_every_supported_language() -> None:
     message = str(LanguageDetectionError("deneme"))
     assert all(lang.value in message for lang in Language)
+
+
+# --- Faz A1 (K2): kullanıcı koduna uygulanan tespit desenleri doğrusal kalır
+_SIZE = 40_000  # limits.max_bytes'a yakın
+_ADVERSARIAL = {
+    "property_spaces": "a:" + " " * _SIZE,
+    "space_newline": " \n" * (_SIZE // 2),
+    "newlines": "\n" * _SIZE,
+    "open_def": "def a(\n" * (_SIZE // 7),
+    "if_colons": "if " + "a:" * (_SIZE // 2),
+    "words": "a " * (_SIZE // 2),
+    "selector_spaces": "a" + " " * _SIZE,
+    "dashes": "-" * _SIZE,
+    "angles": "<" * _SIZE,
+    "colons": ":" * _SIZE,
+}
+
+
+def _all_signals() -> list[tuple[str, re.Pattern[str]]]:
+    groups = (detect_module._ENGINE_SIGNALS, detect_module._LANGUAGE_SIGNALS)
+    found = [
+        (f"{key}:{signal.reason}", signal.pattern)
+        for group in (*groups, detect_module._OTHER_SIGNALS)
+        for key, signals in group.items()
+        for signal in signals
+    ]
+    return [*found, ("java", detect_module._JAVA)]
+
+
+@pytest.mark.parametrize("name", _ADVERSARIAL)
+def test_signals_stay_fast_on_adversarial_input(name: str) -> None:
+    code = _ADVERSARIAL[name]
+    for label, pattern in _all_signals():
+        start = time.perf_counter()
+        pattern.search(code)
+        elapsed = time.perf_counter() - start
+        assert elapsed < 0.25, f"{label}: {elapsed:.2f} sn ({name})"
+
+
+def test_detection_of_redos_input_is_fast() -> None:
+    start = time.perf_counter()
+    with pytest.raises(LanguageDetectionError):
+        detect("a:" + " " * _SIZE)
+    assert time.perf_counter() - start < 1.0
+
+
+@pytest.mark.parametrize(
+    ("code", "language"),
+    [
+        ("import os\nimport sys\n\nx = os.getcwd()\n", Language.PYTHON),
+        ("body {\n  margin: 0;\n  width: 100%;\n}\n", Language.CSS),
+    ],
+)
+def test_previously_dead_signals_now_match(code: str, language: Language) -> None:
+    """Faz 16'da `\b` yerine kaynağa backspace (U+0008) girmişti; bu sinyaller hiç eşleşmiyordu."""
+    assert detect(code).language is language
+    assert "\x08" not in pathlib.Path(detect_module.__file__).read_text(encoding="utf-8")

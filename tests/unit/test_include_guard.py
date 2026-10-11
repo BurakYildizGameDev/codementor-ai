@@ -54,6 +54,13 @@ REJECTED = {
     "device_conin": '#include "CONIN$"\n',
     "unsafe_path_in_comment": '// #include "/etc/shadow"\n',
     "unsafe_path_in_string": 'const char* s = "#include </etc/passwd>";\n',
+    # --- Faz A1 (K1): `#` ile yönerge adı arasına giren yorum
+    "comment_between_hash_and_keyword": '#/**/include "/etc/passwd"\n',
+    "digraph_comment_between": "%:/**/include </etc/passwd>\n",
+    "multiline_comment_between": '#/*\n*/include "/etc/passwd"\n',
+    "spaced_comment_between": '# /* a */ include "../x.h"\n',
+    "two_comments_between": "#/**//**/include <stdio.h>\n",
+    "comment_between_embed": '#/**/embed "data.bin"\n',
 }
 
 ALLOWED = {
@@ -64,6 +71,8 @@ ALLOWED = {
     "subdir": '#include "Engine/World.h"\n',
     "no_includes": "int x = 1;\n",
     "division_not_path": "int a = 4 / 2;\n",
+    "comment_after_include": "#include <stdio.h> /* g/ç */\n",
+    "hash_in_comment_then_word": "/* # */ int include_count = 0;\n",
 }
 
 

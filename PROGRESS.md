@@ -54,6 +54,7 @@
 | 61 | ✅ (ADR-0026) | faz/61-ipucu-merdiveni | 2026-10-07 | Antigravity / — |
 | 62 | ✅ | faz/62-gecmis-silme | 2026-10-07 | Antigravity / — |
 | 63 | ✅ | faz/63-agy-haiku-canli | 2026-10-09 | Claude Code / — |
+| A1 | ✅ (denetim sonraya) | faz/a1-guvenlik | 2026-10-12 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -173,7 +174,7 @@
 - `-std=c17` trigraph'ları açtığı için trigraph içeren kod reddedilir.
 - Roslyn aracı net10.0 + `RollForward=Major`; `Microsoft.CodeAnalysis.CSharp 4.14.0`.
 **Mimariden sapmalar (ADR linki):** [ADR-0010](docs/adr/0010-tier1-surec-sinirlari.md) — `RLIMIT_NPROC` yerine süreç grubu; mimari §5.2.3, §17, §20 güncellendi.
-**Denetim (kod-denetci, yalnızca güvenlik):** Yüksek ×4 — include koruması atlatılabiliyordu: (H1) `\` + boşluk + satır sonu birleştirmesi, (H2) maskeleyici–derleyici uyuşmazlığıyla sahte yorum (`L'/*'`, `R"`, `@"`), (H3) ``/``, (H4) Unreal dönüşümü yeni yönerge üretebiliyordu. Orta ×3 — tanı regex'inde ReDoS (60 KB boşluklu satır 118 s → 0,3 s), token yapıştırma, `preexec_fn`. Düşük ×6 — beklenmedik hatada süreç sızıntısı, normal çıkışta torun süreçler, Job Object yokken fail-open, Windows aygıt adları, tanı mesajı uzunluğu, Linux'ta dotnet bellek sınırı (ADR'de belgelendi). Hepsi düzeltildi ve regresyon testiyle sabitlendi.
+**Denetim (kod-denetci, yalnızca güvenlik):** Yüksek ×4 — include koruması atlatılabiliyordu: (H1) `\` + boşluk + satır sonu birleştirmesi, (H2) maskeleyici–derleyici uyuşmazlığıyla sahte yorum (`L'/*'`, `R"`, `@"`), (H3) `\f`/`\v`, (H4) Unreal dönüşümü yeni yönerge üretebiliyordu. Orta ×3 — tanı regex'inde ReDoS (60 KB boşluklu satır 118 s → 0,3 s), token yapıştırma, `preexec_fn`. Düşük ×6 — beklenmedik hatada süreç sızıntısı, normal çıkışta torun süreçler, Job Object yokken fail-open, Windows aygıt adları, tanı mesajı uzunluğu, Linux'ta dotnet bellek sınırı (ADR'de belgelendi). Hepsi düzeltildi ve regresyon testiyle sabitlendi.
 **Açık sorular:**
 - gcc/clang bu makinede yok: `compiler` işaretli C/C++ testleri yalnızca CI'da (ubuntu, gcc kurulu) çalışacak. Kaydedilmiş gcc/clang örnek çıktıları belgelenmiş biçime göre elle yazıldı; clang biçimi ve stub, `zig c++` (clang) ile ayrıca denendi.
 - POSIX başlatıcısı ve rlimit testleri Windows'ta atlanıyor; ilk CI koşusunda doğrulanmalı.
@@ -893,6 +894,25 @@ Düşük bulgulardan düzeltilenler: Windows adları; zlib/şifreli arşiv istis
 **Bu fazda öğrendiğim:** Doğrulama geçişi precision'ı prompt kurallarının yapamadığı ölçüde
 artırdı ve recall kaybettirmedi; ayrı bir "kanıtla" adımı tek prompt'tan daha güvenilir bir
 süzgeç. CLI ajanlarının gizli varsayılanları (düşünme bütçesi) ölçümü 10 kat yavaşlatabiliyor.
+
+## Faz A1 — Notlar (include koruması yorum atlatması, dil tespiti ReDoS; 2026-10-12)
+Kaynak: `docs/BulgularVeDuzeltilecekler.md` K1, K2 (tam tarama). Kod-denetçi denetimi token
+nedeniyle sonraya bırakıldı.
+**Yapılanlar:**
+- `validation/include_guard.py`: maskelenmiş birleşik metinde `#`/`%:` + boşluk(yorum) + yönerge
+  adı aranır; arada ham metinde `/*` varsa hedeften bağımsız red (`#/**/include`, `%:/**/include`,
+  satır aşan `#/*` + yeni satır + `*/include`). Yorumsuz `#` + yeni satır + `include` yönerge
+  değil, dokunulmadı.
+- `ingest/detect.py`: CSS özellik deseni (kübik) ve `re.M` + `^\s*` desenleri (karesel; Java dahil)
+  `^[ \t]*`, satır içi `[^…\n]` ve `[^)]{0,300}` ile doğrusal. 13 desende `\b` yerine U+0008 vardı
+  (Faz 16); düzeltildi, Python/HTML/CSS sinyallerinin bir kısmı ilk kez çalışıyor.
+- `pipeline/orchestrator.py`: `_ingest` async; `normalize` `asyncio.to_thread` ile.
+- Testler: 6 yeni red + 2 izin (include), 10 kötü niyetli girdi × tüm tespit desenleri < 0,25 sn,
+  40 KB ReDoS girdisi < 1 sn, ölü sinyallerin eşleşmesi ve kaynakta U+0008 yokluğu,
+  `test_offloop` ingest'i kapsıyor.
+**Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3148 geçti, 14 atlandı.
+**Açık:** `_recursion.py`/`verify/lines.py`/`verify/proof.py` ve `rules/` regex taraması; kod-denetçi
+denetimi; Y1, D13, `.gitignore` (Faz A2).
 
 ## Faz 63 — Notlar (agy ve Haiku canlı doğrulaması)
 **Yapılanlar:**

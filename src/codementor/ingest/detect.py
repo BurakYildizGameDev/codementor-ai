@@ -73,14 +73,14 @@ _LANGUAGE_SIGNALS: dict[Language, list[_Signal]] = {
         _s(r"\bstd::", 4, "std:: kullanımı"),
         _s(r"\btemplate\s*<", 3, "template"),
         _s(r"\bnullptr\b", 3, "nullptr"),
-        _s(r"^\s*(?:public|private|protected)\s*:", 3, "erişim belirteci etiketi", _M),
+        _s(r"^[ \t]*(?:public|private|protected)\s*:", 3, "erişim belirteci etiketi", _M),
         _s(r"\b(?:unique_ptr|shared_ptr|make_unique|make_shared)\b", 3, "akıllı pointer"),
         _s(r"\b(?:cout|cin|cerr)\b", 3, "iostream akışları"),
         _s(r"\w::\w", 1, ":: kapsam çözümü"),
     ],
     Language.CSHARP: [
-        _s(r"^\s*using\s+System(?:\.[\w.]+)?\s*;", 5, "using System", _M),
-        _s(r"^\s*using\s+[A-Z][\w.]*\s*;", 2, "using yönergesi", _M),
+        _s(r"^[ \t]*using\s+System(?:\.[\w.]+)?\s*;", 5, "using System", _M),
+        _s(r"^[ \t]*using\s+[A-Z][\w.]*\s*;", 2, "using yönergesi", _M),
         _s(r"\bnamespace\s+[\w.]+\s*[;{]", 2, "namespace"),
         _s(
             r"\b(?:public|internal|private|protected)\s+(?:(?:static|sealed|abstract|partial)\s+)*"
@@ -102,44 +102,49 @@ _I = re.IGNORECASE
 # bu sinyaller ham kodda aranır; yalnızca C ailesinden belirgin biçimde güçlüyse seçilir.
 _OTHER_SIGNALS: dict[Language, list[_Signal]] = {
     Language.PYTHON: [
-        _s(r"^\s*def\s+\w+\s*\([^)]*\)\s*(?:->[^:]+)?:\s*(?:#.*)?$", 5, "def fonksiyon(...):", _M),
-        _s(r"^\s*(?:from\s+[\w.]+\s+import|import\s+[\w.]+)(?!.*;\s*$)", 3, "import", _M),
         _s(
-            r"^\s*(?:if|elif|for|while|with|try|except|else|class)[^;{}]*:\s*(?:#.*)?$",
+            r"^[ \t]*def\s+\w+\s*\([^)]{0,300}\)\s*(?:->[^:\n]+)?:[ \t]*(?:#.*)?$",
+            5,
+            "def fonksiyon(...):",
+            _M,
+        ),
+        _s(r"^[ \t]*(?:from\s+[\w.]+\s+import|import\s+[\w.]+)\b(?!.*;[ \t]*$)", 3, "import", _M),
+        _s(
+            r"^[ \t]*(?:if|elif|for|while|with|try|except|else|class)\b[^;{}\n]*:[ \t]*(?:#.*)?$",
             3,
             "iki noktayla biten blok başlığı",
             _M,
         ),
-        _s(r"if\s+__name__\s*==", 5, "if __name__ =="),
-        _s(r"self\.\w+", 2, "self."),
-        _s(r"^\s*elif", 3, "elif", _M),
-        _s(r"(?:None|True|False)", 1, "None/True/False"),
-        _s(r"print\s*\(", 1, "print("),
+        _s(r"\bif\s+__name__\s*==", 5, "if __name__ =="),
+        _s(r"\bself\.\w+", 2, "self."),
+        _s(r"^[ \t]*elif\b", 3, "elif", _M),
+        _s(r"\b(?:None|True|False)\b", 1, "None/True/False"),
+        _s(r"\bprint\s*\(", 1, "print("),
     ],
     Language.HTML: [
-        _s(r"^\s*<!DOCTYPE\s+html", 6, "<!DOCTYPE html>", _M | _I),
-        _s(r"<html", 5, "<html>", _I),
+        _s(r"^[ \t]*<!DOCTYPE\s+html", 6, "<!DOCTYPE html>", _M | _I),
+        _s(r"<html\b", 5, "<html>", _I),
         _s(
             r"</(?:div|p|body|head|section|ul|ol|li|a|span|main|nav|form|table|h[1-6]|article)>",
             4,
             "kapanış etiketi",
             _I,
         ),
-        _s(r"<(?:meta|link|img|input|br|hr)[^>]*>", 2, "boş HTML öğesi", _I),
-        _s(r"(?:class|id|href|src)=\"", 1, "HTML özniteliği"),
+        _s(r"<(?:meta|link|img|input|br|hr)\b[^>]*>", 2, "boş HTML öğesi", _I),
+        _s(r"\b(?:class|id|href|src)=\"", 1, "HTML özniteliği"),
     ],
     Language.CSS: [
-        _s(r"^\s*[\w.#:*\-\[\]=\"' >+~,()]+\{\s*$", 2, "seçici {", _M),
-        _s(r"^\s*-{0,2}[a-z][a-z-]*\s*:\s*[^;{}()=]*[^;{}]*;\s*$", 3, "özellik: değer;", _M),
-        _s(r"@(?:media|import|font-face|keyframes|supports)", 4, "@kural"),
-        _s(r":root|var\(--", 3, "CSS değişkeni"),
-        _s(r"\d(?:px|rem|em|vh|vw|%)", 1, "CSS birimi"),
+        _s(r"^[\w.#:*\-\[\]=\"' \t>+~,()]+\{[ \t]*$", 2, "seçici {", _M),
+        _s(r"^[ \t]*-{0,2}[a-z][a-z-]*[ \t]*:[^;{}\n]*;[ \t]*$", 3, "özellik: değer;", _M),
+        _s(r"@(?:media|import|font-face|keyframes|supports)\b", 4, "@kural"),
+        _s(r":root\b|\bvar\(--", 3, "CSS değişkeni"),
+        _s(r"\d(?:px|rem|em|vh|vw|%)(?!\w)", 1, "CSS birimi"),
     ],
 }
 
 # Desteklenmeyen ama C#'a çok benzeyen dil: sessizce C# sayılmasın
 _JAVA = re.compile(
-    r"\bSystem\.out\.print|^\s*import\s+java\.|\bpublic\s+static\s+void\s+main\s*\(\s*String", _M
+    r"\bSystem\.out\.print|^[ \t]*import\s+java\.|\bpublic\s+static\s+void\s+main\s*\(\s*String", _M
 )
 
 

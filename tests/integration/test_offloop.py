@@ -1,4 +1,7 @@
-"""Faz 26: ağır senkron aşamalar (Tier 0, statik olgu/kural) olay döngüsünü kilitlemez."""
+"""Faz 26: ağır senkron aşamalar (Tier 0, statik olgu/kural) olay döngüsünü kilitlemez.
+
+Faz A1 (K2): giriş doğrulama + dil tespiti de iş parçacığında koşar.
+"""
 
 from __future__ import annotations
 
@@ -29,6 +32,12 @@ async def test_heavy_stages_run_off_event_loop(
     loop_thread = threading.get_ident()
     seen: dict[str, int] = {}
     real_tier0, real_static = orchestrator_module.check_syntax, stages.run_static
+    real_normalize = orchestrator_module.normalize
+
+    def slow_normalize(*args: Any, **kwargs: Any) -> Any:
+        seen["ingest"] = threading.get_ident()
+        time.sleep(SLOW_S)
+        return real_normalize(*args, **kwargs)
 
     def slow_tier0(*args: Any, **kwargs: Any) -> Any:
         seen["tier0"] = threading.get_ident()
@@ -41,6 +50,7 @@ async def test_heavy_stages_run_off_event_loop(
         return real_static(*args, **kwargs)
 
     monkeypatch.setattr(orchestrator_module, "check_syntax", slow_tier0)
+    monkeypatch.setattr(orchestrator_module, "normalize", slow_normalize)
     monkeypatch.setattr(stages, "run_static", slow_static)
     events: list[str] = []
     bus = EventBus()
@@ -63,9 +73,10 @@ async def test_heavy_stages_run_off_event_loop(
     ticking.cancel()
 
     assert report.findings is not None
+    assert seen["ingest"] != loop_thread
     assert seen["tier0"] != loop_thread
     assert seen["static"] != loop_thread
-    # 2 × 0,3 sn boyunca döngü serbest kaldı (kilitlenseydi ~0 tık olurdu)
-    assert ticks >= 20
+    # 3 × 0,3 sn boyunca döngü serbest kaldı (kilitlenseydi ~0 tık olurdu)
+    assert ticks >= 30
     assert "tier0:completed" in events
     assert "rules:completed" in events

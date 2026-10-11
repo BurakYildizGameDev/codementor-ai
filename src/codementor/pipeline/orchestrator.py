@@ -119,7 +119,7 @@ class Orchestrator:
 
     async def _traced(self, run: _Run) -> AnalysisTrace:
         request = run.request
-        code = self._ingest(run)
+        code = await self._ingest(run)
         if self.db is not None:
             if request.options.advance_hint is False:
                 current = (
@@ -207,7 +207,9 @@ class Orchestrator:
         use = request.options.use_cache
         return self.settings.pipeline.use_cache if use is None else use
 
-    def _ingest(self, run: _Run) -> NormalizedCode:
+    async def _ingest(self, run: _Run) -> NormalizedCode:
+        """Doğrulama + dil tespiti iş parçacığında: regex/ayrıştırma olay döngüsünü kilitlemesin
+        (Faz A1, K2)."""
         request = run.request
         try:
             if request.question_id:
@@ -219,7 +221,9 @@ class Orchestrator:
                     language=request.language or (run.question.language if run.question else None),
                     engine=request.engine or (run.question.engine if run.question else None),
                 )
-                return normalize(request.code, hint, limits=self.settings.limits)
+                return await asyncio.to_thread(
+                    normalize, request.code, hint, limits=self.settings.limits
+                )
         except QuestionBankError as exc:
             # dosya adı/ayrıştırıcı ayrıntısı yanıta değil log'a (Faz 49 denetimi)
             log.error("question_bank_unreadable", error=type(exc).__name__, detail=str(exc)[:300])

@@ -18,6 +18,9 @@ fark bir `#include` satırını "yorum içinde" gösterebilir. Bu yüzden:
 4. Hedefi olmayan (`#include MACRO`) biçim yalnızca yönerge konumunda reddedilir: satır
    başı (maskelenmiş veya maskelenmemiş metinde) ya da bir `*/` sonrası.
 5. `__has_*` ve `_Pragma` her yerde reddedilir.
+6. Derleyici yorumları boşluğa çevirdiği için `#/**/include "yol"` (satır aşan `#/*…*/include`
+   dahil) geçerli bir yönergedir: maskelenmiş metinde `#` ile yönerge adı arasında ham metinde
+   `/*` varsa, hedef ne olursa olsun reddedilir (Faz A1, K1).
 
 Yanlış pozitif yalnızca Tier 1'in atlanmasına yol açar (`SKIPPED`); güvenli yönde hatadır.
 """
@@ -33,6 +36,8 @@ _TRIGRAPH = re.compile(r"\?\?[=/'()!<>\-]")
 _SPLICE_TAIL = re.compile(r"\\[ \t\f\v]*$")
 _PASTE = re.compile(r"##|%:%:")
 _KEYWORD = re.compile(rf"(?:#|%:){_WS}*(include_next|include|import|embed|pragma)\b")
+# Maskede yorumlar boşluk olduğundan `\s` satır aşan blok yorumunu da kapsar
+_SPLIT_KEYWORD = re.compile(r"(?:#|%:)\s*(include_next|include|import|embed|pragma)\b")
 _AFTER_COMMENT_END = re.compile(rf"\*/(?:{_WS}|/\*.*?\*/)*$")
 _FORBIDDEN_TOKENS = re.compile(r"__has_\w*|\b_Pragma\b")
 _DEPENDENCY = re.compile(r"\bdependency\b")
@@ -135,7 +140,23 @@ def check_includes(code: str) -> list[str]:
             reasons.append(f"Satır {line}: {label} (`{found.group()}`)")
 
     logical = _logical_lines(code)
-    masked = mask_non_code("\n".join(text for _, text in logical)).split("\n")
+    joined = "\n".join(text for _, text in logical)
+    masked_joined = mask_non_code(joined)
+    masked = masked_joined.split("\n")
     for (line, raw), plain in zip(logical, masked, strict=True):
         reasons += _check_line(line, raw, plain)
+    reasons += _comment_split_directives(joined, masked_joined, logical)
+    return reasons
+
+
+def _comment_split_directives(
+    joined: str, masked: str, logical: list[tuple[int, str]]
+) -> list[str]:
+    """`#/**/include` gibi `#` ile yönerge adı arasına yorum giren yönergeler (fail-closed)."""
+    reasons: list[str] = []
+    for match in _SPLIT_KEYWORD.finditer(masked):
+        if "/*" not in joined[match.start() : match.start(1)]:
+            continue
+        line = logical[masked.count("\n", 0, match.start())][0]
+        reasons.append(f"Satır {line}: yorumla bölünmüş `#{match.group(1)}` yönergesi")
     return reasons
