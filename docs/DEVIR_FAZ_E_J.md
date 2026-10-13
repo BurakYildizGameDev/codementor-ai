@@ -1,8 +1,8 @@
 # Devir belgesi — Faz E, F, G, H (+ isteğe bağlı J) · Antigravity için
 
 > **Bu belge kimin için:** Antigravity (ya da başka bir kodlama ajanı).
-> **Kim yazdı:** Claude Code, 2026-10-13. Başlangıç durumu: main = `7801d11`, `v0.1.1` yayında,
-> CI yeşil, `uv run pytest -m "not live"` → 3355 civarı test geçiyor.
+> **Kim yazdı:** Claude Code, 2026-10-13. Başlangıç durumu: main'in son commit'i (bu belgeyi içeren), `v0.1.1` yayında,
+> CI yeşil, `uv run pytest -m "not live"` → 3.350'den fazla test geçiyor (kendi makinende ilk iş bunu koşup sayıyı not et).
 > **İş bitince:** Claude Code her maddeyi tek tek denetleyecek (§13). Uydurma sayı yazma, yapmadığın
 > şeye "yaptım" deme. Önceki iki devirde (Mimo, GLM) rapordaki sayılar uydurmaydı; hepsi yakalandı
 > ve iş geri alındı. Dürüst "yapamadım" her zaman kabul edilir; yanlış "yaptım" edilmez.
@@ -122,9 +122,16 @@ uv run python -m codementor.desktop                    # masaüstü (elle deneme
 
 ## 2. Her madde için çalışma akışı
 
-1. **Dal:** fazın ilk maddesinden önce `git switch main` → `git switch -c faz/e-web`
-   (dal adları: `faz/e-web`, `faz/f-masaustu`, `faz/g-saglayici`, `faz/h-kurallar`).
-   Sonraki fazın dalını da **main'den** aç (önceki faz dalından değil).
+1. **Dal (zincir):** dallar birbirinin üstüne açılır, çünkü sonraki fazlar öncekilerin kodunu kullanır
+   (ör. F6, E1'deki `list_analyses_page`'i kullanır):
+   - Faz E: `git switch main` → `git switch -c faz/e-web`
+   - Faz F: `git switch faz/e-web` → `git switch -c faz/f-masaustu`
+   - Faz G: `git switch faz/f-masaustu` → `git switch -c faz/g-saglayici`
+   - Faz H: `git switch faz/g-saglayici` → `git switch -c faz/h-kurallar`
+
+   Bir faz yarım kaldıysa (ör. E'nin bazı maddeleri yapılamadı) yine de onun dalından devam et; yarım
+   maddeyi raporda belirt. Bir fazın değişikliğini (testler dahil) karşılaştırmak için:
+   `git diff faz/e-web...faz/f-masaustu` (önceki dal...bu dal).
 2. **Maddeyi oku:** "Neden / Nerede / Ne yap / Test / Kabul" kısımlarının hepsini.
 3. **Kodu bul ve oku:** satır numaraları kayabilir; her maddede bir `rg`/`grep` ipucu var.
    Değiştireceğin fonksiyonun **tüm çağıranlarını** bul: `rg -n "fonksiyon_adi" src tests`.
@@ -136,9 +143,11 @@ uv run python -m codementor.desktop                    # masaüstü (elle deneme
 8. **Belgeler:**
    - `docs/BulgularVeDuzeltilecekler.md` §10'daki ilgili maddeyi `- [x]` yap, sonuna `— **Faz E**`.
    - `PROGRESS.md`: fazın ilk commit'inde "Durum" tablosuna satır
-     (`| E | 🚧 | faz/e-web | <tarih> | Antigravity / — |`), fazın sonunda `✅`. "## Faz D — Notlar"
-     başlığından ÖNCE "## Faz E — Notlar (…; <tarih>)" bölümü: **Yapılanlar / Kararlar / Doğrulama
-     (gerçek komut çıktısı) / Açık kalanlar**. Diğer fazların notlarına bak, aynı biçimi kullan.
+     (`| E | 🚧 | faz/e-web | <tarih> | Antigravity / — |`), fazın sonunda `✅`. Notlar bölümü:
+     "## Durum" tablosunun hemen ALTINA, şu an en üstte duran "## Denetim — Faz A1-D" başlığından ÖNCE
+     (en yeni en üstte) "## Faz E — Notlar (…; <tarih>)" bölümü: **Yapılanlar / Kararlar / Doğrulama
+     (gerçek komut çıktısı) / Açık kalanlar**. Sonraki fazın notu bir öncekinin üstüne gelir.
+     Diğer fazların notlarına bak, aynı biçimi kullan.
    - Davranışı README'de anlatılan bir şeyi değiştirdiysen README'yi (ve gerekiyorsa `README.en.md`'yi)
      güncelle.
 9. **Commit** (kural 14).
@@ -213,9 +222,10 @@ Her biri bu projede gerçekten yaşandı.
   ile oku → rapora "golden şu yüzden değişti" yaz. Bilinçsiz değişiklikse kodunu düzelt.
 
 ### 3.7 Sürüm
-- Sürüm yalnız `src/codementor/__init__.py`'de. Sürümü DEĞİŞTİRME, `CHANGELOG.md`'ye yeni sürüm
-  başlığı EKLEME (yeni release kullanıcı + Claude Code kararı). İstersen `CHANGELOG.md`'nin en üstüne
-  `## [Yayımlanmadı]` bölümü açıp maddeleri oraya yaz.
+- Sürüm yalnız `src/codementor/__init__.py`'de. Sürümü DEĞİŞTİRME, `CHANGELOG.md`'ye DOKUNMA
+  (yeni release kullanıcı + Claude Code kararı; değişiklik listesini Claude Code teslim raporundan yazar).
+  DİKKAT: `CHANGELOG.md`'nin en üstüne `## [Yayımlanmadı]` gibi bir başlık eklemek
+  `tests/unit/test_release_readiness.py::test_changelog_top_entry_is_current_version` testini kırar.
 
 ### 3.8 `git stash` dikkat
 - Mutasyon kontrolünden sonra `git stash pop` unutulursa değişikliğin kaybolmuş gibi görünür.
@@ -490,7 +500,7 @@ eklendi; `docs/GUNCELLEMELER.md` Faz 62'deki "yapılmadı → Faz E" maddesi `- 
   - `App` içinde: `def export(self, fmt: str) -> None: history_controller.export(self, fmt)` gibi.
   - Yeni modüllerin EN ÜSTÜNDE tkinter/customtkinter yok (`filedialog` gerekiyorsa fonksiyon içinde
     içe aktar) → `tests/unit/test_tkinter_free_imports.py::MODULES`'a ekle.
-- **Kabul:** `app.py` < 400 satır; `git diff main -- tests/` BOŞ (testler hiç değişmedi) ve tüm testler
+- **Kabul:** `app.py` < 400 satır; `git diff faz/e-web -- tests/` BOŞ (F0'da testler hiç değişmedi) ve tüm testler
   geçiyor. Bu maddeyi tek başına commit'le: `refactor(faz-f): app.py controller'lara bölündü`.
 
 ### F1 — O10: bozuk/kilitli veritabanında exe açılmıyor
@@ -571,8 +581,8 @@ eklendi; `docs/GUNCELLEMELER.md` Faz 62'deki "yapılmadı → Faz E" maddesi `- 
 
 ### F6 — Geçmişte sayfalama ve arama
 - **Nerede:** `desktop/views/history_view.py`, `storage/cache.py`.
-- **Ne yap:** E1'deki `list_analyses_page`'i kullan (Faz E main'e birleşmeden önce F'yi yapıyorsan aynı
-  fonksiyonu burada da tanımlama; F'yi E'den sonra main'e birleştirileceğini varsay ve rapora yaz).
+- **Ne yap:** E1'deki `storage/cache.py::list_analyses_page`'i kullan (F dalı E'nin üstüne açıldığı için
+  mevcut; §2 adım 1). E1 yapılamadıysa F6'yı da atla ve rapora yaz; fonksiyonu ikinci kez yazma.
   Üstte arama kutusu (soru kimliği / dil / sağlayıcı içinde geçen metin; büyük/küçük harf duyarsız,
   SQL `LIKE` + `escape`), altta "Daha fazla yükle".
 - **Test:** 60 kayıt → ilk ekranda 50 satır, "daha fazla" sonrası 60; arama "c-medium" → yalnız eşleşenler;
@@ -640,19 +650,28 @@ DB kullan (kullanıcının geçmişini bozma).
   - `orchestrator.py` → yeni `pipeline/cache_flow.py`: `_cache_key`, `_pipeline_signature`,
     `_run_validation`, kaydetme bloğu (`_run_attempt` içindeki `save_analysis` + oturum kaydı) modül
     fonksiyonları olur; `Orchestrator` yöntemleri ince sarmalayıcı kalır (testler bazılarını
-    `monkeypatch.setattr(Orchestrator, "_validation", ...)` ile yamalıyor — `_validation` ve `_tier1`
-    yöntem olarak KALMALI).
+    `monkeypatch.setattr(Orchestrator, "_validation", ...)`, `(Orchestrator, "_tier1", ...)` ve
+    `(Orchestrator, "_remaining", ...)` ile yamalıyor — bu üç ad `Orchestrator` üzerinde yöntem olarak
+    KALMALI ve kod onları `self._validation(...)` / `self._tier1(...)` / `self._remaining(...)` diye
+    çağırmaya devam etmeli; aksi hâlde yama etkisiz kalır ve testler düşer).
   - `orchestrator.py` → `_timed_out`, `_remaining` (`staticmethod`'lar; testler
     `Orchestrator._remaining`'i yamalıyor → yöntem adı kalmalı, gövde `pipeline/deadline.py`'ye).
-  - `passes.py` → yeni `pipeline/verify_pass.py`: `run_pass_verify`, `call_structured`;
-    yeni `pipeline/socratic_pass.py`: `run_pass_b`, `_socratic`, `run_pass_socratic_schema`.
-    `passes.py` bu adları yeniden dışa aktarsın: `from codementor.pipeline.socratic_pass import run_pass_b  # noqa: F401`
-    (testler `passes.build_socratic_messages`, `passes.build_repair_messages`'i monkeypatch'liyor:
-    bu adlar **yamalandıkları modülde kullanılmaya devam etmeli**. Taşıdığın fonksiyon bu adları
-    kullanıyorsa ya taşıma ya da testlerin yamaladığı modül adını da güncelle — test DOSYASINI
-    değiştirmeden çözülemiyorsa taşıma, rapora yaz).
-- **Kabul:** iki dosya < 400; `git diff main -- tests/` BOŞ; tüm testler geçiyor. Ayrı commit:
-  `refactor(faz-g): orchestrator ve passes bölündü`.
+  - `passes.py` (426): testler `monkeypatch.setattr(passes, "build_socratic_messages", ...)` ve
+    `monkeypatch.setattr(passes, "build_repair_messages", ...)` yapıyor. Python'da yama, adı **o modülde
+    arayan** kodu etkiler. Bu yüzden `build_socratic_messages`'i kullanan `_socratic` ve
+    `build_repair_messages`'i kullanan `run_pass_a` **`passes.py`'de KALMALI**; `run_llm_passes` ve
+    `run_pass_b` de kalsın. Taşınacaklar:
+    - yeni `pipeline/llm_session.py`: `LLMSession` sınıfı (ve yalnız onun kullandığı yardımcılar);
+    - yeni `pipeline/verify_pass.py`: `run_pass_verify` ve `VERIFY_STAGES`.
+    `passes.py` taşınan adları yeniden dışa aktarsın (başka modüller ve testler
+    `from codementor.pipeline.passes import LLMSession, VERIFY_FAILED, ...` diye içe aktarıyor):
+    `from codementor.pipeline.llm_session import LLMSession  # noqa: F401` ve
+    `__all__`'a ekle. Taşımadan önce her ad için `rg -n "<ad>" src tests` ile kimin kullandığına bak.
+    `call_structured` `build_repair_messages`'i kullanıyor: onu da `passes.py`'de BIRAK.
+    Test dosyasını değiştirmeden 400'ün altına inemiyorsan daha fazla taşıma; rapora "passes.py N satır
+    kaldı, şu yüzden" yaz.
+- **Kabul:** iki dosya < 400 (ya da raporda gerekçeli istisna); `git diff <önceki dal> -- tests/` BOŞ;
+  tüm testler geçiyor. Ayrı commit: `refactor(faz-g): orchestrator ve passes bölündü`.
 
 ### G1 — O5: CLI ajan çıktısı 64 KB'de kesiliyor
 - **Nerede:** `validation/runner.py` (`OUTPUT_LIMIT = 64 * 1024`, `_Collector`),
@@ -917,7 +936,7 @@ yerine çıktının son satırını yapıştır.
 ## 13. Claude Code'un denetimde bakacakları
 
 1. Her dalda dört denetim + Linux taklidi + web denetimleri; rapordaki sayılarla karşılaştırma.
-2. `git diff main...<dal> -- tests/`: var olan testte silme, `skip`/`xfail`, gevşetilmiş beklenti ya da
+2. `git diff <önceki dal>...<dal> -- tests/` (E için önceki dal = main): var olan testte silme, `skip`/`xfail`, gevşetilmiş beklenti ya da
    büyütülmüş süre eşiği = o madde reddedilir.
 3. Her yeni test için mutasyon kontrolü (düzeltmeyi geri alıp testi koşma); düşmeyen test = madde reddedilir.
 4. Görünmez karakter taraması (§3.3), 400 satır, mypy strict, tkinter'sız içe aktarma.
