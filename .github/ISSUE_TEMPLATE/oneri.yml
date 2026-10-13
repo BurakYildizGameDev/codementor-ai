@@ -1,0 +1,21 @@
+name: Öneri
+description: Yeni özellik, kural ya da iyileştirme
+labels: ["öneri"]
+body:
+  - type: textarea
+    id: sorun
+    attributes:
+      label: Hangi sorunu çözüyor?
+    validations:
+      required: true
+  - type: textarea
+    id: oneri
+    attributes:
+      label: Önerilen çözüm
+      description: Statik kural önerisiyse pozitif ve negatif bir kod örneği ekleyin.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatif
+    attributes:
+      label: Düşünülen alternatifler

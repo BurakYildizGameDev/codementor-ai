@@ -11,8 +11,11 @@ import build_exe
 import pytest
 
 
-def test_version_comes_from_pyproject() -> None:
-    assert build_exe.project_version() == "0.1.0"
+def test_version_comes_from_single_source() -> None:
+    """Faz D (O18): sürüm `codementor.__version__`'dan; sabit değer yerine tek kaynakla eşitlik."""
+    import codementor
+
+    assert build_exe.project_version() == codementor.__version__
     assert build_exe.version_tuple("1.2.3rc4") == (1, 2, 3, 4)
     assert build_exe.version_tuple("2") == (2, 0, 0, 0)
 

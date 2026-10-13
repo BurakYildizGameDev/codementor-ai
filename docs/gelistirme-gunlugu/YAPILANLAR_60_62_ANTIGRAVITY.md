@@ -2,8 +2,8 @@
 
 **Tarih:** 07.10.2026  
 **Geliştirici Ajan:** Antigravity  
-**Kaynak Belge:** [`docs/DEVIR_FAZ60_62.md`](docs/DEVIR_FAZ60_62.md)  
-**İzleme:** [`PROGRESS.md`](PROGRESS.md) ve [`docs/GUNCELLEMELER.md`](docs/GUNCELLEMELER.md)
+**Kaynak Belge:** [`docs/DEVIR_FAZ60_62.md`](DEVIR_FAZ60_62.md)  
+**İzleme:** [`PROGRESS.md`](../../PROGRESS.md) ve [`docs/GUNCELLEMELER.md`](../GUNCELLEMELER.md)
 
 ---
 

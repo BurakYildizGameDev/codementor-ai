@@ -1,9 +1,9 @@
 # Yapılanlar (Faz 0-16)
 
 > **Arşiv:** Bu özet Faz 16'da (2026-10) dondu; proje 59 fazda tamamlandı. Güncel ve tam
-> kayıt: [PROGRESS.md](../PROGRESS.md), faz planı: [UYGULAMA_PLANI.md](UYGULAMA_PLANI.md).
+> kayıt: [PROGRESS.md](../../PROGRESS.md), faz planı: [UYGULAMA_PLANI.md](../UYGULAMA_PLANI.md).
 
-Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorular: [PROGRESS.md](../PROGRESS.md).
+Fazlara göre tamamlanan işlerin özeti. Ayrıntılı kararlar ve açık sorular: [PROGRESS.md](../../PROGRESS.md).
 
 ---
 

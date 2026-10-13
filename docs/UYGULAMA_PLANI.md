@@ -1568,7 +1568,7 @@ Kullanıcı kararı: canlı doğrulanamayan OpenAI ve DeepSeek kaldırılır; Ge
 
 ### Faz 38 — Faz 36 canlı dev ölçümünün tamamlanması (Codex alternatifi yapıldı; Claude karşılaştırması açık)
 
-**Dal:** `faz/36-hata-oneri` · **Mimari:** §14 · **Rehber:** `docs/EVAL_PARCA_REHBERI.md`
+**Dal:** `faz/36-hata-oneri` · **Mimari:** §14 · **Rehber:** `docs/gelistirme-gunlugu/EVAL_PARCA_REHBERI.md`
 
 **Amaç:** Dev 96 örneği aynı prompt ve modelle koşup Faz 36'nın etkisini (precision, "kaçırma
 oranı düşmez", önerilerin gerçek hata yutup yutmadığı) tüm dev üzerinde ölçmek. Claude CLI

@@ -1,8 +1,8 @@
 """CLI sistem hataları (Faz C, Y9/O12; mimari §10).
 
-Çıkış kodları: 0 başarı · 1 yüksek önemli bulgu (analyze) · 2 geçersiz komut satırı · 3 sistem
-hatası. Sistem hatası (okunamayan yapılandırma ya da dosya, açılamayan veritabanı, bozuk veri)
-traceback yerine Türkçe tek satırla ve 3 koduyla biter; CI kullanan biri onu bulgu sanmaz.
+`analyze` çıkış kodları: 0 tamam · 1 yüksek önemli bulgu · 2 derleme başarısız (erken çıkış) ·
+3 sistem hatası. Sistem hatası (okunamayan yapılandırma ya da dosya, açılamayan veritabanı,
+bozuk veri) traceback yerine Türkçe tek satırla ve 3 koduyla biter; CI onu bulgu sanmaz.
 """
 
 from __future__ import annotations

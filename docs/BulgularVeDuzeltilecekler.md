@@ -314,7 +314,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 
 ## 4. Orta
 
-### O1 — Faz 62 belgesi gerçeği yansıtmıyor 🟡 ✅
+### O1 — Faz 62 belgesi gerçeği yansıtmıyor 🟡 ✅ ✅ Faz D
 
 - **Dosya:** `docs/GUNCELLEMELER.md` Faz 62 bölümü.
 - **Ne yanlış:** "API: `DELETE /v1/analyses/{id}` **ve toplu silme**; **web arayüzünde aynı
@@ -489,7 +489,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   connect-src 'self' http://127.0.0.1:8000`) — O15'teki dış görseli de kapatır. API'de
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`.
 
-### O17 — CI ve release süreci 🟡 📖
+### O17 — CI ve release süreci 🟡 📖 ✅ Faz D
 
 - **Dosya:** `.github/workflows/ci.yml`
 - **Eksikler:**
@@ -505,7 +505,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Düzeltme:** `release.yml` (etiket → exe derle → duman testi → Releases'a zip + SHA256SUMS);
   `permissions`, `concurrency`, action SHA'ları; `dependabot.yml` (pip, npm, actions).
 
-### O18 — Sürüm tutarsızlığı 🟡 ✅
+### O18 — Sürüm tutarsızlığı 🟡 ✅ ✅ Faz D
 
 - **Ne yanlış:**
   - `v0.1.0` etiketi `2cea9d5`'te; main bir commit ileride (`d42515c`, CLI dil düzeltmesi). Release
@@ -816,22 +816,22 @@ hatasını bulgudan ayırsın.
 **Amaç:** Repo public olduğunda ziyaretçi doğru, güncel ve derli toplu bir proje görsün; indirme
 tekrarlanabilir bir release'ten gelsin.
 
-- [ ] **P5, P6 — Belge düzeni:** iç çalışma belgeleri (`DEVIR_*`, `CODEX_3_4_YAPILANLAR`,
+- [x] **P5, P6 — Belge düzeni:** iç çalışma belgeleri (`DEVIR_*`, `CODEX_3_4_YAPILANLAR`,
       `YAPILANLAR_60_62_ANTIGRAVITY`, `FAZ36_OLCUM_DURUMU`, `EVAL_PARCA_REHBERI`) ve PROGRESS
       arşivi `docs/gelistirme-gunlugu/` altına; bağlantılar güncellenir
-- [ ] **O1 — Faz 62 belgesi:** `GUNCELLEMELER.md`'deki yapılmamış web/toplu silme maddeleri
+- [x] **O1 — Faz 62 belgesi:** `GUNCELLEMELER.md`'deki yapılmamış web/toplu silme maddeleri
       düzeltilir (Faz E'ye taşınır)
-- [ ] **P7 — README:** faz sayısı, test sayısı, özellik iddiaları kodla karşılaştırılır
-- [ ] **P8 — `README.en.md`:** kısa İngilizce sürüm (ne, neden, hızlı başlangıç, sonuçlar)
-- [ ] **P9:** `SECURITY.md` (açık bildirimi), `CONTRIBUTING.md`, `CHANGELOG.md`, issue/PR şablonları
-- [ ] **O18 — Sürüm:** tek kaynak (`importlib.metadata`); eşitlik testi; **0.1.1**
-- [ ] **O17 — CI:** `release.yml` (etiket → exe → duman testi → Releases + `SHA256SUMS`),
+- [x] **P7 — README:** faz sayısı, test sayısı, özellik iddiaları kodla karşılaştırılır
+- [x] **P8 — `README.en.md`:** kısa İngilizce sürüm (ne, neden, hızlı başlangıç, sonuçlar)
+- [x] **P9:** `SECURITY.md` (açık bildirimi), `CONTRIBUTING.md`, `CHANGELOG.md`, issue/PR şablonları
+- [x] **O18 — Sürüm:** tek kaynak (`importlib.metadata`); eşitlik testi; **0.1.1**
+- [x] **O17 — CI:** `release.yml` (etiket → exe → duman testi → Releases + `SHA256SUMS`),
       `permissions: contents: read`, `concurrency`, action SHA'ları, `dependabot.yml`
 - [ ] **P11 (yerel):** eski `dist/CodeMentor.exe` ve `dist/codementor.toml` temizlenir, yeniden
       derlenir; **eski Faz 60'ın açık maddesi** (güncel exe ile 64 görev, agy, geçmiş açma
       doğrulaması) burada kapanır
 - [ ] **P13 (kullanıcı):** GitHub'da secret scanning, push protection, Dependabot alerts
-- [ ] **D20 (kısmi):** `pyproject.toml` `authors`, `[project.urls]`, `classifiers`, `keywords`
+- [x] **D20 (kısmi):** `pyproject.toml` `authors`, `[project.urls]`, `classifiers`, `keywords`
 
 **Kabul:** etiket atılınca release otomatik oluşur ve exe açılır; README'deki her komut çalışır.
 **Commit:** `docs(faz-d): public yayın belgeleri ve otomatik release`

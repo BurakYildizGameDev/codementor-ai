@@ -10,11 +10,13 @@ sorunu kendisinin bulmasına yönelten sorular sorar.
 [![CI](https://github.com/BurakYildizGameDev/codementor-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/BurakYildizGameDev/codementor-ai/actions/workflows/ci.yml)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)
 ![mypy strict](https://img.shields.io/badge/mypy-strict-2A6DB2)
-![tests](https://img.shields.io/badge/testler-3000%2B-success)
+![tests](https://img.shields.io/badge/testler-3300%2B-success)
 ![Docker yok](https://img.shields.io/badge/Docker-gerekmez-lightgrey)
 [![Lisans: MIT](https://img.shields.io/badge/lisans-MIT-blue)](LICENSE)
 
 C · C++ · C# · Unity · Unreal · Python · HTML · CSS
+
+**Türkçe** · [English](README.en.md)
 
 ![Masaüstü uygulaması: işaretli bulgu satırları, analiz akışı, Sokratik mentor kartı](docs/img/desktop-live.png)
 
@@ -37,7 +39,7 @@ soruyu veriyor. Web arayüzü: [docs/img/web-live.png](docs/img/web-live.png).</
 | **Eval** | 166 elle etiketlenmiş örnek, dev/test ayrımlı (dev 96 / test 70) |
 | **Arayüzler** | Windows masaüstü (.exe), web (React), CLI, REST API + SSE |
 | **Çıktılar** | JSON · Markdown · SARIF · Rich terminal paneli |
-| **Kalite** | 3.000+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 25 ADR |
+| **Kalite** | 3.300+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 28 ADR |
 
 ## İçindekiler
 
@@ -145,7 +147,7 @@ Ayrıntı: [docs/mimari.md](docs/mimari.md).
 
 ## Mühendislik kararları
 
-Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 25 kayıt). Öne çıkanlar:
+Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 28 kayıt). Öne çıkanlar:
 
 - **Hibrit, LLM sarmalayıcısı değil.** Deterministik katman, yanıtların bir kısmını LLM'siz
   verir (sözdizimi hatalarında erken çıkış precision/recall %100) ve LLM'e olgu sağlar: olgular
@@ -307,9 +309,11 @@ Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 ### Seçenek 1: Masaüstü uygulaması (Windows)
 
 [Releases](https://github.com/BurakYildizGameDev/codementor-ai/releases/latest) sayfasından
-`CodeMentor-0.1.0-win64.zip`'i indir, aç ve `CodeMentor.exe`'ye çift tıkla (imzasız olduğu için
-Windows SmartScreen uyarı verebilir: "Ek bilgi" → "Yine de çalıştır"). Her `main` koşusunun
-derlediği exe GitHub Actions'ta `CodeMentor-win64` artefaktı olarak da bulunur. Python, Node.js
+`CodeMentor-<sürüm>-win64.zip`'i indir, aç ve `CodeMentor.exe`'ye çift tıkla (imzasız olduğu
+için Windows SmartScreen uyarı verebilir: "Ek bilgi" → "Yine de çalıştır"). Release'ler bir
+etiketten otomatik derlenir, duman testinden geçer ve `SHA256SUMS` ile gelir
+(`sha256sum -c SHA256SUMS`). Her `main` koşusunun derlediği exe GitHub Actions'ta
+`CodeMentor-win64` artefaktı olarak da bulunur. Python, Node.js
 ya da tarayıcı gerekmez (ADR-0013). Gereken tek şey bir LLM sağlayıcısı: varsayılan, oturum açılmış [Claude Code](https://claude.com/claude-code) CLI'ı.
 
 ### Seçenek 2: Web arayüzü + API
@@ -457,13 +461,15 @@ CODEMENTOR_E2E_LIVE=1 npx playwright test live   # web/ içinde; gerçek API ve 
 uv run codementor eval run --split dev --provider claude_cli --mode two_pass
 ```
 
-**Test disiplini:** ~25 bin satır test (~27 bin satır kaynak koda karşı): birim, entegrasyon,
+**Test disiplini:** ~28 bin satır test (~29 bin satır kaynak koda karşı): birim, entegrasyon,
 golden prompt anlık görüntüleri, hypothesis özellik testleri, her kural için pozitif/negatif
 fixture'lar, 40 KB kötü niyetli girdiyle doğrusal zaman testleri, Playwright e2e. Testler ağa
 çıkmaz; CI Ubuntu ve Windows'ta koşar, her `main` koşusu exe'yi de derler.
 
-**Nasıl geliştirildi:** proje 59 fazda, her faz ayrı dalda, kabul kriterleri ve testlerle
-geliştirildi ([uygulama planı](docs/UYGULAMA_PLANI.md), [ilerleme günlüğü](PROGRESS.md)).
+**Nasıl geliştirildi:** proje 60'tan fazla fazda (Faz 0-63, ardından public öncesi Faz A-D ve
+K), her faz ayrı dalda, kabul kriterleri ve testlerle geliştirildi
+([uygulama planı](docs/UYGULAMA_PLANI.md), [ilerleme günlüğü](PROGRESS.md),
+[geliştirme günlüğü](docs/gelistirme-gunlugu/)).
 Mimariden her sapma bir ADR'dir. Kodlama ajanlarıyla çalışıldı; fazların çoğu bağımsız bir
 kod denetimi ajanından geçti ve bulunan hatalar birleştirmeden önce düzeltildi.
 
@@ -478,6 +484,7 @@ kod denetimi ajanından geçti ve bulunan hatalar birleştirmeden önce düzelti
 
 Belgeler: [mimari](docs/mimari.md) · [ADR'ler](docs/adr/) · [uygulama planı](docs/UYGULAMA_PLANI.md) ·
 [eval bulguları](docs/eval-findings.md) · [kural kataloğu](docs/rules-catalog.md) ·
-[ilerleme](PROGRESS.md) · [Faz 0-16 özeti](docs/YAPILANLAR.md)
+[ilerleme](PROGRESS.md) · [geliştirme günlüğü](docs/gelistirme-gunlugu/) ·
+[değişiklikler](CHANGELOG.md) · [güvenlik](SECURITY.md) · [katkı](CONTRIBUTING.md)
 
 Lisans: [MIT](LICENSE).

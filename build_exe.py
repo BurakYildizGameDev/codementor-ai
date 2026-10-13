@@ -75,12 +75,12 @@ ZIP_EXCLUDE_SUFFIXES = (".pyc", ".pyo", ".log", ".zip")
 
 
 def project_version() -> str:
-    """pyproject.toml'daki sürüm (paketi import etmeden)."""
+    """`codementor.__version__` (tek kaynak, Faz D; paketi import etmeden)."""
     try:
-        text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        text = (ROOT / "src" / "codementor" / "__init__.py").read_text(encoding="utf-8")
     except OSError:
         return "0.0.0"
-    match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
+    match = re.search(r'^__version__\s*=\s*"([^"]+)"', text, re.MULTILINE)
     return match.group(1) if match else "0.0.0"
 
 

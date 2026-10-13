@@ -1,0 +1,46 @@
+name: Hata bildirimi
+description: Beklenmeyen davranış, çökme ya da yanlış bulgu
+labels: ["hata"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Güvenlik açığı mı? Lütfen burada değil, SECURITY.md'deki özel bildirim yoluyla bildirin.
+  - type: dropdown
+    id: arayuz
+    attributes:
+      label: Arayüz
+      options: [Masaüstü (exe), CLI, Web, REST API]
+    validations:
+      required: true
+  - type: input
+    id: surum
+    attributes:
+      label: Sürüm
+      description: "`codementor --version` çıktısı ya da exe'nin Hakkında bilgisi"
+    validations:
+      required: true
+  - type: input
+    id: saglayici
+    attributes:
+      label: Sağlayıcı ve model
+      placeholder: "claude_cli / claude-opus-5-5"
+  - type: textarea
+    id: adimlar
+    attributes:
+      label: Yeniden üretme adımları
+      description: En küçük kod parçasını ve dil/motor seçimini ekleyin.
+    validations:
+      required: true
+  - type: textarea
+    id: beklenen
+    attributes:
+      label: Beklenen ve gözlenen davranış
+    validations:
+      required: true
+  - type: textarea
+    id: kayit
+    attributes:
+      label: Rapor JSON'u ya da log
+      description: "Masaüstü logu: ~/.codementor/desktop.log (anahtar içermediğinden emin olun)"
+      render: text

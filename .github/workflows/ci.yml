@@ -6,6 +6,15 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Faz D (O17): en az yetki; yalnız release iş akışı yazabilir
+permissions:
+  contents: read
+
+# Aynı dalda üst üste push'ta eski koşu iptal edilir (main hariç: her commit'in sonucu kalsın)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   check:
     strategy:
@@ -14,12 +23,12 @@ jobs:
         os: [ubuntu-latest, windows-latest]  # Windows: .cmd kısayolu ve Job Object yolları
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
       - run: uv sync --locked
       # C# Tier 1 (Roslyn) derleyici testleri Linux'ta koşsun (Faz 27); atlanırsa test başarısız
       - if: runner.os == 'Linux'
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4.3.1
         with:
           dotnet-version: "10.0.x"
       - if: runner.os == 'Linux'
@@ -28,7 +37,7 @@ jobs:
       # sürüm/adres değişmedikçe önbellekten gelir (~100 MB indirme her koşuda tekrarlanmaz)
       - if: runner.os == 'Linux'
         id: zig-cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
         with:
           path: ~/.codementor/toolchain/zig
           key: zig-${{ runner.os }}-${{ hashFiles('codementor.toml') }}
@@ -65,17 +74,17 @@ jobs:
     env:
       PYTHONIOENCODING: utf-8  # runner konsolu cp1252; Türkçe çıktı çökertmesin
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
       - run: uv sync --locked
       # Roslyn denetleyicisi pakete girsin: self-contained tek dosya, kullanıcıda dotnet
       # gerekmez (Faz 29; Faz 27'de dotnet'e bağlıydı)
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4.3.1
         with:
           dotnet-version: "10.0.x"
       - run: dotnet publish tools/roslyn-check -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o tools/roslyn-check/sc
       - run: uv run python build_exe.py --both
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: CodeMentor-win64
           path: |
@@ -90,8 +99,8 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: 24
           cache: npm

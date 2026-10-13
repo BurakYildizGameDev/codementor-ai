@@ -1,7 +1,7 @@
 # Devir: Faz 60, 61, 62 (başka bir ajana)
 
 **Hazırlayan:** Claude Code, 2026-10-06 · **Uygulayacak:** GLM (Cline) · **Denetleyecek:** Claude Code
-**Bağlam:** [docs/GUNCELLEMELER.md](GUNCELLEMELER.md) (kullanıcı testlerinden çıkan bulgular ve kanıtları)
+**Bağlam:** [docs/GUNCELLEMELER.md](../GUNCELLEMELER.md) (kullanıcı testlerinden çıkan bulgular ve kanıtları)
 
 Bu belge üç fazı adım adım anlatır: hangi dosya, hangi fonksiyon, hangi test. Belgede olmayan
 bir karar gerekirse **DUR ve kullanıcıya sor**; kendi başına mimari karar verme.

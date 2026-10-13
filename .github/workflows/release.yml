@@ -1,0 +1,108 @@
+name: Release
+
+# Faz D (O17): `v*` etiketi → testler → Windows exe → duman testi → GitHub Release
+# (zip + exe + SHA256SUMS). Elle yapılan, tekrarlanamayan release'in yerini alır.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8  # runner konsolu cp1252; Türkçe çıktı çökertmesin
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+      - run: uv sync --locked
+
+      # Etiket sürümle aynı olmalı (tek kaynak: codementor.__version__)
+      - name: Etiket = sürüm
+        shell: bash
+        run: |
+          version=$(uv run python -c "import codementor; print(codementor.__version__)")
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "Etiket ${GITHUB_REF_NAME}, paket sürümü ${version}: eşleşmiyor" >&2
+            exit 1
+          fi
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+
+      - run: uv run ruff check .
+      - run: uv run mypy src/
+      - run: uv run pytest -m "not live and not compiler"
+
+      # Roslyn denetleyicisi pakete girsin (self-contained, kullanıcıda dotnet gerekmez)
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4.3.1
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet publish tools/roslyn-check -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o tools/roslyn-check/sc
+      - run: uv run python build_exe.py --both
+
+      # Duman testi: derlenen iki paket de pencere açmadan kaynaklarını ve çekirdeği denetler
+      - name: Duman testi (onedir + onefile)
+        shell: pwsh
+        run: |
+          $i = 0
+          foreach ($exe in @("dist/CodeMentor/CodeMentor.exe", "dist/CodeMentor.exe")) {
+            $i++
+            $out = Join-Path $env:RUNNER_TEMP "self-check-$i.json"
+            $proc = Start-Process -FilePath $exe -ArgumentList @("--self-check", $out) -Wait -PassThru
+            Get-Content $out -Encoding utf8
+            if ($proc.ExitCode -ne 0) { throw "$exe duman testi başarısız (çıkış $($proc.ExitCode))" }
+            $result = Get-Content $out -Encoding utf8 | ConvertFrom-Json
+            $roslyn = $result.checks | Where-Object { $_.name -eq "Roslyn denetleyicisi" }
+            if (-not $roslyn.ok) { throw "$exe paketinde Roslyn denetleyicisi yok" }
+          }
+
+      - name: SHA256SUMS
+        shell: bash
+        working-directory: dist
+        run: sha256sum "CodeMentor-${VERSION}-win64.zip" CodeMentor.exe > SHA256SUMS
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: release-files
+          path: |
+            dist/CodeMentor-*-win64.zip
+            dist/CodeMentor.exe
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # yalnız release oluşturan iş yazabilir
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: release-files
+          path: release
+      # Release notu CHANGELOG.md'deki bu sürümün bölümüdür
+      - name: Release notu
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "CHANGELOG.md'de $version bölümü yok" >&2; exit 1; }
+          (cd release && sha256sum -c SHA256SUMS)
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/* \
+            --title "CodeMentor AI ${GITHUB_REF_NAME#v}" \
+            --notes-file notes.md \
+            --verify-tag

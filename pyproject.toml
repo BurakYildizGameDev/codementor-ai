@@ -1,11 +1,38 @@
 [project]
 name = "codementor"
-version = "0.1.0"
+# Sürüm tek kaynaktan: src/codementor/__init__.py (Faz D, O18)
+dynamic = ["version"]
 description = "Kodu düzeltmeyen, denetleyip Sokratik sorular üreten hibrit kod mentorluk motoru"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
+authors = [{ name = "Burak Yildiz" }]
+keywords = [
+    "education",
+    "code-review",
+    "static-analysis",
+    "llm",
+    "socratic",
+    "tree-sitter",
+    "unity",
+    "unreal",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Turkish",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Education",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
 dependencies = [
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
@@ -32,6 +59,12 @@ dependencies = [
     "tomlkit>=0.15.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/BurakYildizGameDev/codementor-ai"
+Repository = "https://github.com/BurakYildizGameDev/codementor-ai"
+Issues = "https://github.com/BurakYildizGameDev/codementor-ai/issues"
+Changelog = "https://github.com/BurakYildizGameDev/codementor-ai/blob/main/CHANGELOG.md"
+
 [project.scripts]
 codementor = "codementor.cli.main:run"
 
@@ -56,6 +89,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/codementor/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codementor"]
