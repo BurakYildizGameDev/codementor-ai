@@ -33,3 +33,6 @@ requirements-audit.txt
 .coverage.*
 coverage.xml
 htmlcov/
+
+# Kişisel notlar (repoya girmez)
+linkedin metini.md

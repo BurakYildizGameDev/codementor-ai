@@ -118,6 +118,33 @@ class _CappedReader(threading.Thread):
             return b"".join(self._chunks).decode("utf-8", errors="replace")
 
 
+def find_on_path(name: str, search_path: str) -> Path | None:
+    """Çıplak `name`'i yalnız `search_path`'teki mutlak dizinlerde arar (Faz A2, Y1).
+
+    `shutil.which` Windows'ta `NoDefaultCurrentDirectoryInExePath` yoksa çalışma dizinini başa
+    ekler (`path=` verilse bile); öğrenci projesindeki `gcc.bat` derleyici sanılmasın diye
+    çalışma dizini ve göreli `PATH` girdileri hiç denenmez. Bulunursa mutlak (çözülmüş) yol.
+    """
+    suffixes = [""]
+    if sys.platform == "win32" and not Path(name).suffix:
+        pathext = os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";")
+        suffixes = [s.lower() for s in pathext if s]
+    for directory in search_path.split(os.pathsep):
+        base = Path(directory)
+        if not directory or not base.is_absolute():
+            continue
+        for suffix in suffixes:
+            candidate = base / f"{name}{suffix}"
+            try:
+                if candidate.is_file() and (
+                    sys.platform == "win32" or os.access(candidate, os.X_OK)
+                ):
+                    return candidate.resolve()
+            except (OSError, ValueError):
+                continue
+    return None
+
+
 def _feed_stdin(stream: IO[bytes], data: bytes) -> None:
     try:
         stream.write(data)

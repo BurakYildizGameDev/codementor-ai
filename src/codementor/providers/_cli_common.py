@@ -9,14 +9,13 @@ from __future__ import annotations
 
 import os
 import re
-import sys
 from collections.abc import Sequence
 from pathlib import Path
 
 from codementor.log import scrub
 from codementor.models.provider import ChatMessage
 from codementor.providers.base import ProviderConfigError, ProviderUnavailableError
-from codementor.validation.runner import ProcessLimits
+from codementor.validation.runner import ProcessLimits, find_on_path
 
 MEMORY_MB = 4096
 MAX_PROCESSES = 64
@@ -52,31 +51,22 @@ class CliTimeoutError(ProviderUnavailableError):
     retryable = False
 
 
-def _candidates(command: str) -> list[Path]:
-    """PATH'teki mutlak dizinlerde aday dosyalar (çalışma dizini hiç denenmez)."""
+def _locate(command: str) -> Path | None:
+    """Mutlak yol olduğu gibi; çıplak ad yalnız PATH'teki mutlak dizinlerde (çalışma dizini hiç
+    denenmez, `find_on_path`)."""
     given = Path(command)
     if given.is_absolute():
-        return [given]
+        return given if given.is_file() else None
     if "/" in command or "\\" in command:
-        return []  # `./claude`, `bin/claude` gibi göreli yollar kabul edilmez
-    suffixes = [""]
-    if sys.platform == "win32":
-        pathext = os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";")
-        suffixes = [s.lower() for s in pathext if s] if not given.suffix else [""]
-    found: list[Path] = []
-    for directory in os.environ.get("PATH", "").split(os.pathsep):
-        base = Path(directory)
-        if not directory or not base.is_absolute():
-            continue
-        found += [base / f"{command}{suffix}" for suffix in suffixes]
-    return found
+        return None  # `./claude`, `bin/claude` gibi göreli yollar kabul edilmez
+    return find_on_path(command, os.environ.get("PATH", ""))
 
 
 def resolve_executable(provider: str, command: str | None) -> str:
     """Çalıştırılabilir dosyanın mutlak yolu; `.cmd` kısayolu ise işaret ettiği `.exe`."""
     if not command:
         raise ProviderConfigError(provider, f"command tanımlı değil ([providers.{provider}])")
-    path = next((p for p in _candidates(command) if p.is_file()), None)
+    path = _locate(command)
     if path is None:
         raise ProviderConfigError(provider, f"çalıştırılabilir bulunamadı: {command}")
     path = path.resolve()

@@ -55,6 +55,7 @@
 | 62 | ✅ | faz/62-gecmis-silme | 2026-10-07 | Antigravity / — |
 | 63 | ✅ | faz/63-agy-haiku-canli | 2026-10-09 | Claude Code / — |
 | A1 | ✅ (denetim sonraya) | faz/a1-guvenlik | 2026-10-12 | Claude Code / — |
+| A2 | ✅ (denetim sonraya) | faz/a2-guvenlik | 2026-10-13 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -913,6 +914,23 @@ nedeniyle sonraya bırakıldı.
 **Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3148 geçti, 14 atlandı.
 **Açık:** `_recursion.py`/`verify/lines.py`/`verify/proof.py` ve `rules/` regex taraması; kod-denetçi
 denetimi; Y1, D13, `.gitignore` (Faz A2).
+
+
+## Faz A2 — Notlar (araç keşfi çalışma dizini, sınırlayıcı benzerleri, .gitignore; 2026-10-13)
+Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`ten açıldı.
+**Yapılanlar:**
+- `validation/runner.py` `find_on_path(name, search_path)`: yalnız mutlak `PATH` dizinleri, Windows'ta
+  `PATHEXT`, POSIX'te çalıştırma izni; çalışma dizini ve göreli girdiler hiç denenmez.
+  `toolchain._which` (`shutil.which` yerine) ve `providers/_cli_common` (`_candidates` → `_locate`)
+  aynı yardımcıyı kullanıyor.
+- `prompts/templates.py`: `˂` U+02C2, `❮` U+276E, `❰` U+2770, `«` U+00AB `<` sayılır; `&lt;`/`&LT;`
+  biçimli sınırlayıcı ve rol etiketleri `&amp;lt;` yapılır. `﹤` U+FE64 NFKC ile zaten kapsanıyordu.
+- `.gitignore`: `linkedin metini.md`.
+- Testler: çalışma dizinine bırakılan sahte `gcc/g++/clang/clang++/zig/dotnet` (`.exe/.bat/.cmd`)
+  seçilmez (eski kodla düşüyordu), göreli `PATH` girdileri yok sayılır, mutlak dizin bulunur,
+  `find_on_path` PATHEXT/dizin/çalıştırma izni; 5 benzer × 4 etiket, 6 varlık biçimi, 5 olağan metin.
+**Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3188 geçti, 15 atlandı.
+**Açık:** Y2 (kullanıcı, `private/`), K2 kalan regex taraması, A1+A2 kod-denetçi denetimi.
 
 ## Faz 63 — Notlar (agy ve Haiku canlı doğrulaması)
 **Yapılanlar:**

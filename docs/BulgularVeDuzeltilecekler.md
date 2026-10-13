@@ -176,7 +176,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 
 ## 3. Yüksek
 
-### Y1 — Windows'ta çalışma dizinindeki sahte derleyici 🟠 🔬 (koşullu)
+### Y1 — Windows'ta çalışma dizinindeki sahte derleyici 🟠 🔬 (koşullu) ✅ Faz A2
 
 - **Dosya:** `src/codementor/validation/toolchain.py:51` (`_which` → `shutil.which(name, path=PATH)`)
 - **Ne yanlış:** `run_process` (`runner.py:237`) çıplak/göreli `argv[0]`'ı reddediyor, ama keşif
@@ -533,7 +533,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | D10 | `models/schemas.py:26-38` | `LLMMarkupAnalysisOutput` `SCHEMA_MODELS`'te yok; HTML/CSS LLM şeması `schemas/` altına yazılmıyor. | Ekle, `schemas/` yeniden üret. |
 | D11 | `prompts/builder.py`, `orchestrator.py` | Olay döngüsünde küçük bloklayan G/Ç: `prompt_version` her analizde `rglob`+`stat`; `_rules_version` veri dosyalarını 2 kez okuyor; `_question_bank` her istekte disk (CLI). | Önbellekle. |
 | D12 | `providers/cli_agent.py:108-126` | `_json_document` karesel (160 KB'de 2,7 sn; 64 KB sınırıyla ≤0,5 sn). O5'te sınır büyütülürse sorun olur. | Doğrusal tarama. |
-| D13 | `prompts/templates.py:36-55` | Sınırlayıcı korumasında atlanan benzer karakterler: `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `﹤` varyantı, `«` (U+00AB), düz `&lt;/user_code&gt;`. | `_CONFUSABLES`'a ekle, `&lt;` biçimini desene kat. |
+| D13 ✅ A2 | `prompts/templates.py:36-55` | Sınırlayıcı korumasında atlanan benzer karakterler: `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `﹤` varyantı, `«` (U+00AB), düz `&lt;/user_code&gt;`. | `_CONFUSABLES`'a ekle, `&lt;` biçimini desene kat. |
 | D14 | `api/auth.py:105`, `providers/health.py:105-133` | API anahtarı tanımlıyken bile `/health/ready`, `/docs`, `/openapi.json` açık; sağlayıcı/model adları, anahtar değişken adları, çalıştırılabilir yolları sızıyor. | Anahtar varken `/health/ready`'yi koru; `/health` açık kalsın. |
 | D15 | `report/markdown.py:14, 24, 61, 80-83` | LLM metni ve derleyici iletisi ham yazılıyor (yalnız `\|` kaçışlı); dosyada `<details>` HTML'i de var. HTML'e izin veren görüntüleyicide XSS. | `< > &` kaçışı. |
 | D16 | `models/request.py:36`, `storage/sessions.py:146` | `session_id` sahipsiz; kimliği bilen başkasının ipucu merdivenini ilerletir. Rastgele kimliklerle `sessions` tablosu büyütülebilir (bilinen). | Paylaşılan sunucu için belgeye yaz; ileride anahtara bağla. |
@@ -554,7 +554,7 @@ bölünmeli. Sınıra yakın: `analysis/extractor.py` 398, `desktop/views/analyz
 |---|---|---|---|
 | P1 | Git geçmişinde gerçek anahtar | ✅ Yok (yalnız `sk-ant-test-SECRET-…` test sahtesi) | — |
 | P2 | `.env`, `private/` | ✅ `.gitignore`'da | — |
-| P3 | `linkedin metini.md` | ⚠️ İzlenmiyor ama `.gitignore`'da da değil | `.gitignore`'a ekle |
+| P3 | `linkedin metini.md` | ✅ `.gitignore`'da (Faz A2) | `.gitignore`'a ekle |
 | P4 | Referans çözüm sızıntısı | ❓ Y2 | Kontrol et |
 | P5 | İç çalışma belgeleri | ⚠️ `docs/DEVIR_FAZ52_54.md`, `DEVIR_FAZ55.md`, `DEVIR_FAZ60_62.md`, `CODEX_3_4_YAPILANLAR.md`, `YAPILANLAR_60_62_ANTIGRAVITY.md`, `FAZ36_OLCUM_DURUMU.md`, `EVAL_PARCA_REHBERI.md` | `docs/gelistirme-gunlugu/` altına taşı |
 | P6 | `PROGRESS.md` | ⚠️ 252 KB | Arşivle; kökte kısa özet bırak |
@@ -727,16 +727,16 @@ dosya sistemine dokunmasını kesin olarak engellemek.
       `<html`/boş öğe/öznitelik, CSS `@kural`/`var(--`/birim sinyalleri **hiç eşleşmiyordu**.
       Hepsi `\b` yapıldı; CSS birimi `(?!\w)` (`100%;` de eşleşsin). Kaynakta U+0008 kalmadığını
       sınayan test eklendi
-- [ ] **Y1 — Araç keşfi:** çalışma dizinindeki çalıştırılabilir dosya derleyici olarak seçilmez
+- [x] **Y1 — Araç keşfi:** çalışma dizinindeki çalıştırılabilir dosya derleyici olarak seçilmez
       (`validation/toolchain.py`); Windows'taki `NoDefaultCurrentDirectoryInExePath`
       davranışına bağlı kalınmaz. `providers/_cli_common.py` `_candidates()` mantığı ortak
-      yardımcıya çıkarılıp iki yerde de kullanılır
+      yardımcıya (`runner.find_on_path`) çıkarılıp iki yerde de kullanılır — **Faz A2**
 - [ ] **Y2 — Referans çözüm:** `tests/fixtures/llm_responses/unity03_reference.cs` bankadaki
       çözümle karşılaştırılır (kullanıcı; `private/` erişimi). Aynıysa bankada olmayan yapay bir
       çözümle değiştirilir, golden'lar yeniden üretilir
-- [ ] **D13 — Sınırlayıcı:** `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `«` (U+00AB) ve
-      `&lt;/user_code&gt;` biçimi `guard_delimiters`'a eklenir
-- [ ] **P3:** `linkedin metini.md` `.gitignore`'a eklenir
+- [x] **D13 — Sınırlayıcı:** `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `«` (U+00AB) ve
+      `&lt;/user_code&gt;` biçimi `guard_delimiters`'a eklenir — **Faz A2**
+- [x] **P3:** `linkedin metini.md` `.gitignore`'a eklenir — **Faz A2**
 - [ ] Testler:
   - include: üç atlatma biçimi + `# /* a */ include`, `#/**//**/include` red; `compiler`
     işaretli uçtan uca test (yönerge Tier 1'e ulaşmaz)

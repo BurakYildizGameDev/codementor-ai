@@ -16,7 +16,6 @@ Sonuç önbelleklenir; kurulumdan sonra `clear_toolchain_cache()`. `/health/read
 from __future__ import annotations
 
 import os
-import shutil
 from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
@@ -26,6 +25,7 @@ from codementor.config import ValidationSettings
 from codementor.log import get_logger
 from codementor.models.api import CompilerStatus
 from codementor.models.validation import CompilerTool, DiagnosticTool, Toolchain, ToolOrigin
+from codementor.validation.runner import find_on_path
 from codementor.validation.toolchain_install import installed_zig, zig_root
 from codementor.validation.zig import ZigLanguage, probe_flags
 
@@ -49,11 +49,9 @@ class Prober(Protocol):
 
 
 def _which(name: str, path: str) -> str | None:
-    try:
-        found = shutil.which(name, path=path)
-        return str(Path(found).resolve()) if found else None
-    except (OSError, ValueError):
-        return None
+    # shutil.which değil: Windows'ta çalışma dizinine de bakar (Faz A2, Y1)
+    found = find_on_path(name, path)
+    return str(found) if found else None
 
 
 def _existing(path: Path | None) -> str | None:

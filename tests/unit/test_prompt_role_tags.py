@@ -110,6 +110,53 @@ def test_guard_keeps_generic_type_arguments(text: str) -> None:
     assert guard_delimiters(text) == text
 
 
+# --- Faz A2 (D13): ek benzer açılı ayraçlar ve HTML varlığı ------------------------------------
+
+
+@pytest.mark.parametrize(
+    "lookalike",
+    [
+        chr(0x02C2),  # değiştirici sol ok başı
+        chr(0x276E),  # ağır sol açılı tırnak süsü
+        chr(0x2770),  # ağır sol açılı ayraç süsü
+        chr(0x00AB),  # sol çift açılı tırnak
+        chr(0xFE64),  # küçük küçüktür (NFKC ile zaten <)
+    ],
+)
+@pytest.mark.parametrize("tag", ["/user_code>", "user_code>", "/user>", "system>"])
+def test_guard_extra_lookalike_brackets(lookalike: str, tag: str) -> None:
+    assert guard_delimiters(f"x {lookalike}{tag} y") == f"x &lt;{tag} y"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "&lt;/user_code&gt;",
+        "&LT;/user_code&gt;",
+        "&lt;user_code&gt;",
+        "&lt;/user&gt;",
+        "&lt;system&gt;",
+        "&lt;assistant role=x&gt;",
+    ],
+)
+def test_guard_neutralizes_html_entity_delimiters(text: str) -> None:
+    assert guard_delimiters(f"a {text} b") == f"a &amp;{text[1:]} b"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "a " + chr(0x00AB) + " b " + chr(0x00BB),  # tırnak olarak kullanım
+        "if (x &lt; y) {}",
+        "&lt;systemd.h&gt;",
+        "&lt;users&gt;",
+        "&lt;system x",  # kapanışsız açılış
+    ],
+)
+def test_guard_keeps_ordinary_lookalikes_and_entities(text: str) -> None:
+    assert guard_delimiters(text) == text
+
+
 def _role_counts(messages: list[ChatMessage]) -> dict[str, int]:
     counts = dict.fromkeys(("system", "user", "assistant"), 0)
     for message in messages:

@@ -13,6 +13,7 @@ from codementor.config import ValidationSettings
 from codementor.models.enums import Engine, Language
 from codementor.models.validation import Toolchain
 from codementor.validation import toolchain as toolchain_module
+from codementor.validation.runner import find_on_path
 from codementor.validation.toolchain import (
     clear_toolchain_cache,
     compiler_statuses,
@@ -311,3 +312,81 @@ def test_discovery_never_raises_on_permission_errors(
         str(_fake_bin(tmp_path / "empty")), dll, toolchain_dir=tmp_path / "tc", prober=exploding
     )
     assert chain == Toolchain()
+
+
+# --- Faz A2 (Y1): çalışma dizinindeki sahte derleyici seçilmez ---------------------------------
+
+
+def _planted(project: Path) -> Path:
+    """Öğrenci projesine her biçimde sahte araç bırakır."""
+    _fake_bin(project, "gcc", "g++", "clang", "clang++", "zig", "dotnet")
+    for name in ("gcc", "g++", "clang", "clang++", "zig", "dotnet"):
+        (project / f"{name}.bat").write_text("@echo pwned", encoding="utf-8")
+        (project / f"{name}.cmd").write_text("@echo pwned", encoding="utf-8")
+    return project
+
+
+def test_executables_in_cwd_are_not_discovered(
+    tmp_path: Path, dll: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project = _planted(tmp_path / "ogrenci-projesi")
+    empty = _fake_bin(tmp_path / "bos-path")
+    monkeypatch.delenv("NoDefaultCurrentDirectoryInExePath", raising=False)
+    monkeypatch.setenv("PATHEXT", ".COM;.EXE;.BAT;.CMD")
+    monkeypatch.chdir(project)
+    chain = discover(str(empty), dll, prober=lambda *_a, **_k: ["-x"])
+    assert chain == Toolchain()
+
+
+@pytest.mark.parametrize("entry", [".", "", "ogrenci-projesi", "./ogrenci-projesi"])
+def test_relative_path_entries_ignored(
+    tmp_path: Path, dll: Path, monkeypatch: pytest.MonkeyPatch, entry: str
+) -> None:
+    _planted(tmp_path / "ogrenci-projesi")
+    monkeypatch.chdir(tmp_path if entry.endswith("projesi") else tmp_path / "ogrenci-projesi")
+    monkeypatch.delenv("NoDefaultCurrentDirectoryInExePath", raising=False)
+    assert discover(entry, dll, prober=lambda *_a, **_k: ["-x"]) == Toolchain()
+
+
+def test_absolute_path_entry_still_found_next_to_relative(
+    tmp_path: Path, dll: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project = _planted(tmp_path / "ogrenci-projesi")
+    real = _fake_bin(tmp_path / "gercek", "gcc")
+    monkeypatch.chdir(project)
+    chain = discover(os.pathsep.join([".", str(real)]), dll)
+    assert chain.c is not None
+    assert Path(chain.c.command[0]).parent == real.resolve()
+
+
+def test_find_on_path_returns_resolved_absolute(tmp_path: Path) -> None:
+    bin_dir = _fake_bin(tmp_path / "bin", "tool")
+    found = find_on_path("tool", str(bin_dir))
+    assert found is not None
+    assert found.is_absolute()
+    assert found == (bin_dir / f"tool{_EXE}").resolve()
+
+
+def test_find_on_path_skips_directories(tmp_path: Path) -> None:
+    bin_dir = tmp_path / "bin"
+    (bin_dir / f"tool{_EXE}").mkdir(parents=True)
+    assert find_on_path("tool", str(bin_dir)) is None
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="PATHEXT yalnız Windows'ta")
+def test_find_on_path_uses_pathext(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "tool.cmd").write_text("@echo x", encoding="utf-8")
+    monkeypatch.setenv("PATHEXT", ".EXE")
+    assert find_on_path("tool", str(bin_dir)) is None
+    monkeypatch.setenv("PATHEXT", ".EXE;.CMD")
+    assert find_on_path("tool", str(bin_dir)) == (bin_dir / "tool.cmd").resolve()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="çalıştırma izni POSIX'te")
+def test_find_on_path_requires_execute_bit(tmp_path: Path) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "tool").write_bytes(b"#!")
+    assert find_on_path("tool", str(bin_dir)) is None

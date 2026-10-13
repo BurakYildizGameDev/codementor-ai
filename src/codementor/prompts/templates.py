@@ -25,10 +25,13 @@ TEMPLATE_SUFFIXES = (".j2", ".yaml", ".yml")
 # iskelet küçük harfe katlandığı için `List<User>` gibi generic'leri bozardı; kapanış nötrken
 # kullanıcı bloğundan çıkılamaz.
 _ROLE = r"(?:user|system|assistant)(?![a-z0-9_])"
+# Faz A2 (D13): HTML varlığı `&lt;` da açılış sayılır (model `&lt;/user_code&gt;`'i etiket
+# okuyabilir); iskelet küçük harfe katlandığı için `&LT;` de yakalanır.
+_OPEN = r"(?:<|&lt;)"
 _DELIMITER = re.compile(
-    r"<\s*/?\s*user_code"
-    rf"|<\s*/\s*{_ROLE}"
-    r"|<\s*(?:system|assistant)(?:\s+[\w-]+\s*=[^<>]*)?\s*/?\s*>"
+    rf"{_OPEN}\s*/?\s*user_code"
+    rf"|{_OPEN}\s*/\s*{_ROLE}"
+    rf"|{_OPEN}\s*(?:system|assistant)(?:\s+[\w-]+\s*=[^<>&]*)?\s*/?\s*(?:>|&gt;)"
 )
 # Görünmez/biçim karakterleri ve birleştirici işaretler iskelete girmez (Faz 48 denetimi:
 # sabit liste U+034F, U+0332, varyasyon seçicileri, yön denetimlerini kaçırıyordu).
@@ -39,7 +42,10 @@ _INVISIBLE = frozenset(
 )
 _CONFUSABLES = str.maketrans(
     {
-        **dict.fromkeys(map(chr, (0x2039, 0x3008, 0x27E8, 0x1438)), "<"),  # açılı tırnak/ayraçlar
+        # açılı tırnak/ayraçlar; Faz A2 (D13): değiştirici ok, süslü ayraçlar, çift açılı tırnak
+        **dict.fromkeys(
+            map(chr, (0x2039, 0x3008, 0x27E8, 0x1438, 0x02C2, 0x276E, 0x2770, 0x00AB)), "<"
+        ),
         **dict.fromkeys(map(chr, (0x2044, 0x2215, 0x29F8)), "/"),  # kesir, bölme, büyük eğik çizgi
         **dict.fromkeys(map(chr, (0x057D, 0x03C5)), "u"),  # Ermeni seh, Yunan upsilon
         chr(0x0455): "s",  # Kiril dze
@@ -84,7 +90,8 @@ def guard_delimiters(text: str) -> str:
     previous = 0
     for start in starts:
         parts.append(text[previous:start])
-        parts.append("&lt;")
+        # `&lt;` biçiminde `&` kaçırılır (`&amp;lt;`); diğerlerinde ayraç `&lt;` olur
+        parts.append("&amp;" if text[start] == "&" else "&lt;")
         previous = start + 1
     parts.append(text[previous:])
     return "".join(parts)
