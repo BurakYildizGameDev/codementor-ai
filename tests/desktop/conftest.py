@@ -32,7 +32,7 @@ StateFactory = Callable[..., ApiState]
 try:
     import tkinter  # noqa: F401
 except ImportError:
-    collect_ignore = ["test_app.py", "test_user_questions_app.py"]
+    collect_ignore = ["test_app.py", "test_user_questions_app.py", "test_faz_c_app.py"]
 
 
 def scripted() -> FakeProvider:

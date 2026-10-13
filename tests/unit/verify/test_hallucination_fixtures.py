@@ -69,6 +69,7 @@ def _run_socratic(case: dict[str, Any]) -> Any:
         output,
         code=code,
         hint_level=1,
+        name_concept=False,
         question=None,
         reference=reference,
         regenerated=case["regenerated"],

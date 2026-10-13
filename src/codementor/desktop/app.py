@@ -17,7 +17,7 @@ from typing import Any
 import customtkinter as ctk
 
 from codementor.api.state import ApiState
-from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE, Settings, load_settings
+from codementor.config import Settings, config_file, load_settings
 from codementor.desktop import questions_controller, runtime, theme
 from codementor.desktop.bridge import Bridge, Cancellation, Message, analysis_work
 from codementor.desktop.config_writer import write_provider_prefs
@@ -451,9 +451,9 @@ class App(ctk.CTk):  # type: ignore[misc]
             os.startfile(folder)
 
     def _locations(self) -> list[tuple[str, str]]:
-        config = os.environ.get(CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE)
+        # Faz C (Y8): okunan dosyanın kendisi (exe'de geçici paket dizini değil)
         return [
-            ("Yapılandırma", str(Path(config).resolve())),
+            ("Yapılandırma", str(config_file().resolve())),
             ("Veritabanı", str(resolve_db_path(self.settings))),
             ("Kullanıcı verisi", str(runtime.user_dir())),
         ]

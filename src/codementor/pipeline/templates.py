@@ -53,6 +53,7 @@ def early_exit_socratic(
         guiding_questions=questions,
         next_step_hint=templates.early_exit_hint,
         leak_check="skipped",
+        concept_revealed=True,  # genel şablon adı ("Derleme hatası"), çözüm içermez
     )
 
 
@@ -92,6 +93,7 @@ def degraded_socratic(
         guiding_questions=questions,
         next_step_hint=templates.degraded_hint,
         leak_check="skipped",
+        concept_revealed=True,  # bulgu kategorisinin genel adı, çözüm içermez
     )
 
 

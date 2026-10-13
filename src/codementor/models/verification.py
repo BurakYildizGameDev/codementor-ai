@@ -19,7 +19,7 @@ RepairReason = Literal["schema", "complexity_unparsable", "unjustified_conflict"
 AgreementState = Literal["agrees", "justified_conflict", "unjustified_conflict", "no_hint"]
 LeakKind = Literal["code_block", "code_line", "ngram_overlap", "forbidden_identifier", "too_long"]
 LeakAction = Literal["passed", "regenerate", "dropped_questions"]
-LeakField = Literal["guiding_questions", "next_step_hint"]
+LeakField = Literal["guiding_questions", "next_step_hint", "key_flaw_concept"]
 
 
 class RepairRequest(StrictModel):

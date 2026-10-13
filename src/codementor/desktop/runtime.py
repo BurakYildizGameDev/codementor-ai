@@ -17,7 +17,7 @@ from typing import TextIO
 from pydantic import ValidationError
 
 from codementor import paths
-from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE
+from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE, config_file
 from codementor.models.desktop import MAX_RECENT_FILES, DesktopPrefs
 
 PREFS_FILE = "desktop.json"
@@ -41,27 +41,46 @@ def user_dir() -> Path:
     return Path.home() / ".codementor"
 
 
+def is_installed_package() -> bool:
+    """Wheel'den kurulu mu (kaynak kökü paketteki `_resources`): oraya yazılmaz (Faz C, O9)."""
+    return not is_frozen() and resource_root().name == paths.RESOURCES_DIR
+
+
+def _user_config_target() -> Path | None:
+    """Paket verisi salt okunur/geçici olduğunda kullanıcının toml'u: exe'de exe'nin yanı, kurulu
+    wheel'de `~/.codementor/codementor.toml`; depodan çalışırken None (depo kökündeki dosya)."""
+    if is_frozen():
+        return Path(sys.executable).resolve().parent / DEFAULT_CONFIG_FILE
+    if is_installed_package():
+        return user_dir() / DEFAULT_CONFIG_FILE
+    return None
+
+
 def user_config_file() -> Path | None:
-    """Exe'nin yanına konan `codementor.toml` paketteki varsayılanı geçersiz kılar."""
-    if not is_frozen():
-        return None
-    candidate = Path(sys.executable).resolve().parent / DEFAULT_CONFIG_FILE
-    return candidate if candidate.is_file() else None
+    """Kullanıcının toml'u varsa (exe yanı ya da kurulu wheel'de `~/.codementor`) o dosya;
+    paketteki varsayılanı geçersiz kılar."""
+    target = _user_config_target()
+    return target if target is not None and target.is_file() else None
 
 
 def writable_config_file() -> Path:
-    """Tercihlerin yazılacağı `codementor.toml` (Faz 24).
+    """Tercihlerin yazılacağı `codementor.toml` (Faz 24; Faz C, Y8/O9).
 
-    Exe'de paketteki dosya geçici dizindedir; exe'nin yanındaki kullanıcı dosyası kullanılır,
-    yoksa paketteki varsayılan oraya kopyalanır (varsayılan ayarlar kaybolmasın). Kaynaktan
-    çalışırken etkin yapılandırma dosyasıdır.
+    Öncelik: `CODEMENTOR_CONFIG_FILE` → exe yanı / `~/.codementor` (yoksa paketteki varsayılan
+    oraya kopyalanır, varsayılan ayarlar kaybolmasın) → depodan çalışırken etkin dosya. Seçilen
+    yol `CODEMENTOR_CONFIG_FILE`'a yazılır: yeniden yükleme ve gösterilen konum aynı dosyadır.
     """
-    if not is_frozen():
-        return Path(os.environ.get(CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE)).absolute()
-    target = Path(sys.executable).resolve().parent / DEFAULT_CONFIG_FILE
-    bundled = resource_root() / DEFAULT_CONFIG_FILE
-    if not target.is_file() and bundled.is_file():
-        shutil.copyfile(bundled, target)
+    if env := os.environ.get(CONFIG_FILE_ENV):
+        return Path(env).absolute()
+    target = _user_config_target()
+    if target is None:
+        target = config_file().absolute()
+    else:
+        bundled = resource_root() / DEFAULT_CONFIG_FILE
+        if not target.is_file() and bundled.is_file():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(bundled, target)
+    os.environ[CONFIG_FILE_ENV] = str(target)
     return target
 
 

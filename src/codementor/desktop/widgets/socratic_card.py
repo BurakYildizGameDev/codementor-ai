@@ -55,7 +55,9 @@ class SocraticCard(Card):
                 self.body, "Bu analizde mentor sorusu üretilmedi.", size=14, color=theme.MUTED
             ).grid(row=0, column=0, sticky="ew")
             return
-        wrap_label(self.body, result.key_flaw_concept, size=18, weight="bold").grid(
+        # Faz C (Y6): kavram yalnız açıldıysa başlıkta; yoksa nötr başlık
+        title = result.key_flaw_concept if result.concept_revealed else ""
+        wrap_label(self.body, title or "Mentor soruları", size=18, weight="bold").grid(
             row=0, column=0, sticky="ew"
         )
         self._ladder(result.hint_level).grid(row=1, column=0, sticky="ew", pady=(10, 14))

@@ -33,6 +33,11 @@ class SocraticResult(StrictModel):
     guiding_questions: list[str]
     next_step_hint: str | None
     leak_check: Literal["passed", "regenerated", "dropped_questions", "skipped"]
+    # Faz C (Y6, mimari §5.4.3): kavram adı açıldı mı. Kural kaynağında uygulanır: açılmadıysa
+    # `key_flaw_concept` boştur; arayüzler yalnız bu bayrağa bakar. Varsayılan güvenli taraf.
+    concept_revealed: bool = Field(
+        default=False, description="false ise key_flaw_concept boştur ve gösterilmez"
+    )
 
 
 class TokenSplit(StrictModel):

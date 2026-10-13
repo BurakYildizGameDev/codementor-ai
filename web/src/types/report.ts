@@ -91,6 +91,10 @@ export type UsageEstimated = boolean;
 export type Warnings = string[];
 export type QuestionId = string | null;
 export type SchemaVersion1 = "1.0" | "1.1";
+/**
+ * false ise key_flaw_concept boştur ve gösterilmez
+ */
+export type ConceptRevealed = boolean;
 export type GuidingQuestions = string[];
 export type HintLevel = number;
 export type KeyFlawConcept = string;
@@ -193,6 +197,7 @@ export interface TokenSplit {
   output: Output;
 }
 export interface SocraticResult {
+  concept_revealed?: ConceptRevealed;
   guiding_questions: GuidingQuestions;
   hint_level: HintLevel;
   key_flaw_concept: KeyFlawConcept;

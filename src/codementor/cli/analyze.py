@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from rich.console import Console
 from rich.markup import escape
 
+from codementor.cli.errors import system_errors
 from codementor.config import Settings, load_settings
 from codementor.ingest.errors import InvalidEncodingError
 from codementor.ingest.normalize import decode_source
@@ -154,19 +155,25 @@ def analyze(
             options=AnalysisOptions(mode=mode, tier1=tier1, use_cache=False if no_cache else None),
         )
         pretty = fmt is OutputFormat.PRETTY and out is None
-        report = asyncio.run(_run(settings, request, console, progress=pretty))
+        # Faz C (Y9): açılamayan veritabanı vb. traceback + 1 değil, Türkçe mesaj + 3
+        with system_errors(console):
+            report = asyncio.run(_run(settings, request, console, progress=pretty))
     except PipelineError as exc:
         raise _fail(console, str(exc)) from exc
     except ValidationError as exc:
         raise _fail(console, f"Geçersiz istek: {exc.error_count()} hata") from exc
 
-    if fmt is OutputFormat.PRETTY:
-        target = Console(file=out.open("w", encoding="utf-8")) if out else Console()
-        print_report(report, target, request.code)
-    else:
-        text = render(report, fmt, path.as_posix())
-        if out is not None:
-            out.write_text(text, encoding="utf-8", newline="\n")
+    with system_errors(console, "çıktı yazılamadı"):
+        if fmt is OutputFormat.PRETTY:
+            if out is None:
+                print_report(report, Console(), request.code)
+            else:
+                with out.open("w", encoding="utf-8") as handle:
+                    print_report(report, Console(file=handle), request.code)
         else:
-            _write_stdout(text)
+            text = render(report, fmt, path.as_posix())
+            if out is not None:
+                out.write_text(text, encoding="utf-8", newline="\n")
+            else:
+                _write_stdout(text)
     raise typer.Exit(exit_code(report))

@@ -184,6 +184,7 @@ def test_llm_schemas_have_no_system_fields() -> None:
                 "guiding_questions",
                 "next_step_hint",
                 "leak_check",
+                "concept_revealed",  # Faz C (Y6)
             },
         ),
         (

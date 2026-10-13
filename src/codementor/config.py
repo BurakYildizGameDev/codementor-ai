@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import os
 import sys
+import tomllib
 from functools import lru_cache
+from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import Any, Literal, get_args
 
@@ -304,8 +306,7 @@ class Settings(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        toml_file = Path(os.environ.get(CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE))
-        toml_settings = _RelativeTomlSource(settings_cls, toml_file)
+        toml_settings = _RelativeTomlSource(settings_cls, config_file())
         return (init_settings, env_settings, toml_settings)
 
 
@@ -346,6 +347,12 @@ class _RelativeTomlSource(TomlConfigSettingsSource):
         super().__init__(settings_cls, toml_file=toml_file)
         self._base = toml_file.absolute().parent
 
+    def _read_file(self, file_path: Path | Traversable) -> dict[str, Any]:
+        """BOM'lu dosya da okunur (Faz C, O7): Not Defteri "UTF-8 BOM" ile kaydedebilir."""
+        with file_path.open(mode="rb") as handle:
+            text = handle.read().decode("utf-8")
+        return tomllib.loads(text.removeprefix("\ufeff"))
+
     def __call__(self) -> dict[str, Any]:
         data = dict(super().__call__())
         for section, names in _path_fields(self.settings_cls).items():
@@ -359,6 +366,19 @@ class _RelativeTomlSource(TomlConfigSettingsSource):
                 for key, value in values.items()
             }
         return data
+
+
+def config_file() -> Path:
+    """Etkin `codementor.toml` (Faz C, O9): `CODEMENTOR_CONFIG_FILE` → çalışma dizinindeki dosya →
+    kaynak kökündeki varsayılan (wheel/exe paketindeki; depoda depo kökü). Hiçbiri yoksa çalışma
+    dizinindeki (olmayan) yol: yalnız kod varsayılanları geçerli olur."""
+    if env := os.environ.get(CONFIG_FILE_ENV):
+        return Path(env)
+    local = Path(DEFAULT_CONFIG_FILE)
+    if local.is_file():
+        return local
+    bundled = resource_path(DEFAULT_CONFIG_FILE)
+    return bundled if bundled.is_file() else local
 
 
 def load_settings(**overrides: Any) -> Settings:

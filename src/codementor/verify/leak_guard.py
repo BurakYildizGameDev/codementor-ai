@@ -188,10 +188,12 @@ def check_leaks(
     question_text: str = "",
     settings: VerifySettings | None = None,
     common: CommonIdentifiers | None = None,
+    key_flaw_concept: str | None = None,
 ) -> LeakCheck:
     """Soruları ve ipucunu üç kontrolden geçirir. Referans yoksa yalnızca kod kontrolü yapılır.
 
     `question_text`: sorunun başlık/metin/kısıtları (orada geçen adlar yasaklı değildir).
+    `key_flaw_concept`: öğrenciye gösterilecekse kavram adı da denetlenir (Faz C, Y6).
     """
     settings = settings or get_settings().verify
     ref: _Reference | None = None
@@ -205,6 +207,8 @@ def check_leaks(
     ]
     if next_step_hint:
         targets.append(("next_step_hint", None, next_step_hint))
+    if key_flaw_concept:
+        targets.append(("key_flaw_concept", None, key_flaw_concept))
     violations: list[LeakViolation] = []
     for field, index, text in targets:
         if len(text) > MAX_TEXT_CHARS:

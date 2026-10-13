@@ -186,12 +186,13 @@ class VerifyArgs:
         )
 
     def socratic(
-        self, output: LLMSocraticOutput, hint_level: int, regenerated: bool
+        self, output: LLMSocraticOutput, hint_level: int, regenerated: bool, name_concept: bool
     ) -> SocraticVerification:
         return verify_socratic(
             output,
             code=self.code,
             hint_level=hint_level,
+            name_concept=name_concept,
             question=self.question,
             reference=self.reference,
             regenerated=regenerated,

@@ -14,6 +14,7 @@ from rich.markup import escape
 from rich.progress import BarColumn, DownloadColumn, Progress, TextColumn
 from rich.table import Table
 
+from codementor.cli.errors import system_errors
 from codementor.config import load_settings
 from codementor.models.validation import DownloadProgress
 from codementor.validation.toolchain import clear_toolchain_cache, compiler_statuses, get_toolchain
@@ -36,7 +37,8 @@ _STAGES = {"download": "İndiriliyor", "extract": "Açılıyor", "check": "Denet
 @toolchain_app.command("status")
 def status() -> None:
     """Hedef başına kullanılacak derleyiciyi ve indirilen zig'in durumunu gösterir."""
-    settings = load_settings().validation
+    with system_errors():  # Faz C (O12): bozuk toml → Türkçe mesaj + 3
+        settings = load_settings().validation
     console = Console()
     table = Table(title="Tier 1 derleyicileri")
     table.add_column("Hedef", no_wrap=True)
@@ -65,7 +67,8 @@ def install(
     if tool != "zig":
         console.print(f"[red]Bilinmeyen araç: {escape(tool)}. Yalnızca 'zig' kurulabilir.[/red]")
         raise typer.Exit(2)
-    settings = load_settings().validation
+    with system_errors():
+        settings = load_settings().validation
     with Progress(
         TextColumn("{task.description}"), BarColumn(), DownloadColumn(), console=console
     ) as bar:

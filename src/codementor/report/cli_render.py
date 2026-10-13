@@ -103,7 +103,7 @@ def render_report(report: AnalysisReport, code: str | None = None) -> list[Rende
         if s.next_step_hint:
             lines += ["", f"→ {s.next_step_hint}"]
         title = f"Mentor soruları (ipucu seviyesi {s.hint_level})"
-        if s.hint_level >= 3:
+        if s.concept_revealed and s.key_flaw_concept:  # Faz C (Y6): tek kural
             title += f" · {s.key_flaw_concept}"
         parts.append(Panel("\n".join(lines), title=title, border_style="magenta"))
     if report.meta.warnings:

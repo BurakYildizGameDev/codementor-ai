@@ -92,6 +92,7 @@ def _report(
             guiding_questions=["n elemanlı dizide son indis kaçtır?"],
             next_step_hint="Döngüyü n = 2 için izle.",
             leak_check="passed",
+            concept_revealed=hint_level >= 3,  # Faz C: gösterim yalnız bu bayrağa bağlı
         ),
         meta=ReportMeta(
             provider="fake",

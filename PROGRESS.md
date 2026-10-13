@@ -58,6 +58,7 @@
 | A2 | ✅ (denetim sonraya) | faz/a2-guvenlik | 2026-10-13 | Claude Code / — |
 | B | ✅ (denetim sonraya) | faz/b-bulgu-kaybi-onbellek | 2026-10-13 | Claude Code / — |
 | K | ✅ (ADR-0028) | faz/k-kullanici-soru-token | 2026-10-13 | Claude Code / — |
+| C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -918,6 +919,41 @@ nedeniyle sonraya bırakıldı.
 denetimi; Y1, D13, `.gitignore` (Faz A2).
 
 
+
+## Faz C — Notlar (ipucu merdiveni, yapılandırma, CLI çıkış kodları; 2026-10-13)
+Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y6, Y7, Y8, Y9, O7, O8, O9, O11, O12, D20.
+**Yapılanlar:**
+- **Y6:** `SocraticResult.concept_revealed` (varsayılan False). Kural kaynağında:
+  `verify_socratic(name_concept=…)` (`MentoringProfile.name_concept`, `run_pass_b` →
+  `VerifyArgs.socratic`) açılmayacaksa `key_flaw_concept=""`; API/JSON/indirme dahil hiçbir yere
+  gitmez. Açılacaksa kavram `check_leaks` hedefi (`LeakField` += `key_flaw_concept`): önce yeniden
+  üretim, sonra kavram gizlenir, sorular kalır. Şablonlar (genel ad) True. Masaüstü kartı, CLI,
+  Markdown bayrağa bakar (`hint_level >= 3` kalktı).
+- **O7:** `_RelativeTomlSource._read_file` BOM'u atar; `config_writer` BOM'lu okur, BOM'suz yazar.
+- **Y7:** `config_writer` satır içi tabloyu ve nokta anahtarlı `providers.x`'i yerinde günceller
+  (başlıklı tablo yalnız başlıklı tablonun altına; aksi tomlkit sonraki satırları yanlış tabloya
+  kaydırıyordu), yazım atomik.
+- **Y8/O9:** `config.config_file()` (env → çalışma dizini → paketteki varsayılan);
+  `pyproject` wheel'e `codementor.toml`'u ekler. `runtime.writable_config_file()`: env → exe yanı /
+  kurulu wheel'de `~/.codementor/codementor.toml` (paketteki kopyalanır) → depodaki etkin dosya;
+  seçilen yol `CODEMENTOR_CONFIG_FILE`'a yazılır (yeniden yükleme ve Bağlantılar'daki konum aynı
+  dosya). `prepare_environment` kurulu wheel'de kullanıcı toml'unu etkinleştirir.
+- **O8 (karar):** `.env` yüklenmez (öğrenci projesindeki `.env` sağlayıcı komutunu
+  değiştirebilirdi, §12); `.env.example` başlığı + güncel liste, README.
+- **Y9/O12:** `cli/errors.py` `system_errors`: OSError, SQLAlchemyError, ValidationError,
+  TOMLDecodeError, DataFileError → `Hata: …` + 3 (`typer.Exit`'e dokunmaz). `analyze` (DB, `--out`
+  `with` ile), `toolchain status/install`, `eval compare/analyze`.
+- **O11:** `cli.main.run()` giriş noktası (`[project.scripts]`), kök `--help` UTF-8.
+- **D20:** `rules list` "Durum" sütunu (kapalı/açık; ayar okunamazsa "—").
+- Testler: `test_pipeline_concept.py`, `test_analysis.py` (+4 kavram), `test_config_cli_faz_c.py`
+  (17), `desktop/test_faz_c_app.py` (3). Yazıcı/CLI değişiklikleri geri alınınca 9 test düşüyor.
+  `tests/conftest.py` `_restore_config_env`: `writable_config_file` env'e yazdığı için testler arası
+  sızıntıyı keser (önce sıra bağımlı 30 düşüş görüldü).
+**Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3313 geçti, 15 atlandı; web 36 test + `tsc`;
+wheel geçici venv'e kuruldu: toml'suz dizinde varsayılan `claude_cli`, 6 zig kaynağı, kök `--help`
+UTF-8; masaüstünde seviye 1 kartında kavram gizli, 2. denemede açık (ekran görüntüsü).
+**Açık:** `toolchain install` indirme hatası hâlâ 1 dönüyor (sistem hatası sayılabilir; Faz G).
+Önbellekteki eski raporlar bayraksız: kavram gösterilmez (güvenli taraf).
 
 ## Faz K — Notlar (kullanıcı soruları + token kullanımı; 2026-10-13)
 Kaynak: kullanıcı isteği (Faz C'den önce). Kararlar (kullanıcı): soru ekleme masaüstü formu + CLI;

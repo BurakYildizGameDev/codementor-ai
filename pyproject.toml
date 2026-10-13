@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [project.scripts]
-codementor = "codementor.cli.main:app"
+codementor = "codementor.cli.main:run"
 
 [project.gui-scripts]
 codementor-desktop = "codementor.desktop.launch:main"
@@ -64,6 +64,7 @@ packages = ["src/codementor"]
 [tool.hatch.build.targets.wheel.force-include]
 "data" = "codementor/_resources/data"
 "prompts" = "codementor/_resources/prompts"
+"codementor.toml" = "codementor/_resources/codementor.toml"  # Faz C (O9): kurulu varsayılanlar
 
 [tool.ruff]
 line-length = 100

@@ -253,7 +253,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   (`cache_key=None` ya da `cacheable=False` bayrağı).
 - **Test:** birincil hata + fallback yanıtı → ikinci istek önbellekten dönmez.
 
-### Y6 — İpucu merdiveni: kavram adı her seviyede açık 🟠 ✅
+### Y6 — İpucu merdiveni: kavram adı her seviyede açık 🟠 ✅ ✅ Faz C
 
 - **Dosyalar:**
   - `src/codementor/desktop/widgets/socratic_card.py:58` → `result.key_flaw_concept` koşulsuz,
@@ -271,7 +271,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Test:** seviye 1 ve 2'de masaüstü kartı, API yanıtı ve JSON indirmesinde kavram yok; seviye
   3'te var. Sızıntılı kavram adı yakalanıyor.
 
-### Y7 — toml yazıcısı kullanıcı ayarını siliyor 🟠 🔬
+### Y7 — toml yazıcısı kullanıcı ayarını siliyor 🟠 🔬 ✅ Faz C
 
 - **Dosya:** `src/codementor/desktop/config_writer.py:18-24, 42`
 - **Ne yanlış (ajan scratchpad'de doğruladı):**
@@ -285,7 +285,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Test:** satır içi tablo, nokta anahtarı, yorumların korunması, BOM'lu dosya, yazım sırasında
   istisna (eski dosya bozulmamalı).
 
-### Y8 — Exe'de yapılandırma konumu ve yeniden yükleme yanlış 🟠 📖
+### Y8 — Exe'de yapılandırma konumu ve yeniden yükleme yanlış 🟠 📖 ✅ Faz C
 
 - **Dosyalar:** `src/codementor/desktop/app.py:443-449, 464`, `desktop/runtime.py:44-74`
 - **Ne yanlış:** exe'nin yanında `codementor.toml` yokken `CONFIG_FILE_ENV` ayarlanmıyor ve
@@ -299,7 +299,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Test:** toml'suz exe senaryosu: yaz → yeniden yükle → yeni değer okunuyor; gösterilen konum
   yazılan dosya.
 
-### Y9 — CLI sistem hatasında 1 dönüyor 🟠 🔬
+### Y9 — CLI sistem hatasında 1 dönüyor 🟠 🔬 ✅ Faz C
 
 - **Dosya:** `src/codementor/cli/analyze.py:93, 157-171`
 - **Ne yanlış:** veritabanı açılamazsa ya da `--out` yazılamazsa yakalanmamış traceback çıkıyor ve
@@ -391,7 +391,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   `CliPermanentError`.
 - **Test:** boş yanıt / bilinmeyen subtype → tek çağrı.
 
-### O7 — BOM'lu toml uygulamayı durduruyor 🟡 ✅
+### O7 — BOM'lu toml uygulamayı durduruyor 🟡 ✅ ✅ Faz C
 
 - **Dosya:** `src/codementor/config.py:301` (`_RelativeTomlSource`)
 - **Ne yanlış:** `tomllib` BOM'u reddediyor (elle doğrulandı: `TOMLDecodeError`). Not Defteri'nde
@@ -401,7 +401,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   yazsın.
 - **Test:** BOM'lu toml okunuyor ve yazılıyor.
 
-### O8 — `.env` okunmuyor, `.env.example` eski 🟡 ✅
+### O8 — `.env` okunmuyor, `.env.example` eski 🟡 ✅ ✅ Faz C
 
 - **Dosyalar:** `.env.example`, `src/codementor/config.py:298` (`settings_customise_sources`)
 - **Ne yanlış:**
@@ -413,7 +413,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   dosya başına "ortam değişkeni olarak ayarlayın; .env otomatik yüklenmez" yaz. Her durumda değişken
   listesini güncelle.
 
-### O9 — pip ile kurulumda varsayılan toml yok 🟡 📖
+### O9 — pip ile kurulumda varsayılan toml yok 🟡 📖 ✅ Faz C
 
 - **Dosya:** `pyproject.toml:63-66` (`force-include`)
 - **Ne yanlış:** wheel'e `codementor.toml` girmiyor. `pip install` / `uv tool install` kullanıcısında:
@@ -435,14 +435,14 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   `report_callback_exception` log + kullanıcıya bildirim.
 - **Test:** bozuk DB yolu ile `launch.main` → çökmeden hata akışı.
 
-### O11 — Kök `--help` Türkçe karakterleri bozuk basıyor 🟡 🔬
+### O11 — Kök `--help` Türkçe karakterleri bozuk basıyor 🟡 🔬 ✅ Faz C
 
 - **Dosya:** `src/codementor/cli/main.py:30-37`
 - **Ne yanlış:** `ensure_utf8_console()` yalnız alt komut callback'inde çalışıyor; Windows'ta
   `codementor --help` `�` basıyor, alt komut yardımları düzgün.
 - **Düzeltme:** modül yüklenirken ya da `app()` çağrısından önce çalıştır.
 
-### O12 — Diğer CLI komutları traceback veriyor 🟡 🔬
+### O12 — Diğer CLI komutları traceback veriyor 🟡 🔬 ✅ Faz C
 
 - **Dosyalar:** `cli/toolchain.py:39, 68`, `cli/eval.py:212`
 - **Ne yanlış:** `toolchain status/install` bozuk toml'da ham traceback (exit 1). `eval compare`
@@ -789,21 +789,21 @@ yeşil.
 **Amaç:** Kavram adı hiçbir arayüzde erken açılmasın; kullanıcının ayarı bozulmasın; CLI sistem
 hatasını bulgudan ayırsın.
 
-- [ ] **Y6 — Kavram adı:** gösterim kuralı tek bayrakta (ör. `SocraticResult.concept_revealed`);
+- [x] **Y6 — Kavram adı:** gösterim kuralı tek bayrakta (ör. `SocraticResult.concept_revealed`);
       masaüstü, web, CLI, Markdown, API JSON aynı kuralı uygular; `key_flaw_concept` sızıntı
       denetimine girer
-- [ ] **Y7 — toml yazıcısı:** satır içi tablo, nokta anahtarı ve yorumlar korunur; yazım atomik
-- [ ] **Y8 — Exe toml yolu:** toml'suz exe'de yazılan dosya `CONFIG_FILE_ENV` ile etkinleşir;
+- [x] **Y7 — toml yazıcısı:** satır içi tablo, nokta anahtarı ve yorumlar korunur; yazım atomik
+- [x] **Y8 — Exe toml yolu:** toml'suz exe'de yazılan dosya `CONFIG_FILE_ENV` ile etkinleşir;
       Bağlantılar ekranı gerçek konumu gösterir
-- [ ] **O7 — BOM:** BOM'lu toml okunur ve yazılır
-- [ ] **O8 — `.env`:** karar: `.env` desteği ya da açık uyarı; `.env.example` güncel değişkenlerle
+- [x] **O7 — BOM:** BOM'lu toml okunur ve yazılır
+- [x] **O8 — `.env`:** karar: `.env` desteği ya da açık uyarı; `.env.example` güncel değişkenlerle
       (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `CODEMENTOR_API_KEY`)
-- [ ] **O9 — Wheel:** varsayılan toml pakete girer; kurulu masaüstü `~/.codementor/codementor.toml`
+- [x] **O9 — Wheel:** varsayılan toml pakete girer; kurulu masaüstü `~/.codementor/codementor.toml`
       kullanır
-- [ ] **Y9, O12 — CLI çıkış kodları:** sistem hataları Türkçe mesaj + çıkış 3; `--out` `with` ile
-- [ ] **O11 — `--help`:** kök yardım UTF-8
-- [ ] **D20 (kısmi):** `rules list` `[rules] disabled`'ı gösterir
-- [ ] Testler: §8 madde 16, 19-21, 25
+- [x] **Y9, O12 — CLI çıkış kodları:** sistem hataları Türkçe mesaj + çıkış 3; `--out` `with` ile
+- [x] **O11 — `--help`:** kök yardım UTF-8
+- [x] **D20 (kısmi):** `rules list` `[rules] disabled`'ı gösterir
+- [x] Testler: §8 madde 16, 19-21, 25 — **Faz C** (O8 kararı: `.env` yüklenmez, belgelendi)
 
 **Commit:** `fix(faz-c): ipucu merdiveni tutarlılığı, toml yazımı, CLI çıkış kodları`
 

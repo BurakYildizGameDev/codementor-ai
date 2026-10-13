@@ -451,6 +451,12 @@
     "SocraticResult": {
       "additionalProperties": false,
       "properties": {
+        "concept_revealed": {
+          "default": false,
+          "description": "false ise key_flaw_concept boştur ve gösterilmez",
+          "title": "Concept Revealed",
+          "type": "boolean"
+        },
         "guiding_questions": {
           "items": {
             "type": "string"

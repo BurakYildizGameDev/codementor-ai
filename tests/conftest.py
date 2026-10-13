@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 import json
 import logging
+import os
 import socket
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -32,6 +33,18 @@ def _isolated_toolchain_dir(
     clear_toolchain_cache()
     yield
     clear_toolchain_cache()
+
+
+@pytest.fixture(autouse=True)
+def _restore_config_env() -> Iterator[None]:
+    """`runtime.writable_config_file` etkin toml'u `CODEMENTOR_CONFIG_FILE`'a yazar (Faz C, Y8);
+    bir testin seçtiği dosya sonraki testlere sızmasın."""
+    before = os.environ.get(codementor.config.CONFIG_FILE_ENV)
+    yield
+    if before is None:
+        os.environ.pop(codementor.config.CONFIG_FILE_ENV, None)
+    else:
+        os.environ[codementor.config.CONFIG_FILE_ENV] = before
 
 
 @pytest.fixture(autouse=True)

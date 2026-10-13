@@ -156,6 +156,7 @@ def test_socratic_regenerate_then_drop() -> None:
         SOCRATIC,
         code=CODE,
         hint_level=2,
+        name_concept=False,
         question=None,
         reference=None,
         regenerated=False,
@@ -167,6 +168,7 @@ def test_socratic_regenerate_then_drop() -> None:
         SOCRATIC,
         code=CODE,
         hint_level=2,
+        name_concept=False,
         question=None,
         reference=None,
         regenerated=True,
@@ -185,6 +187,7 @@ def test_socratic_clean_after_regeneration_marked() -> None:
         clean,
         code=CODE,
         hint_level=1,
+        name_concept=False,
         question=None,
         reference=None,
         regenerated=True,
@@ -200,6 +203,7 @@ def test_socratic_all_dropped_returns_no_result() -> None:
         leaky,
         code=CODE,
         hint_level=1,
+        name_concept=False,
         question=None,
         reference=None,
         regenerated=True,
@@ -249,3 +253,78 @@ def test_suggestion_kept_only_for_low_severity(severity: Severity) -> None:
     """Orta/yüksek önemde bir gözlem öneri olamaz: hata olarak raporlanır."""
     finding = _llm(3, "i <= n").model_copy(update={"severity": severity, "kind": "suggestion"})
     assert [f.kind for f in _verified(finding)] == ["issue"]
+
+
+# --- Faz C (Y6): kavram adı tek kuralla -----------------------------------------------------
+
+
+def _clean_socratic(**kw: object) -> LLMSocraticOutput:
+    return SOCRATIC.model_copy(update={"guiding_questions": ["Son indis kaçtır?"], **kw})
+
+
+@pytest.mark.parametrize("name_concept", [False, True])
+def test_concept_follows_name_concept(name_concept: bool) -> None:
+    result = verify_socratic(
+        _clean_socratic(),
+        code=CODE,
+        hint_level=3 if name_concept else 1,
+        name_concept=name_concept,
+        question=None,
+        reference=None,
+        regenerated=False,
+        settings=SETTINGS,
+    ).result
+    assert result is not None
+    assert result.concept_revealed is name_concept
+    assert result.key_flaw_concept == ("Sınır dışı erişim" if name_concept else "")
+
+
+def test_leaky_concept_regenerates_then_is_masked() -> None:
+    """Kavram adı kodu ele veriyor: önce yeniden üretim, sonra kavram gizlenir, sorular kalır."""
+    leaky = _clean_socratic(key_flaw_concept="`while (lo < hi) {` yaz")
+    first = verify_socratic(
+        leaky,
+        code=CODE,
+        hint_level=3,
+        name_concept=True,
+        question=None,
+        reference=None,
+        regenerated=False,
+        settings=SETTINGS,
+    )
+    assert first.decision.action == "regenerate"
+    assert any(v.field == "key_flaw_concept" for v in first.decision.violations)
+    second = verify_socratic(
+        leaky,
+        code=CODE,
+        hint_level=3,
+        name_concept=True,
+        question=None,
+        reference=None,
+        regenerated=True,
+        settings=SETTINGS,
+    )
+    assert second.result is not None
+    assert second.result.key_flaw_concept == ""
+    assert second.result.concept_revealed is False
+    assert second.result.guiding_questions == ["Son indis kaçtır?"]
+    assert any("Kavram adı" in w for w in second.warnings)
+    assert not any("Bazı mentor soruları" in w for w in second.warnings)
+
+
+def test_hidden_concept_is_not_leak_checked() -> None:
+    """Gösterilmeyecek kavram denetlenmez de: sızıntılı olsa bile yeniden üretim gerekmez."""
+    leaky = _clean_socratic(key_flaw_concept="`while (lo < hi) {` yaz")
+    checked = verify_socratic(
+        leaky,
+        code=CODE,
+        hint_level=1,
+        name_concept=False,
+        question=None,
+        reference=None,
+        regenerated=False,
+        settings=SETTINGS,
+    )
+    assert checked.decision.action == "passed"
+    assert checked.result is not None
+    assert checked.result.key_flaw_concept == ""

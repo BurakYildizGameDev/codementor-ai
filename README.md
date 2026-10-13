@@ -348,9 +348,12 @@ uv run codementor rules list                                      # 34 statik ku
 altına kurar (ADR-0018). Durum: `codementor toolchain status`, hazırlık:
 `curl http://127.0.0.1:8000/health/ready`.
 
-Komutlar her dizinden çalışır: `codementor.toml` çalışma dizininde ya da
-`CODEMENTOR_CONFIG_FILE` ile verilir, içindeki göreli yollar toml'un dizinine göre çözülür
-(ADR-0016).
+Komutlar her dizinden çalışır: `codementor.toml` önce `CODEMENTOR_CONFIG_FILE`'dan, sonra
+çalışma dizininden okunur; ikisi de yoksa paketle gelen varsayılan kullanılır (`pip install` ile
+kurulumda da). İçindeki göreli yollar toml'un dizinine göre çözülür (ADR-0016). Not Defteri'nin
+"UTF-8 BOM" ile kaydettiği dosya da okunur. CLI'da sistem hataları (okunamayan yapılandırma ya
+da dosya, açılamayan veritabanı) Türkçe mesaj ve **çıkış kodu 3** ile biter; 1 yalnız yüksek
+önemli bulgu demektir.
 
 ## Masaüstü uygulaması
 
@@ -383,13 +386,17 @@ uv run python build_exe.py --both    # dist/CodeMentor.exe (~37 MB) + dist/CodeM
 uv run python -m codementor.desktop  # derlemeden çalıştırmak için
 ```
 
-Exe'nin yanına bir `codementor.toml` koyarsan paketteki varsayılan yerine o kullanılır.
-Veritabanı, tercihler ve log `~/.codementor` altındadır.
+Exe'nin yanına bir `codementor.toml` koyarsan paketteki varsayılan yerine o kullanılır;
+"toml'a yaz" düğmesi de bu dosyayı oluşturur (pip ile kurulumda `~/.codementor/codementor.toml`)
+ve Bağlantılar ekranı hangi dosyanın okunduğunu gösterir. Yazarken satır içi tablolar, nokta
+anahtarları ve yorumlar korunur. Veritabanı, tercihler ve log `~/.codementor` altındadır.
 
 ## Sağlayıcılar
 
 `codementor.toml` içinde `[providers] default = "..."`. Model adları yalnızca yapılandırmada
-tutulur (ADR-0008).
+tutulur (ADR-0008). API anahtarları **ortam değişkeni** olarak verilir; `.env` dosyası bilerek
+otomatik yüklenmez (öğrenci projesindeki bir `.env` ayarları değiştirebilirdi; bkz.
+`.env.example`). Masaüstünde anahtarlar Bağlantılar ekranından girilir.
 
 | Sağlayıcı | Kurulum | Not |
 |---|---|---|

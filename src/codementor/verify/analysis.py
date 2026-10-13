@@ -195,13 +195,19 @@ def verify_socratic(
     *,
     code: NormalizedCode,
     hint_level: int,
+    name_concept: bool,
     question: QuestionContext | None,
     reference: str | None,
     regenerated: bool,
     settings: VerifySettings | None = None,
     common: CommonIdentifiers | None = None,
 ) -> SocraticVerification:
-    """Geçiş B: sızıntı kontrolü ve kararı. `regenerate` ise sonuç yok (Faz 10 yeniden üretir)."""
+    """Geçiş B: sızıntı kontrolü ve kararı. `regenerate` ise sonuç yok (Faz 10 yeniden üretir).
+
+    Kavram adı kuralı burada uygulanır (Faz C, Y6; mimari §5.4.3): `name_concept` False ise ya da
+    kavram yeniden üretimden sonra da çözümü ele veriyorsa `key_flaw_concept` boş döner.
+    """
+    concept = output.key_flaw_concept.strip() if name_concept else ""
     check = check_leaks(
         output.guiding_questions,
         output.next_step_hint,
@@ -212,6 +218,7 @@ def verify_socratic(
         question_text=question_text(question),
         settings=settings,
         common=common,
+        key_flaw_concept=concept or None,
     )
     decision = decide_leak_action(
         output.guiding_questions, output.next_step_hint, check, regenerated=regenerated
@@ -219,7 +226,13 @@ def verify_socratic(
     if decision.action == "regenerate":
         return SocraticVerification(decision=decision, result=None)
     warnings: list[str] = []
-    if decision.action == "dropped_questions":
+    if any(v.field == "key_flaw_concept" for v in decision.violations):
+        concept = ""  # yeniden üretimde de sızdırdı: sorular kalır, kavram gizlenir
+        warnings.append("Kavram adı çözümü ele verdiği için gösterilmedi.")
+    if decision.action == "dropped_questions" and (
+        len(decision.guiding_questions) < len(output.guiding_questions)
+        or decision.next_step_hint != output.next_step_hint
+    ):
         warnings.append("Bazı mentor soruları çözümü ele verdiği için çıkarıldı.")
     if not decision.guiding_questions:
         warnings.append("Mentor sorularının tümü çözümü ele verdiği için çıkarıldı.")
@@ -232,10 +245,11 @@ def verify_socratic(
         else "passed"
     )
     result = SocraticResult(
-        key_flaw_concept=output.key_flaw_concept,
+        key_flaw_concept=concept,
         hint_level=hint_level,
         guiding_questions=decision.guiding_questions,
         next_step_hint=decision.next_step_hint,
         leak_check=status,
+        concept_revealed=bool(concept),
     )
     return SocraticVerification(decision=decision, result=result, warnings=warnings)

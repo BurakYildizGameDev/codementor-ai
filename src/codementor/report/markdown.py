@@ -77,7 +77,7 @@ def to_markdown(report: AnalysisReport) -> str:
     if report.socratic:
         s = report.socratic
         out += ["## Mentor soruları", "", f"İpucu seviyesi: {s.hint_level}", ""]
-        if s.hint_level >= 3:
+        if s.concept_revealed and s.key_flaw_concept:  # Faz C (Y6): tek kural
             out += [f"**Kavram:** {s.key_flaw_concept}", ""]
         out += [f"{i}. {q}" for i, q in enumerate(s.guiding_questions, 1)]
         if s.next_step_hint:

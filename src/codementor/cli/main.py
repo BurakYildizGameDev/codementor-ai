@@ -27,6 +27,12 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
+def run() -> None:
+    """Konsol giriş noktası (Faz C, O11): UTF-8 ayarı Typer kök `--help`'ten önce yapılır."""
+    ensure_utf8_console()
+    app()
+
+
 @app.callback()
 def main(
     version: bool = typer.Option(

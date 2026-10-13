@@ -202,6 +202,8 @@ async def run_pass_b(
     verify: VerifyArgs,
     hint_level: int,
     first: LLMSocraticOutput | None = None,
+    *,
+    name_concept: bool,
 ) -> SocraticVerification | None:
     """Sokratik geçiş: şema onarımı + sızıntıda 1 kez yeniden üretim. `first` verilirse
     (tek geçiş) ilk yanıt odur. Sonuç None ise şablona düşülür."""
@@ -213,7 +215,7 @@ async def run_pass_b(
                 return None
             output = parsed
         with llm.timer.stage("verify_b"):
-            checked = verify.socratic(output, hint_level, regenerated)
+            checked = verify.socratic(output, hint_level, regenerated, name_concept)
         if checked.decision.action != "regenerate":
             return checked
         output = None
@@ -408,4 +410,6 @@ async def _socratic(
             settings=llm.settings,
             provider=provider,
         )
-    return await run_pass_b(llm, built_b, verify, profile.hint_level, first)
+    return await run_pass_b(
+        llm, built_b, verify, profile.hint_level, first, name_concept=profile.name_concept
+    )

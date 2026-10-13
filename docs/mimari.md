@@ -792,7 +792,8 @@ class AnalysisReport(BaseModel):
       "Envanterde bir öğenin var olup olmadığını kontrol etmek için her seferinde tüm listeyi taramak yerine hangi veri yapısı kullanılabilir?"
     ],
     "next_step_hint": null,
-    "leak_check": "passed"
+    "leak_check": "passed",
+    "concept_revealed": true
   },
   "meta": {
     "provider": "ollama",

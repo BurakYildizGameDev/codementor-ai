@@ -20,6 +20,7 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
+from codementor.cli.errors import system_errors
 from codementor.config import Settings, load_settings
 from codementor.eval.analysis import analysis_markdown, analyze
 from codementor.eval.breakdown import breakdown, breakdown_table
@@ -199,7 +200,8 @@ def analyze_cmd(
     result, labels = _result_and_labels(path, dataset, console)
     text = analysis_markdown(analyze(result, labels))
     if out is not None:
-        out.write_text(text, encoding="utf-8", newline="\n")
+        with system_errors(console, "çıktı yazılamadı"):
+            out.write_text(text, encoding="utf-8", newline="\n")
     typer.echo(text)
 
 
@@ -209,9 +211,10 @@ def compare(
     out: Annotated[Path | None, typer.Option(help="Tabloyu dosyaya yaz.")] = None,
 ) -> None:
     """Sonuç dosyalarından Markdown karşılaştırma tablosu (§14.3)."""
-    table = compare_table(load_results(paths))
-    if out is not None:
-        out.write_text(table, encoding="utf-8", newline="\n")
+    with system_errors():  # Faz C (O12): olmayan/bozuk sonuç dosyası → 3
+        table = compare_table(load_results(paths))
+        if out is not None:
+            out.write_text(table, encoding="utf-8", newline="\n")
     typer.echo(table)
 
 
