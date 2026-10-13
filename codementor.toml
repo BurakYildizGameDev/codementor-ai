@@ -110,3 +110,7 @@ model = ""                   # ör. güncel Claude model kimliği
 api_key_env = "ANTHROPIC_API_KEY"
 context_tokens = 200000
 # temperature/seed verme: güncel Claude modelleri temperature'ı reddediyor (ADR-0011)
+
+[api]
+# rate_limit_per_minute = 30     # Faz E: istemci IP başına dakikalık istek sınırı; boşsa sınırsız
+

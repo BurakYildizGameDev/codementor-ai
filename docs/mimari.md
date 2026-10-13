@@ -1366,6 +1366,8 @@ allowed_hosts = []           # Faz 47: loopback'e ek Host adları (DNS rebinding
 # allowed_providers = ["ollama"]  # boşsa providers.default + fallback; dışındaki ad 422
 max_body_bytes = 1048576     # aşılırsa 413
 max_concurrent_analyses = 4  # dolunca 503
+# rate_limit_per_minute = 30 # Faz E: istemci IP başına dakikalık istek sınırı; boşsa sınırsız
+
 
 [storage]                    # Faz 10 (§11); yoksa CODEMENTOR_DB_PATH, o da yoksa ~/.codementor/codementor.db
 # db_path = "~/.codementor/codementor.db"

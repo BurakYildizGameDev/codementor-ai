@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from codementor.models.api import Problem
+from codementor.models.api import AnalysisPage, DeletedCount, Problem
 from codementor.models.llm_output import (
     LLMAnalysisOutput,
     LLMSinglePassOutput,
@@ -35,6 +35,8 @@ SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "question_public.schema.json": QuestionPublic,
     "problem.schema.json": Problem,
     "provider_status.schema.json": ProviderStatus,  # web sağlayıcı seçimi (Faz 26)
+    "analysis_page.schema.json": AnalysisPage,  # geçmiş listesi (Faz E)
+    "deleted_count.schema.json": DeletedCount,  # silinen kayıt sayısı (Faz E)
 }
 
 

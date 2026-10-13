@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import Field
 
 from codementor.models._base import StrictModel
+from codementor.models.enums import Engine, Language
 from codementor.models.provider import ProviderStatus
 from codementor.models.validation import ToolOrigin
 
@@ -43,3 +45,32 @@ class Readiness(StrictModel):
     ready: bool
     providers: list[ProviderStatus]
     compilers: list[CompilerStatus]
+
+
+class AnalysisSummary(StrictModel):
+    """Geçmiş listesindeki bir satır; rapor gövdesi ve kod içermez."""
+
+    analysis_id: str
+    created_at: datetime
+    language: Language
+    engine: Engine
+    question_id: str | None
+    provider: str | None
+    degraded: bool
+    early_exit: bool
+    tokens_in: int
+    tokens_out: int
+
+
+class AnalysisPage(StrictModel):
+    items: list[AnalysisSummary]
+    next_cursor: str | None = Field(
+        default=None,
+        description="Sonraki sayfa için `before` değeri; yoksa null",
+    )
+
+
+class DeletedCount(StrictModel):
+    """Silinen kayıt sayısı yanıtı (Faz E)."""
+
+    deleted: int

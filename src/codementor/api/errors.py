@@ -32,6 +32,7 @@ _TITLES = {
     405: "Yönteme izin verilmiyor",
     413: "Kod çok büyük",
     422: "Geçersiz istek",
+    429: "Çok fazla istek",
     500: "Sunucu hatası",
     503: "Servis hazır değil",
 }
@@ -40,17 +41,27 @@ _TITLES = {
 class ApiProblemError(Exception):
     """Rotalardan fırlatılan, doğrudan problem+json'a dönüşen hata."""
 
-    def __init__(self, status: int, detail: str, title: str | None = None) -> None:
+    def __init__(
+        self,
+        status: int,
+        detail: str,
+        title: str | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         super().__init__(detail)
         self.status = status
         self.detail = detail
         self.title = title or _TITLES.get(status, "Hata")
+        self.headers = headers or {}
 
 
-def problem_response(problem: Problem) -> JSONResponse:
+def problem_response(problem: Problem, headers: dict[str, str] | None = None) -> JSONResponse:
     """Problem gövdesi, doğru içerik türüyle."""
     return JSONResponse(
-        problem.model_dump(exclude_none=True), status_code=problem.status, media_type=PROBLEM_JSON
+        problem.model_dump(exclude_none=True),
+        status_code=problem.status,
+        media_type=PROBLEM_JSON,
+        headers=headers,
     )
 
 
@@ -72,7 +83,8 @@ def install_error_handlers(app: FastAPI) -> None:
         return problem_response(
             Problem(
                 title=exc.title, status=exc.status, detail=exc.detail, instance=request.url.path
-            )
+            ),
+            headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)

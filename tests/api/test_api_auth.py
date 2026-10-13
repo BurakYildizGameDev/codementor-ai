@@ -97,3 +97,49 @@ async def test_delete_without_key_rejected_and_record_kept(
     assert (await client.get(f"/v1/analyses/{analysis_id}", headers=auth)).status_code == 200
     deleted = await client.delete(f"/v1/analyses/{analysis_id}", headers=auth)
     assert deleted.status_code == 204
+
+
+async def test_internal_endpoints_protected_with_key(
+    client_for: ClientFactory, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz E (E7, D14): Anahtarlı modda /health/ready, /docs, /redoc, /openapi.json korunur,
+    /health açık kalır.
+    """
+    monkeypatch.setenv(KEY_ENV, KEY)
+    cfg = settings.model_copy(
+        update={
+            "api": settings.api.model_copy(update={"api_key_env": KEY_ENV}),
+            "providers": settings.providers.model_copy(update={"default": "anthropic"}),
+        }
+    )
+    client_keyed = client_for(cfg=cfg)
+    protected_paths = [
+        "/health/ready",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/docs/oauth2-redirect",
+    ]
+
+    # Anahtarlı mod: başlıksız 401
+    for path in protected_paths:
+        resp = await client_keyed.get(path)
+        assert resp.status_code == 401, f"{path} başlıksız 401 olmalı"
+
+    # Anahtarlı mod: başlıklı normal (200)
+    for path in protected_paths:
+        resp = await client_keyed.get(path, headers={"X-API-Key": KEY})
+        assert resp.status_code == 200, f"{path} başlıklı 200 olmalı"
+
+    # /health her zaman açık
+    assert (await client_keyed.get("/health")).status_code == 200
+
+    # Anahtarsız mod: hepsi açık
+    monkeypatch.delenv(KEY_ENV, raising=False)
+    cfg_open = settings.model_copy(
+        update={"providers": settings.providers.model_copy(update={"default": "anthropic"})}
+    )
+    client_open = client_for(cfg=cfg_open)
+    for path in protected_paths:
+        resp = await client_open.get(path)
+        assert resp.status_code == 200, f"{path} anahtarsız modda açık olmalı"

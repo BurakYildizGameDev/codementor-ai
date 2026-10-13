@@ -21,6 +21,14 @@ from codementor.models.api import Problem
 
 API_KEY_HEADER = "x-api-key"
 PROTECTED_PREFIX = "/v1/"
+PROTECTED_EXACT_PATHS = frozenset(
+    {"/health/ready", "/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect"}
+)
+
+
+def _is_protected(path: str) -> bool:
+    """Verilen yol API anahtarı korumasına tabi mi? (/health açık kalır)."""
+    return path.startswith(PROTECTED_PREFIX) or path in PROTECTED_EXACT_PATHS
 
 
 def configured_key(settings: Settings) -> str | None:
@@ -31,7 +39,7 @@ def configured_key(settings: Settings) -> str | None:
 
 
 def install_api_key(app: FastAPI, settings: Settings) -> None:
-    """Anahtar tanımlıysa `/v1/*` için denetleyen ara katmanı ekler."""
+    """Anahtar tanımlıysa `/v1/*` ve dahili uçlar için denetleyen ara katmanı ekler."""
     key = configured_key(settings)
     if key is None:
         return
@@ -42,7 +50,7 @@ def install_api_key(app: FastAPI, settings: Settings) -> None:
     async def require_key(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if request.method == "OPTIONS" or not request.url.path.startswith(PROTECTED_PREFIX):
+        if request.method == "OPTIONS" or not _is_protected(request.url.path):
             return await call_next(request)
         given = request.headers.get(API_KEY_HEADER, "").encode("utf-8")
         if not hmac.compare_digest(given, expected):

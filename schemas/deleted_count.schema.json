@@ -1,0 +1,17 @@
+{
+  "$id": "deleted_count.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Silinen kayıt sayısı yanıtı (Faz E).",
+  "properties": {
+    "deleted": {
+      "title": "Deleted",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "deleted"
+  ],
+  "title": "DeletedCount",
+  "type": "object"
+}

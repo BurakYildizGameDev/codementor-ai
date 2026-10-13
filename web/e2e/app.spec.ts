@@ -51,6 +51,9 @@ async function mockApi(page: Page): Promise<void> {
   await page.route("**/v1/questions?*", (route) =>
     route.fulfill({ json: QUESTIONS.filter((q) => route.request().url().includes(`language=${q.language}`)) }),
   );
+  await page.route("**/v1/analyses*", (route) =>
+    route.fulfill({ json: { items: [], next_cursor: null } }),
+  );
   await page.route("**/v1/analyze/stream", (route) =>
     route.fulfill({
       status: 200,
@@ -124,4 +127,56 @@ test("README GIF kareleri: aç → analiz et → bulguya git → indir", async (
   await frame(4);
   // 1440×900'de indirme kartı da görünür: son kare akışın tamamını gösterir
   await expect(page.getByRole("region", { name: "Raporu indir" })).toBeInViewport();
+});
+
+test("geçmiş paneli analizleri listeler ve silme isteği atar (Faz E: E3)", async ({ page }) => {
+  let deleteCalled = false;
+  await page.route("**/v1/providers", (route) => route.fulfill({ json: [] }));
+  await page.route("**/v1/questions?*", (route) => route.fulfill({ json: [] }));
+  await page.route("**/v1/analyses*", (route) => {
+    if (route.request().method() === "GET") {
+      return route.fulfill({
+        json: {
+          items: [
+            {
+              analysis_id: "01JTEST1234567890ABCDEFGH",
+              created_at: new Date().toISOString(),
+              language: "c",
+              engine: "none",
+              question_id: "c-test-q",
+              provider: "claude_cli",
+              degraded: false,
+              early_exit: false,
+              tokens_in: 50,
+              tokens_out: 100,
+            },
+          ],
+          next_cursor: null,
+        },
+      });
+    }
+    return route.continue();
+  });
+  await page.route("**/v1/analyses/01JTEST1234567890ABCDEFGH", (route) => {
+    if (route.request().method() === "DELETE") {
+      deleteCalled = true;
+      return route.fulfill({ status: 204 });
+    }
+    return route.continue();
+  });
+
+  const consoleErrors: string[] = [];
+  page.on("console", (msg) => {
+    if (msg.type() === "error") consoleErrors.push(msg.text());
+  });
+
+  await page.goto("/");
+  const historyPanel = page.getByRole("region", { name: "Analiz geçmişi" });
+  await expect(historyPanel).toBeVisible();
+  await expect(historyPanel.getByText("c-test-q")).toBeVisible();
+
+  await historyPanel.getByRole("button", { name: "Sil", exact: true }).click();
+  await expect(historyPanel.getByText("c-test-q")).not.toBeVisible();
+  expect(deleteCalled).toBe(true);
+  expect(consoleErrors.filter((e) => e.includes("Content Security Policy"))).toEqual([]);
 });

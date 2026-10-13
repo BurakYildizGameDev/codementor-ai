@@ -427,10 +427,12 @@ otomatik yüklenmez (öğrenci projesindeki bir `.env` ayarları değiştirebili
   uyarır. Host başlığı izin listesi, gövde boyutu sınırı, eşzamanlı analiz sınırı (4) ve analiz
   başına toplam süre sınırı vardır; istek isteği Tier 1'i kapatabilir ama açamaz (ADR-0023).
 - **İsteğe bağlı API anahtarı:** `codementor.toml`'da `[api] api_key_env = "CODEMENTOR_API_KEY"`
-  ve ortamda `CODEMENTOR_API_KEY=<anahtar>`; bu durumda `/v1/*` istekleri `X-API-Key` başlığı
-  ister (`/health` açık kalır). Web arayüzü anahtar göndermez; yerel kullanım içindir.
+  ve ortamda `CODEMENTOR_API_KEY=<anahtar>`; bu durumda `/v1/*` ve dahili uçlar `X-API-Key` başlığı
+  ister (`/health` açık kalır). Web arayüzü anahtarı tarayıcı oturumunda (`sessionStorage`) saklar ve
+  isteklerde iletir.
 - **Paylaşılan sunucuda** ayrıca `[validation] tier0_isolation = true` açılmalı (ADR-0025).
-  İstek/dakika hız sınırı yoktur.
+  İstemci IP başına dakikalık hız sınırı `[api] rate_limit_per_minute` (varsayılan 30) ile korunur;
+  dışa açık adrese anahtarsız `serve` reddedilir (`--insecure` ile geçilebilir).
 - **Bağımlılıklar:** `uv.lock` sabit; CI'da `pip-audit --strict` ve `npm audit`. İndirilen
   derleyici yalnız yapılandırmadaki https adresinden, sha256 doğrulanarak, güvenli açma ile kurulur.
 

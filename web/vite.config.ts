@@ -6,7 +6,16 @@ import { defineConfig } from "vite";
 const API = process.env.CODEMENTOR_API ?? "http://127.0.0.1:8000";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: "html-csp-dev",
+      apply: "serve",
+      transformIndexHtml(html) {
+        return html.replace("connect-src 'self'", "connect-src 'self' ws:");
+      },
+    },
+  ],
   // Monaco çekirdeği tek başına ~3 MB (gzip ~770 kB); yerel araç olduğu için kabul edilir.
   build: { chunkSizeWarningLimit: 3500 },
   server: {

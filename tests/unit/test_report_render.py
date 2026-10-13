@@ -162,6 +162,26 @@ def test_markdown_early_exit() -> None:
     assert "2. satır (error): expected ';'" in md
 
 
+def test_markdown_html_escaping() -> None:
+    """Faz E (E8, D15): Serbest metinde &, <, > kaçışlanır; kod içi korunur."""
+    report = _report()
+    # Açıklamada script ve kod içi #include ve serbest a & b
+    f = report.findings[0].model_copy(
+        update={
+            "description": (
+                "<script>alert(1)</script> ve `code < 5` ve `#include <stdio.h>` ve a & b"
+            )
+        }
+    )
+    rep = report.model_copy(update={"findings": [f]})
+    md = to_markdown(rep)
+    assert "<script>alert(1)</script>" not in md
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in md
+    assert "`code < 5`" in md
+    assert "`#include <stdio.h>`" in md
+    assert "a &amp; b" in md
+
+
 def _rich(report: AnalysisReport, code: str | None = CODE) -> str:
     console = Console(record=True, width=100, color_system=None)
     print_report(report, console, code)

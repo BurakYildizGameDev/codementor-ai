@@ -13,6 +13,7 @@ from codementor.api.auth import API_KEY_HEADER, install_api_key
 from codementor.api.errors import install_error_handlers
 from codementor.api.guard import GuardMiddleware, allowed_hosts
 from codementor.api.routes import router
+from codementor.api.security_headers import SecurityHeadersMiddleware
 from codementor.api.state import ApiState
 from codementor.config import Settings, get_settings
 from codementor.pipeline.orchestrator import ProviderFactory
@@ -55,6 +56,9 @@ def create_app(
         hosts=allowed_hosts(settings),
         max_body_bytes=settings.api.max_body_bytes,
     )
+    # en son eklenen en dışta çalışır: Güvenlik başlıkları 401/404/413
+    # dahil tüm yanıtlarda (Faz E: E6)
+    app.add_middleware(SecurityHeadersMiddleware)
     install_error_handlers(app)
     app.include_router(router)
     return app

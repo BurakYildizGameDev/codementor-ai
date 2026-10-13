@@ -1,6 +1,7 @@
 /** Bulgular ve derleyici tanıları → Monaco satır dekorasyonları (önem derecesine göre renk).
  * Monaco'ya bağımlı değildir; nesneler `IModelDeltaDecoration` ile yapısal olarak uyumludur. */
 import type { Diagnostic, Finding } from "../types/report";
+import { escapeMarkdown } from "./markdown";
 
 export type Level = Finding["severity"];
 
@@ -53,13 +54,17 @@ export function lineDecorations(
     if (f.kind === "suggestion") continue; // Faz 36: editörde yalnız hatalar boyanır
     if (f.line_start < 1 || f.line_start > lineCount) continue;
     const end = Math.min(Math.max(f.line_end ?? f.line_start, f.line_start), lineCount);
+    const cat = escapeMarkdown(f.category);
+    const desc = escapeMarkdown(f.description);
     for (let line = f.line_start; line <= end; line++) {
-      mark(line, f.severity, `**${f.category}** — ${f.description}`);
+      mark(line, f.severity, `**${cat}** — ${desc}`);
     }
   }
   for (const d of diagnostics) {
     const level = DIAGNOSTIC_LEVEL[d.severity];
-    if (level && d.line >= 1 && d.line <= lineCount) mark(d.line, level, `**${d.tool}** — ${d.message}`);
+    if (level && d.line >= 1 && d.line <= lineCount) {
+      mark(d.line, level, `**${escapeMarkdown(d.tool)}** — ${escapeMarkdown(d.message)}`);
+    }
   }
   return [...lines.entries()]
     .sort(([a], [b]) => a - b)

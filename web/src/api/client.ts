@@ -1,10 +1,12 @@
-/** CodeMentor REST/SSE API istemcisi (mimari §9). Tipler şemadan üretilmiş dosyalardan gelir. */
+import type { AnalysisPage } from "../types/analysis_page";
+import type { DeletedCount } from "../types/deleted_count";
 import type { Problem } from "../types/problem";
 import type { ProviderStatus } from "../types/provider_status";
 import type { QuestionPublic } from "../types/question_public";
 import type { AnalysisReport } from "../types/report";
 import type { AnalysisRequest, Engine, Language } from "../types/request";
 import type { StageEvent } from "../types/stage_event";
+import { getApiKey } from "../lib/apiKey";
 import { SseParser } from "./sse";
 
 /** Kullanıcıya gösterilecek Türkçe mesajı taşıyan API hatası. */
@@ -27,14 +29,22 @@ function problemMessage(problem: Partial<Problem>): string {
 }
 
 async function request(url: string, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  const apiKey = getApiKey();
+  if (apiKey) {
+    headers.set("X-API-Key", apiKey);
+  }
   let response: Response;
   try {
-    response = await fetch(url, init);
+    response = await fetch(url, { ...init, headers });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw new ApiError(UNREACHABLE);
   }
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new ApiError("API anahtarı gerekli ya da yanlış. Ayarlardan girin.", 401);
+    }
     const body = (await response.json().catch(() => ({}))) as Partial<Problem>;
     throw new ApiError(problemMessage({ title: `HTTP ${response.status}`, ...body }), response.status);
   }
@@ -91,3 +101,31 @@ export async function fetchExport(analysisId: string, format: ExportFormat): Pro
   const response = await request(`/v1/analyses/${encodeURIComponent(analysisId)}/${format}`);
   return response.blob();
 }
+
+/** Kayıtlı analizlerin sayfalı listesi (Faz E). */
+export async function listAnalyses(limit?: number, before?: string): Promise<AnalysisPage> {
+  const params = new URLSearchParams();
+  if (limit !== undefined) params.set("limit", String(limit));
+  if (before) params.set("before", before);
+  const qs = params.toString();
+  const response = await request(`/v1/analyses${qs ? `?${qs}` : ""}`);
+  return (await response.json()) as AnalysisPage;
+}
+
+/** Kimlikle tek bir kayıtlı analizi getirir (Faz E). */
+export async function getAnalysis(analysisId: string): Promise<AnalysisReport> {
+  const response = await request(`/v1/analyses/${encodeURIComponent(analysisId)}`);
+  return (await response.json()) as AnalysisReport;
+}
+
+/** Tek bir kayıtlı analizi siler (Faz E). */
+export async function deleteAnalysis(analysisId: string): Promise<void> {
+  await request(`/v1/analyses/${encodeURIComponent(analysisId)}`, { method: "DELETE" });
+}
+
+/** Tüm kayıtlı analizleri siler (Faz E). */
+export async function deleteAllAnalyses(): Promise<DeletedCount> {
+  const response = await request("/v1/analyses", { method: "DELETE" });
+  return (await response.json()) as DeletedCount;
+}
+

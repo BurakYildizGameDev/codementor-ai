@@ -15,6 +15,8 @@ const UI_SCHEMAS = [
   "question_public",
   "problem",
   "provider_status",
+  "analysis_page",
+  "deleted_count",
 ];
 const BANNER =
   "/* OTOMATİK ÜRETİLDİ — elle düzenlemeyin.\n" +

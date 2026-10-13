@@ -52,6 +52,10 @@ def serve(
         str | None, typer.Option(help="Bağlanılacak adres (varsayılan: api.host).")
     ] = None,
     port: Annotated[int | None, typer.Option(help="Port (varsayılan: api.port).")] = None,
+    insecure: Annotated[
+        bool,
+        typer.Option("--insecure", help="Dışa açık adrese anahtarsız bağlanmaya izin ver."),
+    ] = False,
 ) -> None:
     """REST API ve SSE sunucusunu başlatır (`/docs` OpenAPI)."""
     console = Console(stderr=True)
@@ -62,6 +66,16 @@ def serve(
         raise typer.Exit(EXIT_SYSTEM_ERROR) from exc
     bind_host = host or settings.api.host
     bind_port = port or settings.api.port
+    if not is_loopback(bind_host) and configured_key(settings) is None:
+        if not insecure:
+            console.print(
+                "[red]Hata:[/red] Dışa açık adrese anahtarsız bağlanılamaz. "
+                "[api] api_key_env ayarlayın ya da --insecure verin."
+            )
+            raise typer.Exit(EXIT_SYSTEM_ERROR)
+        console.print(
+            "[yellow]Uyarı:[/yellow] Dışa açık adrese anahtarsız bağlanılıyor (--insecure etkin)."
+        )
     warning = exposure_warning(settings, bind_host)
     if warning is not None:
         console.print(f"[yellow]Uyarı:[/yellow] {warning}")

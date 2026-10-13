@@ -62,6 +62,60 @@
 | K | ✅ (ADR-0028) | faz/k-kullanici-soru-token | 2026-10-13 | Claude Code / — |
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | D | ✅ (release etiketi kullanıcıda) | faz/d-public-release | 2026-10-13 | Claude Code / — |
+| E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
+
+## Faz E — Notlar (web geçmişi, silme ve güvenlik başlıkları; 2026-10-13)
+
+### Yapılanlar
+- **E1 & E2 (API geçmişi ve silme):** `AnalysisSummary`, `AnalysisPage`, `DeletedCount` modelleri (`models/api.py`).
+  `storage/cache.py`'de `list_analyses_page(db, limit, before)` (en yeni önce, cursor tabanlı sayfalama) ve
+  `storage/sessions.py`'de `delete_session(db, session_id)` (belirli oturumu silme). `GET /v1/analyses`,
+  `DELETE /v1/analyses` (toplu silme), `DELETE /v1/sessions/{session_id}` uç noktaları eklendi.
+  Şemalar dışa aktarıldı (`schemas/`) ve TypeScript tipleri üretildi (`web/src/types/`).
+- **E3 & E4 (Web geçmişi ve API anahtarı):** `web/src/lib/apiKey.ts` (`sessionStorage` tabanlı `getApiKey`/`setApiKey`/`clearApiKey`),
+  `web/src/api/client.ts` (`X-API-Key` ekleme, 401 için Türkçe hata mesajı, `listAnalyses`, `getAnalysis`, `deleteAnalysis`, `deleteAllAnalyses`).
+  `web/src/components/HistoryPanel.tsx` (geçmiş listesi, silme, tümünü temizle onaylı, sayfalama).
+  `web/src/App.tsx` içine geçmiş paneli ve başlıkta API anahtarı ayarı entegre edildi.
+- **E5 (O15 Monaco hover güvenliği):** `web/src/lib/markdown.ts` içinde `escapeMarkdown` eklendi;
+  `markers.ts` Monaco hover içerisindeki LLM bulgu açıklamaları ve derleyici iletilerini kaçışlayarak
+  güvenilmeyen bağlantı ve görselleri etkisizleştirdi.
+- **E6 (O16 Güvenlik başlıkları):** `web/index.html`'e sıkı CSP meta etiketi (`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; ...`);
+  `web/vite.config.ts` dev modunda HMR için `connect-src` genişletmesi; `src/codementor/api/security_headers.py`
+  ile API yanıtlarına `X-Content-Type-Options: nosniff` ve `Referrer-Policy: no-referrer` başlıkları eklendi.
+- **E7 (D14 İç uçların korunması):** `src/codementor/api/auth.py` içinde `_is_protected` ile `/health/ready`,
+  `/docs`, `/redoc`, `/openapi.json`, `/docs/oauth2-redirect` ve `/v1/*` yolları API anahtarı açıkken korundu;
+  yalnız `/health` açık bırakıldı.
+- **E8 (D15 Markdown dışa aktarımında HTML kaçışı):** `src/codementor/report/markdown.py` içinde `_escape_html`
+  fonksiyonu ile kod içi (`...`) ve kod blokları korunarak serbest metindeki `<`, `>`, `&` karakterleri kaçışlandı.
+- **E9 (D17 İndirme URL gecikmeli iptal):** `web/src/lib/download.ts` içinde `URL.revokeObjectURL(url)` 1000 ms
+  gecikmeyle (`setTimeout`) çağrılacak şekilde güncellendi.
+- **E10 (Soru filtresi boş mesajı):** `web/src/components/Controls.tsx` soru listesi boş olduğunda
+  "Bu filtrelerle eşleşen soru yok." mesajı gösterir.
+- **E11 (Dışa açık serve ve hız sınırı):** `src/codementor/cli/serve.py` dışa açık IP'de anahtarsız ve `--insecure`
+  olmaksızın başlatmayı reddeder (kod 3). `ApiSettings.rate_limit_per_minute` (varsayılan 30); `RateLimiter`
+  (`api/guard.py`) ve `ApiState` üzerinde kayan pencere ile 429 Too Many Requests + `Retry-After: 60` üretilir.
+- **E12 (CSRF / text/plain güven sınırı):** `tests/api/test_trust_boundary.py` içinde `POST /v1/analyze`
+  `text/plain` içerik türüyle reddedildiği ve LLM çağrılmadığı doğrulandı.
+
+### Kararlar
+- **RateLimiter mimarisi:** Hız sınırlayıcı durum bilgisi `src/codementor/api/guard.py` içinde `RateLimiter` sınıfında
+  toplandı ve `ApiState` üzerinden uygulama durumuna bağlandı; böylece test ortamlarında her ASGI uygulaması
+  tamamen yalıtılmış hız sayacına sahip oldu.
+- **API Anahtarı saklama:** Web tarafında API anahtarı `localStorage` yerine `sessionStorage`'da tutuldu; sekme
+  kapanınca anahtar temizlenerek paylaşılan bilgisayarlarda güvenlik sağlandı.
+
+### Doğrulama
+- `uv run ruff check .` → All checks passed!
+- `uv run ruff format --check .` → 456 files already formatted
+- `uv run mypy src/` → Success: no issues found in 204 source files
+- `uv run pytest -m "not live"` → 3383 passed, 15 skipped, 6 deselected in 178s
+- `npm run typecheck` → 0 errors
+- `npm test` → 12 passed (54 tests)
+- `npm run build` → built in 404ms
+- `npx playwright test e2e/app.spec.ts` → 4 passed (5.0s, CSP console hatası 0)
+- Linux tkinter-free yalıtım testi → 7 passed
+- Görünmez karakter taraması → 0 bulgu
+
 ## Denetim — Faz A1-D (kod-denetci, 2026-10-13)
 İki kod-denetci ajanı (A1+A2+B ve K+C) "birleştirilemez" dedi; bulgular doğrulanmıştı. Dal
 `fix/denetim-a-d` (`faz/d-public-release`dan).

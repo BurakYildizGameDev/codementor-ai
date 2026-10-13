@@ -1,0 +1,128 @@
+{
+  "$defs": {
+    "AnalysisSummary": {
+      "additionalProperties": false,
+      "description": "Geçmiş listesindeki bir satır; rapor gövdesi ve kod içermez.",
+      "properties": {
+        "analysis_id": {
+          "title": "Analysis Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "degraded": {
+          "title": "Degraded",
+          "type": "boolean"
+        },
+        "early_exit": {
+          "title": "Early Exit",
+          "type": "boolean"
+        },
+        "engine": {
+          "$ref": "#/$defs/Engine"
+        },
+        "language": {
+          "$ref": "#/$defs/Language"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Provider"
+        },
+        "question_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Question Id"
+        },
+        "tokens_in": {
+          "title": "Tokens In",
+          "type": "integer"
+        },
+        "tokens_out": {
+          "title": "Tokens Out",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "analysis_id",
+        "created_at",
+        "language",
+        "engine",
+        "question_id",
+        "provider",
+        "degraded",
+        "early_exit",
+        "tokens_in",
+        "tokens_out"
+      ],
+      "title": "AnalysisSummary",
+      "type": "object"
+    },
+    "Engine": {
+      "enum": [
+        "none",
+        "unity",
+        "unreal"
+      ],
+      "title": "Engine",
+      "type": "string"
+    },
+    "Language": {
+      "enum": [
+        "c",
+        "cpp",
+        "csharp",
+        "python",
+        "html",
+        "css"
+      ],
+      "title": "Language",
+      "type": "string"
+    }
+  },
+  "$id": "analysis_page.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/AnalysisSummary"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Sonraki sayfa için `before` değeri; yoksa null",
+      "title": "Next Cursor"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "AnalysisPage",
+  "type": "object"
+}

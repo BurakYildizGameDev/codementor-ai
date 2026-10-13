@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 
-from sqlalchemy import case, func
+from sqlalchemy import and_, case, func, or_
 from sqlmodel import col, delete, select
 
 from codementor.log import get_logger
@@ -108,6 +108,41 @@ def list_analyses(db: Database, limit: int = 50) -> list[AnalysisRow]:
             select(AnalysisRow).order_by(col(AnalysisRow.created_at).desc()).limit(limit)
         ).all()
     return list(rows)
+
+
+def list_analyses_page(
+    db: Database, *, limit: int, before: str | None
+) -> tuple[list[AnalysisRow], str | None]:
+    """Sayfalı analiz listesi (API `GET /v1/analyses`, Faz E).
+
+    Sıralama `created_at` azalan, eşitlikte `id` azalan. `before` verilirse o kimliğin
+    satırından sonra gelenleri (daha eski olanları) döndürür; `before` bulunamazsa boş sayfa döner.
+    `limit + 1` satır çekilir; fazlası varsa `next_cursor` son döndürülen satırın kimliğidir.
+    """
+    with db.session() as session:
+        query = select(AnalysisRow).order_by(
+            col(AnalysisRow.created_at).desc(), col(AnalysisRow.id).desc()
+        )
+        if before is not None:
+            before_row = session.get(AnalysisRow, before)
+            if before_row is None:
+                return [], None
+            query = query.where(
+                or_(
+                    col(AnalysisRow.created_at) < before_row.created_at,
+                    and_(
+                        col(AnalysisRow.created_at) == before_row.created_at,
+                        col(AnalysisRow.id) < before_row.id,
+                    ),
+                )
+            )
+        rows = list(session.exec(query.limit(limit + 1)).all())
+        has_more = len(rows) > limit
+        items = rows[:limit]
+        for r in items:
+            session.expunge(r)
+        next_cursor = items[-1].id if has_more and items else None
+        return items, next_cursor
 
 
 def save_analysis(

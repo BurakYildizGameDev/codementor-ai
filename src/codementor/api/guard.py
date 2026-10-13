@@ -11,18 +11,47 @@
 
 from __future__ import annotations
 
+import threading
+import time
+from collections import defaultdict, deque
 from dataclasses import dataclass
 
 from starlette.datastructures import Headers
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from codementor.api.errors import problem_response
+from codementor.api.errors import ApiProblemError, problem_response
 from codementor.config import Settings
 from codementor.models.api import Problem
 
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "[::1]")
 ANY_HOST = "*"
 _BODY_METHODS = frozenset({"POST", "PUT", "PATCH"})
+
+
+class RateLimiter:
+    """İstemci IP başına kayan pencere (dakika) hız sınırlayıcı (Faz E, mimari §17)."""
+
+    def __init__(self, limit_per_minute: int | None) -> None:
+        self.limit = limit_per_minute
+        self._lock = threading.Lock()
+        self._records: dict[str, deque[float]] = defaultdict(deque)
+
+    def check(self, client_host: str) -> None:
+        if self.limit is None:
+            return
+        now = time.time()
+        cutoff = now - 60.0
+        with self._lock:
+            timestamps = self._records[client_host]
+            while timestamps and timestamps[0] <= cutoff:
+                timestamps.popleft()
+            if len(timestamps) >= self.limit:
+                raise ApiProblemError(
+                    429,
+                    "Çok fazla istek; bir dakika sonra yeniden deneyin.",
+                    headers={"Retry-After": "60"},
+                )
+            timestamps.append(now)
 
 
 def host_of(header: str) -> str | None:

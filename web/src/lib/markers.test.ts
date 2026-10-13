@@ -72,4 +72,23 @@ describe("lineDecorations", () => {
     );
     expect(decos).toEqual([]);
   });
+
+  it("hover mesajında güvenilmeyen markdown ve bağlantıları kaçışlar (Faz E: E5)", () => {
+    const decos = lineDecorations(
+      [
+        finding({
+          category: "design",
+          description: "![x](http://e) ve [a](https://p) — Döngü n kez döner mi?",
+        }),
+      ],
+      [],
+      10,
+    );
+    expect(decos).toHaveLength(1);
+    const hover = decos[0]!.options.hoverMessage.value;
+    expect(hover).not.toContain("](");
+    expect(hover).toContain("\\]\\(");
+    expect(hover).toContain("Döngü n kez döner mi?");
+    expect(hover).toContain("**design**");
+  });
 });

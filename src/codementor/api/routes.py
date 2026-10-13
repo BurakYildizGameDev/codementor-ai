@@ -21,7 +21,15 @@ from codementor.api.sse import SSE_HEADERS, stream_analysis
 from codementor.api.state import ApiState
 from codementor.config import Settings
 from codementor.languages import CANONICAL_SUFFIX
-from codementor.models.api import PROBLEM_JSON, Health, Problem, Readiness
+from codementor.models.api import (
+    PROBLEM_JSON,
+    AnalysisPage,
+    AnalysisSummary,
+    DeletedCount,
+    Health,
+    Problem,
+    Readiness,
+)
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.provider import ProviderStatus
 from codementor.models.questions import QuestionPublic
@@ -34,7 +42,13 @@ from codementor.questions.bank import QuestionNotFoundError
 from codementor.report.markdown import to_markdown
 from codementor.report.sarif import to_sarif
 from codementor.rules.catalog import rule_catalog
-from codementor.storage.cache import delete_analysis, get_analysis
+from codementor.storage.cache import (
+    clear_analyses,
+    delete_analysis,
+    get_analysis,
+    list_analyses_page,
+)
+from codementor.storage.sessions import delete_session
 from codementor.validation.toolchain import compiler_statuses, get_toolchain
 
 SARIF_MEDIA_TYPE = "application/sarif+json"
@@ -80,14 +94,14 @@ def _state(request: Request) -> ApiState:
 @router.post(
     "/v1/analyze",
     response_model=AnalysisReport,
-    responses={**_report_response(), **_problems(404, 413, 422, 503)},
+    responses={**_report_response(), **_problems(404, 413, 422, 429, 503)},
     tags=["analiz"],
 )
 async def analyze(request: Request, body: AnalyzeBody) -> AnalysisReport | Response:
     """Senkron analiz. Sağlayıcıların hepsi düşse de rapor döner (`meta.degraded=true`).
     İstemci yanıtı beklemeden koparsa analiz iptal edilir (Faz 48; yanıt 499, okuyan yok)."""
     state = _state(request)
-    _admit(state, body)
+    _admit(state, body, request)
     try:
         return await run_until_disconnect(request.receive, state.orchestrator().analyze(body))
     except ClientDisconnectedError:
@@ -108,14 +122,14 @@ async def analyze(request: Request, body: AnalyzeBody) -> AnalysisReport | Respo
                 }
             }
         },
-        **_problems(413, 422, 503),
+        **_problems(413, 422, 429, 503),
     },
     tags=["analiz"],
 )
 async def analyze_stream(request: Request, body: AnalyzeBody) -> StreamingResponse:
     """SSE: `stage` olayları (`started`/`completed`/`skipped`), sonda `report` ya da `error`."""
     state = _state(request)
-    _admit(state, body)
+    _admit(state, body, request)
     release = _once(state.slots.release)
 
     async def guarded() -> AsyncIterator[str]:
@@ -140,12 +154,15 @@ def allowed_providers(settings: Settings) -> list[str]:
     return configured if configured is not None else chain_names(settings.providers)
 
 
-def _admit(state: ApiState, body: AnalysisRequest) -> None:
-    """Analiz kapısı (Faz 47): izinli sağlayıcı, kaba kod sınırı, eşzamanlılık yuvası.
+def _admit(state: ApiState, body: AnalysisRequest, request: Request) -> None:
+    """Analiz kapısı (Faz 47, Faz E): hız sınırı, izinli sağlayıcı,
+    kaba kod sınırı, eşzamanlılık yuvası.
 
     Yuva en son alınır; reddedilen istek yuva tutmaz. Alınan yuvayı çağıran bırakır.
     """
     settings = state.settings
+    client_host = request.client.host if request.client else "127.0.0.1"
+    state.rate_limiter.check(client_host)
     if body.provider is not None and body.provider not in allowed_providers(settings):
         raise ApiProblemError(
             422, f"'{body.provider}' sağlayıcısı bu sunucuda seçilemez (api.allowed_providers)."
@@ -177,6 +194,60 @@ def _stored(request: Request, analysis_id: str) -> AnalysisReport:
     if report is None:
         raise ApiProblemError(404, f"'{analysis_id}' kimlikli analiz bulunamadı.")
     return report
+
+
+@router.get("/v1/analyses", response_model=AnalysisPage, tags=["analiz"])
+def list_stored(
+    request: Request,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    before: Annotated[str | None, Query(pattern=ULID_PATTERN)] = None,
+) -> AnalysisPage:
+    """Kayıtlı analizlerin sayfalı listesi (Faz E; kod ve rapor gövdesi içermez)."""
+    rows, next_cursor = list_analyses_page(_state(request).database(), limit=limit, before=before)
+    items = [
+        AnalysisSummary(
+            analysis_id=row.id,
+            created_at=row.created_at,
+            language=Language(row.language),
+            engine=Engine(row.engine),
+            question_id=row.question_id,
+            provider=row.provider,
+            degraded=row.degraded,
+            early_exit=row.early_exit,
+            tokens_in=row.tokens_in,
+            tokens_out=row.tokens_out,
+        )
+        for row in rows
+    ]
+    return AnalysisPage(items=items, next_cursor=next_cursor)
+
+
+@router.delete(
+    "/v1/analyses",
+    response_model=DeletedCount,
+    tags=["analiz"],
+)
+def clear_stored(request: Request) -> DeletedCount:
+    """Tüm kayıtlı analizleri siler (Faz E)."""
+    count = clear_analyses(_state(request).database())
+    return DeletedCount(deleted=count)
+
+
+@router.delete(
+    "/v1/sessions/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={204: {"description": "Oturum silindi."}, **_problems(404)},
+    tags=["analiz"],
+)
+def delete_stored_session(request: Request, session_id: str) -> Response:
+    """Kayıtlı bir oturumu ve ipucu geçmişini siler (Faz E)."""
+    valid = len(session_id) <= 128 and re.fullmatch(r"^[A-Za-z0-9_.-]+$", session_id) is not None
+    if not valid:
+        raise ApiProblemError(404, f"'{session_id}' kimlikli oturum bulunamadı.")
+    deleted = delete_session(_state(request).database(), session_id)
+    if not deleted:
+        raise ApiProblemError(404, f"'{session_id}' kimlikli oturum bulunamadı.")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get(

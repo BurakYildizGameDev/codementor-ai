@@ -162,6 +162,11 @@ class ApiSettings(BaseModel):
     )
     max_body_bytes: int = Field(default=1024 * 1024, ge=1024)
     max_concurrent_analyses: int = Field(default=4, ge=1)
+    rate_limit_per_minute: int | None = Field(
+        default=30,
+        ge=1,
+        description="İstemci IP başına dakikalık istek sınırı; None ise sınırsız (Faz E)",
+    )
 
 
 class StorageSettings(BaseModel):

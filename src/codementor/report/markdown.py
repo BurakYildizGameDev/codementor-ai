@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from codementor.models.enums import FindingKind
 from codementor.models.findings import Finding
 from codementor.models.report import AnalysisReport
@@ -9,9 +11,23 @@ from codementor.models.report import AnalysisReport
 _SEVERITY = {"high": "🔴 yüksek", "medium": "🟠 orta", "low": "🟢 düşük"}
 _STATUS = {"passed": "geçti", "warning": "uyarı", "failed": "başarısız", "skipped": "atlandı"}
 
+_CODE_SEGMENT = re.compile(r"(```[\s\S]*?```|`[^`]*`)")
+
+
+def _escape_html(text: str) -> str:
+    """Serbest metindeki HTML özel karakterlerini (&, <, >) kaçışlar (Faz E: E8, D15).
+
+    Kod blokları (```) ve satır içi kod (`…`) içi olduğu gibi korunur.
+    """
+    parts = _CODE_SEGMENT.split(text)
+    for i in range(0, len(parts), 2):
+        parts[i] = parts[i].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return "".join(parts)
+
 
 def _cell(text: str) -> str:
-    return text.replace("|", "\\|").replace("\n", " ")
+    escaped = _escape_html(text)
+    return escaped.replace("|", "\\|").replace("\n", " ")
 
 
 def _finding_table(findings: list[Finding]) -> list[str]:
@@ -43,7 +59,7 @@ def _findings(findings: list[Finding]) -> list[str]:
 def to_markdown(report: AnalysisReport) -> str:
     """Raporu Markdown metnine çevirir. Kavram adı yalnızca ipucu seviyesi 3'te gösterilir."""
     out = ["# CodeMentor raporu", ""]
-    target = report.question_id or "serbest mod"
+    target = _escape_html(report.question_id or "serbest mod")
     out.append(f"- **Dil / motor:** {report.language.value} / {report.engine.value}")
     out.append(f"- **Soru:** {target}")
     out.append(f"- **Derleme:** {_STATUS[report.compilation.status.value]}")
@@ -69,7 +85,9 @@ def to_markdown(report: AnalysisReport) -> str:
             out.append(f"- **Hedefe uygun mu:** {'evet' if c.is_optimal else 'hayır'}")
         if c.static_hint:
             out.append(f"- **Statik ipucu:** O({c.static_hint}) ({c.agreement})")
-        out += ["", "Gerekçe:", ""] + [f"{i}. {s}" for i, s in enumerate(c.reasoning_steps, 1)]
+        out += ["", "Gerekçe:", ""] + [
+            f"{i}. {_escape_html(s)}" for i, s in enumerate(c.reasoning_steps, 1)
+        ]
         out.append("")
 
     out += _findings(report.findings)
@@ -78,14 +96,14 @@ def to_markdown(report: AnalysisReport) -> str:
         s = report.socratic
         out += ["## Mentor soruları", "", f"İpucu seviyesi: {s.hint_level}", ""]
         if s.concept_revealed and s.key_flaw_concept:  # Faz C (Y6): tek kural
-            out += [f"**Kavram:** {s.key_flaw_concept}", ""]
-        out += [f"{i}. {q}" for i, q in enumerate(s.guiding_questions, 1)]
+            out += [f"**Kavram:** {_escape_html(s.key_flaw_concept)}", ""]
+        out += [f"{i}. {_escape_html(q)}" for i, q in enumerate(s.guiding_questions, 1)]
         if s.next_step_hint:
-            out += ["", f"> Sonraki adım: {s.next_step_hint}"]
+            out += ["", f"> Sonraki adım: {_escape_html(s.next_step_hint)}"]
         out.append("")
 
     if report.meta.warnings:
-        out += ["## Notlar", ""] + [f"- {w}" for w in report.meta.warnings] + [""]
+        out += ["## Notlar", ""] + [f"- {_escape_html(w)}" for w in report.meta.warnings] + [""]
     out.append(
         f"<sub>{report.analysis_id} · {report.meta.provider or 'LLM yok'} · "
         f"{report.meta.prompt_version} · {report.meta.rules_version}</sub>"

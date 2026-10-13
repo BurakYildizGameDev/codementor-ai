@@ -467,7 +467,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Düzeltme:** `clear_analyses` sonrası `VACUUM`; `secure_delete=ON`; temizlik son dosyaları da
   kapsasın (logu temizlemek isteğe bağlı).
 
-### O15 — Monaco hover güvenilmeyen markdown işliyor 🟡 📖
+### O15 — Monaco hover güvenilmeyen markdown işliyor 🟡 📖 ✅ Faz E
 
 - **Dosya:** `web/src/lib/markers.ts:31` (`hoverMessage: { value }`), `:57` (`f.description`),
   `:63` (`d.message`)
@@ -482,7 +482,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   metin ver.
 - **Test:** `![x](http://e)` içeren açıklama düz metin kalıyor.
 
-### O16 — CSP ve güvenlik başlıkları yok 🟡 📖
+### O16 — CSP ve güvenlik başlıkları yok 🟡 📖 ✅ Faz E
 
 - **Dosyalar:** `web/index.html`, API ara katmanı
 - **Düzeltme:** web için CSP (`default-src 'self'; img-src 'self' data:; worker-src blob: 'self';
@@ -839,24 +839,24 @@ tekrarlanabilir bir release'ten gelsin.
 
 ---
 
-### Faz E — Web: geçmiş, silme, güvenlik başlıkları (öncelik: orta)
+### Faz E — Web: geçmiş, silme, güvenlik başlıkları (öncelik: orta) ✅
 
 **Dal:** `faz/e-web`
 
-- [ ] `GET /v1/analyses` (sayfalı), `DELETE /v1/analyses` (toplu, API anahtarı açıksa korumalı),
-      `DELETE /v1/sessions/{id}`
-- [ ] Web'de geçmiş paneli, satır başına sil, "tümünü temizle" (onaylı) — eski Faz 62'nin
-      yapılmamış kısmı
-- [ ] Web istemcisinden `X-API-Key` gönderme (Sonraya: Faz 26)
-- [ ] **O15:** Monaco hover metni kaçışlanır
-- [ ] **O16:** web CSP; API `nosniff`, `Referrer-Policy`
-- [ ] **D14:** anahtar varken `/health/ready` korunur
-- [ ] **D15:** Markdown dışa aktarımında `< > &` kaçışı
-- [ ] **D17:** indirme URL'si gecikmeli iptal
-- [ ] Soru filtresi boşsa "eşleşen soru yok" (Sonraya: Faz 30)
-- [ ] İstemci başına hız sınırı; dışa açık adreste anahtarsız `serve` reddi ya da `--insecure`
-      (Sonraya: Faz 11, 26)
-- [ ] Testler: Vitest + Playwright + API; CSRF `text/plain` regresyonu
+- [x] `GET /v1/analyses` (sayfalı), `DELETE /v1/analyses` (toplu, API anahtarı açıksa korumalı),
+      `DELETE /v1/sessions/{id}` — **Faz E**
+- [x] Web'de geçmiş paneli, satır başına sil, "tümünü temizle" (onaylı) — eski Faz 62'nin
+      yapılmamış kısmı — **Faz E**
+- [x] Web istemcisinden `X-API-Key` gönderme (Sonraya: Faz 26) — **Faz E**
+- [x] **O15:** Monaco hover metni kaçışlanır — **Faz E**
+- [x] **O16:** web CSP; API `nosniff`, `Referrer-Policy` — **Faz E**
+- [x] **D14:** anahtar varken `/health/ready` korunur — **Faz E**
+- [x] **D15:** Markdown dışa aktarımında `< > &` kaçışı — **Faz E**
+- [x] **D17:** indirme URL'si gecikmeli iptal — **Faz E**
+- [x] Soru filtresi boşsa "eşleşen soru yok" (Sonraya: Faz 30) — **Faz E**
+- [x] İstemci başına hız sınırı; dışa açık adreste anahtarsız `serve` reddi ya da `--insecure`
+      (Sonraya: Faz 11, 26) — **Faz E**
+- [x] Testler: Vitest + Playwright + API; CSRF `text/plain` regresyonu — **Faz E**
 
 ---
 

@@ -101,6 +101,9 @@ export function Controls(props: Props) {
             </option>
           ))}
         </select>
+        {visible.length === 0 && (
+          <span className="muted filter-empty">Bu filtrelerle eşleşen soru yok.</span>
+        )}
       </label>
       <label>
         Sağlayıcı

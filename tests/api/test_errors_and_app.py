@@ -153,6 +153,8 @@ def test_serve_uses_config_and_warns_when_exposed(monkeypatch: pytest.MonkeyPatc
     assert calls[-1]["host"] == "127.0.0.1"
     assert calls[-1]["port"] == 8000
     assert "Uyarı" not in result.output
-    exposed = CliRunner().invoke(cli_app, ["serve", "--host", "0.0.0.0", "--port", "9000"])
+    exposed = CliRunner().invoke(
+        cli_app, ["serve", "--host", "0.0.0.0", "--port", "9000", "--insecure"]
+    )
     assert calls[-1] == {"host": "0.0.0.0", "port": 9000, "log_level": "warning"}
     assert "Uyarı" in exposed.output

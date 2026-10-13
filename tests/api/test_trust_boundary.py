@@ -245,3 +245,39 @@ async def test_providers_endpoint_lists_allowed(
     cfg = _with_api(settings, allowed_providers=["gemini", "anthropic"])
     response = await client_for(cfg=cfg).get("/v1/providers")
     assert [s["name"] for s in response.json()] == ["gemini", "anthropic"]
+
+
+async def test_text_plain_post_rejected(client_for: ClientFactory, fake: FakeFactory) -> None:
+    """Faz E (E12): POST /v1/analyze text/plain ile çağrılırsa 415/422 döner, LLM çağrılmaz."""
+    provider = fake(analysis_reply(), socratic_reply())
+    client = client_for(provider)
+    resp = await client.post(
+        "/v1/analyze",
+        content=b'{"code": "int main() {}", "language": "c"}',
+        headers={"content-type": "text/plain"},
+    )
+    assert resp.status_code in (415, 422)
+    assert len(provider.calls) == 0
+
+
+async def test_rate_limit_exceeded_429(
+    client_for: ClientFactory, settings: Settings, fake: FakeFactory
+) -> None:
+    """Faz E (E11): İstemci dakikalık hız sınırını aşarsa 429 ve Retry-After döner."""
+    cfg = _with_api(settings, rate_limit_per_minute=2)
+    provider = fake(analysis_reply(), socratic_reply())
+    client = client_for(provider, cfg=cfg)
+
+    r1 = await client.post("/v1/analyze", json=SMALL)
+    assert r1.status_code == 200
+
+    r2 = await client.post("/v1/analyze", json=SMALL)
+    assert r2.status_code == 200
+
+    r3 = await client.post("/v1/analyze", json=SMALL)
+    assert r3.status_code == 429
+    assert r3.headers["content-type"] == PROBLEM
+    assert r3.headers["retry-after"] == "60"
+    data = r3.json()
+    assert data["status"] == 429
+    assert "Çok fazla istek" in data["detail"]

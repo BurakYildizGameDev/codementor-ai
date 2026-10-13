@@ -65,3 +65,57 @@ describe("fetchQuestions", () => {
     expect(fetchMock.mock.calls[0]![0]).toBe("/v1/questions?language=c&engine=none");
   });
 });
+
+describe("X-API-Key başlığı ve 401", () => {
+  it("anahtar varken X-API-Key başlığı eklenir, yokken eklenmez", async () => {
+    sessionStorage.clear();
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(() => Promise.resolve(new Response("[]", { status: 200 })));
+
+    await fetchQuestions("c", "none");
+    const firstHeaders = fetchMock.mock.calls[0]![1]?.headers as Headers;
+    expect(firstHeaders.has("X-API-Key")).toBe(false);
+
+    sessionStorage.setItem("codementor_api_key", "my-secret-key");
+    await fetchQuestions("c", "none");
+    const secondHeaders = fetchMock.mock.calls[1]![1]?.headers as Headers;
+    expect(secondHeaders.get("X-API-Key")).toBe("my-secret-key");
+    sessionStorage.clear();
+  });
+
+  it("401 durumunda anlaşılır Türkçe hata mesajı üretilir", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ title: "Yetkisiz", status: 401 }), { status: 401 }),
+    );
+    await expect(fetchQuestions("c", "none")).rejects.toThrow(
+      "API anahtarı gerekli ya da yanlış. Ayarlardan girin.",
+    );
+  });
+});
+
+describe("geçmiş API fonksiyonları", () => {
+  it("listAnalyses limit ve before ile çağrı yapar", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ items: [], next_cursor: null }), { status: 200 }),
+    );
+    const { listAnalyses } = await import("./client");
+    await listAnalyses(10, "01CURSOR");
+    expect(fetchMock.mock.calls[0]![0]).toBe("/v1/analyses?limit=10&before=01CURSOR");
+  });
+
+  it("deleteAnalysis ve deleteAllAnalyses DELETE istekleri atar", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ deleted: 1 }), { status: 200 }),
+    );
+    const { deleteAnalysis, deleteAllAnalyses } = await import("./client");
+    await deleteAnalysis("01ID");
+    expect(fetchMock.mock.calls[0]![0]).toBe("/v1/analyses/01ID");
+    expect(fetchMock.mock.calls[0]![1]?.method).toBe("DELETE");
+
+    await deleteAllAnalyses();
+    expect(fetchMock.mock.calls[1]![0]).toBe("/v1/analyses");
+    expect(fetchMock.mock.calls[1]![1]?.method).toBe("DELETE");
+  });
+});
+

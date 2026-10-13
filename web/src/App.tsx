@@ -3,9 +3,11 @@ import { analyzeStream, fetchProviders, fetchQuestions } from "./api/client";
 import { ComplexityCard } from "./components/ComplexityCard";
 import { Controls } from "./components/Controls";
 import { FindingList } from "./components/FindingList";
+import { HistoryPanel } from "./components/HistoryPanel";
 import { ReportDownload } from "./components/ReportDownload";
 import { SocraticPanel } from "./components/SocraticPanel";
 import { StageProgress } from "./components/StageProgress";
+import { clearApiKey, getApiKey, setApiKey } from "./lib/apiKey";
 import { lineDecorations } from "./lib/markers";
 import { initialProgress, progressReducer } from "./lib/progress";
 import { SAMPLES, enginesFor, monacoLanguage } from "./lib/samples";
@@ -41,6 +43,9 @@ export default function App() {
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
+  const [apiKeyVal, setApiKeyVal] = useState<string>(() => getApiKey() ?? "");
+  const [apiKeyInput, setApiKeyInput] = useState<string>(() => getApiKey() ?? "");
+  const [showKeyInput, setShowKeyInput] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -129,8 +134,60 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <h1>CodeMentor AI</h1>
-        <p className="muted">Kodu düzeltmez; denetler ve Sokratik sorular sorar.</p>
+        <div className="header-row">
+          <div>
+            <h1>CodeMentor AI</h1>
+            <p className="muted">Kodu düzeltmez; denetler ve Sokratik sorular sorar.</p>
+          </div>
+          <div className="header-actions">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowKeyInput((v) => !v)}
+              aria-label="API anahtarı ayarı"
+            >
+              {apiKeyVal ? "🔑 Anahtar tanımlı" : "🔑 API Anahtarı"}
+            </button>
+          </div>
+        </div>
+        {showKeyInput && (
+          <div className="api-key-form">
+            <input
+              type="password"
+              placeholder="API anahtarı"
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value)}
+              aria-label="API anahtarı"
+            />
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => {
+                const trimmed = apiKeyInput.trim();
+                setApiKey(trimmed);
+                setApiKeyVal(trimmed);
+                setShowKeyInput(false);
+                if (error?.includes("API anahtarı")) setError(null);
+              }}
+            >
+              Kaydet
+            </button>
+            {apiKeyVal && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  clearApiKey();
+                  setApiKeyVal("");
+                  setApiKeyInput("");
+                  setShowKeyInput(false);
+                }}
+              >
+                Temizle
+              </button>
+            )}
+          </div>
+        )}
       </header>
       <Controls
         language={language}
@@ -169,7 +226,29 @@ export default function App() {
         <aside className="panel">
           {error && (
             <div className="card error" role="alert">
-              {error}
+              <p>{error}</p>
+              {error.includes("API anahtarı") && !showKeyInput && (
+                <div className="api-key-inline">
+                  <input
+                    type="password"
+                    placeholder="API anahtarı"
+                    value={apiKeyInput}
+                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    aria-label="API anahtarı"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = apiKeyInput.trim();
+                      setApiKey(trimmed);
+                      setApiKeyVal(trimmed);
+                      setError(null);
+                    }}
+                  >
+                    Kaydet
+                  </button>
+                </div>
+              )}
             </div>
           )}
           <StageProgress stages={stages} busy={busy} />
@@ -207,8 +286,14 @@ export default function App() {
               onSelect={setSelectedLine}
             />
           )}
+          <HistoryPanel
+            onSelectReport={(r) => setReport(r)}
+            currentReportId={report?.analysis_id ?? null}
+            onClearReport={() => setReport(null)}
+          />
         </aside>
       </main>
     </div>
   );
 }
+

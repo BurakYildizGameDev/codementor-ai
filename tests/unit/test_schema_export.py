@@ -22,6 +22,8 @@ EXPECTED = {
     "question_public.schema.json",
     "problem.schema.json",
     "provider_status.schema.json",
+    "analysis_page.schema.json",
+    "deleted_count.schema.json",
 }
 REPO_SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 
@@ -68,6 +70,8 @@ def test_ui_schemas_exported() -> None:
         "stage_event.schema.json": "StageEvent",
         "question_public.schema.json": "QuestionPublic",
         "problem.schema.json": "Problem",
+        "analysis_page.schema.json": "AnalysisPage",
+        "deleted_count.schema.json": "DeletedCount",
     }
     for name, title in titles.items():
         assert schemas[name]["title"] == title

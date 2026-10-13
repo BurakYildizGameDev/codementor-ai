@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from sqlalchemy import Table, update
 from sqlalchemy.dialects.sqlite import insert
-from sqlmodel import delete
+from sqlmodel import col, delete
 
 from codementor.storage.db import Database, SessionRow, utcnow
 
@@ -106,3 +106,11 @@ def clear_sessions(db: Database) -> int:
         result = session.exec(delete(SessionRow))
         session.commit()
         return int(result.rowcount)
+
+
+def delete_session(db: Database, session_id: str) -> bool:
+    """Belirli bir oturumun tüm satırlarını siler (Faz E); silinen satır varsa True."""
+    with db.session() as session:
+        result = session.exec(delete(SessionRow).where(col(SessionRow.session_id) == session_id))
+        session.commit()
+        return bool(result.rowcount > 0)
