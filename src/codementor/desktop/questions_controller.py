@@ -21,7 +21,6 @@ from codementor.desktop.viewmodel import (
     LANGUAGE_LABELS,
     SAMPLES,
 )
-from codementor.desktop.views.question_form import QuestionForm, draft_values
 from codementor.log import get_logger
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.questions import (
@@ -41,6 +40,7 @@ from codementor.questions.user_store import (
 if TYPE_CHECKING:
     from codementor.api.state import ApiState
     from codementor.desktop.app import App
+    from codementor.desktop.views.question_form import QuestionForm
 
 log = get_logger("codementor.desktop")
 
@@ -214,11 +214,17 @@ def delete_user(app: App, question: QuestionPublic) -> bool:
 
 def open_add(app: App) -> QuestionForm:
     """Boş soru formu."""
+    # Tk penceresi yalnız açılırken içe aktarılır: bu modül tkinter'sız Linux CI'da da
+    # içe aktarılabilmeli (test_app_logging, a702872)
+    from codementor.desktop.views.question_form import QuestionForm
+
     return QuestionForm(app, lambda values: save_user(app, values))
 
 
 def open_edit(app: App, question: QuestionPublic) -> QuestionForm | None:
     """Kullanıcı sorusunu düzenleme formu; soru okunamazsa None (bildirim gösterilir)."""
+    from codementor.desktop.views.question_form import QuestionForm, draft_values
+
     stored = user_question(app, question.id)
     if stored is None:
         app.toast("Soru okunamadı; dosyası silinmiş ya da bozulmuş olabilir.")

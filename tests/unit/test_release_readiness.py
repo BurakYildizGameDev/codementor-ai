@@ -13,7 +13,7 @@ from types import ModuleType
 import pytest
 
 import codementor
-from codementor.desktop import launch, self_check
+from codementor.desktop import self_check
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -74,6 +74,8 @@ def test_optional_check_does_not_fail(tmp_path: Path, monkeypatch: pytest.Monkey
 
 
 def test_launch_flag_runs_without_window(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # launch tkinter'a bağlı; tkinter'sız Linux CI'da atlanır (release Windows'ta exe ile sınar)
+    launch = pytest.importorskip("codementor.desktop.launch", exc_type=ImportError)
     monkeypatch.setattr(launch.runtime, "prepare_environment", lambda: tmp_path)
     monkeypatch.setattr(launch, "App", None)  # pencere açılmaya kalkarsa test düşer
     monkeypatch.chdir(tmp_path)
