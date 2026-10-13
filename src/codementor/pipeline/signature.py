@@ -18,6 +18,7 @@ from codementor.models.enums import PipelineMode
 from codementor.models.questions import Question
 from codementor.models.request import NormalizedCode
 from codementor.models.validation import CompilerTool, Toolchain
+from codementor.paths import resource_root
 from codementor.validation.toolchain import get_toolchain
 
 _DIGEST_CHARS = 16
@@ -30,6 +31,21 @@ def _file_stamp(path: str | Path) -> list[int] | None:
     except (OSError, ValueError):
         return None
     return [info.st_size, info.st_mtime_ns]
+
+
+def _dir_stamps(directory: Path) -> list[list[Any]]:
+    """Dizindeki dosyaların adı, boyutu ve değişiklik zamanı (içerik okunmadan)."""
+    try:
+        files = sorted(p for p in directory.iterdir() if p.is_file())
+    except (OSError, ValueError):
+        return []
+    return [[p.name, _file_stamp(p)] for p in files]
+
+
+def _reference_stamp(question: Question | None) -> list[int] | None:
+    if question is None or not question.reference_solution_path:
+        return None
+    return _file_stamp(resource_root() / question.reference_solution_path)
 
 
 def tier1_tool(
@@ -87,6 +103,11 @@ def pipeline_signature(
             "stub_header_stamp": _file_stamp(validation.stub_header),
             "tool": _tool_identity(tool),
         },
+        # denetim (O-4): prompt'a giren kontrol listeleri, bütçe/kırpmayı ve yanıtı etkileyen
+        # sağlayıcı ayarları, sızıntı kontrolünü etkileyen referans çözüm
+        "checklists": _dir_stamps(settings.data.checklists_dir),
+        "providers": settings.providers.model_dump(mode="json"),
+        "reference": _reference_stamp(question),
         "question": (
             hashlib.sha256(question.model_dump_json().encode("utf-8")).hexdigest()
             if question is not None

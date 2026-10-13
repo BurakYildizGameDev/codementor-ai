@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlmodel import col, delete, select
 
 from codementor.log import get_logger
@@ -187,7 +187,14 @@ class UsageTotals:
 
 def usage_totals(db: Database) -> UsageTotals:
     """`analyses` tablosundaki tüm kayıtların token ve tahmini maliyet toplamı."""
-    cost = func.json_extract(AnalysisRow.report_json, "$.meta.cost_est")
+    # denetim (K O-6): tek bir bozuk `report_json` tüm toplamı düşürmesin
+    cost = case(
+        (
+            func.json_valid(AnalysisRow.report_json) == 1,
+            func.json_extract(AnalysisRow.report_json, "$.meta.cost_est"),
+        ),
+        else_=None,
+    )
     with db.session() as session:
         count, tokens_in, tokens_out, cost_sum = session.exec(
             select(

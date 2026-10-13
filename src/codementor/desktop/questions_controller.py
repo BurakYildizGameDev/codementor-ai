@@ -223,8 +223,20 @@ def open_edit(app: App, question: QuestionPublic) -> QuestionForm | None:
     if stored is None:
         app.toast("Soru okunamadı; dosyası silinmiş ya da bozulmuş olabilir.")
         return None
-    initial = draft_values(UserQuestionDraft.from_question(stored))
+    try:
+        initial = draft_values(UserQuestionDraft.from_question(stored))
+    except ValidationError as exc:  # elle yazılmış dosya formun kurallarını aşıyor (denetim D-2)
+        app.toast(f"Bu soru formla düzenlenemiyor: {form_error(exc)}")
+        return None
     return QuestionForm(app, lambda values: save_user(app, values, question.id), initial=initial)
+
+
+def bank_warnings(core: ApiState) -> list[str]:
+    """Atlanan kendi soru dosyaları (ADR-0028 §6); banka okunamazsa boş."""
+    try:
+        return list(core.questions().warnings)
+    except Exception:
+        return []
 
 
 def _reload(app: App) -> None:

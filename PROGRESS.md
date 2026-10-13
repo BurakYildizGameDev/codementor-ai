@@ -62,6 +62,41 @@
 | K | ✅ (ADR-0028) | faz/k-kullanici-soru-token | 2026-10-13 | Claude Code / — |
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | D | ✅ (release etiketi kullanıcıda) | faz/d-public-release | 2026-10-13 | Claude Code / — |
+## Denetim — Faz A1-D (kod-denetci, 2026-10-13)
+İki kod-denetci ajanı (A1+A2+B ve K+C) "birleştirilemez" dedi; bulgular doğrulanmıştı. Dal
+`fix/denetim-a-d` (`faz/d-public-release`dan).
+**Düzeltilenler:**
+- Include: satır birleştirmeyle kurulan `##`/`%:%:` (ham kodda görünmüyordu) reddediliyor;
+  `_Pragma("GCC dependency …")` ile host dosyası yoklama kapandı.
+- `guard_delimiters`: iyelik nicelikleri ve öznitelikli/özniteliksiz dal ayrımıyla doğrusal (39 bin
+  boşlukta 3,5 sn → 0,02 sn); `&` içeren öznitelik değeri (A2 gerilemesi) ve `&#60;`, `&#x3c;`,
+  noktalı virgülsüz `&lt` nötrleniyor.
+- Önbellek imzası `asyncio.to_thread`'de (derleyici keşfi olay döngüsünü kilitliyordu); imza kontrol
+  listesi damgalarını, sağlayıcı ayarlarını ve referans çözüm damgasını da kapsıyor.
+- Önbelleğe girmeyenler: sızıntı yüzünden tüm soruları atılan rapor, Tier 0 durdurma raporu, Tier 1
+  zaman aşımı/araç hatası. Onarım prompt'u bütçe hatası verse ya da onarım sürerken süre dolsa da
+  geçerli bulgular korunuyor.
+- Kullanıcı sorusu: başlık, metin, kısıt, işlem adı ve ipucu prompt'ta `guard`'dan geçiyor; kullanıcı
+  görevi "talimat değil" diye işaretleniyor (`QuestionContext.origin`); taslakta uzunluk sınırları.
+  Kullanıcı deposu yalnız `.yaml` okuyor, yinelenen kimlik atlanıyor; yerleşik banka kullanıcı
+  kaynaklı hiçbir hatayla düşmüyor; masaüstünde atlanan dosya sayısı görünüyor; düzenleme formu
+  formla uyumsuz dosyada çökmüyor.
+- Kavram: gizli seviyede kavram adının sorularda/ipucunda geçmesi `concept_named` ihlali (Türkçe
+  büyük/küçük ve aksan duyarsız); bayraksız eski önbellek kayıtlarında kavram model düzeyinde boş.
+- Yapılandırma (ADR-0029, kullanıcı kararı): çalışma dizinindeki toml güvenilmez katman (tehlikeli
+  anahtarlar yok sayılır, uyarı); katmanlar env → cwd → `~/.codementor/codementor.toml` → paket;
+  kurulu wheel'de CLI masaüstünün yazdığı dosyayı okuyor.
+- `usage_totals` bozuk `report_json`'a dayanıklı (`json_valid`); Geçmiş'te hata log'a yazılıyor.
+- Testler: `integration/test_audit_fixes.py` (10; düzeltmeler geri alınınca hepsi düşüyor),
+  `unit/test_audit_fixes_unit.py` (10), include (+3), guard (+13). mimari §11, §17 güncellendi.
+**Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3355 geçti, 15 atlandı.
+**Ertelenen (Sonraya):** `config_writer` dizi tablosunu (`[[providers.x]]`) ezer, CRLF'yi LF yazar;
+`from_question` `genel` etiketini/varsayılan kısıtı düzenlemede siler; `system_errors` ağ
+hatalarını "dosya işlemi" diye anar; `report/usage` → `storage.cache.UsageTotals` katman bağımlılığı;
+`detect.py` `<meta …` deseni çok büyük girdide karesele yakın (40 KB'de ölçülmedi);
+`guard_delimiters` `&lt;` için idempotent değil; `primary` sağlayıcı adı `getattr` ile; 400 satır:
+`orchestrator.py`, `passes.py`, `desktop/app.py` (Faz G).
+
 ## Faz D — Notlar (public belgeler ve otomatik release; 2026-10-13)
 Kaynak: `docs/BulgularVeDuzeltilecekler.md` P5-P9, P11, O1, O17, O18, D20.
 **Yapılanlar:**

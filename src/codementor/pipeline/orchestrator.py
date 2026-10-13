@@ -21,7 +21,7 @@ from codementor.models.prompts import MentoringProfile, QuestionContext
 from codementor.models.questions import Question
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest, LanguageHint, NormalizedCode
-from codementor.models.validation import Tier1Result, Toolchain
+from codementor.models.validation import SkipReason, Tier1Result, Toolchain
 from codementor.models.verification import FindingCheck
 from codementor.pipeline import stages
 from codementor.pipeline.assemble import ReportParts, assemble_report, from_cache
@@ -53,6 +53,9 @@ from codementor.validation.tier1 import run_tier1
 
 ProviderFactory = Callable[[str], LLMProvider]
 
+
+# Tier 1'in geçici atlanma nedenleri: bu raporlar önbelleğe girmez (denetim O-3)
+_TRANSIENT_SKIPS = frozenset({SkipReason.TIMEOUT, SkipReason.TOOL_ERROR})
 
 PipelineErrorKind = Literal["too_large", "invalid", "not_found", "provider", "unavailable"]
 
@@ -167,7 +170,9 @@ class Orchestrator:
         except ProviderError as exc:
             raise PipelineError(f"Sağlayıcı kullanılamıyor: {exc}", "provider") from exc
         version = prompt_version(self.settings.prompts.dir)
-        key = self._cache_key(run, code, profile, provider, version)
+        # Denetim Y-2: imza derleyici keşfi ve dosya stat'ı yapar (zig sondası 30 sn sürebilir);
+        # olay döngüsünü kilitlemesin
+        key = await asyncio.to_thread(self._cache_key, run, code, profile, provider, version)
 
         cached = None
         with run.timer.stage("cache"):
@@ -338,12 +343,15 @@ class Orchestrator:
             tier0 = await asyncio.to_thread(check_syntax, code, settings.validation)
         if stopped(tier0):  # erken çıkış eksik bir rapordur; kullanıcı bilsin
             run.warnings.append(STOP_WARNING)
+            run.cacheable = False  # denetim O-3: geçici altyapı durması kalıcılaşmasın
         tier1 = None
         if tier0.has_errors:
             timer.skip("tier1", "Tier 0 hatası")
         else:
             with timer.stage("tier1"):
                 tier1 = await self._tier1(code, self._run_validation(run))
+        if tier1 is not None and tier1.skip_reason in _TRANSIENT_SKIPS:
+            run.cacheable = False  # zaman aşımı / araç hatası geçici: rapor önbelleğe girmez
         policy = decide(tier0, tier1)
         run.warnings += policy.warnings
         if policy.early_exit:  # §5.2.4: LLM hiç çağrılmaz
@@ -385,7 +393,7 @@ class Orchestrator:
             outcome = self._timed_out(llm, limit)
         run.warnings += [*llm.warnings, *outcome.warnings]
         primary = getattr(provider, "chain", [provider])[0].name
-        run.cacheable = not llm.incomplete and llm.providers <= {primary}
+        run.cacheable = run.cacheable and not llm.incomplete and llm.providers <= {primary}
 
         parts = ReportParts(policy=policy, degraded=outcome.verification is None)
         if outcome.verification is not None:

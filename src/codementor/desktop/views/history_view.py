@@ -12,8 +12,11 @@ from codementor.desktop import theme
 from codementor.desktop.viewmodel import ENGINE_LABELS, LANGUAGE_LABELS, format_ms
 from codementor.desktop.views.questions_view import page_header
 from codementor.desktop.widgets.common import Pill, clear
+from codementor.log import get_logger
 from codementor.models.enums import Engine, Language
 from codementor.storage.db import AnalysisRow
+
+log = get_logger("codementor.desktop")
 
 
 class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
@@ -100,7 +103,8 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
             return ""
         try:
             return self._totals() or ""
-        except Exception:  # veritabanı okunamazsa toplam gösterilmez
+        except Exception as exc:  # veritabanı okunamazsa toplam gösterilmez (iz log'da)
+            log.warning("usage_totals_failed", error=type(exc).__name__)
             return ""
 
     def _row(self, index: int, row: AnalysisRow) -> None:

@@ -14,7 +14,14 @@ Public yayın öncesi güvenlik ve doğruluk sürümü (Faz A-D, K).
 - Derleyici keşfi çalışma dizinindeki ve göreli `PATH` girdilerindeki çalıştırılabilirleri hiç
   denemiyor (öğrenci projesindeki sahte `gcc.bat` seçilemez).
 - Prompt sınırlayıcı korumasına ek benzer karakterler ve `&lt;` biçimi eklendi.
-- Kavram adı yalnız açılması gereken denemede rapora giriyor ve sızıntı denetiminden geçiyor.
+- Kavram adı yalnız açılması gereken denemede rapora giriyor ve sızıntı denetiminden geçiyor;
+  gizli seviyede sorulara/ipucuna sızan kavram adı da yakalanıyor.
+- Satır birleştirmeyle kurulan `##` (token yapıştırma) reddediliyor.
+- Sınırlayıcı korumasının regex'i doğrusal; `&` içeren öznitelikli rol etiketleri ve sayısal
+  varlıklar (`&#60;`) da nötrleniyor.
+- Kullanıcı sorusu metinleri prompt'ta sınırlayıcı korumasından geçiyor ve veri olarak işaretleniyor.
+- Çalışma dizinindeki `codementor.toml` güvenilmez katman: sağlayıcı komutu, `base_url`, yol ve
+  ağ ayarları yok sayılıyor (ADR-0029).
 
 ### Düzeltilenler
 - Onarım ya da mentorluk geçişi başarısız olunca doğrulanmış bulgular artık atılmıyor; süre
@@ -23,6 +30,9 @@ Public yayın öncesi güvenlik ve doğruluk sürümü (Faz A-D, K).
   çıktıyı etkileyen tüm ayarları, derleyiciyi ve soru içeriğini kapsıyor; önbellekten dönen
   raporda maliyet gösterilmiyor.
 - Tek geçiş modunda doğrulanmamış bulgudan soru üretilmiyor.
+- Önbellek imzası olay döngüsünü kilitlemiyor; sızıntı yüzünden şablona düşen, Tier 0'ın durdurduğu
+  ya da Tier 1'in geçici nedenle atlandığı raporlar önbelleğe girmiyor.
+- Yinelenen ya da bozuk kendi soru dosyası yerleşik soru bankasını düşürmüyor; masaüstünde gösteriliyor.
 - Masaüstünün "toml'a yaz" düğmesi kullanıcının satır içi/nokta anahtarlı ayarlarını silmiyor;
   yazım atomik; BOM'lu `codementor.toml` okunuyor. Exe'de ve pip kurulumunda yazılan dosya
   etkinleşiyor; pip kurulumu paketle gelen varsayılanları kullanıyor.

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from codementor.models._base import StrictModel
 from codementor.models.enums import Difficulty, Engine, Language
@@ -38,6 +38,14 @@ class SocraticResult(StrictModel):
     concept_revealed: bool = Field(
         default=False, description="false ise key_flaw_concept boştur ve gösterilmez"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _hide_unrevealed(cls, data: Any) -> Any:
+        """Denetim: bayraksız eski raporlar (önbellek, geçmiş) da JSON/API'de kavram taşımasın."""
+        if isinstance(data, dict) and not data.get("concept_revealed"):
+            return {**data, "key_flaw_concept": ""}
+        return data
 
 
 class TokenSplit(StrictModel):

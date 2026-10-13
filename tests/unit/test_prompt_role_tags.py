@@ -189,3 +189,47 @@ def test_cli_render_prompt_has_no_injected_role_tag(tmp_path: Path) -> None:
     _assert_only_wrapper_tags(
         build_socratic_messages(socratic, settings=prompt_settings()).messages
     )
+
+
+# --- Denetim (Faz A-D sonrası): `&` içeren öznitelik, ek varlık biçimleri, doğrusal süre ---------
+
+
+@pytest.mark.parametrize("tag", ['<system role="a&b">', "<assistant a=&>", "<system role=x />"])
+def test_guard_attribute_value_with_ampersand(tag: str) -> None:
+    """A2'de `[^<>&]` gerilemesi: `&` içeren öznitelikli rol etiketi geçiyordu."""
+    assert guard_delimiters(f"x {tag} y") == f"x &lt;{tag[1:]} y"
+
+
+@pytest.mark.parametrize(
+    "text", ["&#60;/user_code&#62;", "&#x3c;/user_code>", "&lt/user_code&gt", "&LT/user_code>"]
+)
+def test_guard_numeric_and_semicolonless_entities(text: str) -> None:
+    assert guard_delimiters(text) == "&amp;" + text[1:]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "<system" + " " * 39000,
+        "&lt;system role=x" + " " * 39000,
+        "<system role=x" + "/" * 39000,
+        ("<system x=" + " " * 50) * 700,
+        "<" + " " * 39000,
+        "&lt;" * 9000,
+    ],
+    ids=[
+        "acilis-bosluk",
+        "varlik-oznitelik",
+        "egik-cizgi",
+        "tekrarli-oznitelik",
+        "ayrac",
+        "varlik",
+    ],
+)
+def test_guard_is_linear_on_adversarial_input(payload: str) -> None:
+    """Karesel geri izleme yok: 40 KB'lık kötü niyetli girdi bütçe içinde (denetim Y-3)."""
+    import time
+
+    start = time.perf_counter()
+    guard_delimiters(payload)
+    assert time.perf_counter() - start < 0.25

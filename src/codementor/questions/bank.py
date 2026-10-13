@@ -78,7 +78,13 @@ class QuestionBank:
         builtin = cls.load(data.questions_dir)
         user, warnings = load_user_questions(data.user_questions_dir)
         merged = list(builtin._questions.values())
+        seen: set[str] = set()
         for question in user:
+            # denetim Y-2: kullanıcı kaynaklı hiçbir çakışma yerleşik bankayı düşürmez
+            if question.id in seen:
+                warnings.append(f"Kendi sorun iki kez tanımlı, biri atlandı: {question.id}")
+                continue
+            seen.add(question.id)
             if question.id in builtin:
                 warnings.append(
                     f"Kendi sorun yerleşik bir soruyla aynı kimlikte, atlandı: {question.id}"

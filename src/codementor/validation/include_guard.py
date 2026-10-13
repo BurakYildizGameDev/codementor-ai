@@ -141,6 +141,13 @@ def check_includes(code: str) -> list[str]:
 
     logical = _logical_lines(code)
     joined = "\n".join(text for _, text in logical)
+    # Denetim (Faz A sonrası): `#\` + yeni satır + `#` satır birleştirmeden sonra `##` olur;
+    # ham kodda görünmeyen yapıştırma işleci birleştirilmiş metinde aranır
+    if not any("token yapıştırma" in r for r in reasons):
+        pasted = _PASTE.search(joined)
+        if pasted:
+            line = logical[joined.count("\n", 0, pasted.start())][0]
+            reasons.append(f"Satır {line}: token yapıştırma (satır birleştirmeyle `##`)")
     masked_joined = mask_non_code(joined)
     masked = masked_joined.split("\n")
     for (line, raw), plain in zip(logical, masked, strict=True):

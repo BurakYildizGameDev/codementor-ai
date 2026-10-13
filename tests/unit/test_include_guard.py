@@ -112,6 +112,21 @@ def test_token_pasting_rejected(code: str) -> None:
     assert check_includes(code)
 
 
+@pytest.mark.parametrize(
+    "code",
+    [
+        # denetim: `_Pragma("GCC dependency ...")` ile host dosyası yoklanabiliyordu
+        '#define P(a,b) a#\\\n#b\nP(_Pra,gma)("GCC dependency \\"C:/Windows/win.ini\\"")\n',
+        "#define P(a,b) a%:\\\n%:b\n",
+        "#define P(a,b) a#\\  \n#b\n",  # `\` ile satır sonu arası boşluk (gcc/clang kabul eder)
+    ],
+)
+def test_token_pasting_split_by_line_splice_rejected(code: str) -> None:
+    reasons = check_includes(code)
+    assert any("token yapıştırma" in r for r in reasons), reasons
+    assert any(r.startswith("Satır 1") for r in reasons)
+
+
 def test_reason_mentions_line_number() -> None:
     code = 'int a;\n\n#include "/etc/shadow"\n'
     (reason,) = check_includes(code)

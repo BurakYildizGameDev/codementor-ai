@@ -24,7 +24,12 @@ from codementor.models.llm_output import (
     LLMSocraticOutput,
 )
 from codementor.models.provider import ChatMessage
-from codementor.models.questions import ChecklistItem, ExpectedComplexity, Question
+from codementor.models.questions import (
+    ChecklistItem,
+    ExpectedComplexity,
+    Question,
+    QuestionOrigin,
+)
 from codementor.models.request import NormalizedCode
 
 
@@ -40,6 +45,8 @@ class QuestionContext(StrictModel):
     concept_tags: list[str] = Field(default_factory=list)
     checklist_extra: list[str] = Field(default_factory=list)
     hint_ladder: dict[int, str] = Field(default_factory=dict)
+    # Denetim (Faz K): kullanıcı sorusu prompt'ta veri olarak işaretlenir (ADR-0028)
+    origin: QuestionOrigin = "builtin"
 
     @classmethod
     def from_question(cls, question: Question) -> QuestionContext:
@@ -54,6 +61,7 @@ class QuestionContext(StrictModel):
             concept_tags=list(question.concept_tags),
             checklist_extra=list(question.checklist_extra),
             hint_ladder=dict(question.hint_ladder),
+            origin=question.origin,
         )
 
 

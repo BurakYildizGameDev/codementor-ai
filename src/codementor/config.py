@@ -306,8 +306,12 @@ class Settings(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        toml_settings = _RelativeTomlSource(settings_cls, config_file())
-        return (init_settings, env_settings, toml_settings)
+        # Önce gelen kazanır; iç içe bölümler katmanlar arasında birleşir (ADR-0029)
+        layers = tuple(
+            _RelativeTomlSource(settings_cls, path, trusted=trusted)
+            for path, trusted in config_layers()
+        )
+        return (init_settings, env_settings, *layers)
 
 
 def _path_fields(settings_cls: type[BaseSettings]) -> dict[str, list[str]]:
@@ -343,9 +347,12 @@ def _resolve_toml_path(section: str, key: str, value: str, base: Path) -> Path:
 class _RelativeTomlSource(TomlConfigSettingsSource):
     """`codementor.toml`'daki göreli yolları dosyanın dizinine göre çözer (ADR-0016, ADR-0027)."""
 
-    def __init__(self, settings_cls: type[BaseSettings], toml_file: Path) -> None:
+    def __init__(
+        self, settings_cls: type[BaseSettings], toml_file: Path, *, trusted: bool = True
+    ) -> None:
         super().__init__(settings_cls, toml_file=toml_file)
         self._base = toml_file.absolute().parent
+        self._trusted = trusted
 
     def _read_file(self, file_path: Path | Traversable) -> dict[str, Any]:
         """BOM'lu dosya da okunur (Faz C, O7): Not Defteri "UTF-8 BOM" ile kaydedebilir."""
@@ -355,6 +362,8 @@ class _RelativeTomlSource(TomlConfigSettingsSource):
 
     def __call__(self) -> dict[str, Any]:
         data = dict(super().__call__())
+        if not self._trusted:
+            data = _drop_untrusted(data, self.toml_file_path)
         for section, names in _path_fields(self.settings_cls).items():
             values = data.get(section)
             if not isinstance(values, dict):
@@ -368,17 +377,90 @@ class _RelativeTomlSource(TomlConfigSettingsSource):
         return data
 
 
-def config_file() -> Path:
-    """Etkin `codementor.toml` (Faz C, O9): `CODEMENTOR_CONFIG_FILE` → çalışma dizinindeki dosya →
-    kaynak kökündeki varsayılan (wheel/exe paketindeki; depoda depo kökü). Hiçbiri yoksa çalışma
-    dizinindeki (olmayan) yol: yalnız kod varsayılanları geçerli olur."""
+def _default_user_config() -> Path:
+    return Path.home() / ".codementor" / DEFAULT_CONFIG_FILE
+
+
+def config_layers() -> list[tuple[Path, bool]]:
+    """Okunacak `codementor.toml` katmanları, öncelik sırasıyla: (yol, güvenilir mi).
+
+    `CODEMENTOR_CONFIG_FILE` verilmişse yalnız o (güvenilir). Değilse çalışma dizinindeki dosya,
+    `~/.codementor/codementor.toml` (masaüstünün yazdığı) ve paketteki varsayılan; ilk güvenilir
+    katmanda durulur. Çalışma dizinindeki dosya, paketin kendi dosyası değilse **güvenilmez**:
+    öğrenci projesinden gelebilir; tehlikeli anahtarları yok sayılır (ADR-0029, denetim O-3).
+    """
     if env := os.environ.get(CONFIG_FILE_ENV):
-        return Path(env)
+        return [(Path(env), True)]
+    bundled = resource_path(DEFAULT_CONFIG_FILE)
+    layers: list[tuple[Path, bool]] = []
     local = Path(DEFAULT_CONFIG_FILE)
     if local.is_file():
-        return local
-    bundled = resource_path(DEFAULT_CONFIG_FILE)
-    return bundled if bundled.is_file() else local
+        trusted = _same_file(local, bundled)
+        layers.append((local, trusted))
+        if trusted:
+            return layers
+    for candidate in (_default_user_config(), bundled):
+        if candidate.is_file():
+            layers.append((candidate, True))
+            return layers
+    return layers
+
+
+def _same_file(a: Path, b: Path) -> bool:
+    try:
+        return a.resolve() == b.resolve()
+    except OSError:
+        return False
+
+
+def config_file() -> Path:
+    """Etkin (en öncelikli) `codementor.toml`: masaüstü "Yapılandırma" konumu ve yazma hedefi.
+    Hiçbiri yoksa çalışma dizinindeki (olmayan) yol: yalnız kod varsayılanları geçerli olur."""
+    layers = config_layers()
+    return layers[0][0] if layers else Path(DEFAULT_CONFIG_FILE)
+
+
+# Güvenilmeyen (çalışma dizinindeki) toml'un değiştiremeyeceği anahtarlar (ADR-0029): komut
+# çalıştırma, ağ hedefi/anahtar adı, dosya sistemi yolları, şablon dizini (Jinja korumasız)
+_UNTRUSTED_PROVIDER_KEYS = frozenset({"command", "base_url", "api_key_env", "allow_tool_agent"})
+_UNTRUSTED_SECTION_KEYS: dict[str, frozenset[str]] = {
+    "validation": frozenset(
+        {"toolchain_dir", "zig", "roslyn_check_dll", "roslyn_check_exe", "stub_header"}
+    ),
+    "storage": frozenset({"db_path"}),
+    "data": frozenset({"user_questions_dir"}),
+    "prompts": frozenset({"dir"}),
+    "api": frozenset({"host", "cors_origins", "allowed_hosts", "api_key_env", "allowed_providers"}),
+}
+
+
+def _drop_untrusted(data: dict[str, Any], path: Path | Any) -> dict[str, Any]:
+    """Güvenilmeyen katmandan tehlikeli anahtarları atar; atılanlar stderr'e uyarılır."""
+    dropped: list[str] = []
+    cleaned: dict[str, Any] = {}
+    for section, values in data.items():
+        if not isinstance(values, dict):
+            cleaned[section] = values
+            continue
+        blocked = _UNTRUSTED_SECTION_KEYS.get(section, frozenset())
+        kept: dict[str, Any] = {}
+        for key, value in values.items():
+            if key in blocked:
+                dropped.append(f"{section}.{key}")
+            elif section == "providers" and isinstance(value, dict):
+                safe = {k: v for k, v in value.items() if k not in _UNTRUSTED_PROVIDER_KEYS}
+                dropped += [f"providers.{key}.{k}" for k in value if k not in safe]
+                kept[key] = safe
+            else:
+                kept[key] = value
+        cleaned[section] = kept
+    if dropped:
+        sys.stderr.write(
+            f"Uyarı: çalışma dizinindeki {path} güvenilmeyen kaynak sayıldı; şu ayarlar yok "
+            f"sayıldı: {', '.join(sorted(dropped))}. Bunları kullanmak için "
+            f"{CONFIG_FILE_ENV} ile dosyayı açıkça verin.\n"
+        )
+    return cleaned
 
 
 def load_settings(**overrides: Any) -> Settings:

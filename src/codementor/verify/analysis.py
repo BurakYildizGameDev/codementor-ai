@@ -33,7 +33,7 @@ from codementor.models.verification import (
 )
 from codementor.verify.complexity import check_complexity
 from codementor.verify.confidence import analysis_confidence, evidence_ratio, finding_confidence
-from codementor.verify.leak_guard import check_leaks, decide_leak_action
+from codementor.verify.leak_guard import check_leaks, concept_mentions, decide_leak_action
 from codementor.verify.lines import check_line_range, match_evidence
 from codementor.verify.merge import merge_findings
 
@@ -220,6 +220,13 @@ def verify_socratic(
         common=common,
         key_flaw_concept=concept or None,
     )
+    if not name_concept:
+        # denetim (Faz C sonrası): gizli seviyede kavramın adı sorulara/ipucuna da sızmasın
+        named = concept_mentions(
+            output.key_flaw_concept, output.guiding_questions, output.next_step_hint
+        )
+        if named:
+            check = check.model_copy(update={"violations": [*check.violations, *named]})
     decision = decide_leak_action(
         output.guiding_questions, output.next_step_hint, check, regenerated=regenerated
     )

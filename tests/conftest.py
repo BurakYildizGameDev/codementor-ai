@@ -48,6 +48,15 @@ def _restore_config_env() -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True)
+def _isolated_user_config(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Testler geliştiricinin `~/.codementor/codementor.toml`'unu görmez (denetim O-4)."""
+    missing: Path = tmp_path_factory.getbasetemp() / "no-user-config" / "codementor.toml"
+    monkeypatch.setattr(codementor.config, "_default_user_config", lambda: missing)
+
+
+@pytest.fixture(autouse=True)
 def _isolated_user_questions(
     tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
 ) -> None:

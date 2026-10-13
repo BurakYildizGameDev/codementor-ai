@@ -147,7 +147,16 @@ def load_user_questions(directory: Path) -> tuple[list[Question], list[str]]:
         return [], []
     questions: list[Question] = []
     warnings: list[str] = []
-    for path in list_yaml_files(directory, UserQuestionError):
+    try:
+        paths = list_yaml_files(directory, UserQuestionError)
+    except DataFileError as exc:
+        return [], [f"Kendi soruların okunamadı: {exc}"]
+    for path in paths:
+        # denetim Y-2: depo yalnız `.yaml` yazar/okur; `.yml` kopyası aynı kimliği iki kez
+        # getirip yerleşik bankayı da düşürüyordu
+        if path.suffix != ".yaml":
+            warnings.append(f"Kendi sorun atlandı (yalnız .yaml okunur): {path.name}")
+            continue
         try:
             questions.append(_load(path))
         except DataFileError as exc:

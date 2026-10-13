@@ -11,6 +11,7 @@ Karar: ihlal varsa 1 kez yeniden üret; yine varsa sorunlu soruyu/ipucunu at.
 from __future__ import annotations
 
 import re
+import unicodedata
 from functools import lru_cache
 from pathlib import Path
 
@@ -227,6 +228,41 @@ def check_leaks(
             for kind, detail in found
         ]
     return LeakCheck(violations=violations, reference_checked=ref is not None)
+
+
+MIN_CONCEPT_CHARS = 6  # "dizi" gibi kısa genel sözcükler soruları gereksiz yere düşürmesin
+
+
+# Türkçe büyük/küçük: `SINIR` → `sinir` olurdu, `sınır` değil; noktalı/noktasız i aynı sayılır
+_DOTLESS = str.maketrans({chr(0x0130): "i", "I": "i", chr(0x0131): "i"})
+
+
+def _fold(text: str) -> str:
+    """Büyük/küçük harf (Türkçe dahil), aksan ve noktalama farkını yok sayan biçim."""
+    decomposed = unicodedata.normalize("NFKD", text.translate(_DOTLESS).casefold())
+    plain = "".join(c for c in decomposed if not unicodedata.combining(c))
+    return " " + " ".join(re.findall(r"\w+", plain)) + " "
+
+
+def concept_mentions(
+    concept: str, guiding_questions: list[str], next_step_hint: str | None
+) -> list[LeakViolation]:
+    """Gizli kalması gereken kavram adı soruda ya da ipucunda geçiyor mu (mimari §5.4.3)."""
+    target = _fold(concept)
+    if len(target.strip()) < MIN_CONCEPT_CHARS:
+        return []
+    found: list[LeakViolation] = []
+    texts: list[tuple[LeakField, int | None, str]] = [
+        ("guiding_questions", i, q) for i, q in enumerate(guiding_questions)
+    ]
+    if next_step_hint:
+        texts.append(("next_step_hint", None, next_step_hint))
+    for field, index, text in texts:
+        if target in _fold(text):
+            found.append(
+                LeakViolation(field=field, index=index, kind="concept_named", detail=concept)
+            )
+    return found
 
 
 def decide_leak_action(

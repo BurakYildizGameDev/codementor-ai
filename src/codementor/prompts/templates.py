@@ -27,11 +27,17 @@ TEMPLATE_SUFFIXES = (".j2", ".yaml", ".yml")
 _ROLE = r"(?:user|system|assistant)(?![a-z0-9_])"
 # Faz A2 (D13): HTML varlığı `&lt;` da açılış sayılır (model `&lt;/user_code&gt;`'i etiket
 # okuyabilir); iskelet küçük harfe katlandığı için `&LT;` de yakalanır.
-_OPEN = r"(?:<|&lt;)"
+# Denetim: noktalı virgülsüz `&lt` ve sayısal `&#60;` / `&#x3c;` biçimleri de açılıştır.
+_OPEN = r"(?:<|&(?:lt|#0*60|#x0*3c);?)"
+# Denetim: boşluk tekrarları iyelik (`*+`): ardışık `\s*/?\s*` boşluk koşusunda karesel
+# geri izleme yapıyordu (39 bin boşlukta 3,5 sn). Öznitelik değeri tembel `[^<>]*?`: `&` içeren
+# değer (`role="a&b"`) de yakalanır, eşleşme `>` ya da `&gt;`'de durur.
 _DELIMITER = re.compile(
-    rf"{_OPEN}\s*/?\s*user_code"
-    rf"|{_OPEN}\s*/\s*{_ROLE}"
-    rf"|{_OPEN}\s*(?:system|assistant)(?:\s+[\w-]+\s*=[^<>&]*)?\s*/?\s*(?:>|&gt;)"
+    rf"{_OPEN}\s*+(?:/\s*+)?user_code"
+    rf"|{_OPEN}\s*+/\s*+{_ROLE}"
+    rf"|{_OPEN}\s*+(?:system|assistant)"
+    # öznitelikli: değer boşluk ve `/` dahil her şeyi alır, doğrudan kapanışta durur (doğrusal)
+    r"(?:\s++[\w-]++\s*+=[^<>]*?(?:>|&gt;?)|\s*+/?\s*+(?:>|&gt;?))"
 )
 # Görünmez/biçim karakterleri ve birleştirici işaretler iskelete girmez (Faz 48 denetimi:
 # sabit liste U+034F, U+0332, varyasyon seçicileri, yön denetimlerini kaçırıyordu).

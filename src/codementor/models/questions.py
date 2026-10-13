@@ -213,6 +213,10 @@ def _clean_lines(value: object) -> object:
 
 
 OptionalBigO = Annotated[BigOText | None, BeforeValidator(_strip_bigo)]
+MAX_USER_PROMPT_CHARS = 4000
+MAX_USER_ITEM_CHARS = 400
+MAX_USER_ITEMS = 12
+ShortUserText = Annotated[NonEmptyText, StringConstraints(max_length=MAX_USER_ITEM_CHARS)]
 
 
 class UserQuestionDraft(StrictModel):
@@ -223,17 +227,20 @@ class UserQuestionDraft(StrictModel):
     """
 
     title: NonEmptyText = Field(max_length=120)
-    prompt: NonEmptyText
+    # denetim: kullanıcı metni prompt'a girer; bütçe ve kötüye kullanım için üst sınır
+    prompt: NonEmptyText = Field(max_length=MAX_USER_PROMPT_CHARS)
     language: Language
     engine: Engine = Engine.NONE
     difficulty: Difficulty
-    constraints: Annotated[list[NonEmptyText], BeforeValidator(_clean_lines)] = Field(
-        default_factory=list
+    constraints: Annotated[list[ShortUserText], BeforeValidator(_clean_lines)] = Field(
+        default_factory=list, max_length=MAX_USER_ITEMS
     )
     expected_time: OptionalBigO = None
     expected_space: OptionalBigO = None
-    concept_tags: Annotated[list[Tag], BeforeValidator(_clean_lines)] = Field(default_factory=list)
-    hints: Annotated[list[NonEmptyText], BeforeValidator(_clean_lines)] = Field(
+    concept_tags: Annotated[list[Tag], BeforeValidator(_clean_lines)] = Field(
+        default_factory=list, max_length=MAX_USER_ITEMS
+    )
+    hints: Annotated[list[ShortUserText], BeforeValidator(_clean_lines)] = Field(
         default_factory=list, max_length=3
     )
 

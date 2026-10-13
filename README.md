@@ -39,7 +39,7 @@ soruyu veriyor. Web arayüzü: [docs/img/web-live.png](docs/img/web-live.png).</
 | **Eval** | 166 elle etiketlenmiş örnek, dev/test ayrımlı (dev 96 / test 70) |
 | **Arayüzler** | Windows masaüstü (.exe), web (React), CLI, REST API + SSE |
 | **Çıktılar** | JSON · Markdown · SARIF · Rich terminal paneli |
-| **Kalite** | 3.300+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 28 ADR |
+| **Kalite** | 3.300+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 29 ADR |
 
 ## İçindekiler
 
@@ -147,7 +147,7 @@ Ayrıntı: [docs/mimari.md](docs/mimari.md).
 
 ## Mühendislik kararları
 
-Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 28 kayıt). Öne çıkanlar:
+Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 29 kayıt). Öne çıkanlar:
 
 - **Hibrit, LLM sarmalayıcısı değil.** Deterministik katman, yanıtların bir kısmını LLM'siz
   verir (sözdizimi hatalarında erken çıkış precision/recall %100) ve LLM'e olgu sağlar: olgular
@@ -353,8 +353,10 @@ altına kurar (ADR-0018). Durum: `codementor toolchain status`, hazırlık:
 `curl http://127.0.0.1:8000/health/ready`.
 
 Komutlar her dizinden çalışır: `codementor.toml` önce `CODEMENTOR_CONFIG_FILE`'dan, sonra
-çalışma dizininden okunur; ikisi de yoksa paketle gelen varsayılan kullanılır (`pip install` ile
-kurulumda da). İçindeki göreli yollar toml'un dizinine göre çözülür (ADR-0016). Not Defteri'nin
+çalışma dizininden, `~/.codementor/codementor.toml`'dan ve paketle gelen varsayılandan okunur
+(`pip install` ile kurulumda da). Çalışma dizinindeki dosya güvenilmez sayılır: içindeki sağlayıcı
+komutu, `base_url`, yol ve ağ ayarları yok sayılır ve uyarı basılır; bunlar için dosyayı
+`CODEMENTOR_CONFIG_FILE` ile verin (ADR-0029). İçindeki göreli yollar toml'un dizinine göre çözülür (ADR-0016). Not Defteri'nin
 "UTF-8 BOM" ile kaydettiği dosya da okunur. CLI'da sistem hataları (okunamayan yapılandırma ya
 da dosya, açılamayan veritabanı) Türkçe mesaj ve **çıkış kodu 3** ile biter; 1 yalnız yüksek
 önemli bulgu demektir.

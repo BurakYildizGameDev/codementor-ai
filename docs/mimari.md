@@ -1098,7 +1098,7 @@ codementor schema export --out schemas/
 
 - Eval sonuçları veritabanında değil, `eval/results/*.json` dosyalarındadır (Faz 50: kullanılmayan `eval_runs`/`eval_results` tabloları kaldırıldı; eski veritabanlarında kalan boş tablolar zararsızdır).
 - **Önbellek anahtarı:**
-  `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version | pipeline)`; `rules_version` (`r2+…`) kural kimlikleri, `rules/`, `analysis/` (alt paketler ve `queries/**/*.scm` dahil), `validation/` ve `verify/` kaynakları ile `data/call_costs.yaml` ve `data/mentor_templates.yaml`'ın hash'idir (Faz 31, Faz 49); `pipeline` mod ve doğrulama geçişi imzasıdır, ör. `two_pass+verify` (Faz 35)
+  `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version | pipeline)`; `rules_version` (`r2+…`) kural kimlikleri, `rules/`, `analysis/` (alt paketler ve `queries/**/*.scm` dahil), `validation/` ve `verify/` kaynakları ile `data/call_costs.yaml` ve `data/mentor_templates.yaml`'ın hash'idir (Faz 31, Faz 49); `pipeline` çıktıyı etkileyen ayarların imzasıdır, ör. `two_pass+verify:<sha256 öneki>` (Faz 35; Faz B'de genişledi, `pipeline/signature.py`): mod, doğrulama ve onarım ayarları, kural/prompt/doğrulayıcı ayarları, sağlayıcı ayarları, kontrol listeleri, Tier 1 etkinliği + seçilecek derleyicinin kimliği ve dosya damgası, soru içeriği ve referans çözüm damgası. İmza olay döngüsü dışında hesaplanır. Yarım ya da yedek sağlayıcıdan gelen rapor (`cacheable=False`) boş anahtarla yazılır: geçmişte durur, önbellekten dönmez
 - Önbellek isabeti `meta.cache_hit = true` ile işaretlenir; eval çalıştırmalarında önbellek **kapalıdır**.
 - **Oturum denemesi (Faz 49):** deneme analiz başında tek ifadeyle ayrılır (`INSERT … ON CONFLICT DO UPDATE … RETURNING attempt_count`); aynı oturumdan eşzamanlı gönderimler farklı deneme alır. İptal/hata ayrılan denemeyi geri verir (yalnız arada başka ayırma olmadıysa), yarıda kalan analiz ipucu merdivenini ilerletmez.
 - **Saklama (Faz 49):** `storage.max_analyses` (2000) en yeni kaydı tutar, fazlası her kayıtta budanır (`created_at` indeksli); masaüstü kod arşivi aynı sınırla, `desktop.log` açılışta 5 MB'ı aşmışsa `desktop.log.1`'e döner, tercihler atomik yazılır. Bugünkü şemaya uymayan eski `report_json` yok sayılır (önbellek ıskası, `GET` 404) ve loglanır.
@@ -1311,6 +1311,13 @@ codementor-ai/
 ## 17. Konfigürasyon
 
 Öncelik: CLI bayrağı > ortam değişkeni > `codementor.toml` > varsayılan. `pydantic-settings` ile.
+
+**Hangi toml (ADR-0029):** `CODEMENTOR_CONFIG_FILE` verilmişse yalnız o. Değilse katmanlar:
+çalışma dizinindeki `codementor.toml` → `~/.codementor/codementor.toml` → paketteki varsayılan
+(ilk güvenilir katmanda durulur). Çalışma dizinindeki dosya paketin kendi dosyası değilse
+**güvenilmez**dir: sağlayıcı `command`/`base_url`/`api_key_env`/`allow_tool_agent`, derleyici ve
+şablon yolları, veritabanı yolu, API ağ ayarları gibi anahtarları yok sayılır (uyarı basılır);
+eksikler alttaki güvenilir katmandan gelir. `.env` hiç yüklenmez (Faz C).
 
 **Yol çözümü (Faz 23, ADR-0016):** göreli bir yol, değerin geldiği yere göre çözülür. Varsayılan
 değer kaynak köküne (depo kökü, kurulu wheel'de `codementor/_resources`, exe'de `sys._MEIPASS`),

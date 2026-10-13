@@ -148,6 +148,7 @@ class App(ctk.CTk):  # type: ignore[misc]
             on_add=lambda: questions_controller.open_add(self),
             on_edit=lambda q: questions_controller.open_edit(self, q),
             on_delete=lambda q: questions_controller.delete_user(self, q),
+            warnings=lambda: questions_controller.bank_warnings(self.core),
         )
         self.history_view = HistoryView(
             stage,

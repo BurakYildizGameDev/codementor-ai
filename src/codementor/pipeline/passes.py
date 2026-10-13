@@ -176,12 +176,16 @@ async def run_pass_a[M: BaseModel](
         if attempt == llm.settings.pipeline.max_repair_attempts:
             break
         llm.repair_attempts += 1
-        built = build_repair_messages(
-            built, raw_text=result.raw_text, errors=errors, settings=llm.settings
-        )
+        if last_valid is not None:
+            # denetim: onarım sürerken süre dolarsa da doğrulanmış bulgular korunsun
+            llm.checkpoint = _rescued(last_valid[2])
+            llm.checkpoint_verified = not llm.settings.pipeline.verify_findings
         try:
+            built = build_repair_messages(
+                built, raw_text=result.raw_text, errors=errors, settings=llm.settings
+            )
             result = await llm.call(llm_stage, built, model)
-        except ProviderError:
+        except (ProviderError, PromptBudgetError):
             if last_valid is None:
                 raise
             break
@@ -192,8 +196,13 @@ async def run_pass_a[M: BaseModel](
     # boş bırakır, bulgular doğrulanmıştır
     parsed_valid, analysis_valid, verification_valid = last_valid
     llm.fail_part(COMPLEXITY_UNVERIFIED)
-    kept = verification_valid.model_copy(update={"repair": None, "complexity": None})
+    kept = _rescued(verification_valid)
     return parsed_valid, PassA(output=analysis_valid, verification=kept, rescued=True)
+
+
+def _rescued(verification: AnalysisVerification) -> AnalysisVerification:
+    """Onarımı tamamlanamayan geçerli yanıt: bulgular korunur, karmaşıklık boş (Y3)."""
+    return verification.model_copy(update={"repair": None, "complexity": None})
 
 
 async def run_pass_b(
@@ -378,6 +387,8 @@ async def run_llm_passes(
     if checked is None:
         llm.incomplete = True
         return LLMOutcome(verification, None, [SOCRATIC_FAILED])
+    if checked.result is None:  # denetim O-2: sızıntı yüzünden tüm sorular atıldı → şablon
+        llm.incomplete = True
     return LLMOutcome(verification, checked.result, list(checked.warnings))
 
 

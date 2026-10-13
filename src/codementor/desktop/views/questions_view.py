@@ -40,12 +40,14 @@ class QuestionsView(ctk.CTkFrame):  # type: ignore[misc]
         on_add: Callable[[], object] | None = None,
         on_edit: Callable[[QuestionPublic], object] | None = None,
         on_delete: Callable[[QuestionPublic], object] | None = None,
+        warnings: Callable[[], list[str]] | None = None,
     ) -> None:
         super().__init__(master, fg_color="transparent")
         self._load = load
         self._on_start = on_start
         self._on_edit = on_edit
         self._on_delete = on_delete
+        self._warnings = warnings
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
         header = ctk.CTkFrame(self, fg_color="transparent")
@@ -116,7 +118,10 @@ class QuestionsView(ctk.CTkFrame):  # type: ignore[misc]
         mine = self.origin_filter.get() == MINE
         if mine:
             questions = [q for q in questions if q.origin == "user"]
-        self.count_label.configure(text=f"{len(questions)} soru")
+        skipped = len(self._warnings()) if self._warnings is not None else 0
+        # denetim (K O-5): okunamayan kendi soru dosyaları sessizce kaybolmasın (ADR-0028 §6)
+        note = f" · {skipped} kendi soru dosyası okunamadı (log'a bakın)" if skipped else ""
+        self.count_label.configure(text=f"{len(questions)} soru{note}")
         if not questions:
             filtered = language is not None or difficulty is not None
             if loaded is None:
