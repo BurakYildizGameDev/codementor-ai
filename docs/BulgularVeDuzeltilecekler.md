@@ -734,7 +734,8 @@ dosya sistemine dokunmasını kesin olarak engellemek.
       yardımcıya (`runner.find_on_path`) çıkarılıp iki yerde de kullanılır — **Faz A2**
 - [ ] **Y2 — Referans çözüm:** `tests/fixtures/llm_responses/unity03_reference.cs` bankadaki
       çözümle karşılaştırılır (kullanıcı; `private/` erişimi). Aynıysa bankada olmayan yapay bir
-      çözümle değiştirilir, golden'lar yeniden üretilir
+      çözümle değiştirilir, golden'lar yeniden üretilir. **Açık (2026-10-13, kullanıcı kararı):**
+      repo henüz private; **public yapılmadan önce** kullanıcı kontrol edecek
 - [x] **D13 — Sınırlayıcı:** `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `«` (U+00AB) ve
       `&lt;/user_code&gt;` biçimi `guard_delimiters`'a eklenir — **Faz A2**
 - [x] **P3:** `linkedin metini.md` `.gitignore`'a eklenir — **Faz A2**
