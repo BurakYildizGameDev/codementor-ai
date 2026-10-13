@@ -391,6 +391,14 @@
           "title": "Stage Latency Ms",
           "type": "object"
         },
+        "stage_tokens": {
+          "additionalProperties": {
+            "$ref": "#/$defs/TokenSplit"
+          },
+          "description": "LLM aşaması → giriş/çıkış token",
+          "title": "Stage Tokens",
+          "type": "object"
+        },
         "tokens_in": {
           "title": "Tokens In",
           "type": "integer"
@@ -490,6 +498,28 @@
         "leak_check"
       ],
       "title": "SocraticResult",
+      "type": "object"
+    },
+    "TokenSplit": {
+      "additionalProperties": false,
+      "description": "Bir LLM aşamasının token kullanımı (Faz K).",
+      "properties": {
+        "input": {
+          "minimum": 0,
+          "title": "Input",
+          "type": "integer"
+        },
+        "output": {
+          "minimum": 0,
+          "title": "Output",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "input",
+        "output"
+      ],
+      "title": "TokenSplit",
       "type": "object"
     }
   },

@@ -25,7 +25,7 @@ from codementor.models.prompts import (
     VerifyPromptInput,
 )
 from codementor.models.provider import GenerationOptions, ProviderResult, TokenUsage
-from codementor.models.report import SocraticResult
+from codementor.models.report import SocraticResult, TokenSplit
 from codementor.models.verification import AnalysisVerification, SocraticVerification
 from codementor.pipeline.events import StageTimer
 from codementor.pipeline.stages import StaticAnalysis, VerifyArgs
@@ -75,6 +75,7 @@ class LLMSession:
     incomplete: bool = False
     checkpoint: AnalysisVerification | None = None
     checkpoint_verified: bool = True
+    stage_tokens: dict[str, TokenSplit] = field(default_factory=dict)  # Faz K
 
     def fail_part(self, warning: str) -> None:
         """LLM'in bir kısmı başarısız: uyarı yazılır, rapor önbelleğe alınmaz."""
@@ -91,6 +92,10 @@ class LLMSession:
             usage = self._usage(built, result)
             self.tokens_in += usage.input_tokens
             self.tokens_out += usage.output_tokens
+            split = self.stage_tokens.get(stage, TokenSplit(input=0, output=0))
+            self.stage_tokens[stage] = TokenSplit(
+                input=split.input + usage.input_tokens, output=split.output + usage.output_tokens
+            )
             self.timer.add_tokens(stage, usage.input_tokens + usage.output_tokens)
         self.warnings.extend(result.warnings)
         self.provider_name, self.model = result.provider, result.model

@@ -32,8 +32,12 @@ class ApiState:
 
     def questions(self) -> QuestionBank:
         if self._bank is None:
-            self._bank = QuestionBank.load(self.settings.data.questions_dir)
+            self._bank = QuestionBank.load_all(self.settings.data)
         return self._bank
+
+    def reload_questions(self) -> None:
+        """Kullanıcı sorusu eklendi/silindi: banka bir sonraki erişimde yeniden okunur (Faz K)."""
+        self._bank = None
 
     def orchestrator(self, bus: EventBus | None = None) -> Orchestrator:
         """İstek başına orkestratör: her istek kendi olay yolunu kullanır (SSE karışmaz)."""

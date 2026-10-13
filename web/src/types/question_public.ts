@@ -11,6 +11,10 @@ export type Engine = "none" | "unity" | "unreal";
 export type Space = string;
 export type Id = string;
 export type Language = "c" | "cpp" | "csharp" | "python" | "html" | "css";
+/**
+ * builtin: soru bankası; user: kullanıcının eklediği
+ */
+export type Origin = "builtin" | "user";
 export type Prompt = string;
 export type Title = string;
 export type Version = number;
@@ -27,11 +31,12 @@ export interface QuestionPublic {
   difficulty: Difficulty;
   engine: Engine;
   /**
-   * Hedef karmaşıklık; HTML/CSS görevlerinde yok (ADR-0015)
+   * Hedef karmaşıklık; HTML/CSS görevlerinde ve isteğe bağlı olarak kullanıcı sorularında yok (ADR-0015, ADR-0028)
    */
   expected?: ExpectedComplexity | null;
   id: Id;
   language: Language;
+  origin?: Origin;
   prompt: Prompt;
   title: Title;
   version: Version;

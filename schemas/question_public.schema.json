@@ -89,7 +89,7 @@
         }
       ],
       "default": null,
-      "description": "Hedef karmaşıklık; HTML/CSS görevlerinde yok (ADR-0015)"
+      "description": "Hedef karmaşıklık; HTML/CSS görevlerinde ve isteğe bağlı olarak kullanıcı sorularında yok (ADR-0015, ADR-0028)"
     },
     "id": {
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)+$",
@@ -98,6 +98,16 @@
     },
     "language": {
       "$ref": "#/$defs/Language"
+    },
+    "origin": {
+      "default": "builtin",
+      "description": "builtin: soru bankası; user: kullanıcının eklediği",
+      "enum": [
+        "builtin",
+        "user"
+      ],
+      "title": "Origin",
+      "type": "string"
     },
     "prompt": {
       "minLength": 1,

@@ -38,12 +38,14 @@ from codementor.models.questions import QuestionPublic
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.providers.factory import PROVIDER_NAMES
+from codementor.report.usage import usage_totals_label
 from codementor.storage.cache import (
     clear_analyses,
     delete_analysis,
     get_analysis,
     get_row,
     list_analyses,
+    usage_totals,
 )
 from codementor.storage.db import AnalysisRow, resolve_db_path
 from codementor.storage.sessions import clear_sessions
@@ -139,13 +141,21 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.analyze_view.select(self.prefs.language, self.prefs.engine, None)
         self.analyze_view.editor.set(SAMPLES[self.prefs.language], self.prefs.language)
         self.files.enable_drop(self.analyze_view.editor.text)
-        self.questions_view = QuestionsView(stage, self._filtered_questions, self.start_question)
+        self.questions_view = QuestionsView(
+            stage,
+            self._filtered_questions,
+            self.start_question,
+            on_add=lambda: questions_controller.open_add(self),
+            on_edit=lambda q: questions_controller.open_edit(self, q),
+            on_delete=lambda q: questions_controller.delete_user(self, q),
+        )
         self.history_view = HistoryView(
             stage,
             self._history_rows,
             self.open_history,
             on_delete=self.delete_history,
             on_clear=self.clear_history,
+            totals=lambda: usage_totals_label(usage_totals(self.core.database())),
         )
         self.settings_view = ConnectionsView(
             stage,

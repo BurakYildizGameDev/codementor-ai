@@ -5,9 +5,11 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
+from codementor.config import DataSettings
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.questions import Question, QuestionPublic
 from codementor.questions._loader import DataFileError, list_yaml_files, load_model
+from codementor.questions.user_store import load_user_questions
 
 _LANGUAGE_ORDER = {lang: i for i, lang in enumerate(Language)}
 _ENGINE_ORDER = {engine: i for i, engine in enumerate(Engine)}
@@ -42,7 +44,8 @@ class QuestionBank:
     çözüm yolu yalnızca `get` ile, iç bileşenlere (K5 sızıntı koruması) açıktır.
     """
 
-    def __init__(self, questions: Iterable[Question]) -> None:
+    def __init__(self, questions: Iterable[Question], warnings: Iterable[str] = ()) -> None:
+        self.warnings: list[str] = list(warnings)  # atlanan kullanıcı soruları (Faz K)
         self._questions: dict[str, Question] = {}
         for q in questions:
             if q.id in self._questions:
@@ -67,6 +70,22 @@ class QuestionBank:
             sources[q.id] = path
             questions.append(q)
         return cls(questions)
+
+    @classmethod
+    def load_all(cls, data: DataSettings) -> QuestionBank:
+        """Yerleşik banka + kullanıcı soruları (ADR-0028). Yerleşik banka okunamazsa hata;
+        bozuk ya da çakışan kullanıcı sorusu atlanır, `warnings`'e yazılır."""
+        builtin = cls.load(data.questions_dir)
+        user, warnings = load_user_questions(data.user_questions_dir)
+        merged = list(builtin._questions.values())
+        for question in user:
+            if question.id in builtin:
+                warnings.append(
+                    f"Kendi sorun yerleşik bir soruyla aynı kimlikte, atlandı: {question.id}"
+                )
+                continue
+            merged.append(question)
+        return cls(merged, warnings)
 
     def __len__(self) -> int:
         return len(self._questions)
@@ -93,6 +112,7 @@ class QuestionBank:
         language: Language | None = None,
         engine: Engine | None = None,
         difficulty: Difficulty | None = None,
+        origin: str | None = None,
     ) -> list[QuestionPublic]:
         """Verilen ölçütlerin hepsine uyan sorular (dil, motor, zorluk, id sırasıyla)."""
         return [
@@ -101,4 +121,5 @@ class QuestionBank:
             if (language is None or q.language == language)
             and (engine is None or q.engine == engine)
             and (difficulty is None or q.difficulty == difficulty)
+            and (origin is None or q.origin == origin)
         ]

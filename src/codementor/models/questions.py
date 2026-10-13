@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 from pathlib import PurePosixPath
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
-from pydantic import AfterValidator, Field, StringConstraints, field_validator, model_validator
+from pydantic import (
+    AfterValidator,
+    BeforeValidator,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 from codementor.models._base import StrictModel
 from codementor.models.bigo import parse_cost
@@ -18,6 +25,9 @@ from codementor.models.enums import (
 )
 
 QUESTION_ID_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)+$"
+# Faz K (ADR-0028): kullanıcı soruları bu önekle kimlik alır; yerleşik kimliklerle çakışmaz
+USER_QUESTION_PREFIX = "kullanici-"
+QuestionOrigin = Literal["builtin", "user"]
 CHECKLIST_ITEM_ID_PATTERN = r"^[A-Z]+-[A-Z]+-\d{3}$"
 TAG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
 REFERENCE_ROOT = "private"
@@ -70,13 +80,20 @@ class QuestionPublic(StrictModel):
     prompt: NonEmptyText
     constraints: list[NonEmptyText] = Field(min_length=1)
     expected: ExpectedComplexity | None = Field(
-        default=None, description="Hedef karmaşıklık; HTML/CSS görevlerinde yok (ADR-0015)"
+        default=None,
+        description="Hedef karmaşıklık; HTML/CSS görevlerinde ve isteğe bağlı olarak kullanıcı "
+        "sorularında yok (ADR-0015, ADR-0028)",
+    )
+    origin: QuestionOrigin = Field(
+        default="builtin", description="builtin: soru bankası; user: kullanıcının eklediği"
     )
 
     @model_validator(mode="after")
     def _engine_matches_language(self) -> Self:
         check_engine_language(self.language, self.engine)
-        if has_complexity(self.language) and self.expected is None:
+        if self.origin == "user" and not self.id.startswith(USER_QUESTION_PREFIX):
+            raise ValueError(f"kullanıcı sorusu kimliği '{USER_QUESTION_PREFIX}' ile başlamalı")
+        if has_complexity(self.language) and self.expected is None and self.origin == "builtin":
             raise ValueError(f"{self.language} görevi hedef karmaşıklık (expected) içermeli")
         if not has_complexity(self.language) and self.expected is not None:
             raise ValueError(f"{self.language} görevinde hedef karmaşıklık olmaz")
@@ -162,3 +179,118 @@ class BankReport(StrictModel):
     question_count: int = Field(ge=0)
     errors: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+
+
+# --- Faz K (ADR-0028): kullanıcı soruları -------------------------------------------------------
+
+DEFAULT_USER_CONSTRAINT = "Görev tanımındaki gereksinimler eksiksiz karşılanmalı."
+DEFAULT_USER_TAG = "genel"  # kontrol listesinde yalnız `core` maddeler seçilir
+DEFAULT_USER_HINTS = (
+    "Görevin kısıtlarını tek tek düşün: kodun hangisini henüz karşılamıyor olabilir?",
+    "Şüphelendiğin satırı en küçük bir girdiyle elle izle; beklediğinle gördüğün nerede ayrılıyor?",
+    "Bulduğun sorunun genel adı nedir ve bu tür hatalar genellikle nasıl önlenir?",
+)
+EXPECTED_OPERATION = "çözüm"  # tek hedef zaman karmaşıklığının işlem adı
+
+
+def _strip_bigo(value: object) -> object:
+    """Formdan gelen `O(n log n)` → `n log n`; boş metin → None."""
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if not text:
+        return None
+    if text[:2].upper() == "O(" and text.endswith(")"):
+        text = text[2:-1].strip()
+    return text
+
+
+def _clean_lines(value: object) -> object:
+    """Boş satırlar atılır (form metin kutusu satır başına bir öğe verir)."""
+    if isinstance(value, list):
+        return [v for v in value if not isinstance(v, str) or v.strip()]
+    return value
+
+
+OptionalBigO = Annotated[BigOText | None, BeforeValidator(_strip_bigo)]
+
+
+class UserQuestionDraft(StrictModel):
+    """Kullanıcının masaüstü formundan ya da CLI YAML'ından verdiği soru (ADR-0028).
+
+    Zorunlu: başlık, açıklama, dil, zorluk. Kısıtlar, hedef karmaşıklık, kavram etiketleri ve
+    ipuçları isteğe bağlı; boş olanlar `to_question` ile genel değerlerle doldurulur.
+    """
+
+    title: NonEmptyText = Field(max_length=120)
+    prompt: NonEmptyText
+    language: Language
+    engine: Engine = Engine.NONE
+    difficulty: Difficulty
+    constraints: Annotated[list[NonEmptyText], BeforeValidator(_clean_lines)] = Field(
+        default_factory=list
+    )
+    expected_time: OptionalBigO = None
+    expected_space: OptionalBigO = None
+    concept_tags: Annotated[list[Tag], BeforeValidator(_clean_lines)] = Field(default_factory=list)
+    hints: Annotated[list[NonEmptyText], BeforeValidator(_clean_lines)] = Field(
+        default_factory=list, max_length=3
+    )
+
+    @model_validator(mode="after")
+    def _consistent(self) -> Self:
+        check_engine_language(self.language, self.engine)
+        given = (self.expected_time is not None, self.expected_space is not None)
+        if not has_complexity(self.language) and any(given):
+            raise ValueError(f"{self.language} görevinde hedef karmaşıklık olmaz")
+        if given[0] != given[1]:
+            raise ValueError(
+                "hedef karmaşıklık için hem zaman hem bellek verilmeli (ya da hiçbiri)"
+            )
+        return self
+
+    def to_question(self, question_id: str, version: int = 1) -> Question:
+        """Tam soru kaydı: boş alanlar genel değerlerle dolar, referans çözüm yok."""
+        expected = (
+            ExpectedComplexity(
+                time={EXPECTED_OPERATION: self.expected_time}, space=self.expected_space
+            )
+            if self.expected_time is not None and self.expected_space is not None
+            else None
+        )
+        hints = [*self.hints, *DEFAULT_USER_HINTS[len(self.hints) :]]
+        return Question(
+            id=question_id,
+            version=version,
+            language=self.language,
+            engine=self.engine,
+            difficulty=self.difficulty,
+            title=self.title,
+            prompt=self.prompt,
+            constraints=self.constraints or [DEFAULT_USER_CONSTRAINT],
+            expected=expected,
+            origin="user",
+            concept_tags=list(dict.fromkeys(self.concept_tags)) or [DEFAULT_USER_TAG],
+            hint_ladder=dict(zip(HINT_LEVELS, hints, strict=True)),
+            reference_solution_path=None,
+        )
+
+    @classmethod
+    def from_question(cls, question: Question) -> UserQuestionDraft:
+        """Düzenleme formu için mevcut sorudan taslak (genel varsayılanlar boş gösterilir)."""
+        expected = question.expected
+        hints = [question.hint_ladder[level] for level in HINT_LEVELS]
+        while hints and hints[-1] == DEFAULT_USER_HINTS[len(hints) - 1]:
+            hints.pop()
+        return cls(
+            title=question.title,
+            prompt=question.prompt,
+            language=question.language,
+            engine=question.engine,
+            difficulty=question.difficulty,
+            constraints=[c for c in question.constraints if c != DEFAULT_USER_CONSTRAINT],
+            expected_time=next(iter(expected.time.values())) if expected else None,
+            expected_space=expected.space if expected else None,
+            concept_tags=[t for t in question.concept_tags if t != DEFAULT_USER_TAG],
+            hints=hints,
+        )

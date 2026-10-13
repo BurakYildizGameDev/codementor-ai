@@ -809,7 +809,11 @@ class AnalysisReport(BaseModel):
     "repair_attempts": 0,
     "warnings": [],
     "usage_estimated": false,
-    "cost_est": null
+    "cost_est": null,
+    "stage_tokens": {
+      "llm_a": { "input": 1380, "output": 296 },
+      "llm_b": { "input": 760, "output": 116 }
+    }
   }
 }
 ```
@@ -938,6 +942,16 @@ altındadır ve derleyiciden temiz geçer. Denetim: `codementor questions valida
 ### 7.3 Serbest mod
 
 Soru seçilmezse (`question_id = null`) analiz yapılır ama `is_optimal = null` döner; çünkü "optimal" ancak bir problem tanımına göre anlamlıdır.
+
+### 7.4 Kullanıcı soruları (ADR-0028)
+
+Kullanıcı kendi görevini masaüstü formundan ya da `codementor questions add <dosya.yaml>` ile
+ekler. Sorular `data.user_questions_dir` (varsayılan `~/.codementor/questions`) altında, bankayla
+aynı biçimde ve `origin: user` alanıyla saklanır; kimlik `kullanici-<başlık>`. Zorunlu alanlar
+başlık, açıklama, dil ve zorluktur; hedef karmaşıklık, kısıtlar, kavram etiketleri ve ipuçları
+isteğe bağlıdır (boşlar genel değerlerle dolar). Hedef verilmezse `is_optimal = null` (serbest
+mod gibi). Referans çözüm yoktur. `QuestionBank.load_all` yerleşik bankayla birleştirir; bozuk
+kullanıcı dosyası atlanır. Web/API salt okunur.
 
 ---
 

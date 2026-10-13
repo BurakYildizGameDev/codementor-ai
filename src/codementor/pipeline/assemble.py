@@ -77,6 +77,7 @@ def assemble_report(
                 repair_attempts=llm.repair_attempts if llm else 0,
                 warnings=list(dict.fromkeys(warnings)),
                 usage_estimated=llm.usage_estimated if llm else False,
+                stage_tokens=dict(llm.stage_tokens) if llm else {},
             ),
         )
     report.meta.stage_latency_ms = stage_latencies(timer)
@@ -95,6 +96,7 @@ def from_cache(cached: AnalysisReport, analysis_id: str, timer: StageTimer) -> A
             "tokens_in": 0,
             "tokens_out": 0,
             "cost_est": None,  # bu istek harcamadı (Faz B, O4)
+            "stage_tokens": {},
             "usage_estimated": False,
         }
     )

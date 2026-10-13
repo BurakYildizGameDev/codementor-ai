@@ -9,7 +9,9 @@ uymayan eski `report_json` yok sayılır (geçmiş/GET çökmez); `max_analyses`
 from __future__ import annotations
 
 import hashlib
+from dataclasses import dataclass
 
+from sqlalchemy import func
 from sqlmodel import col, delete, select
 
 from codementor.log import get_logger
@@ -170,3 +172,34 @@ def clear_analyses(db: Database) -> int:
         result = session.exec(delete(AnalysisRow))
         session.commit()
         return int(result.rowcount)
+
+
+@dataclass(frozen=True)
+class UsageTotals:
+    """Kayıtlı analizlerin toplam kullanımı (Geçmiş ekranı, Faz K). Önbellek isabetleri 0 token
+    ve maliyetsiz kaydedilir: toplam gerçekten harcananı gösterir."""
+
+    analyses: int
+    tokens_in: int
+    tokens_out: int
+    cost: float | None  # hiçbir kayıtta fiyat yoksa None
+
+
+def usage_totals(db: Database) -> UsageTotals:
+    """`analyses` tablosundaki tüm kayıtların token ve tahmini maliyet toplamı."""
+    cost = func.json_extract(AnalysisRow.report_json, "$.meta.cost_est")
+    with db.session() as session:
+        count, tokens_in, tokens_out, cost_sum = session.exec(
+            select(
+                func.count(col(AnalysisRow.id)),
+                func.coalesce(func.sum(AnalysisRow.tokens_in), 0),
+                func.coalesce(func.sum(AnalysisRow.tokens_out), 0),
+                func.sum(cost),
+            )
+        ).one()
+    return UsageTotals(
+        analyses=int(count),
+        tokens_in=int(tokens_in),
+        tokens_out=int(tokens_out),
+        cost=float(cost_sum) if cost_sum is not None else None,
+    )

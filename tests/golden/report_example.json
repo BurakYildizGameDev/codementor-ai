@@ -62,6 +62,10 @@
     "repair_attempts": 0,
     "warnings": [],
     "usage_estimated": false,
-    "cost_est": null
+    "cost_est": null,
+    "stage_tokens": {
+      "llm_a": { "input": 1380, "output": 296 },
+      "llm_b": { "input": 760, "output": 116 }
+    }
   }
 }

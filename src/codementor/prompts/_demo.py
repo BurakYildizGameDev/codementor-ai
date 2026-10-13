@@ -55,7 +55,7 @@ def demo_input(
 ) -> AnalysisPromptInput:
     """Soru bankasındaki sorunun örnek koduyla prompt girdisi kurar."""
     settings = settings or get_settings()
-    question = QuestionBank.load(settings.data.questions_dir).get(question_id)
+    question = QuestionBank.load_all(settings.data).get(question_id)
     if code_path is None:
         matches = sorted((GOLDEN_DIR / question_id).glob("code.*"))
         if not matches:

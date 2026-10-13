@@ -35,6 +35,13 @@ class SocraticResult(StrictModel):
     leak_check: Literal["passed", "regenerated", "dropped_questions", "skipped"]
 
 
+class TokenSplit(StrictModel):
+    """Bir LLM aşamasının token kullanımı (Faz K)."""
+
+    input: int = Field(ge=0)
+    output: int = Field(ge=0)
+
+
 class ReportMeta(StrictModel):
     provider: str | None
     model: str | None
@@ -55,6 +62,11 @@ class ReportMeta(StrictModel):
     )
     cost_est: float | None = Field(
         default=None, ge=0, description="Tahmini maliyet (USD, data/pricing.yaml); fiyat yoksa null"
+    )
+    # Faz K: aşama başına token (`llm_a` onarımlar dahil, `llm_v`, `llm_b`); toplamı
+    # `tokens_in/out`. Varsayılanlı: eski raporlar okunur
+    stage_tokens: dict[str, TokenSplit] = Field(
+        default_factory=dict, description="LLM aşaması → giriş/çıkış token"
     )
 
 

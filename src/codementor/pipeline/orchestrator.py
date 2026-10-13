@@ -247,7 +247,7 @@ class Orchestrator:
     def _question_bank(self) -> QuestionBank:
         if self.questions is not None:
             return self.questions()
-        return QuestionBank.load(self.settings.data.questions_dir)
+        return QuestionBank.load_all(self.settings.data)
 
     def _rules_version(self) -> str:
         data = self.settings.data

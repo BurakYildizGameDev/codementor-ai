@@ -24,12 +24,14 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
         on_open: Callable[[str], None],
         on_delete: Callable[[str], None] | None = None,
         on_clear: Callable[[], None] | None = None,
+        totals: Callable[[], str | None] | None = None,
     ) -> None:
         super().__init__(master, fg_color="transparent")
         self._load = load
         self._on_open = on_open
         self._on_delete = on_delete
         self._on_clear = on_clear
+        self._totals = totals
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
@@ -53,6 +55,11 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
             command=self._handle_clear,
         )
         self.clear_btn.grid(row=0, column=1, sticky="e")
+        # Faz K: kayıtlı analizlerin toplam token/maliyeti
+        self.totals_label = ctk.CTkLabel(
+            header_frame, text="", font=theme.font(12), text_color=theme.MUTED, anchor="w"
+        )
+        self.totals_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
 
         self.list = ctk.CTkScrollableFrame(
             self, fg_color="transparent", scrollbar_button_color=theme.SURFACE_3
@@ -70,6 +77,7 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
 
     def refresh(self) -> None:
         clear(self.list)
+        self.totals_label.configure(text=self._totals_text())
         try:
             rows = self._load()
         except Exception:  # veritabanı açılamazsa ekran yine açılır
@@ -86,6 +94,14 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
         self.clear_btn.configure(state="normal")
         for i, row in enumerate(rows):
             self._row(i, row)
+
+    def _totals_text(self) -> str:
+        if self._totals is None:
+            return ""
+        try:
+            return self._totals() or ""
+        except Exception:  # veritabanı okunamazsa toplam gösterilmez
+            return ""
 
     def _row(self, index: int, row: AnalysisRow) -> None:
         item = ctk.CTkFrame(

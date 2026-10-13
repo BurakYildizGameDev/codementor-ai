@@ -13,7 +13,7 @@ import { getSessionId } from "./lib/session";
 import type { ProviderStatus } from "./types/provider_status";
 import type { Difficulty, QuestionPublic } from "./types/question_public";
 import type { AnalysisReport } from "./types/report";
-import { usageLabel } from "./lib/usage";
+import { usageBreakdown, usageLabel } from "./lib/usage";
 import type { Engine, Language, PipelineMode } from "./types/request";
 import type { StageEvent } from "./types/stage_event";
 
@@ -173,9 +173,15 @@ export default function App() {
             </div>
           )}
           <StageProgress stages={stages} busy={busy} />
-          {report && usageLabel(report.meta) && (
+          {report && (
             <p className="usage" aria-label="Kullanım">
               {usageLabel(report.meta)}
+              {usageBreakdown(report.meta) && (
+                <>
+                  <br />
+                  <small>{usageBreakdown(report.meta)}</small>
+                </>
+              )}
             </p>
           )}
           {report && (report.meta.degraded || notes.length > 0) && (

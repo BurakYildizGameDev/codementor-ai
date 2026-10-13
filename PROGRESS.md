@@ -57,6 +57,7 @@
 | A1 | ✅ (denetim sonraya) | faz/a1-guvenlik | 2026-10-12 | Claude Code / — |
 | A2 | ✅ (denetim sonraya) | faz/a2-guvenlik | 2026-10-13 | Claude Code / — |
 | B | ✅ (denetim sonraya) | faz/b-bulgu-kaybi-onbellek | 2026-10-13 | Claude Code / — |
+| K | ✅ (ADR-0028) | faz/k-kullanici-soru-token | 2026-10-13 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -917,6 +918,41 @@ nedeniyle sonraya bırakıldı.
 denetimi; Y1, D13, `.gitignore` (Faz A2).
 
 
+
+## Faz K — Notlar (kullanıcı soruları + token kullanımı; 2026-10-13)
+Kaynak: kullanıcı isteği (Faz C'den önce). Kararlar (kullanıcı): soru ekleme masaüstü formu + CLI;
+basit form (başlık, açıklama, dil, zorluk zorunlu); token her zaman görünür, aşama dağılımı,
+toplam/geçmiş.
+**Yapılanlar:**
+- **Kullanıcı soruları (ADR-0028):** `QuestionPublic.origin` (`builtin|user`; hedef karmaşıklık
+  yalnız yerleşikte zorunlu, kullanıcı kimliği `kullanici-` önekli), `UserQuestionDraft`
+  (boşlar genel kısıt/etiket/ipucuyla dolar, `O(...)` sarmalayıcısı atılır, zaman+bellek
+  birlikte). `questions/user_store.py`: slug kimlik (Türkçe katlama, çakışmada `-2`), atomik YAML
+  yazımı, düzenlemede sürüm artışı, yerleşik soru silinemez, bozuk dosya atlanır + uyarı.
+  `QuestionBank.load_all` (API, orkestratör, CLI, demo); `ApiState.reload_questions`.
+  `config.data.user_questions_dir` (varsayılan `~/.codementor/questions`, yazılabilir yol).
+- Masaüstü: Sorular ekranında "+ Soru ekle", "Kendi sorularım" filtresi, kartta "Kendi sorum"
+  rozeti + Düzenle/Sil (onaylı); `views/question_form.py` (dile göre motor, HTML/CSS'te hedef
+  alanları kapalı, hata formda Türkçe); mantık `questions_controller.py`'de.
+- CLI: `questions add <yaml>`, `questions remove <id>`, `list`'te `(kendi)`; `validate` yalnız
+  yerleşik banka.
+- **Token:** `ReportMeta.stage_tokens` (`TokenSplit`; `llm_a` onarımlar dahil, `llm_v`, `llm_b`;
+  toplamı `tokens_in/out`), `usage_label` hiç gizlenmez (`token 0 (önbellekten | model
+  çağrılmadı | derleme hatası… | model yanıt vermedi)`), biçim `1.540 token (giriş 1.200 · çıkış
+  340) · tahmini · ~$x`; `usage_breakdown_label`; `storage.cache.usage_totals` (SQL toplam,
+  maliyet `json_extract`) → Geçmiş başlığında "Toplam: N analiz · X token · ~$Y". CLI altbilgisi,
+  masaüstü rapor başlığı ve web paneli aynı metin; `schemas/` + `web/src/types` yeniden üretildi.
+- Testler: `test_user_questions.py` (35), `test_pipeline_usage.py` (6),
+  `test_user_questions_app.py` (11), `test_usage_label.py` yeniden yazıldı, web `usage.test.ts`.
+**Ekranda doğrulama:** masaüstü gerçek `App` ile açılıp gezildi (geçici dizin). Bulunan iki sorun
+düzeltildi: uzun token etiketi rapor başlığıyla çakışıyordu (ayrı satıra alındı); dağılım onarımı
+"Analiz"e yazıyordu, oysa `repair_attempts` tüm aşamaların toplamı (sona `N onarım`).
+**Kararlar:** web/API'de yazma yok (güvenlik incelemesi ayrı iş). Etiket biçimi bilinçli değişti;
+eski etiket testleri yeni metne güncellendi.
+**Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3287 geçti, 15 atlandı; web 36 test,
+`tsc` temiz.
+**Açık:** `desktop/app.py` 504 satır (Faz G bölme). Web'de prettier uyarısı 22 dosyada (önceden
+vardı, CI'da yok).
 
 ## Faz B — Notlar (kısmi LLM hatasında bulgu kaybı, önbellek doğruluğu; 2026-10-13)
 Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y3, Y4, Y5, O2, O3, O4. Dal `faz/a2-guvenlik`ten.

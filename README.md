@@ -338,6 +338,7 @@ Markdown / SARIF olarak indirilir. GIF e2e karelerinden üretilir:
 uv run codementor analyze kod.c                                   # Rich panel
 uv run codementor analyze kod.cs --engine unity --format sarif --out rapor.sarif
 uv run codementor questions list                                  # 64 görevlik soru bankası
+uv run codementor questions add sorum.yaml                        # kendi görevini ekle
 uv run codementor rules list                                      # 34 statik kural
 ```
 
@@ -359,8 +360,14 @@ Komutlar her dizinden çalışır: `codementor.toml` çalışma dizininde ya da
 - **Sokratik mentor:** ana kavram, yönlendirici sorular ve sonraki adım. **Bir ipucu daha**
   aynı oturumla yeniden denetler ve ipucu seviyesini (1 → 3) artırır; **Baştan başla** sıfırlar.
 - **Soru bankası:** 64 görev; her dil/motorda çok kolaydan zora 8 görev, dil ve zorluk filtresiyle.
-- **Geçmiş:** önceki analizler kodlarıyla yeniden açılır; raporlar Markdown / SARIF / JSON olarak
-  dışa aktarılır.
+  **+ Soru ekle** ile kendi görevini ekleyebilirsin: başlık, açıklama, dil ve zorluk yeterli;
+  hedef karmaşıklık, kısıtlar, kavram etiketleri ve ipuçları isteğe bağlı. Kendi soruların
+  `~/.codementor/questions` altında durur, kartlarından düzenlenir ya da silinir (ADR-0028).
+- **Token kullanımı:** her raporda harcanan token (giriş/çıkış, tahmini maliyet) ve aşama
+  dağılımı (analiz, doğrulama, mentor soruları) görünür; önbellekten dönen ya da modelin
+  çağrılmadığı analizde `token 0` ve nedeni yazılır.
+- **Geçmiş:** önceki analizler kodlarıyla yeniden açılır; başlıkta tüm analizlerin toplam token'ı
+  ve tahmini maliyeti; raporlar Markdown / SARIF / JSON olarak dışa aktarılır.
 - **Bağlantılar:** her sağlayıcı için bir kart: model seçimi, **Oturum aç**, API anahtarı
   (Windows Kimlik Bilgisi Yöneticisi'nde, dosyaya yazılmaz), **Bağlantıyı dene**, **Varsayılan
   yap**, **Derleyiciyi indir** (zig). Seçimler tek tuşla `codementor.toml`'a yazılır (yorumlar

@@ -80,6 +80,8 @@ export type Provider = string | null;
 export type RepairAttempts = number;
 export type RulesVersion = string;
 export type SchemaVersion = string;
+export type Input = number;
+export type Output = number;
 export type TokensIn = number;
 export type TokensOut = number;
 /**
@@ -168,6 +170,7 @@ export interface ReportMeta {
   rules_version: RulesVersion;
   schema_version: SchemaVersion;
   stage_latency_ms: StageLatencyMs;
+  stage_tokens?: StageTokens;
   tokens_in: TokensIn;
   tokens_out: TokensOut;
   usage_estimated?: UsageEstimated;
@@ -175,6 +178,19 @@ export interface ReportMeta {
 }
 export interface StageLatencyMs {
   [k: string]: number;
+}
+/**
+ * LLM aşaması → giriş/çıkış token
+ */
+export interface StageTokens {
+  [k: string]: TokenSplit;
+}
+/**
+ * Bir LLM aşamasının token kullanımı (Faz K).
+ */
+export interface TokenSplit {
+  input: Input;
+  output: Output;
 }
 export interface SocraticResult {
   guiding_questions: GuidingQuestions;

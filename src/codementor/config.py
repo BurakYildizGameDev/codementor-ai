@@ -65,6 +65,10 @@ def _default_toolchain_dir() -> Path:
     return Path.home() / ".codementor" / "toolchain"
 
 
+def _default_user_questions_dir() -> Path:
+    return Path.home() / ".codementor" / "questions"
+
+
 class ValidationSettings(BaseModel):
     """Tier 1 yerel derleyici ayarları (mimari §5.2.2-5.2.3, ADR-0009, ADR-0018)."""
 
@@ -116,6 +120,8 @@ class DataSettings(BaseModel):
         default_factory=lambda: resource_path("data/mentor_templates.yaml")
     )
     pricing_file: Path = Field(default_factory=lambda: resource_path("data/pricing.yaml"))
+    # Faz K (ADR-0028): kullanıcının eklediği sorular; yerleşik bankayla birleşir
+    user_questions_dir: Path = Field(default_factory=lambda: _default_user_questions_dir())
 
 
 class PromptSettings(BaseModel):
@@ -322,7 +328,7 @@ def _path_fields(settings_cls: type[BaseSettings]) -> dict[str, list[str]]:
 
 # Uygulamanın yazdığı yollar: paketteki (exe'de geçici, salt okunur) köke asla düşmez (denetim O3)
 WRITABLE_PATHS: frozenset[tuple[str, str]] = frozenset(
-    {("storage", "db_path"), ("validation", "toolchain_dir")}
+    {("storage", "db_path"), ("validation", "toolchain_dir"), ("data", "user_questions_dir")}
 )
 
 

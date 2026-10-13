@@ -186,15 +186,32 @@ def test_rich_without_code_and_level_three() -> None:
 def test_rich_footer_marks_estimated_usage_and_cost() -> None:
     """Faz 25 (§13): tahmini token ve maliyet alt satırda işaretlenir."""
     plain = _rich(_report())
-    assert "token 10/5" in plain
-    assert "(tahmini)" not in plain
+    assert "15 token (giriş 10 · çıkış 5)" in plain
+    assert "tahmini" not in plain
     assert "~$" not in plain
     report = _report()
     report.meta.usage_estimated = True
     report.meta.cost_est = 0.00123
     text = _rich(report)
-    assert "token 10/5 (tahmini)" in text
+    assert "15 token (giriş 10 · çıkış 5) · tahmini" in text
     assert "~$0.0012" in text
+
+
+def test_rich_footer_shows_stage_breakdown_and_zero_usage() -> None:
+    """Faz K: aşama dağılımı ayrı satırda; token harcanmadıysa nedeni yazılır."""
+    from codementor.models.report import TokenSplit
+
+    report = _report()
+    report.meta.stage_tokens = {
+        "llm_a": TokenSplit(input=6, output=3),
+        "llm_b": TokenSplit(input=4, output=2),
+    }
+    text = _rich(report)
+    assert "Giriş/çıkış: Analiz 6/3 · Mentor soruları 4/2" in text
+    cached = _report()
+    cached.meta.tokens_in = cached.meta.tokens_out = 0
+    cached.meta.cache_hit = True
+    assert "token 0 (önbellekten)" in _rich(cached)
 
 
 def _with_suggestion() -> AnalysisReport:

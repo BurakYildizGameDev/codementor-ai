@@ -35,6 +35,15 @@ def _isolated_toolchain_dir(
 
 
 @pytest.fixture(autouse=True)
+def _isolated_user_questions(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Testler geliştiricinin kendi sorularını (~/.codementor/questions) görmez (Faz K)."""
+    empty: Path = tmp_path_factory.getbasetemp() / "no-user-questions"
+    monkeypatch.setattr(codementor.config, "_default_user_questions_dir", lambda: empty)
+
+
+@pytest.fixture(autouse=True)
 def _no_network(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
     """Testler ağa çıkmaz (AGENTS.md kural 4, Faz 50): loopback dışı bağlantı hata verir;
     `@pytest.mark.live` testleri muaf."""

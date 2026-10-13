@@ -204,6 +204,7 @@ def test_llm_schemas_have_no_system_fields() -> None:
                 "warnings",
                 "usage_estimated",  # Faz 25 (§13)
                 "cost_est",
+                "stage_tokens",  # Faz K
             },
         ),
         (

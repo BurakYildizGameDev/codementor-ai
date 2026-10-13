@@ -700,6 +700,7 @@ uygulanır: plan modu → onay → test → `make check` → kabul kriterleri �
 | H | Statik kurallar ve analiz doğruluğu | Sonra |
 | I | Yerel modeller ve eval (eski Faz 64-66) | Sonra |
 | J | Açık kalan diğer işler (havuz) | İhtiyaç oldukça |
+| K | Kullanıcı soruları + token kullanımı (kullanıcı isteği, C'den önce) | ✅ 2026-10-13 |
 
 ---
 

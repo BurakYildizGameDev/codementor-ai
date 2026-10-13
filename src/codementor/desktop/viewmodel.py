@@ -24,7 +24,7 @@ from codementor.models.enums import (
 from codementor.models.findings import Diagnostic, Finding, issues_only
 from codementor.models.pipeline import Stage, StageEvent
 from codementor.models.report import AnalysisReport
-from codementor.report.usage import usage_label
+from codementor.report.usage import usage_breakdown_label, usage_label
 
 GroupStatus = Literal["pending", "running", "done", "skipped", "failed"]
 
@@ -271,9 +271,14 @@ def format_ms(ms: int) -> str:
     return f"{minutes} dk {rest:02d} sn"
 
 
-def report_usage(report: AnalysisReport) -> str | None:
-    """Rapor başlığındaki token/maliyet (Faz 33); LLM harcanmadıysa None."""
+def report_usage(report: AnalysisReport) -> str:
+    """Rapor başlığındaki token/maliyet (Faz 33); Faz K: her zaman, harcanmadıysa nedeniyle."""
     return usage_label(report.meta)
+
+
+def report_usage_breakdown(report: AnalysisReport) -> str | None:
+    """Aşama başına giriş/çıkış token satırı (Faz K); LLM çağrılmadıysa None."""
+    return usage_breakdown_label(report.meta)
 
 
 def report_headline(report: AnalysisReport) -> str:

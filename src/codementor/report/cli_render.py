@@ -11,7 +11,7 @@ from rich.text import Text
 from codementor.models.enums import FindingKind, Language
 from codementor.models.findings import Finding
 from codementor.models.report import AnalysisReport
-from codementor.report.usage import usage_label
+from codementor.report.usage import usage_breakdown_label, usage_label
 
 CONTEXT_LINES = 1
 _LEXERS = {Language.C: "c", Language.CPP: "cpp", Language.CSHARP: "csharp"}
@@ -109,13 +109,13 @@ def render_report(report: AnalysisReport, code: str | None = None) -> list[Rende
     if report.meta.warnings:
         parts.append(Text("\n".join(f"• {w}" for w in report.meta.warnings), style="dim"))
     meta = report.meta
-    usage = usage_label(meta)
     footer = (
         f"{report.analysis_id} · {meta.provider or 'LLM yok'} · {meta.prompt_version}"
-        + (f" · {usage}" if usage else "")
-        + (" · önbellek" if meta.cache_hit else "")
+        f" · {usage_label(meta)}"
     )
     parts.append(Text(footer, style="dim"))
+    if breakdown := usage_breakdown_label(meta):  # Faz K
+        parts.append(Text(breakdown, style="dim"))
     return parts
 
 

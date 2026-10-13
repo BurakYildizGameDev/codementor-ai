@@ -657,9 +657,10 @@ def test_report_headline_shows_usage() -> None:
     from codementor.desktop.viewmodel import report_usage
 
     assert report_usage(_usage_report(tokens=(1200, 340), cost=0.0123)) == (
-        "token 1200/340 · ~$0.0123"
+        "1.540 token (giriş 1.200 · çıkış 340) · ~$0.0123"
     )
-    assert report_usage(_usage_report(tokens=(0, 0), cost=None)) is None
+    # Faz K: token harcanmadıysa da görünür
+    assert report_usage(_usage_report(tokens=(0, 0), cost=None)) == "token 0 (model çağrılmadı)"
 
 
 def _usage_report(tokens: tuple[int, int], cost: float | None) -> Any:

@@ -1,4 +1,4 @@
-"""`codementor questions list|show|validate` komutları (mimari §10).
+"""`codementor questions list|show|validate|add|remove` komutları (mimari §10; Faz K).
 
 CLI yalnızca `QuestionPublic` görür: ipucu merdiveni, soruya özgü kontrol maddeleri,
 kavram etiketleri ve referans çözüm yolu bu modelde hiç bulunmaz.
@@ -6,6 +6,9 @@ kavram etiketleri ve referans çözüm yolu bu modelde hiç bulunmaz.
 Çıkış kodları: 0 başarı · 1 soru bulunamadı ya da bütünlük hatası (validate) · 2 geçersiz komut
 satırı (Typer) ·
 3 sistem hatası (bozuk yapılandırma veya veri dosyası; mimari §10).
+
+`add`/`remove` kullanıcı sorularını `data.user_questions_dir` altında yönetir (ADR-0028);
+`list`/`show` yerleşik bankayla birleşik görür, `validate` yalnız yerleşik bankayı denetler.
 """
 
 from __future__ import annotations
@@ -20,13 +23,15 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
-from codementor.config import load_settings
+from codementor.config import DataSettings, load_settings
 from codementor.models.bigo import parse_cost
 from codementor.models.enums import Difficulty, Engine, Language
+from codementor.models.questions import UserQuestionDraft
 from codementor.paths import resource_root
-from codementor.questions._loader import DataFileError
+from codementor.questions._loader import DataFileError, load_model
 from codementor.questions.bank import QuestionBank, QuestionNotFoundError
 from codementor.questions.checklists import Checklists
+from codementor.questions.user_store import UserQuestionError, delete_question, save_question
 from codementor.questions.validate import DEFAULT_MIN_PER_GROUP, validate_bank
 
 EXIT_NOT_FOUND = 1
@@ -46,16 +51,27 @@ def _fail(message: str) -> NoReturn:
     raise typer.Exit(EXIT_SYSTEM_ERROR)
 
 
-def _load_bank(directory: Path | None) -> QuestionBank:
-    if directory is None:
-        try:
-            directory = load_settings().data.questions_dir
-        except (ValidationError, tomllib.TOMLDecodeError, OSError) as exc:
-            _fail(f"yapılandırma okunamadı ({type(exc).__name__}): {exc}")
+def _data_settings() -> DataSettings:
     try:
-        return QuestionBank.load(directory)
+        return load_settings().data
+    except (ValidationError, tomllib.TOMLDecodeError, OSError) as exc:
+        _fail(f"yapılandırma okunamadı ({type(exc).__name__}): {exc}")
+
+
+def _load_bank(directory: Path | None, *, include_user: bool = True) -> QuestionBank:
+    """`--dir` verilirse yalnız o dizin; yoksa yerleşik banka (+ kullanıcı soruları)."""
+    try:
+        if directory is not None:
+            return QuestionBank.load(directory)
+        data = _data_settings()
+        if not include_user:
+            return QuestionBank.load(data.questions_dir)
+        bank = QuestionBank.load_all(data)
     except DataFileError as exc:
         _fail(str(exc))
+    for warning in bank.warnings:
+        typer.echo(f"Uyarı: {warning}", err=True)
+    return bank
 
 
 def _reflow(text: str) -> str:
@@ -90,7 +106,8 @@ def questions_list(
     table.add_column("Zorluk", no_wrap=True)
     table.add_column("Başlık", overflow="fold")
     for q in questions:
-        table.add_row(q.id, q.language, q.engine, q.difficulty, escape(q.title))
+        title = escape(q.title) + (" [dim](kendi)[/dim]" if q.origin == "user" else "")
+        table.add_row(q.id, q.language, q.engine, q.difficulty, title)
     console.print(table)
 
 
@@ -135,7 +152,7 @@ def questions_validate(
     ] = None,
 ) -> None:
     """Soru bankasını denetler: şema, dil/zorluk dağılımı, kontrol listesi kapsamı, çözümler."""
-    bank = _load_bank(directory)
+    bank = _load_bank(directory, include_user=False)
     try:
         checklists = Checklists.load(load_settings().data.checklists_dir)
     except (DataFileError, ValidationError, tomllib.TOMLDecodeError, OSError) as exc:
@@ -155,3 +172,40 @@ def questions_validate(
         console.print(f"{report.question_count} soru denetlendi: {len(report.errors)} hata.")
         raise typer.Exit(EXIT_INVALID)
     console.print(f"{report.question_count} soru geçerli ({len(report.warnings)} uyarı).")
+
+
+@questions_app.command("add")
+def questions_add(
+    file: Annotated[
+        Path,
+        typer.Argument(
+            help="Soru YAML'ı: title, prompt, language, difficulty zorunlu; engine, constraints, "
+            "expected_time, expected_space, concept_tags, hints isteğe bağlı."
+        ),
+    ],
+) -> None:
+    """Kendi sorunu ekler (kullanıcı soru dizinine kaydedilir); kimliğini yazdırır."""
+    data = _data_settings()
+    try:
+        draft = load_model(file, UserQuestionDraft, UserQuestionError)
+        taken = {q.id for q in QuestionBank.load(data.questions_dir)}
+        question = save_question(draft, data.user_questions_dir, taken=taken)
+    except UserQuestionError as exc:
+        typer.echo(f"Hata: {exc}", err=True)
+        raise typer.Exit(EXIT_INVALID) from exc
+    except DataFileError as exc:
+        _fail(str(exc))
+    typer.echo(f"Soru eklendi: {question.id}")
+
+
+@questions_app.command("remove")
+def questions_remove(
+    question_id: Annotated[str, typer.Argument(help="Kendi sorunun kimliği (kullanici-…).")],
+) -> None:
+    """Kendi eklediğin bir soruyu siler; yerleşik sorular silinemez."""
+    try:
+        delete_question(question_id, _data_settings().user_questions_dir)
+    except UserQuestionError as exc:
+        typer.echo(f"Hata: {exc}", err=True)
+        raise typer.Exit(EXIT_NOT_FOUND) from exc
+    typer.echo(f"Soru silindi: {question_id}")

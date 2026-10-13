@@ -27,6 +27,7 @@ from codementor.desktop.viewmodel import (
     report_headline,
     report_notices,
     report_usage,
+    report_usage_breakdown,
 )
 from codementor.desktop.widgets.code_editor import CodeEditor
 from codementor.desktop.widgets.common import Card, clear, wrap_label
@@ -272,6 +273,10 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
         self.engine_picker.set(ENGINE_LABELS[self.engine])
         self._refresh_questions()
 
+    def refresh_questions(self) -> None:
+        """Soru listesi değişti (kendi sorusu eklendi/silindi; Faz K)."""
+        self._refresh_questions()
+
     def _refresh_questions(self) -> None:
         self._questions = self.actions.questions(self.language, self.engine)
         self.question_picker.configure(values=[FREE_MODE, *(q.title for q in self._questions)])
@@ -331,27 +336,23 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
         )
         self._clear_summary()
         total = sum(report.meta.stage_latency_ms.values())
-        headline = ctk.CTkFrame(self.summary, fg_color="transparent", width=1, height=1)
-        headline.grid(row=0, column=0, sticky="ew", pady=(0, 10))
-        ctk.CTkLabel(
-            headline,
-            text=report_headline(report),
-            font=theme.font(13, "bold"),
-            text_color=theme.TEXT,
-        ).pack(side="left")
-        usage = report_usage(report)
-        self.usage_text = f"{format_ms(total)} · {report.meta.provider or 'LLM yok'}" + (
-            f" · {usage}" if usage else ""
+        wrap_label(self.summary, report_headline(report), weight="bold").grid(
+            row=0, column=0, sticky="ew", pady=(0, 4)
         )
-        ctk.CTkLabel(
-            headline,
-            text=self.usage_text,
-            font=theme.font(12),
-            text_color=theme.MUTED,
-        ).pack(side="right")
+        # Faz K: süre/sağlayıcı/token ayrı satırda (uzun etiket başlıkla çakışmasın) + dağılım
+        self.usage_text = (
+            f"{format_ms(total)} · {report.meta.provider or 'LLM yok'} · {report_usage(report)}"
+        )
+        breakdown = report_usage_breakdown(report)
+        wrap_label(
+            self.summary,
+            self.usage_text + (f"\n{breakdown}" if breakdown else ""),
+            size=12,
+            color=theme.MUTED,
+        ).grid(row=1, column=0, sticky="ew", pady=(0, 10))
         notices = report_notices(report)
         if notices:
-            self._notice(notices, theme.WARN, row=1)
+            self._notice(notices, theme.WARN, row=2)
         self.socratic.show(report.socratic)
         if report.complexity is not None:
             self.complexity.show(report.complexity)
