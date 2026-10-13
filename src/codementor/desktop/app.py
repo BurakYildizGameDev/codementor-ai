@@ -7,24 +7,27 @@ işlenir.
 
 from __future__ import annotations
 
-import os
 import sys
 from collections.abc import Callable
 from pathlib import Path
-from tkinter import filedialog, messagebox
+from tkinter import messagebox
 from typing import Any
 
 import customtkinter as ctk
 
 from codementor.api.state import ApiState
-from codementor.config import Settings, config_file, load_settings
-from codementor.desktop import questions_controller, runtime, theme
+from codementor.config import Settings
+from codementor.desktop import (
+    config_controller,
+    history_controller,
+    questions_controller,
+    runtime,
+    theme,
+)
 from codementor.desktop.bridge import Bridge, Cancellation, Message, analysis_work
-from codementor.desktop.config_writer import write_provider_prefs
-from codementor.desktop.connections import KeyStore, apply_overrides
+from codementor.desktop.connections import KeyStore
 from codementor.desktop.connections_controller import ConnectionsController
 from codementor.desktop.files import FileController
-from codementor.desktop.services import render_export
 from codementor.desktop.viewmodel import SAMPLES, StageTracker
 from codementor.desktop.views.analyze_view import AnalyzeActions, AnalyzeView
 from codementor.desktop.views.connections_view import ConnectionsView
@@ -39,23 +42,14 @@ from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.providers.factory import PROVIDER_NAMES
 from codementor.report.usage import usage_totals_label
-from codementor.storage.cache import (
-    clear_analyses,
-    delete_analysis,
-    get_analysis,
-    get_row,
-    list_analyses,
-    usage_totals,
-)
-from codementor.storage.db import AnalysisRow, resolve_db_path
-from codementor.storage.sessions import clear_sessions
+from codementor.storage.cache import usage_totals
+from codementor.storage.db import AnalysisRow
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 POLL_MS = 60
 WINDOW_SIZE = (1480, 940)
 TOAST_MS = 2600
 CLOSE_JOIN_S = 2.0  # kapanışta süren analizin iptalini bekleme süresi
-_EXPORT_SUFFIX = {"md": ".md", "sarif": ".sarif", "json": ".json"}
 log = get_logger("codementor.desktop")
 
 
@@ -215,21 +209,16 @@ class App(ctk.CTk):  # type: ignore[misc]
     # --- Analiz -------------------------------------------------------------------------
 
     def provider_name(self) -> str:
-        return self.prefs.provider or self.settings.providers.default
+        return config_controller.provider_name(self)
 
     def base_default(self) -> str:
-        """`codementor.toml`'daki varsayılan sağlayıcı."""
-        return self.base_settings.providers.default
+        return config_controller.base_default(self)
 
     def current_model(self) -> str:
-        config = getattr(self.settings.providers, self.provider_name(), None)
-        return str(config.model) if config is not None else ""
+        return config_controller.current_model(self)
 
     def apply_settings(self) -> None:
-        """Arayüz seçimlerini (model, adres) ayarlara uygular; sonraki analizler bunu kullanır."""
-        self.settings = apply_overrides(self.base_settings, self.prefs)
-        self.core.settings = self.settings
-        self.tracker.slow_hint_s = self.settings.pipeline.slow_llm_hint_s
+        config_controller.apply_settings(self)
 
     def analyze(self, *, advance: bool | None = None) -> None:
         view = self.analyze_view
@@ -329,19 +318,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         questions_controller.load_sample(self)
 
     def export(self, fmt: str) -> None:
-        report = self.analyze_view.report
-        if report is None:
-            return
-        suffix = _EXPORT_SUFFIX[fmt]
-        path = filedialog.asksaveasfilename(
-            title="Raporu dışa aktar",
-            defaultextension=suffix,
-            initialfile=f"codementor-{report.analysis_id}{suffix}",
-        )
-        if not path:
-            return
-        Path(path).write_text(render_export(report, fmt), encoding="utf-8")
-        self.toast(f"Rapor kaydedildi: {Path(path).name}")
+        history_controller.export(self, fmt)
 
     # --- Sorular ve geçmiş --------------------------------------------------------------
 
@@ -359,85 +336,18 @@ class App(ctk.CTk):  # type: ignore[misc]
         questions_controller.start(self, question)
 
     def _history_rows(self) -> list[AnalysisRow]:
-        return list_analyses(self.core.database())
+        return history_controller.history_rows(self)
 
     def open_history(self, analysis_id: str) -> None:
-        report = get_analysis(self.core.database(), analysis_id)
-        if report is not None:
-            self._shown_analysis_id = analysis_id
-            view = self.analyze_view
-            view.select(report.language, report.engine, report.question_id)
-            code = runtime.load_source(analysis_id, self.prefs_dir)
-            view.editor.set(code or "// Bu analizin kodu saklanmamış.\n", report.language)
-            self.tracker.reset()
-            self.tracker.finish()
-            view.reset_results()
-            view.show_report(report)
-            self.navigate("analyze")
-            return
-
-        row = get_row(self.core.database(), analysis_id)
-        if row is None:
-            self.toast("Bu analiz artık bulunamıyor.")
-            return
-
-        self._shown_analysis_id = analysis_id
-        view = self.analyze_view
-        try:
-            lang = Language(row.language)
-        except ValueError:
-            lang = view.language
-        try:
-            eng = Engine(row.engine)
-        except ValueError:
-            eng = view.engine
-
-        view.select(lang, eng, row.question_id)
-        code = runtime.load_source(analysis_id, self.prefs_dir)
-        view.editor.set(code or "// Bu analizin kodu saklanmamış.\n", lang)
-        self.tracker.reset()
-        self.tracker.finish()
-        view.reset_results()
-        self.toast(
-            "Bu rapor farklı bir CodeMentor sürümüyle oluşturulduğu için gösterilemiyor. "
-            "Kodu editöre açtım; yeniden denetleyebilirsin."
-        )
-        self.navigate("analyze")
+        history_controller.open_history(self, analysis_id)
 
     def delete_history(self, analysis_id: str) -> None:
         """Kayıtlı bir analizi ve saklanan kodunu siler (Faz 62)."""
-        deleted_db = delete_analysis(self.core.database(), analysis_id)
-        deleted_file = runtime.delete_source(analysis_id, self.prefs_dir)
-        if not deleted_db and not deleted_file:
-            self.toast("Analiz bulunamadı.")
-            return
-        if self._shown_analysis_id == analysis_id:
-            self._shown_analysis_id = None
-            self.analyze_view.report = None
-            self.analyze_view.reset_results()
-        self.history_view.refresh()
-        self.toast("Analiz geçmişten silindi.")
+        history_controller.delete_history(self, analysis_id)
 
     def clear_history(self) -> None:
         """Tüm analiz geçmişini, saklanan kodları ve oturumları temizler (Faz 62)."""
-        if self.analyze_view.busy:  # biten analiz oturumu ve kaydı yeniden yazardı (denetim O2)
-            self.toast("Analiz sürerken geçmiş temizlenemez; önce Durdur'a bas.")
-            return
-        if not self.confirm(
-            "Geçmişi Temizle",
-            "Tüm analiz geçmişi, saklanan kodlar ve ipucu ilerlemen silinecek. Emin misin?",
-            parent=self,
-        ):
-            return
-        count = clear_analyses(self.core.database())
-        clear_sessions(self.core.database())
-        runtime.clear_sources(self.prefs_dir)
-        self._shown_analysis_id = None
-        self._last_code, self._last_question_id, self._last_counted = "", None, None
-        self.analyze_view.report = None
-        self.analyze_view.reset_results()
-        self.history_view.refresh()
-        self.toast(f"Geçmiş temizlendi ({count} analiz).")
+        history_controller.clear_history(self)
 
     # --- Ayarlar ve ortam ---------------------------------------------------------------
 
@@ -446,40 +356,21 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.connections.refresh_all()
 
     def open_folder(self, path: str) -> None:
-        target = Path(path)
-        folder = target if target.is_dir() else target.parent
-        if sys.platform == "win32" and folder.is_dir():
-            os.startfile(folder)
+        config_controller.open_folder(path)
 
     def _locations(self) -> list[tuple[str, str]]:
-        # Faz C (Y8): okunan dosyanın kendisi (exe'de geçici paket dizini değil)
-        return [
-            ("Yapılandırma", str(config_file().resolve())),
-            ("Veritabanı", str(resolve_db_path(self.settings))),
-            ("Kullanıcı verisi", str(runtime.user_dir())),
-        ]
+        return config_controller.locations(self)
 
     def write_config(self) -> None:
         """Model ve varsayılan sağlayıcı seçimlerini `codementor.toml`'a işler (anahtar hariç)."""
-        try:
-            path = write_provider_prefs(runtime.writable_config_file(), self.prefs)
-        except (OSError, ValueError) as exc:  # salt okunur konum, bozuk toml
-            self.toast(f"codementor.toml yazılamadı: {exc}")
-            return
-        self.toast(f"Seçimler yazıldı: {path}")
+        config_controller.write_config(self)
 
     def reload_config(self) -> None:
         """`codementor.toml`'u (ve ortamı) yeniden okur; arayüz seçimleri yine üstüne uygulanır.
-        Bozuk dosya uygulanmaz. Veritabanı yolu gibi açılışta kurulanlar yeniden başlatma ister."""
-        try:
-            base = load_settings()
-        except Exception as exc:  # bozuk toml, geçersiz değer, okunamayan dosya
-            self.toast(f"codementor.toml okunamadı: {exc}")
-            return
-        self.base_settings = base
-        self.apply_settings()
-        self.connections.refresh_all()
-        self.toast("codementor.toml yeniden yüklendi")
+
+        Bozuk dosya uygulanmaz. Veritabanı yolu gibi açılışta kurulanlar yeniden başlatma ister.
+        """
+        config_controller.reload_config(self)
 
     def save_prefs(self, **changes: Any) -> None:
         self.prefs = self.prefs.model_copy(update=changes)
