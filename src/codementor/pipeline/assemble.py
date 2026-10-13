@@ -84,7 +84,7 @@ def assemble_report(
 
 
 def from_cache(cached: AnalysisReport, analysis_id: str, timer: StageTimer) -> AnalysisReport:
-    """Önbellekteki rapor: yeni kimlik, `cache_hit`, bu isteğin süreleri; token harcanmadı."""
+    """Önbellekteki rapor: yeni kimlik, `cache_hit`, bu isteğin süreleri; token ve maliyet yok."""
     for stage in ALL_STAGES:
         if stage not in timer.latency_ms:
             timer.skip(stage, "önbellek")
@@ -94,6 +94,8 @@ def from_cache(cached: AnalysisReport, analysis_id: str, timer: StageTimer) -> A
             "stage_latency_ms": stage_latencies(timer),
             "tokens_in": 0,
             "tokens_out": 0,
+            "cost_est": None,  # bu istek harcamadı (Faz B, O4)
+            "usage_estimated": False,
         }
     )
     return cached.model_copy(

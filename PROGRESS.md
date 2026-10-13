@@ -56,6 +56,7 @@
 | 63 | ✅ | faz/63-agy-haiku-canli | 2026-10-09 | Claude Code / — |
 | A1 | ✅ (denetim sonraya) | faz/a1-guvenlik | 2026-10-12 | Claude Code / — |
 | A2 | ✅ (denetim sonraya) | faz/a2-guvenlik | 2026-10-13 | Claude Code / — |
+| B | ✅ (denetim sonraya) | faz/b-bulgu-kaybi-onbellek | 2026-10-13 | Claude Code / — |
 ## Faz 0 — Notlar
 **Yapılanlar:** pyproject (uv, ruff, mypy strict, pytest işaretleri live/sandbox/slow), config (pydantic-settings; CLI > env > TOML > varsayılan), `codementor --version`, Makefile, CI, ajan dosyaları (Bölüm 4).
 **Alınan kararlar (ve neden):**
@@ -916,6 +917,33 @@ nedeniyle sonraya bırakıldı.
 denetimi; Y1, D13, `.gitignore` (Faz A2).
 
 
+
+## Faz B — Notlar (kısmi LLM hatasında bulgu kaybı, önbellek doğruluğu; 2026-10-13)
+Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y3, Y4, Y5, O2, O3, O4. Dal `faz/a2-guvenlik`ten.
+**Yapılanlar:**
+- `pipeline/passes.py`: `LLMSession.providers/incomplete/checkpoint` ve `fail_part`.
+  `run_pass_a` şemaya uyan son yanıtı saklar; onarım tükenir ya da onarım çağrısı sağlayıcı hatası
+  verirse bulgular korunur, karmaşıklık boş + `COMPLEXITY_UNVERIFIED` (Y3). Geçiş B ayrı `try`:
+  sağlayıcı/bütçe/yapılandırma hatası Geçiş A'yı silmez, sorular şablondan (Y4). Karmaşıklık
+  Geçiş B prompt'una yalnız doğrulandıysa girer. Tek geçişte K5 bulgu attıysa ya da karmaşıklık
+  kurtarıldıysa ayrı Geçiş B (O2).
+- `pipeline/orchestrator.py`: süre sınırında Geçiş A bittiyse `checkpoint` kullanılır (doğrulama
+  geçişi yarıda kaldıysa `VERIFY_FAILED`); `run.cacheable` = yarım değil ∧ yalnız birincil
+  sağlayıcı yanıt verdi (Y5); Tier 1 ayarı analiz başına bir kez (`_run_validation`).
+- `pipeline/signature.py` (yeni): `pipeline` imzası mod/doğrulama öneki + kural, prompt, doğrulayıcı,
+  onarım ayarları, Tier 1 etkinliği + seçilecek aracın kimliği ve dosya boyutu/zamanı, soru modeli
+  özeti (O3). `storage/cache.save_analysis(cacheable=)`: değilse boş anahtar (`NOT_CACHEABLE`).
+- `pipeline/assemble.from_cache`: `cost_est=None`, `usage_estimated=False` (O4).
+- Testler: `test_pipeline_partial.py` (18), `test_pipeline_cache_key.py` (12),
+  `test_pipeline_signature.py` (6). Önbellek denetimi kapatılınca 8, eski imzayla 9 test düşüyor.
+**Kararlar:** DB şeması değişmedi (yarım rapor boş anahtarla geçmişte durur). Derleyici sürümü süreç
+açmadan dosya boyutu + değişiklik zamanıyla temsil edilir. Fallback testleri iki koşuda da aynı
+zincir yapısını kullanır (anahtar sağlayıcı/model etiketine bağlı; aksi hâlde test boşuna geçer).
+**Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3224 geçti, 15 atlandı; statik dev
+eval A2 ile birebir aynı (zamanlamalar hariç).
+**Açık:** `orchestrator.py` 457, `passes.py` 406 satır (400 sınırı; bölme Faz G'de). Önbellek
+anahtarında referans çözüm dosyası ve `data/checklists` içeriği yok. A1+A2+B kod-denetçi denetimi.
+
 ## Faz A2 — Notlar (araç keşfi çalışma dizini, sınırlayıcı benzerleri, .gitignore; 2026-10-13)
 Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`ten açıldı.
 **Yapılanlar:**
@@ -1382,10 +1410,10 @@ az bilgi kaybettiren bir precision aracıdır.
 ## Sonraya (kapsam dışı fikirler)
 - CPP-OWN-001 akış duyarlı eşleşme: erken `return`/istisna yolunda atlanan `delete` öneri yerine hata sayılsın (Faz 52 denetimi).
 - Faz 51 denetimi: `RunConfig` etiket/veri seti sürümü taşımıyor; eski koşular yeni etiketlerle sessizce yeniden puanlanabiliyor (etiket özeti `RunConfig`'e + `compare` dipnotu). Ters yön: bellek erişimi olmayan `memory_safety` etiketleri (CPP-OWN-001 çıplak `new[]`: dev `cpp-009`, `cpp-105`, test `cpp-006`) yeni tanıma uymuyor → Faz 52 (kural bazında öneri türü) ile birlikte ele alınmalı. Etiketlerde serbest metin sezgisi yerine yapısal `boundary:` alanı.
-- Faz 49: `sessions` tablosu da sınırsız büyüyor (oturum başına bir satır); eski oturumları `updated_at`'e göre budamak. Tier 1 derleyici sürümü önbellek imzasında yok.
-- Faz 49 denetimi O3: önbellek anahtarında soru içeriği yok (`question_id` var; referans çözüm, `concept_tags`, `data/checklists` ve `pipeline/assemble.py`/`stages.py` değişince eski rapor dönebilir). Soru içeriği özeti anahtara eklenebilir.
+- Faz 49: `sessions` tablosu da sınırsız büyüyor (oturum başına bir satır); eski oturumları `updated_at`'e göre budamak. ~~Tier 1 derleyici sürümü önbellek imzasında yok.~~ (Faz B: araç kimliği + dosya boyutu/zamanı)
+- Faz 49 denetimi O3 (**Faz B'de kısmen kapandı:** soru modeli özeti imzada; referans çözüm dosyası, `data/checklists` ve kod değişiklikleri hâlâ yok): önbellek anahtarında soru içeriği yok (`question_id` var; referans çözüm, `concept_tags`, `data/checklists` ve `pipeline/assemble.py`/`stages.py` değişince eski rapor dönebilir). Soru içeriği özeti anahtara eklenebilir.
 - Faz 49 denetimi Ü9: eksik sütunlu eski şema (`OperationalError`) ve bozuk `created_at` için şema göçü yok; `list_analyses` korunmuyor.
-- Faz 48 denetimi: süre Geçiş B (Sokratik) sırasında dolarsa doğrulanmış Geçiş A sonucu da atılıyor; bulguları koruyup yalnız Sokratik kısmı şablona düşürmek `run_pass_b is None` yoluyla tutarlı olur (`run_llm_passes` kısmi sonuç döndürmeli).
+- ~~Faz 48 denetimi~~ (**Faz B'de kapandı**): süre Geçiş B (Sokratik) sırasında dolarsa doğrulanmış Geçiş A sonucu da atılıyor; bulguları koruyup yalnız Sokratik kısmı şablona düşürmek `run_pass_b is None` yoluyla tutarlı olur (`run_llm_passes` kısmi sonuç döndürmeli).
 - Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001). ~~Claude Opus canlı dev ölçümü~~ → yapıldı (2026-10-05).
 - Eval: `select_part` etiket değişikliğine duyarlı; parça atamasını kimlik özetiyle sabitlemek ya da sonuç dosyasına parça kimliklerini yazıp birleştirmede eksik/çakışanı uyarmak.
 - Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.

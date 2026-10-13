@@ -28,7 +28,13 @@ from codementor.pipeline.assemble import ReportParts, assemble_report, from_cach
 from codementor.pipeline.cost import estimate_cost, load_pricing
 from codementor.pipeline.events import EventBus, StageTimer
 from codementor.pipeline.ids import new_ulid
-from codementor.pipeline.passes import LLMOutcome, LLMSession, run_llm_passes
+from codementor.pipeline.passes import (
+    VERIFY_FAILED,
+    LLMOutcome,
+    LLMSession,
+    run_llm_passes,
+)
+from codementor.pipeline.signature import pipeline_signature, tier1_tool
 from codementor.pipeline.templates import degraded_socratic, early_exit_socratic, load_templates
 from codementor.pipeline.versions import SCHEMA_VERSION, rules_version
 from codementor.prompts.budget import PromptBudgetError, PromptConfigError
@@ -77,6 +83,8 @@ class _Run:
     finding_checks: list[FindingCheck] = field(default_factory=list)
     saved: bool = False  # analiz kaydedildi: deneme artık geri alınmaz (Faz 49)
     advance: bool = True  # Faz 61: advance_hint=False iken ayırma/kayıt yapılmaz
+    cacheable: bool = True  # Faz B (Y5): fallback ya da yarım LLM sonucu önbelleğe girmez
+    validation: ValidationSettings | None = None  # isteğe göre Tier 1 ayarı (bir kez)
 
     @property
     def analysis_id(self) -> str:
@@ -182,6 +190,7 @@ class Orchestrator:
                 session_id=request.session_id,
                 latency_ms=latency,
                 max_analyses=self.settings.storage.max_analyses,
+                cacheable=run.cacheable,
             )
             run.saved = True
             if run.advance:
@@ -266,18 +275,24 @@ class Orchestrator:
             prompt_version=version,
             rules_version=self._rules_version(),
             schema_version=SCHEMA_VERSION,
-            pipeline=self._pipeline_signature(run.request),
+            pipeline=self._pipeline_signature(run, code),
         )
 
     def _mode(self, request: AnalysisRequest) -> PipelineMode:
         return request.options.mode or PipelineMode(self.settings.pipeline.mode)
 
-    def _pipeline_signature(self, request: AnalysisRequest) -> str:
-        """Önbellek anahtarı için çıktıyı etkileyen pipeline ayarları (Faz 35)."""
-        verify = "+verify" if self.settings.pipeline.verify_findings else ""
-        return f"{self._mode(request).value}{verify}"
+    def _pipeline_signature(self, run: _Run, code: NormalizedCode) -> str:
+        """Önbellek anahtarı için çıktıyı etkileyen ayarlar (Faz 35; Faz B/O3 tamamladı)."""
+        validation = self._run_validation(run)
+        return pipeline_signature(
+            self.settings,
+            mode=self._mode(run.request),
+            validation=validation,
+            tool=tier1_tool(code, validation, self.toolchain),
+            question=run.question,
+        )
 
-    async def _tier1(self, code: NormalizedCode, request: AnalysisRequest) -> Tier1Result:
+    async def _tier1(self, code: NormalizedCode, validation: ValidationSettings) -> Tier1Result:
         """Tier 1 iş parçacığında koşar (olay döngüsünü kilitlemez); görev iptal edilirse
         derleyici süreci zaman aşımını beklemeden öldürülür (Faz 24)."""
         cancel = threading.Event()
@@ -285,7 +300,7 @@ class Orchestrator:
             return await asyncio.to_thread(
                 run_tier1,
                 code,
-                self._validation(request),
+                validation,
                 toolchain=self.toolchain,
                 runner=self.tier1_runner,
                 cancel=cancel,
@@ -293,6 +308,12 @@ class Orchestrator:
         except asyncio.CancelledError:
             cancel.set()
             raise
+
+    def _run_validation(self, run: _Run) -> ValidationSettings:
+        """Analiz başına bir kez: önbellek imzası ve Tier 1 aynı ayarı görür."""
+        if run.validation is None:
+            run.validation = self._validation(run.request)
+        return run.validation
 
     def _validation(self, request: AnalysisRequest) -> ValidationSettings:
         # İstek Tier 1'i yalnız kapatabilir; yapılandırmada kapalıysa açamaz (Faz 47, ADR-0023)
@@ -322,7 +343,7 @@ class Orchestrator:
             timer.skip("tier1", "Tier 0 hatası")
         else:
             with timer.stage("tier1"):
-                tier1 = await self._tier1(code, run.request)
+                tier1 = await self._tier1(code, self._run_validation(run))
         policy = decide(tier0, tier1)
         run.warnings += policy.warnings
         if policy.early_exit:  # §5.2.4: LLM hiç çağrılmaz
@@ -361,11 +382,10 @@ class Orchestrator:
                 if not deadline.expired():  # başka kaynaklı zaman aşımı bizim sınırımız değil
                     raise
         if outcome is None:
-            outcome = LLMOutcome(verification=None, socratic=None)
-            llm.warnings.append(
-                f"Analiz süre sınırı ({limit:g} sn) aşıldı; rapor statik analizle hazırlandı."
-            )
+            outcome = self._timed_out(llm, limit)
         run.warnings += [*llm.warnings, *outcome.warnings]
+        primary = getattr(provider, "chain", [provider])[0].name
+        run.cacheable = not llm.incomplete and llm.providers <= {primary}
 
         parts = ReportParts(policy=policy, degraded=outcome.verification is None)
         if outcome.verification is not None:
@@ -380,6 +400,24 @@ class Orchestrator:
             templates, parts.findings, run.context, profile.hint_level
         )
         return self._report(run, code, parts, llm, version)
+
+    @staticmethod
+    def _timed_out(llm: LLMSession, limit: float | None) -> LLMOutcome:
+        """Süre sınırı: Geçiş A bittiyse doğrulanmış bulgular korunur, sorular şablondan
+        (Faz B, Y4); bitmediyse rapor statik analizle."""
+        if llm.checkpoint is None:
+            llm.warnings.append(
+                f"Analiz süre sınırı ({limit:g} sn) aşıldı; rapor statik analizle hazırlandı."
+            )
+            return LLMOutcome(verification=None, socratic=None)
+        llm.incomplete = True
+        if not llm.checkpoint_verified:
+            llm.warnings.append(VERIFY_FAILED)
+        llm.warnings.append(
+            f"Analiz süre sınırı ({limit:g} sn) aşıldı; bulgular korundu, mentor soruları "
+            "şablondan."
+        )
+        return LLMOutcome(verification=llm.checkpoint, socratic=None)
 
     @staticmethod
     def _remaining(run: _Run, limit: float | None) -> float | None:

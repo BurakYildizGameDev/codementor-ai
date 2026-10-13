@@ -21,6 +21,10 @@ log = get_logger("codementor.storage")
 _SEPARATOR = "\x1f"  # alan ayırıcı: kodda geçse bile uzunluk öneki çakışmayı önler
 
 
+# sha256 özeti hiçbir zaman boş değildir: bu anahtarla kaydedilen satır önbellekten dönmez
+NOT_CACHEABLE = ""
+
+
 def cache_key(
     *,
     normalized_code: str,
@@ -36,7 +40,7 @@ def cache_key(
     pipeline: str,
 ) -> str:
     """§11'deki alanların tamamından belirleyici anahtar. `pipeline`: çıktıyı değiştiren
-    pipeline ayarları (mod, doğrulama geçişi; Faz 35), ör. `"two_pass+verify"`."""
+    ayarların imzası (`pipeline.signature`), ör. `"two_pass+verify:<özet>"`."""
     fields = [
         normalized_code,
         language,
@@ -112,13 +116,15 @@ def save_analysis(
     session_id: str | None,
     latency_ms: int,
     max_analyses: int | None = None,
+    cacheable: bool = True,
 ) -> None:
     """Raporu `analyses` tablosuna yazar (önbellek isabetleri de iz için kaydedilir);
-    `max_analyses` verilirse en yeni o kadar kayıt kalır."""
+    `max_analyses` verilirse en yeni o kadar kayıt kalır. `cacheable=False` (fallback ya da
+    yarım LLM sonucu, Faz B) kayıt geçmişte durur ama boş anahtarla önbellekten hiç dönmez."""
     row = AnalysisRow(
         id=report.analysis_id,
         created_at=report.created_at,
-        cache_key=key,
+        cache_key=key if cacheable else NOT_CACHEABLE,
         language=report.language.value,
         engine=report.engine.value,
         question_id=report.question_id,

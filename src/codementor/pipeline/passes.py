@@ -29,7 +29,12 @@ from codementor.models.report import SocraticResult
 from codementor.models.verification import AnalysisVerification, SocraticVerification
 from codementor.pipeline.events import StageTimer
 from codementor.pipeline.stages import StaticAnalysis, VerifyArgs
-from codementor.prompts.budget import PromptBudgetError, estimate_messages, estimate_tokens
+from codementor.prompts.budget import (
+    PromptBudgetError,
+    PromptConfigError,
+    estimate_messages,
+    estimate_tokens,
+)
 from codementor.prompts.builder import (
     build_analysis_messages,
     build_markup_analysis_messages,
@@ -47,6 +52,7 @@ SCHEMA_OK = "schema:ok"
 SCHEMA_INVALID = "schema:invalid"
 VERIFY_STAGES: tuple[Stage, ...] = ("prompt_v", "llm_v", "verify_v")
 VERIFY_FAILED = "Bulgu doğrulama geçişi tamamlanamadı; bulgular olduğu gibi bırakıldı."
+SOCRATIC_FAILED = "Mentor soruları doğrulanamadı; şablon sorular kullanıldı."
 
 
 @dataclass
@@ -63,6 +69,17 @@ class LLMSession:
     provider_name: str | None = None
     model: str | None = None
     usage_estimated: bool = False
+    # Faz B: yanıt veren sağlayıcılar (fallback tespiti), LLM'in bir kısmı başarısız mı (rapor
+    # önbelleğe alınmaz) ve süre sınırında kullanılacak son doğrulanmış Geçiş A sonucu
+    providers: set[str] = field(default_factory=set)
+    incomplete: bool = False
+    checkpoint: AnalysisVerification | None = None
+    checkpoint_verified: bool = True
+
+    def fail_part(self, warning: str) -> None:
+        """LLM'in bir kısmı başarısız: uyarı yazılır, rapor önbelleğe alınmaz."""
+        self.warnings.append(warning)
+        self.incomplete = True
 
     async def call(
         self, stage: Stage, built: BuiltPrompt, model: type[BaseModel]
@@ -77,6 +94,7 @@ class LLMSession:
             self.timer.add_tokens(stage, usage.input_tokens + usage.output_tokens)
         self.warnings.extend(result.warnings)
         self.provider_name, self.model = result.provider, result.model
+        self.providers.add(result.provider)
         return result
 
     def _usage(self, built: BuiltPrompt, result: ProviderResult) -> TokenUsage:
@@ -102,6 +120,18 @@ class PassA:
 
     output: AnalysisOutput | None
     verification: AnalysisVerification | None
+    # Faz B (Y3): onarım başarısız ama şemaya uyan bir yanıt vardı; bulgular korundu, karmaşıklık
+    # doğrulanamadığı için boş
+    rescued: bool = False
+
+
+COMPLEXITY_UNVERIFIED = (
+    "Karmaşıklık analizi onarımdan sonra da doğrulanamadı; bulgular korundu, karmaşıklık "
+    "gösterilmiyor."
+)
+PASS_A_FAILED = (
+    "Model yanıtı onarımdan sonra da doğrulanamadı; rapor yalnızca statik analizle hazırlandı."
+)
 
 
 async def run_pass_a[M: BaseModel](
@@ -116,9 +146,12 @@ async def run_pass_a[M: BaseModel](
     """Çağır → şema → doğrula; hata varsa `max_repair_attempts` kez onarım iste.
 
     `model` Geçiş A şeması ya da tek geçiş şeması; `extract` ondan analiz kısmını alır.
+    Onarım tükenir ya da onarım çağrısı sağlayıcı hatası verirse şemaya uyan son yanıtın
+    bulguları korunur (Faz B, Y3); hiç uyan yanıt yoksa zarif bozulma.
     """
     result = await llm.call(llm_stage, built, model)
     schema_first_try: bool | None = None
+    last_valid: tuple[M, AnalysisOutput, AnalysisVerification] | None = None
     for attempt in range(llm.settings.pipeline.max_repair_attempts + 1):
         with llm.timer.stage(verify_stage):
             parsed, check = check_schema(model, parsed=result.parsed, raw_text=result.raw_text)
@@ -132,6 +165,7 @@ async def run_pass_a[M: BaseModel](
                 analysis = extract(parsed)
                 verification = verify.analysis(analysis, schema_first_try)
                 errors = verification.repair.errors if verification.repair else []
+                last_valid = (parsed, analysis, verification)
         if not errors:
             return parsed, PassA(output=analysis, verification=verification)
         if attempt == llm.settings.pipeline.max_repair_attempts:
@@ -140,11 +174,21 @@ async def run_pass_a[M: BaseModel](
         built = build_repair_messages(
             built, raw_text=result.raw_text, errors=errors, settings=llm.settings
         )
-        result = await llm.call(llm_stage, built, model)
-    llm.warnings.append(
-        "Model yanıtı onarımdan sonra da doğrulanamadı; rapor yalnızca statik analizle hazırlandı."
-    )
-    return None, PassA(output=None, verification=None)
+        try:
+            result = await llm.call(llm_stage, built, model)
+        except ProviderError:
+            if last_valid is None:
+                raise
+            break
+    if last_valid is None:
+        llm.warnings.append(PASS_A_FAILED)
+        return None, PassA(output=None, verification=None)
+    # Şemaya uyan yanıtta onarım nedeni yalnız karmaşıklıktır; `_complexity_result` onu zaten
+    # boş bırakır, bulgular doğrulanmıştır
+    parsed_valid, analysis_valid, verification_valid = last_valid
+    llm.fail_part(COMPLEXITY_UNVERIFIED)
+    kept = verification_valid.model_copy(update={"repair": None, "complexity": None})
+    return parsed_valid, PassA(output=analysis_valid, verification=kept, rescued=True)
 
 
 async def run_pass_b(
@@ -222,10 +266,10 @@ async def run_pass_verify(
             )
         parsed, _ = await call_structured(llm, "llm_v", built, LLMVerifyOutput)
     except (ProviderError, PromptBudgetError) as exc:
-        llm.warnings.append(f"{VERIFY_FAILED} ({exc})")
+        llm.fail_part(f"{VERIFY_FAILED} ({exc})")
         return verification, 0
     if parsed is None:
-        llm.warnings.append(VERIFY_FAILED)
+        llm.fail_part(VERIFY_FAILED)
         return verification, 0
     with llm.timer.stage("verify_v"):
         result = apply_verdicts(verification.findings, parsed)
@@ -301,32 +345,62 @@ async def run_llm_passes(
             timer.skip(stage, "Geçiş A doğrulanamadı")
         return LLMOutcome(verification=None, socratic=None)
     verification = pass_a.verification
+    # O2 (§5.4.2): K5 bulgu attıysa ya da karmaşıklık kurtarıldıysa tek geçişin soruları
+    # doğrulanmamış içeriğe dayanıyor olabilir: ayrı Geçiş B
+    if pass_a.rescued or verification.evidence_ratio < 1:
+        first = None
+    llm.checkpoint = verification
     if settings.pipeline.verify_findings:
+        llm.checkpoint_verified = False
         verification, dropped = await run_pass_verify(llm, verification, verify, provider)
+        llm.checkpoint, llm.checkpoint_verified = verification, True
         if dropped:  # tek geçişin soruları atılan bulguya dayanıyor olabilir: ayrı Geçiş B
             first = None
     else:
         for stage in VERIFY_STAGES:
             timer.skip(stage, "Bulgu doğrulama kapalı")
-    with timer.stage("prompt_b"):
+    # Y4: Geçiş B'nin hatası doğrulanmış bulguları silmez; sorular şablona düşer
+    try:
+        checked = await _socratic(
+            llm, verify, verification, pass_a, profile, attempt, first, provider
+        )
+    except (ProviderError, PromptBudgetError, PromptConfigError) as exc:
+        llm.incomplete = True
+        warning = f"Mentor soruları üretilemedi ({exc}); şablon sorular kullanıldı."
+        return LLMOutcome(verification, None, [warning])
+    if checked is None:
+        llm.incomplete = True
+        return LLMOutcome(verification, None, [SOCRATIC_FAILED])
+    return LLMOutcome(verification, checked.result, list(checked.warnings))
+
+
+async def _socratic(
+    llm: LLMSession,
+    verify: VerifyArgs,
+    verification: AnalysisVerification,
+    pass_a: PassA,
+    profile: MentoringProfile,
+    attempt: int,
+    first: LLMSocraticOutput | None,
+    provider: str | None,
+) -> SocraticVerification | None:
+    """Geçiş B: prompt + çağrı. Karmaşıklık yalnız doğrulandıysa prompt'a girer (kurtarılan
+    çelişkili karmaşıklık soruya taşınmasın)."""
+    complexity = (
+        pass_a.output.complexity
+        if isinstance(pass_a.output, LLMAnalysisOutput) and verification.complexity is not None
+        else None
+    )
+    with llm.timer.stage("prompt_b"):
         built_b = build_socratic_messages(
             SocraticPromptInput(
                 code=verify.code,
                 question=verify.question,
                 findings=issues_only(verification.findings),
-                complexity=(
-                    pass_a.output.complexity
-                    if isinstance(pass_a.output, LLMAnalysisOutput)
-                    else None
-                ),
+                complexity=complexity,
                 attempt=attempt,
             ),
-            settings=settings,
+            settings=llm.settings,
             provider=provider,
         )
-    checked = await run_pass_b(llm, built_b, verify, profile.hint_level, first)
-    if checked is None:
-        return LLMOutcome(
-            verification, None, ["Mentor soruları doğrulanamadı; şablon sorular kullanıldı."]
-        )
-    return LLMOutcome(verification, checked.result, list(checked.warnings))
+    return await run_pass_b(llm, built_b, verify, profile.hint_level, first)

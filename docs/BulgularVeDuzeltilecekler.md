@@ -209,7 +209,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   çözümle değiştir. Sonra golden'ları yeniden üret. Git geçmişinde de durduğu için gerekirse ilgili
   soruyu bankada değiştirmek daha kolay olabilir.
 
-### Y3 — Onarım döngüsü doğrulanmış bulguları atıyor 🟠 🔬
+### Y3 — Onarım döngüsü doğrulanmış bulguları atıyor 🟠 🔬 ✅ Faz B
 
 - **Dosya:** `src/codementor/pipeline/passes.py:122-147`
 - **Ne yanlış:** İlk yanıt şemaya uyuyor ve bulgular kanıtla doğrulanıyor. Ama karmaşıklık statik
@@ -225,7 +225,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Test:** ilk yanıt geçerli + çelişkili karmaşıklık + bozuk onarım → bulgular raporda,
   `complexity` boş, `degraded=False`, uyarı var.
 
-### Y4 — Geçiş B hatası Geçiş A'yı da atıyor 🟠 📖
+### Y4 — Geçiş B hatası Geçiş A'yı da atıyor 🟠 📖 ✅ Faz B
 
 - **Dosya:** `src/codementor/pipeline/orchestrator.py:351-355` (`run_llm_passes`)
 - **Ne yanlış:** her `ProviderError`, `PromptBudgetError` ve `PromptConfigError` tüm sonucu
@@ -238,7 +238,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Test:** Geçiş A başarılı, Geçiş B `ProviderUnavailableError` / `PromptBudgetError` /
   zaman aşımı → bulgular raporda, Sokratik kısım şablon, uyarı var.
 
-### Y5 — Fallback raporu birincil sağlayıcının önbellek anahtarıyla saklanıyor 🟠 📖
+### Y5 — Fallback raporu birincil sağlayıcının önbellek anahtarıyla saklanıyor 🟠 📖 ✅ Faz B
 
 - **Dosya:** `orchestrator.py:162`, `_cache_key` (`orchestrator.py:251-266`),
   `storage/cache.py:107-147`
@@ -327,7 +327,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Düzeltme:** ya belgeyi düzelt (madde açık kalsın) ya da web geçmiş/silme özelliğini yap
   (§9 Web).
 
-### O2 — `single_pass` doğrulanmamış bulgudan soru üretiyor 🟡 🔬
+### O2 — `single_pass` doğrulanmamış bulgudan soru üretiyor 🟡 🔬 ✅ Faz B
 
 - **Dosya:** `src/codementor/pipeline/passes.py:293-307`
 - **Ne yanlış:** tek geçişin soruları (`first`) yalnız doğrulama geçişi bulgu düşürürse
@@ -341,7 +341,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Test:** `single_pass` + kanıtsız bulgu → ikinci çağrı yapılıyor, sorular yalnız doğrulanmış
   bulgulara dayanıyor.
 
-### O3 — Önbellek anahtarı çıktıyı etkileyen ayarları içermiyor 🟡 📖
+### O3 — Önbellek anahtarı çıktıyı etkileyen ayarları içermiyor 🟡 📖 ✅ Faz B
 
 - **Dosya:** `orchestrator.py:271-274` (`_pipeline_signature`)
 - **Anahtarda olmayanlar:**
@@ -358,7 +358,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   derleyici kimliği/sürümü + soru içeriği özeti.
 - **Test:** `options.tier1`, `rules.disabled` ya da prompt bayrağı değişince önbellek ıskalanıyor.
 
-### O4 — Önbellekten dönen raporda eski maliyet 🟡 🔬
+### O4 — Önbellekten dönen raporda eski maliyet 🟡 🔬 ✅ Faz B
 
 - **Dosyalar:** `pipeline/assemble.py:86-101` (`from_cache`), `orchestrator.py:168-169`
 - **Ne yanlış:** `from_cache` token sayılarını sıfırlıyor ama `cost_est`'i önceki koşudan
@@ -758,21 +758,22 @@ sırasında yanıt verir; `make check` yeşil.
 **Amaç:** LLM'in kısmi başarısızlığında doğrulanmış bulgular kaybolmasın; önbellek yalnız tam ve
 doğru anahtarlı sonuç döndürsün.
 
-- [ ] **Y3 — Onarım:** onarım başarısız ve kalan hata yalnız karmaşıklıksa bulgular korunur,
+- [x] **Y3 — Onarım:** onarım başarısız ve kalan hata yalnız karmaşıklıksa bulgular korunur,
       `complexity=None` + uyarı; şema hatasıyla biten onarımda son geçerli yanıt kullanılır
       (`pipeline/passes.py:122-147`)
-- [ ] **Y4 — Geçiş B:** `run_llm_passes` kısmi sonuç döndürür; Geçiş B'deki sağlayıcı/bütçe/süre
+- [x] **Y4 — Geçiş B:** `run_llm_passes` kısmi sonuç döndürür; Geçiş B'deki sağlayıcı/bütçe/süre
       hatası Geçiş A bulgularını silmez, Sokratik kısım şablona düşer (Sonraya: Faz 48 denetimi
       maddesi de kapanır)
-- [ ] **Y5 — Fallback önbelleği:** yanıtı fallback sağlayıcı verdiyse ya da LLM kısmen başarısızsa
+- [x] **Y5 — Fallback önbelleği:** yanıtı fallback sağlayıcı verdiyse ya da LLM kısmen başarısızsa
       (Sokratik şablon, doğrulama hatası) rapor önbelleğe alınmaz
-- [ ] **O2 — `single_pass`:** kanıt kontrolü bulgu düşürünce sorular atılır, ayrı Geçiş B yapılır
+- [x] **O2 — `single_pass`:** kanıt kontrolü bulgu düşürünce sorular atılır, ayrı Geçiş B yapılır
       (§5.4.2)
-- [ ] **O3 — Önbellek imzası:** `options.tier1`, derleyici kimliği/sürümü, `rules.disabled`,
+- [x] **O3 — Önbellek imzası:** `options.tier1`, derleyici kimliği/sürümü, `rules.disabled`,
       `rules.max_findings`, prompt ayarları, `verify.*`, `max_repair_attempts` ve soru içeriği
       özeti anahtara girer (Sonraya: Faz 49 maddeleri de kapanır)
-- [ ] **O4 — Maliyet:** önbellekten dönen raporda `cost_est=None`, `usage_estimated=False`
-- [ ] Testler: §8 madde 10-15 (BulgularVeDuzeltilecekler)
+- [x] **O4 — Maliyet:** önbellekten dönen raporda `cost_est=None`, `usage_estimated=False`
+- [x] Testler: §8 madde 10-15 (BulgularVeDuzeltilecekler) — **Faz B** (O3'te referans çözüm
+      dosyası ve `data/checklists` içeriği hâlâ anahtarda değil)
 
 **Kabul:** her senaryo FakeProvider testiyle; statik dev eval bulguları değişmez; `make check`
 yeşil.
