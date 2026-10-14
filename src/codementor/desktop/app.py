@@ -41,9 +41,6 @@ from codementor.models.questions import QuestionPublic
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.providers.factory import PROVIDER_NAMES
-from codementor.report.usage import usage_totals_label
-from codementor.storage.cache import usage_totals
-from codementor.storage.db import AnalysisRow
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 POLL_MS = 60
@@ -150,13 +147,11 @@ class App(ctk.CTk):  # type: ignore[misc]
         )
         self.history_view = HistoryView(
             stage,
-            self._history_rows,
-            self.open_history,
+            on_open=self.open_history,
             on_delete=self.delete_history,
             on_clear=self.clear_history,
-            totals=lambda: usage_totals_label(usage_totals(self.core.database())),
             is_busy=lambda: self.analyze_view.busy,
-            load_page=self._history_page,
+            request_page=self._request_history_page,
         )
         self.settings_view = ConnectionsView(
             stage,
@@ -289,6 +284,9 @@ class App(ctk.CTk):  # type: ignore[misc]
         if message.task.partition(":")[0] in CONNECTIONS_TASKS:
             self.connections.handle(message)
             return
+        if message.task in history_controller.HISTORY_TASKS:  # F11: geçmiş DB işleri arka planda
+            history_controller.handle(self, message)
+            return
         handler = getattr(self, f"_on_{message.task}", None)
         if handler is not None:
             handler(message)
@@ -334,22 +332,20 @@ class App(ctk.CTk):  # type: ignore[misc]
         self._last_counted = None
         questions_controller.start(self, question)
 
-    def _history_rows(self) -> list[AnalysisRow]:
-        return history_controller.history_rows(self)
-
-    def _history_page(
-        self, limit: int = 50, before: str | None = None, search: str | None = None
-    ) -> tuple[list[AnalysisRow], str | None]:
-        return history_controller.history_page(self, limit=limit, before=before, search=search)
+    def _request_history_page(
+        self, limit: int, before: str | None, search: str | None, append: bool
+    ) -> None:
+        """Geçmiş listesini arka planda okutur (Faz F, F11)."""
+        history_controller.refresh(self, limit=limit, before=before, search=search, append=append)
 
     def open_history(self, analysis_id: str) -> None:
         history_controller.open_history(self, analysis_id)
 
     def delete_history(self, analysis_id: str) -> None:
-        history_controller.delete_history(self, analysis_id)
+        history_controller.delete(self, analysis_id)
 
     def clear_history(self) -> None:
-        history_controller.clear_history(self)
+        history_controller.clear(self)
 
     # --- Ayarlar ve ortam ---------------------------------------------------------------
     def check_environment(self) -> None:

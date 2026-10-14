@@ -15,7 +15,7 @@ from codementor.desktop.connections import KeyStore
 from codementor.desktop.views.questions_view import MINE
 from codementor.models.enums import Engine, Language
 from codementor.models.questions import DEFAULT_USER_HINTS
-from tests.desktop.test_app import _open
+from tests.desktop.test_app import _open, pump
 
 VALUES = {
     "title": "Dizideki en büyük iki sayı",
@@ -170,4 +170,5 @@ def test_mine_filter_and_owner_buttons(user_app: App) -> None:
 
 def test_history_shows_totals(user_app: App) -> None:
     user_app.navigate("history")
+    pump(user_app, lambda: not user_app.history_view.loading)  # F11: liste arka planda okunur
     assert user_app.history_view.totals_label.cget("text").startswith("Toplam: 0 analiz")

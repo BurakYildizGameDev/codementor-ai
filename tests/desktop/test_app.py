@@ -19,12 +19,13 @@ import pytest
 from codementor.api.state import ApiState
 from codementor.config import CONFIG_FILE_ENV
 from codementor.desktop import connections_controller as controller_module
-from codementor.desktop import runtime
+from codementor.desktop import history_controller, runtime
 from codementor.desktop.app import App
 from codementor.desktop.bridge import Cancellation, Message
 from codementor.desktop.connections import PROVIDERS, KeyStore, Probe
 from codementor.desktop.services import PullOutcome
 from codementor.desktop.views import analyze_view as analyze_view_module
+from codementor.desktop.views import history_view as history_view_module
 from codementor.models.api import CompilerStatus
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.provider import ProviderStatus
@@ -88,6 +89,11 @@ def pump(app: App, until: Callable[[], bool], timeout: float = 30) -> None:
         time.sleep(0.02)
 
 
+def pump_history(app: App) -> None:
+    """Faz F (F11): geçmiş listesi arka planda okunur; yükleme bitene kadar bekler."""
+    pump(app, lambda: not app.history_view.loading)
+
+
 def analyze(app: App) -> None:
     app.analyze()
     assert app.analyze_view.busy
@@ -145,6 +151,7 @@ def test_history_reopens_report_with_code(app: App) -> None:
     assert report is not None
     app.analyze_view.editor.set("int baska;\n")
     app.navigate("history")
+    pump_history(app)  # F11: liste arka plan iş parçacığında okunur
     assert app.history_view.list.winfo_children()
 
     app.open_history(report.analysis_id)
@@ -168,6 +175,8 @@ def test_delete_history_removes_record_and_resets_active_report(app: App, prefs_
 
     # Sil
     app.delete_history(analysis_id)
+    pump(app, lambda: cache.get_analysis(app.core.database(), analysis_id) is None)
+    pump_history(app)  # F11: silme ve liste yenilemesi arka planda
     assert cache.get_analysis(app.core.database(), analysis_id) is None
     assert runtime.load_source(analysis_id, prefs_dir) is None
     assert app.analyze_view.report is None
@@ -175,6 +184,7 @@ def test_delete_history_removes_record_and_resets_active_report(app: App, prefs_
 
     # Zaten silinmiş analizi tekrar silme
     app.delete_history(analysis_id)
+    pump(app, lambda: "bulunamadı" in _toast(app))  # F11: silme arka planda
 
 
 def test_clear_history_confirmation_and_cleanup(app: App, prefs_dir: Path) -> None:
@@ -213,6 +223,8 @@ def test_clear_history_confirmation_and_cleanup(app: App, prefs_dir: Path) -> No
 
     app.confirm = accept
     app.clear_history()
+    pump(app, lambda: "Geçmiş temizlendi" in _toast(app))  # F11: temizlik arka planda
+    pump_history(app)
     assert cache.get_analysis(app.core.database(), analysis_id) is None
     assert runtime.load_source(analysis_id, prefs_dir) is None
     assert app.analyze_view.report is None
@@ -256,6 +268,7 @@ def test_delete_history_incompatible_report_resets_shown_analysis(
     assert app.analyze_view.report is None  # şema uyumsuz
 
     app.delete_history(analysis_id)
+    pump(app, lambda: app._shown_analysis_id is None and not app.history_view.loading)
     assert app._shown_analysis_id is None
     assert cache.get_row(db, analysis_id) is None
     assert runtime.load_source(analysis_id, prefs_dir) is None
@@ -282,6 +295,7 @@ def test_history_view_buttons_trigger_callbacks(app: App) -> None:
     assert report is not None
 
     app.navigate("history")
+    pump_history(app)  # F11: satırlar arka planda yüklenir
     # "Tümünü temizle" butonuna tıkla
     app.history_view.clear_btn.invoke()
     assert cleared is True
@@ -491,6 +505,7 @@ def test_escape_stops_only_on_analyze_page(stalled_app: App, stalling: StallingP
     stalled_app.analyze()
     assert stalling.started.wait(10)
     stalled_app.navigate("history")
+    pump_history(stalled_app)  # F11: geçmiş listesi arka planda yüklenir
     stalled_app.on_escape()  # başka sayfada Esc (ör. açılır liste kapatma) analizi durdurmaz
     assert view.busy
     stalled_app.navigate("analyze")
@@ -1184,6 +1199,7 @@ def test_history_view_delete_button_disabled_when_busy(app: App) -> None:
     analyze(app)
     app.analyze_view.set_busy(True)
     app.history_view.refresh()
+    pump_history(app)  # F11: liste arka planda okunur
 
     item = next(w for w in app.history_view.list.winfo_children() if isinstance(w, ctk.CTkFrame))
     del_btn = next(
@@ -1192,6 +1208,7 @@ def test_history_view_delete_button_disabled_when_busy(app: App) -> None:
     assert del_btn.cget("state") == "disabled"
     app.analyze_view.set_busy(False)
     app.history_view.refresh()
+    pump_history(app)  # F11: liste arka planda okunur
     item_normal = next(
         w for w in app.history_view.list.winfo_children() if isinstance(w, ctk.CTkFrame)
     )
@@ -1210,6 +1227,7 @@ def test_clear_history_resets_last_attempt_state(app: App) -> None:
     assert app._last_counted is not None
     app.confirm = lambda *_a, **_k: True
     app.clear_history()
+    pump(app, lambda: app._last_counted is None)  # F11: temizlik arka planda
     assert app._last_counted is None
     assert app._last_code == ""
     assert app._last_question_id is None
@@ -1252,7 +1270,7 @@ def test_history_delete_click_does_not_open_row(app: App) -> None:
     app.analyze_view.editor.set(LINKED_LIST, Language.C)
     analyze(app)
     app.navigate("history")
-    app.update()
+    pump_history(app)  # F11: liste arka planda okunur
     item = next(w for w in app.history_view.list.winfo_children() if isinstance(w, ctk.CTkFrame))
     del_btn = next(
         c for c in item.winfo_children() if isinstance(c, ctk.CTkButton) and c.cget("text") == "Sil"
@@ -1460,11 +1478,13 @@ def test_history_view_pagination_and_search(app: App) -> None:
     # 1. İlk yükleme: 50 satır ve Daha Fazla butonu görünür
     app.history_view.search_entry.delete(0, "end")
     app.history_view.refresh()
+    pump_history(app)  # F11: sayfa arka planda okunur
     assert len(app.history_view._rows) == 50
     assert app.history_view._next_cursor is not None
 
     # 2. Daha fazla yükle: kalan 10 satır eklenir, toplam 60 satır olur ve buton gizlenir
     app.history_view._handle_load_more()
+    pump_history(app)  # F11: sonraki sayfa da arka planda okunur
     assert len(app.history_view._rows) == 60
     assert app.history_view._next_cursor is None
 
@@ -1472,6 +1492,7 @@ def test_history_view_pagination_and_search(app: App) -> None:
     app.history_view.search_entry.delete(0, "end")
     app.history_view.search_entry.insert(0, "c-medium")
     app.history_view.on_search()
+    pump_history(app)
     assert len(app.history_view._rows) == 1
     assert app.history_view._rows[0].question_id == "c-medium"
 
@@ -1480,6 +1501,7 @@ def test_history_view_pagination_and_search(app: App) -> None:
     app.history_view.search_entry.delete(0, "end")
     app.history_view.search_entry.insert(0, "c_")
     app.history_view.on_search()
+    pump_history(app)
     assert len(app.history_view._rows) == 1
     assert app.history_view._rows[0].question_id == "c_underscore"
 
@@ -1487,5 +1509,172 @@ def test_history_view_pagination_and_search(app: App) -> None:
     app.history_view.search_entry.delete(0, "end")
     app.history_view.search_entry.insert(0, "100%")
     app.history_view.on_search()
+    pump_history(app)
     assert len(app.history_view._rows) == 1
     assert app.history_view._rows[0].question_id == "100%_done"
+
+
+# --- Faz F (F11): SQLite işleri arka plan iş parçacığında --------------------------------------
+
+
+def _list_texts(app: App) -> str:
+    """Geçmiş listesindeki etiket metinleri (yükleme/boş/hata mesajları buradan okunur)."""
+    labels = [
+        str(child.cget("text"))
+        for child in app.history_view.list.winfo_children()
+        if isinstance(child, ctk.CTkLabel)
+    ]
+    return "\n".join(labels)
+
+
+def _seed_history(app: App, *analysis_ids: str) -> None:
+    """Geçmiş listesi testleri için DB'ye rapor gövdesiz kayıtlar ekler."""
+    db = app.core.database()
+    with db.session() as session:
+        for analysis_id in analysis_ids:
+            session.add(
+                AnalysisRow(
+                    id=analysis_id,
+                    created_at=datetime.now(UTC),
+                    cache_key=f"key_{analysis_id}",
+                    language="c",
+                    engine="none",
+                    question_id=None,
+                    session_id=None,
+                    provider="fake",
+                    model="fake",
+                    early_exit=False,
+                    degraded=False,
+                    tokens_in=10,
+                    tokens_out=20,
+                    latency_ms=100,
+                    report_json="{}",
+                )
+            )
+        session.commit()
+
+
+def test_history_list_loads_off_main_thread(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    """F11: liste DB'den arka plan iş parçacığında okunur, arada "Yükleniyor…" görünür."""
+    _seed_history(app, "01J11LIST0000000000000001")
+    seen: list[bool] = []
+    release = threading.Event()
+    real_page = history_controller.list_analyses_page
+
+    def slow_page(*args: Any, **kwargs: Any) -> Any:
+        seen.append(threading.current_thread() is threading.main_thread())
+        assert release.wait(10)  # bu sırada ana iş parçacığı arayüzü çizebilmeli
+        return real_page(*args, **kwargs)
+
+    monkeypatch.setattr(history_controller, "list_analyses_page", slow_page)
+    app.navigate("history")
+    assert app.history_view.loading
+    assert history_view_module.LOADING_TEXT in _list_texts(app)
+    release.set()
+    pump_history(app)
+    assert seen == [False]  # DB işi ana iş parçacığında DEĞİL
+    assert [row.id for row in app.history_view._rows] == ["01J11LIST0000000000000001"]
+
+
+def test_history_page_renders_rows_and_totals(app: App) -> None:
+    """F11: arka plandan gelen sayfa satırları ve toplam etiketi çizer."""
+    _seed_history(app, "01J11TOTAL000000000000001", "01J11TOTAL000000000000002")
+    app.navigate("history")
+    pump_history(app)
+    assert not app.history_view.loading
+    assert {row.id for row in app.history_view._rows} == {
+        "01J11TOTAL000000000000001",
+        "01J11TOTAL000000000000002",
+    }
+    assert app.history_view.totals_label.cget("text").startswith("Toplam: 2 analiz")
+    assert any(isinstance(w, ctk.CTkFrame) for w in app.history_view.list.winfo_children())
+
+
+def test_history_page_error_is_shown_in_turkish(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    """F11: DB okunamazsa liste Türkçe hata metni gösterir; arayüz çökmez."""
+    monkeypatch.setattr(
+        history_controller,
+        "list_analyses_page",
+        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("veritabanı kapalı")),
+    )
+    app.navigate("history")
+    pump_history(app)
+    assert app.history_view._rows == []
+    assert "Beklenmeyen bir hata" in _list_texts(app)
+
+
+def test_history_stale_page_result_is_dropped(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    """F11: yeni yükleme başlarken eski iş parçacığının geç gelen sonucu listeye yazılmaz."""
+    _seed_history(app, "01J11STALE000000000000001")
+    release = threading.Event()
+    started = threading.Event()
+    calls = 0
+    real_page = history_controller.list_analyses_page
+
+    def page(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        if calls == 1:  # ilk yükleme: ikinci yükleme bitene kadar bekler
+            started.set()
+            assert release.wait(10)
+            return real_page(*args, **kwargs)
+        return [], None
+
+    monkeypatch.setattr(history_controller, "list_analyses_page", page)
+    app.navigate("history")  # 1. yükleme (beklemede)
+    pump(app, lambda: started.is_set())
+    assert calls == 1
+    app.history_view.refresh()  # 2. yükleme: kuşağı ilerletir
+    pump_history(app)
+    assert app.history_view._rows == []
+    release.set()  # 1. yükleme geç biter
+    pump(app, lambda: not app.bridge.is_running("history"))
+    for _ in range(5):
+        app.update()
+        time.sleep(0.02)
+    assert app.history_view._rows == []
+
+
+def test_history_delete_runs_off_main_thread(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    """F11: silme DB işi arka planda koşar; kayıt listeden ve diskten düşer."""
+    _seed_history(app, "01J11DELETE00000000000001")
+    app.navigate("history")
+    pump_history(app)
+    assert app.history_view._rows
+    seen: list[bool] = []
+    real_delete = history_controller.delete_analysis
+
+    def spy(db: Any, analysis_id: str) -> bool:
+        seen.append(threading.current_thread() is threading.main_thread())
+        return real_delete(db, analysis_id)
+
+    monkeypatch.setattr(history_controller, "delete_analysis", spy)
+    app.delete_history("01J11DELETE00000000000001")
+    pump(app, lambda: cache.get_row(app.core.database(), "01J11DELETE00000000000001") is None)
+    pump_history(app)
+    assert seen == [False]
+    assert app.history_view._rows == []
+    assert "geçmişten silindi" in _toast(app)
+
+
+def test_history_clear_runs_off_main_thread(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    """F11: "Tümünü temizle" DB işi arka planda; liste, oturumlar ve tercihler sıfırlanır."""
+    _seed_history(app, "01J11CLEAR000000000000001")
+    app.navigate("history")
+    pump_history(app)
+    seen: list[bool] = []
+    real_clear = history_controller.clear_analyses
+
+    def spy(db: Any) -> int:
+        seen.append(threading.current_thread() is threading.main_thread())
+        return real_clear(db)
+
+    monkeypatch.setattr(history_controller, "clear_analyses", spy)
+    app.confirm = lambda *_a, **_k: True  # type: ignore[method-assign]
+    app.save_prefs(recent_files=["test.c"])
+    app.clear_history()
+    pump(app, lambda: "Geçmiş temizlendi" in _toast(app))
+    pump_history(app)
+    assert seen == [False]
+    assert app.history_view._rows == []
+    assert app.prefs.recent_files == []

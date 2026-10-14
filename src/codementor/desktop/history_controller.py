@@ -1,24 +1,30 @@
 """Geçmiş ve dışa aktarma denetleyicisi — Faz F (F0) bölmesi (`app.py`'den).
 
 Kayıtlı analizleri listeleme, açma, silme, temizleme ve farklı biçimlerde dışa aktarma.
-Tkinter/CustomTkinter en üstte içe aktarılmaz; Linux CI'da tkinter'sız içe aktarılabilir.
+Faz F (F11): SQLite işleri (liste, silme, temizleme) `Bridge` üzerinden arka plan iş
+parçacığında koşar; sonuçlar ana iş parçacığında `handle` ile arayüze uygulanır, liste o sırada
+"Yükleniyor…" gösterir. Tkinter/CustomTkinter en üstte içe aktarılmaz; Linux CI'da tkinter'sız
+içe aktarılabilir.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from codementor.desktop import runtime
+from codementor.desktop.bridge import Emit, Message
 from codementor.desktop.services import render_export
 from codementor.models.enums import Engine, Language
+from codementor.report.usage import usage_totals_label
 from codementor.storage.cache import (
     clear_analyses,
     delete_analysis,
     get_analysis,
     get_row,
-    list_analyses,
     list_analyses_page,
+    usage_totals,
 )
 from codementor.storage.db import AnalysisRow
 from codementor.storage.sessions import clear_sessions
@@ -27,6 +33,37 @@ if TYPE_CHECKING:
     from codementor.desktop.app import App
 
 _EXPORT_SUFFIX = {"md": ".md", "sarif": ".sarif", "json": ".json"}
+# Faz F (F11): geçmiş DB işleri arka plan görevleri (köprü kuşağı eski sonuçları atar)
+PAGE_TASK = "history"
+DELETE_TASK = "history_delete"
+CLEAR_TASK = "history_clear"
+HISTORY_TASKS = (PAGE_TASK, DELETE_TASK, CLEAR_TASK)
+
+
+@dataclass(frozen=True)
+class HistoryPage:
+    """Arka planda okunan geçmiş sayfası (Faz F, F11)."""
+
+    rows: list[AnalysisRow]
+    next_cursor: str | None
+    totals: str | None  # yalnız ilk sayfada hesaplanır; "daha fazla"da None
+    search_active: bool
+    append: bool
+
+
+@dataclass(frozen=True)
+class HistoryDeleted:
+    """Silme sonucu: kayıt ya da saklanan kod bulundu mu (Faz F, F11)."""
+
+    analysis_id: str
+    deleted: bool
+
+
+@dataclass(frozen=True)
+class HistoryCleared:
+    """Temizlik sonucu: silinen analiz sayısı (Faz F, F11)."""
+
+    count: int
 
 
 def export(app: App, fmt: str) -> None:
@@ -51,16 +88,109 @@ def export(app: App, fmt: str) -> None:
         app.toast(f"Rapor kaydedilemedi: {exc.strerror or exc}")
 
 
-def history_rows(app: App) -> list[AnalysisRow]:
-    """Tüm geçmiş satırlarını döndürür."""
-    return list_analyses(app.core.database())
+def refresh(app: App, *, limit: int, before: str | None, search: str | None, append: bool) -> None:
+    """Geçmiş sayfasını arka planda okur; liste o sırada "Yükleniyor…" gösterir (F11).
+
+    `append` verilirse sonuç mevcut satırların altına eklenir ve toplam etiketi yeniden
+    hesaplanmaz. Aynı görev yeniden başlatılırsa köprü eski iş parçacığının sonucunu atar.
+    """
+    db = app.core.database()
+    search_active = bool(search)
+
+    def work(_emit: Emit) -> HistoryPage:
+        rows, next_cursor = list_analyses_page(db, limit=limit, before=before, search=search)
+        totals = None if append else usage_totals_label(usage_totals(db))
+        return HistoryPage(list(rows), next_cursor, totals, search_active, append)
+
+    app.bridge.submit(PAGE_TASK, work)
 
 
-def history_page(
-    app: App, *, limit: int = 50, before: str | None = None, search: str | None = None
-) -> tuple[list[AnalysisRow], str | None]:
-    """Sayfalı ve filtreli geçmiş listesi döndürür (Faz F, F6)."""
-    return list_analyses_page(app.core.database(), limit=limit, before=before, search=search)
+def delete(app: App, analysis_id: str) -> None:
+    """Kaydı ve saklanan kodu arka planda siler (Faz 62, Faz F; F11: DB işi iş parçacığında)."""
+    if app.analyze_view.busy:
+        app.toast("Analiz sürerken silinemez; önce Durdur'a bas.")
+        return
+    db = app.core.database()
+    prefs_dir = app.prefs_dir
+
+    def work(_emit: Emit) -> HistoryDeleted:
+        deleted_db = delete_analysis(db, analysis_id)
+        deleted_file = runtime.delete_source(analysis_id, prefs_dir)
+        return HistoryDeleted(analysis_id, deleted_db or deleted_file)
+
+    app.history_view.show_loading()  # silme + liste yenilemesi boyunca "Yükleniyor…" (F11)
+    app.bridge.submit(DELETE_TASK, work)
+
+
+def clear(app: App) -> None:
+    """Tüm geçmişi, saklanan kodları ve oturumları arka planda temizler (Faz 62, Faz F, F11)."""
+    if app.analyze_view.busy:  # biten analiz oturumu ve kaydı yeniden yazardı (denetim O2)
+        app.toast("Analiz sürerken geçmiş temizlenemez; önce Durdur'a bas.")
+        return
+    if not app.confirm(
+        "Geçmişi Temizle",
+        "Tüm analiz geçmişi, saklanan kodlar ve ipucu ilerlemen silinecek. Emin misin?",
+        parent=app,
+    ):
+        return
+    db = app.core.database()
+    prefs_dir = app.prefs_dir
+
+    def work(_emit: Emit) -> HistoryCleared:
+        count = clear_analyses(db)
+        clear_sessions(db)
+        runtime.clear_sources(prefs_dir)
+        return HistoryCleared(count)
+
+    app.history_view.show_loading()  # temizlik + liste yenilemesi boyunca "Yükleniyor…" (F11)
+    app.bridge.submit(CLEAR_TASK, work)
+
+
+def handle(app: App, message: Message) -> None:
+    """Köprüden gelen geçmiş sonuçlarını ana iş parçacığında arayüze uygular (F11)."""
+    if message.kind == "error":  # köprü istisnayı Türkçe metne çevirdi
+        text = str(message.payload)
+        if message.task == PAGE_TASK:
+            app.history_view.apply_error(text)
+        else:
+            app.history_view.refresh()  # hata sonrası liste "Yükleniyor…"da kalmaz (F11)
+            app.toast(text)
+        return
+    payload = message.payload
+    if isinstance(payload, HistoryPage):
+        app.history_view.apply_page(
+            payload.rows,
+            payload.next_cursor,
+            totals=payload.totals,
+            search_active=payload.search_active,
+            append=payload.append,
+        )
+    elif isinstance(payload, HistoryDeleted):
+        _apply_deleted(app, payload)
+    elif isinstance(payload, HistoryCleared):
+        _apply_cleared(app, payload)
+
+
+def _apply_deleted(app: App, result: HistoryDeleted) -> None:
+    app.history_view.refresh()  # yükleme gösterimi kapanır, liste güncel kalır (F11)
+    if not result.deleted:
+        app.toast("Analiz bulunamadı.")
+        return
+    if app._shown_analysis_id == result.analysis_id:
+        app._shown_analysis_id = None
+        app.analyze_view.report = None
+        app.analyze_view.reset_results()
+    app.toast("Analiz geçmişten silindi.")
+
+
+def _apply_cleared(app: App, result: HistoryCleared) -> None:
+    app.save_prefs(recent_files=[])
+    app._shown_analysis_id = None
+    app._last_code, app._last_question_id, app._last_counted = "", None, None
+    app.analyze_view.report = None
+    app.analyze_view.reset_results()
+    app.history_view.refresh()
+    app.toast(f"Geçmiş temizlendi ({result.count} analiz).")
 
 
 def open_history(app: App, analysis_id: str) -> None:
@@ -112,44 +242,3 @@ def open_history(app: App, analysis_id: str) -> None:
         "Kodu editöre açtım; yeniden denetleyebilirsin."
     )
     app.navigate("analyze")
-
-
-def delete_history(app: App, analysis_id: str) -> None:
-    """Kayıtlı bir analizi ve saklanan kodunu siler (Faz 62, Faz F)."""
-    if app.analyze_view.busy:
-        app.toast("Analiz sürerken silinemez; önce Durdur'a bas.")
-        return
-    deleted_db = delete_analysis(app.core.database(), analysis_id)
-    deleted_file = runtime.delete_source(analysis_id, app.prefs_dir)
-    if not deleted_db and not deleted_file:
-        app.toast("Analiz bulunamadı.")
-        return
-    if app._shown_analysis_id == analysis_id:
-        app._shown_analysis_id = None
-        app.analyze_view.report = None
-        app.analyze_view.reset_results()
-    app.history_view.refresh()
-    app.toast("Analiz geçmişten silindi.")
-
-
-def clear_history(app: App) -> None:
-    """Tüm analiz geçmişini, saklanan kodları ve oturumları temizler (Faz 62, Faz F)."""
-    if app.analyze_view.busy:  # biten analiz oturumu ve kaydı yeniden yazardı (denetim O2)
-        app.toast("Analiz sürerken geçmiş temizlenemez; önce Durdur'a bas.")
-        return
-    if not app.confirm(
-        "Geçmişi Temizle",
-        "Tüm analiz geçmişi, saklanan kodlar ve ipucu ilerlemen silinecek. Emin misin?",
-        parent=app,
-    ):
-        return
-    count = clear_analyses(app.core.database())
-    clear_sessions(app.core.database())
-    runtime.clear_sources(app.prefs_dir)
-    app.save_prefs(recent_files=[])
-    app._shown_analysis_id = None
-    app._last_code, app._last_question_id, app._last_counted = "", None, None
-    app.analyze_view.report = None
-    app.analyze_view.reset_results()
-    app.history_view.refresh()
-    app.toast(f"Geçmiş temizlendi ({count} analiz).")

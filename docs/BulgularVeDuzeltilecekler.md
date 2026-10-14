@@ -876,7 +876,7 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] Keyring'deki eski OpenAI/DeepSeek anahtarlarını temizleme (Sonraya: Faz 37) — **Faz F**
 - [x] Kurulu zig sürümü eskiyse "güncelle" önerisi (Sonraya: Faz 29) — **Faz F**
 - [x] Bağlantılar'da `ollama pull` düğmesi (Sonraya: Faz 15) — **Faz F**
-- [ ] SQLite çağrılarını iş parçacığına alma (Sonraya: Faz 26)
+- [x] SQLite çağrılarını iş parçacığına alma (Sonraya: Faz 26) — **Faz F**
 - [ ] **400 satır:** `desktop/app.py` (494) ve `pipeline/orchestrator.py` (415) bölünür
 - [ ] Linux/macOS'ta "Oturum aç" (şu an yalnız Windows)
 

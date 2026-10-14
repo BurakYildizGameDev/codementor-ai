@@ -20,6 +20,11 @@ log = get_logger("codementor.desktop")
 
 
 LoadPageFn = Callable[[int, str | None, str | None], tuple[list[AnalysisRow], str | None]]
+# Faz F (F11): DB işini arka planda başlatan istek (limit, imleç, arama, listeye ekle)
+RequestPageFn = Callable[[int, str | None, str | None, bool], None]
+
+LOADING_TEXT = "Yükleniyor…"
+PAGE_SIZE = 50
 
 
 class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
@@ -33,6 +38,7 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
         totals: Callable[[], str | None] | None = None,
         is_busy: Callable[[], bool] | None = None,
         load_page: LoadPageFn | None = None,
+        request_page: RequestPageFn | None = None,
     ) -> None:
         super().__init__(master, fg_color="transparent")
         self._load = load
@@ -49,9 +55,11 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
             return rows[:limit], None
 
         self._load_page = load_page or _fallback_page
+        self._request_page = request_page
         self._rows: list[AnalysisRow] = []
         self._next_cursor: str | None = None
-        self._page_size = 50
+        self._page_size = PAGE_SIZE
+        self._loading = False
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
@@ -128,9 +136,71 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
         """Arama metni değiştiğinde veya Ara tıklandığında listeyi baştan tazeler."""
         self.refresh()
 
+    @property
+    def page_size(self) -> int:
+        """Sayfa boyutu (denetleyici arka plan isteğini bununla kurar)."""
+        return self._page_size
+
+    @property
+    def loading(self) -> bool:
+        """Arka plan yüklemesi sürüyor mu (F11; testler sonucu bununla bekler)."""
+        return self._loading
+
+    def show_loading(self, *, append: bool = False) -> None:
+        """Yükleme boyunca listeyi (ya da "Daha fazla" düğmesini) "Yükleniyor…" yapar (F11)."""
+        self._loading = True
+        if append:
+            if self.load_more_btn is not None:
+                self.load_more_btn.configure(text=LOADING_TEXT, state="disabled")
+            return
+        clear(self.list)
+        self._rows, self._next_cursor, self.load_more_btn = [], None, None
+        self.clear_btn.configure(state="disabled")
+        ctk.CTkLabel(
+            self.list, text=LOADING_TEXT, font=theme.font(13), text_color=theme.MUTED
+        ).grid(row=0, column=0, pady=40)
+
+    def apply_page(
+        self,
+        rows: list[AnalysisRow],
+        next_cursor: str | None,
+        *,
+        totals: str | None = None,
+        search_active: bool = False,
+        append: bool = False,
+    ) -> None:
+        """Arka plandan gelen sayfayı çizer; `append` ise mevcut satırların altına ekler (F11)."""
+        self._loading = False
+        if totals is not None:
+            self.totals_label.configure(text=totals)
+        self._rows = [*self._rows, *rows] if append else list(rows)
+        self._next_cursor = next_cursor
+        self._render_rows(search_active=search_active)
+
+    def apply_error(self, message: str) -> None:
+        """Yükleme başarısızsa Türkçe metni liste yerine gösterir (F11)."""
+        self._loading = False
+        self._rows, self._next_cursor, self.load_more_btn = [], None, None
+        clear(self.list)
+        self.clear_btn.configure(state="disabled")
+        ctk.CTkLabel(
+            self.list,
+            text=message,
+            font=theme.font(13),
+            text_color=theme.ERROR,
+            wraplength=760,
+            justify="left",
+        ).grid(row=0, column=0, padx=16, pady=40, sticky="w")
+
     def refresh(self) -> None:
-        self.totals_label.configure(text=self._totals_text())
+        """Listeyi baştan yükler; DB işi arka planda koşar (Faz F, F11)."""
         search_text = self.search_entry.get().strip()
+        if self._request_page is not None:
+            self.show_loading()
+            self._request_page(self._page_size, None, search_text or None, False)
+            return
+        self._loading = False  # arka plan isteği yoksa (tek başına görünüm) eşzamanlı yol
+        self.totals_label.configure(text=self._totals_text())
         try:
             rows, next_cursor = self._load_page(self._page_size, None, search_text or None)
         except Exception:
@@ -175,9 +245,13 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
             self.load_more_btn = None
 
     def _handle_load_more(self) -> None:
-        if self._next_cursor is None:
+        if self._next_cursor is None or self._loading:
             return
         search_text = self.search_entry.get().strip()
+        if self._request_page is not None:  # F11: sonraki sayfa da arka planda okunur
+            self.show_loading(append=True)
+            self._request_page(self._page_size, self._next_cursor, search_text or None, True)
+            return
         try:
             more_rows, next_cursor = self._load_page(
                 self._page_size, self._next_cursor, search_text or None
