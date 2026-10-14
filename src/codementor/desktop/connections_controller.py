@@ -7,6 +7,7 @@ yeniden uygulama, arka plan görevi başlatma ve bildirim gösterme.
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import TYPE_CHECKING, Any, cast
 
 from codementor.desktop.bridge import Cancellation, Emit, Message
@@ -27,10 +28,14 @@ from codementor.desktop.connections import (
     try_connection,
 )
 from codementor.desktop.services import (
+    OllamaPullError,
+    PullOutcome,
     compiler_statuses,
     compiler_update_available,
     describe_progress,
     offer_compiler_download,
+    ollama_pull_argv,
+    run_ollama_pull,
 )
 from codementor.desktop.widgets.provider_card import CardActions
 from codementor.models.api import CompilerStatus
@@ -68,6 +73,7 @@ class ConnectionsController:
             set_base_url=self.set_base_url,
             save_key=self.save_key,
             allow_tool_agent=self.allow_tool_agent,
+            pull_model=self.pull_model,
         )
 
     def attach(self, view: ConnectionsView) -> None:
@@ -138,6 +144,8 @@ class ConnectionsController:
         elif kind == "test" and message.kind != "event":
             text = str(message.payload)
             self._card_message(name, text, message.kind == "result" and text.startswith("Bağlantı"))
+        elif kind == "pull" and message.kind != "event":
+            self._on_pull(name, message)
 
     def _on_probe(self, name: str, message: Message) -> None:
         if message.kind == "result" and isinstance(message.payload, Probe):
@@ -152,6 +160,33 @@ class ConnectionsController:
         if name == self.app.provider_name():
             self.app.sidebar.set_provider(name, result.ready, result.status.model or "")
         self.render()
+
+    # --- Ollama model indirme (Faz F, F10) -----------------------------------------------
+
+    def pull_model(self, name: str) -> None:
+        """Seçili modeli `ollama pull` ile indirir; doğrulama anında, indirme arka planda.
+
+        Model adı güvensizse ya da `ollama` PATH'te yoksa hiçbir süreç başlatılmaz; kullanıcı
+        Türkçe uyarı görür. Gerçek `ollama` yalnız kullanıcı isterse çalışır (testler bunu
+        taklit eder).
+        """
+        model = getattr(self.app.settings.providers, name).model
+        try:
+            argv = ollama_pull_argv(model, os.environ.get("PATH", ""))
+        except OllamaPullError as exc:
+            self._card_message(name, str(exc), False)
+            self.app.toast(str(exc))
+            return
+        self._card_message(name, f"{model} indiriliyor… (bu birkaç dakika sürebilir)", True)
+        self.app.bridge.submit(f"pull:{name}", lambda _emit: run_ollama_pull(model, argv))
+
+    def _on_pull(self, name: str, message: Message) -> None:
+        if message.kind == "result" and isinstance(message.payload, PullOutcome):
+            outcome = message.payload
+        else:  # köprü istisnayı metne çevirdi
+            outcome = PullOutcome(False, str(message.payload))
+        self._card_message(name, outcome.message, outcome.ok)
+        self.app.toast(outcome.message)
 
     # --- Derleyici indirme (Faz 29) ------------------------------------------------------
 

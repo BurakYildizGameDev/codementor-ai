@@ -23,6 +23,7 @@ from codementor.desktop import runtime
 from codementor.desktop.app import App
 from codementor.desktop.bridge import Cancellation, Message
 from codementor.desktop.connections import PROVIDERS, KeyStore, Probe
+from codementor.desktop.services import PullOutcome
 from codementor.desktop.views import analyze_view as analyze_view_module
 from codementor.models.api import CompilerStatus
 from codementor.models.enums import Difficulty, Engine, Language
@@ -824,6 +825,56 @@ def test_compiler_update_button_downloads_through_same_flow(
     assert done.wait(5)
     pump(app, lambda: not view.downloading)
     assert "kuruldu" in _toast(app)
+
+
+# --- Faz F (F10): `ollama pull` düğmesi --------------------------------------------------------
+
+
+def test_ollama_pull_button_runs_through_background_task(
+    app: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """F10: kart düğmesi argv ile arka plan görevini başlatır; sonuç kartta ve toast'ta."""
+    app.connections.check = lambda _name: None  # type: ignore[method-assign]
+    app.connections.set_model("ollama", "qwen2.5-coder:7b")
+    card = app.settings_view.cards["ollama"]
+    model = card.model.get()
+    assert model == "qwen2.5-coder:7b"
+    seen: list[tuple[str, list[str]]] = []
+    proceed = threading.Event()
+    off_main: list[bool] = []
+
+    def fake_pull(model_name: str, argv: list[str]) -> PullOutcome:
+        seen.append((model_name, argv))
+        off_main.append(threading.current_thread() is not threading.main_thread())
+        assert proceed.wait(10)
+        return PullOutcome(True, f"{model_name} indirildi.")
+
+    monkeypatch.setattr(controller_module, "run_ollama_pull", fake_pull)
+    monkeypatch.setattr(
+        controller_module, "ollama_pull_argv", lambda m, _path: ["/opt/ollama", "pull", m]
+    )
+    card.pull_button.invoke()
+    assert app.bridge.is_running("pull:ollama")  # iş arka planda (arayüz kilitlenmez)
+    assert "indiriliyor" in str(card.detail.cget("text"))
+    proceed.set()
+    pump(app, lambda: "indirildi" in _toast(app))
+    assert off_main == [True]  # DB/ağ işi ana iş parçacığında değil
+    assert seen == [(model, ["/opt/ollama", "pull", model])]
+    assert "indirildi" in str(card.detail.cget("text"))
+
+
+def test_ollama_pull_without_binary_warns_and_starts_nothing(
+    app: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """F10: ollama PATH'te yoksa düğme Türkçe uyarır; hiçbir süreç/görev başlamaz."""
+    app.connections.check = lambda _name: None  # type: ignore[method-assign]
+    app.connections.set_model("ollama", "qwen2.5-coder:7b")
+    card = app.settings_view.cards["ollama"]
+    monkeypatch.setenv("PATH", "")
+    card.pull_button.invoke()
+    assert "Ollama bulunamadı" in _toast(app)
+    assert "Ollama bulunamadı" in str(card.detail.cget("text"))
+    assert not app.bridge.is_running("pull:ollama")
 
 
 def test_question_difficulty_filter(app: App) -> None:

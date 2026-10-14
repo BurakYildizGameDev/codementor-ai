@@ -33,6 +33,7 @@ class CardActions:
     set_base_url: ValueAction
     save_key: ValueAction
     allow_tool_agent: Callable[[str, bool], None]
+    pull_model: Action  # F10: `ollama pull` (yalnız yerel sağlayıcı kartında)
 
 
 def _button(master: Any, text: str, command: Callable[[], None], primary: bool = False) -> Any:
@@ -136,6 +137,7 @@ class ProviderCard(ctk.CTkFrame):  # type: ignore[misc]
         self.url_entry: Any = None
         self.tool_switch: Any = None
         self.key_label: Any = None
+        self.pull_button: Any = None  # F10: yalnız "local" kartta oluşturulur
         self._build_auth()
 
         self.detail = wrap_label(self, "", size=12, color=theme.MUTED)
@@ -174,6 +176,9 @@ class ProviderCard(ctk.CTkFrame):  # type: ignore[misc]
                 "Adresi kaydet",
                 lambda: actions.set_base_url(name, self.url_entry.get().strip()),
             ).grid(row=0, column=1, padx=(6, 0))
+            # F10: seçili modeli indirir (`ollama pull`); süreç arka planda koşar
+            self.pull_button = _button(self.auth, "Modeli indir", lambda: actions.pull_model(name))
+            self.pull_button.grid(row=1, column=0, sticky="w", pady=(8, 0))
         elif name in TOOL_AGENTS:
             self.tool_switch = ctk.CTkSwitch(
                 self.auth,

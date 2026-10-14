@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import stat
 import sys
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,7 @@ from codementor.desktop.connections import (
     probe,
     try_connection,
 )
+from codementor.desktop.services import OllamaPullError, ollama_pull_argv, run_ollama_pull
 from codementor.models.desktop import DesktopPrefs, ProviderOverride
 from codementor.models.provider import GenerationOptions
 from codementor.providers.base import RetryPolicy
@@ -431,3 +433,75 @@ async def test_try_connection_unrelated_json_is_failure(
     other = FakeProvider(script=[FakeReply(data={"baska": 1})], retry=RetryPolicy(max_retries=0))
     monkeypatch.setattr(connections, "build_provider", lambda *_a, **_k: other)
     assert (await try_connection("agy", settings)).startswith("Başarısız")
+
+
+# --- Faz F (F10): `ollama pull` ----------------------------------------------------------------
+
+OLLAMA_MODEL = "qwen2.5-coder:7b"
+EXE_SUFFIX = ".exe" if sys.platform == "win32" else ""
+
+
+def _fake_ollama(directory: Path) -> Path:
+    """PATH'te duran sahte `ollama` (çalıştırılmaz; yalnız bulunur)."""
+    directory.mkdir(parents=True, exist_ok=True)
+    exe = directory / f"ollama{EXE_SUFFIX}"
+    exe.write_bytes(b"")
+    exe.chmod(exe.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    return exe
+
+
+def test_ollama_pull_argv_is_absolute_and_shell_free(tmp_path: Path) -> None:
+    """F10: argv = [mutlak ollama yolu, "pull", model]; model tek bir argv öğesidir (kabuk yok)."""
+    exe = _fake_ollama(tmp_path / "bin")
+    argv = ollama_pull_argv(OLLAMA_MODEL, str(tmp_path / "bin"))
+    assert argv == [str(exe.resolve()), "pull", OLLAMA_MODEL]
+
+
+def test_ollama_pull_runner_gets_validated_argv(tmp_path: Path) -> None:
+    """F10: doğrulanan argv sahte runner'a gider; gerçek süreç çalıştırılmaz."""
+    exe = _fake_ollama(tmp_path / "bin")
+    argv = ollama_pull_argv(OLLAMA_MODEL, str(tmp_path / "bin"))
+    runner = FakeRunner("pulling manifest\n")
+    outcome = run_ollama_pull(OLLAMA_MODEL, argv, runner=runner)
+    assert runner.calls == [[str(exe.resolve()), "pull", OLLAMA_MODEL]]
+    assert outcome.ok
+    assert OLLAMA_MODEL in outcome.message
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        "",
+        "   ",
+        "qwen; rm -rf /",
+        "a b",
+        "$(whoami)",
+        "model|cat",
+        "a\nb",
+        "kötü:model",
+        "qwen&del",
+    ],
+)
+def test_ollama_pull_rejects_unsafe_model_names(model: str, tmp_path: Path) -> None:
+    """F10: model adı `^[A-Za-z0-9._:/-]+$` dışındaysa reddedilir (süreç başlamaz)."""
+    _fake_ollama(tmp_path / "bin")
+    with pytest.raises(OllamaPullError):
+        ollama_pull_argv(model, str(tmp_path / "bin"))
+
+
+def test_ollama_pull_missing_binary_is_turkish_error(tmp_path: Path) -> None:
+    """F10: ollama PATH'te yoksa çalıştırma denenmez; kullanıcıya Türkçe mesaj döner."""
+    empty = tmp_path / "bos"
+    empty.mkdir()
+    with pytest.raises(OllamaPullError, match="Ollama bulunamadı"):
+        ollama_pull_argv(OLLAMA_MODEL, str(empty))
+
+
+def test_ollama_pull_failure_outcome_is_turkish() -> None:
+    """F10: başarısız çıkışta neden Türkçe gösterilir (süreç sahte runner ile)."""
+    runner = SequenceRunner(ProcessResult(1, "", "Error: pull model manifest: file does not exist"))
+    outcome = run_ollama_pull(OLLAMA_MODEL, ["/opt/ollama", "pull", OLLAMA_MODEL], runner=runner)
+    assert runner.calls == [["/opt/ollama", "pull", OLLAMA_MODEL]]
+    assert not outcome.ok
+    assert "başarısız" in outcome.message.lower()
+    assert "manifest" in outcome.message

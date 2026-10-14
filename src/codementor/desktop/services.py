@@ -1,8 +1,11 @@
-"""Masaüstünün GUI'siz yardımcıları: derleyici özeti ve rapor dışa aktarma."""
+"""Masaüstünün GUI'siz yardımcıları: derleyici özeti, rapor dışa aktarma, `ollama pull`."""
 
 from __future__ import annotations
 
 import json
+import re
+from collections.abc import Callable
+from dataclasses import dataclass
 
 from codementor.config import Settings
 from codementor.languages import CANONICAL_SUFFIX
@@ -11,6 +14,12 @@ from codementor.models.report import AnalysisReport
 from codementor.models.validation import DownloadProgress
 from codementor.report.markdown import to_markdown
 from codementor.report.sarif import to_sarif
+from codementor.validation.runner import (
+    ProcessLimits,
+    ProcessResult,
+    find_on_path,
+    run_process,
+)
 from codementor.validation.toolchain import compiler_statuses as toolchain_statuses
 from codementor.validation.toolchain import get_toolchain
 from codementor.validation.toolchain_install import (
@@ -22,6 +31,28 @@ from codementor.validation.toolchain_install import (
 
 _MB = 1024 * 1024
 _C_FAMILY = ("c", "cpp", "unreal")
+
+# F10: `ollama pull` — model adı yalnız bu karakterlerden oluşur; argv liste, kabuk yok.
+OLLAMA_MODEL_RE = re.compile(r"^[A-Za-z0-9._:/-]+$")
+OLLAMA_PULL_TIMEOUT_S = 3600  # büyük modeller dakikalarca inebilir
+_PULL_LIMITS = ProcessLimits(
+    timeout_s=OLLAMA_PULL_TIMEOUT_S, memory_mb=2048, limit_address_space=False
+)
+
+
+class OllamaPullError(Exception):
+    """`ollama pull` isteği geçersiz (eksik ollama ya da güvensiz model adı)."""
+
+
+@dataclass(frozen=True)
+class PullOutcome:
+    """İndirme sonucu: başarılı mı, kullanıcıya gösterilecek Türkçe metin ne."""
+
+    ok: bool
+    message: str
+
+
+Runner = Callable[..., ProcessResult]
 
 
 def compiler_statuses(settings: Settings) -> list[CompilerStatus]:
@@ -46,6 +77,47 @@ def offer_compiler_download(settings: Settings, compilers: list[CompilerStatus])
 def compiler_update_available(settings: Settings) -> bool:
     """Kurulu zig, yapılandırmadaki sürümden/kaynaktan farklıysa güncelleme düğmesi (F9)."""
     return needs_update(settings.validation)
+
+
+def ollama_pull_argv(model: str, search_path: str) -> list[str]:
+    """`ollama pull <model>` için sabit argv (`[mutlak yol, "pull", model]`); F10.
+
+    Model adı `^[A-Za-z0-9._:/-]+$` dışındaysa ya da `ollama` `search_path` (PATH) içindeki
+    mutlak dizinlerde yoksa `OllamaPullError` yükseltir. Kabuk kullanılmaz; çalışma dizinine
+    bakılmaz (Faz A2, Y1).
+    """
+    name = model.strip()
+    if OLLAMA_MODEL_RE.fullmatch(name) is None:
+        raise OllamaPullError(
+            'Geçersiz model adı: yalnız harf, rakam ve " . _ : / - " kullanılabilir.'
+        )
+    found = find_on_path("ollama", search_path)
+    if found is None:
+        raise OllamaPullError(
+            "Ollama bulunamadı; kurulu olduğundan ve PATH'te olduğundan emin olun."
+        )
+    return [str(found), "pull", name]
+
+
+def run_ollama_pull(model: str, argv: list[str], runner: Runner | None = None) -> PullOutcome:
+    """Doğrulanmış `argv`'yi çalıştırır ve sonucu Türkçe özetler (F10).
+
+    Gerçek `ollama` süreci yalnız `runner` ile başlatılır; çağıran (denetleyici) bunu arka plan
+    işine verir, testler sahte bir `runner` geçirir. Hata beklenen bir sonuçtur: istisna değil,
+    `PullOutcome.ok = False` döner (köprünün genel hata metni kullanıcıya anlamsız gelirdi).
+    """
+    result = (runner or run_process)(argv, "", _PULL_LIMITS)
+    if result.error:
+        return PullOutcome(False, f"İndirme başlatılamadı: {result.error}")
+    if result.timed_out:
+        minutes = OLLAMA_PULL_TIMEOUT_S // 60
+        return PullOutcome(False, f"İndirme zaman aşımına uğradı ({minutes} dk).")
+    if result.returncode != 0:
+        text = result.stderr or result.stdout
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        reason = lines[-1] if lines else f"çıkış kodu {result.returncode}"
+        return PullOutcome(False, f"İndirme başarısız: {reason}")
+    return PullOutcome(True, f"{model} indirildi.")
 
 
 def describe_progress(event: DownloadProgress) -> tuple[str, float | None]:

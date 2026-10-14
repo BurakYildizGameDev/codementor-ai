@@ -50,6 +50,7 @@ POLL_MS = 60
 WINDOW_SIZE = (1480, 940)
 TOAST_MS = 2600
 CLOSE_JOIN_S = 2.0  # kapanışta süren analizin iptalini bekleme süresi
+CONNECTIONS_TASKS = ("probe", "test", "compilers", "toolchain", "pull")  # F10: "pull"
 log = get_logger("codementor.desktop")
 
 
@@ -285,7 +286,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         questions_controller.restart(self)
 
     def _on_message(self, message: Message) -> None:
-        if message.task.partition(":")[0] in ("probe", "test", "compilers", "toolchain"):
+        if message.task.partition(":")[0] in CONNECTIONS_TASKS:
             self.connections.handle(message)
             return
         handler = getattr(self, f"_on_{message.task}", None)
