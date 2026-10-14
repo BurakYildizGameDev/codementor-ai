@@ -59,6 +59,7 @@ slow_llm_hint_s = 60         # Faz 63: masaüstünde LLM geçişi bunu aşınca 
 
 [storage]
 max_analyses = 2000           # Faz 49: en yeni N analiz tutulur (masaüstü kod dosyaları da); fazlası budanır
+session_retention_days = 90   # Faz F: eski oturumların saklanacağı gün sayısı; None sınırsız
 
 [data]
 questions_dir = "data/questions"

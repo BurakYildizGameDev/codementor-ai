@@ -114,3 +114,14 @@ def delete_session(db: Database, session_id: str) -> bool:
         result = session.exec(delete(SessionRow).where(col(SessionRow.session_id) == session_id))
         session.commit()
         return bool(result.rowcount > 0)
+
+
+def prune_old_sessions(db: Database, days: int) -> int:
+    """Belirli günden eski oturumları siler (Faz F, D19); silinen satır sayısını döner."""
+    from datetime import timedelta
+
+    cutoff = utcnow() - timedelta(days=days)
+    with db.session() as session:
+        result = session.exec(delete(SessionRow).where(col(SessionRow.updated_at) < cutoff))
+        session.commit()
+        return int(result.rowcount)

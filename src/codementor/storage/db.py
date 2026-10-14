@@ -10,8 +10,9 @@ import os
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, event, text
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Field, Session, SQLModel, create_engine
 
@@ -22,6 +23,13 @@ DEFAULT_DB_PATH = Path.home() / ".codementor" / "codementor.db"
 MEMORY = ":memory:"
 # Oturum denemesi `INSERT … ON CONFLICT DO UPDATE … RETURNING` kullanır (Faz 49)
 MIN_SQLITE = (3, 35)
+SCHEMA_DB_VERSION = 1
+
+
+def _migrate(connection: Any, current: int) -> None:
+    """Veritabanı şema göçü (Faz F, D19)."""
+    if current < 1:
+        connection.execute(text(f"PRAGMA user_version = {SCHEMA_DB_VERSION}"))
 
 
 def utcnow() -> datetime:
@@ -88,6 +96,16 @@ class Database:
             connect_args={"check_same_thread": False},
             poolclass=StaticPool if path == MEMORY else None,
         )
+
+        @event.listens_for(self.engine, "connect")
+        def _sqlite_connect(dbapi_connection: Any, connection_record: Any) -> None:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA secure_delete = ON")
+            cursor.execute("PRAGMA busy_timeout = 5000")
+            if path != MEMORY:
+                cursor.execute("PRAGMA journal_mode = WAL")
+            cursor.close()
+
         try:
             SQLModel.metadata.create_all(self.engine)
             with self.engine.begin() as connection:  # create_all eski tabloya indeks eklemez
@@ -96,13 +114,21 @@ class Database:
                         "CREATE INDEX IF NOT EXISTS ix_analyses_created_at ON analyses (created_at)"
                     )
                 )
+                current_v = connection.execute(text("PRAGMA user_version")).scalar() or 0
+                if current_v < SCHEMA_DB_VERSION:
+                    _migrate(connection, current_v)
         except Exception:
             self.engine.dispose()
             raise
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Database:
-        return cls(resolve_db_path(settings))
+        db = cls(resolve_db_path(settings))
+        if settings.storage.session_retention_days is not None:
+            from codementor.storage.sessions import prune_old_sessions
+
+            prune_old_sessions(db, settings.storage.session_retention_days)
+        return db
 
     def session(self) -> Session:
         return Session(self.engine)

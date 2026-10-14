@@ -176,6 +176,11 @@ class StorageSettings(BaseModel):
     # Faz 49: `analyses` tablosunda tutulacak en yeni kayıt sayısı (masaüstü kod dosyaları da);
     # None sınırsız
     max_analyses: int | None = Field(default=2000, ge=1)
+    session_retention_days: int | None = Field(
+        default=90,
+        ge=1,
+        description="Eski oturumların saklanacağı gün sayısı; None sınırsız (Faz F)",
+    )
 
 
 class VerifySettings(BaseModel):

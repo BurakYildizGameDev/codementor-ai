@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +15,15 @@ from codementor.config import load_settings
 from codementor.models.report import AnalysisReport
 from codementor.pipeline.ids import new_ulid
 from codementor.storage import cache, sessions
-from codementor.storage.db import MEMORY, AnalysisRow, Database, SessionRow, resolve_db_path
+from codementor.storage.db import (
+    MEMORY,
+    SCHEMA_DB_VERSION,
+    AnalysisRow,
+    Database,
+    SessionRow,
+    resolve_db_path,
+    utcnow,
+)
 from tests.unit.test_report_render import _report
 
 BASE = {
@@ -346,3 +354,91 @@ def test_clear_analyses_vacuums_and_removes_bytes(tmp_path: Path) -> None:
 
     combined_after = db_file.read_bytes() + (wal_file.read_bytes() if wal_file.exists() else b"")
     assert marker.encode() not in combined_after
+
+
+def test_database_pragmas_and_version(tmp_path: Path) -> None:
+    """Faz F (D19): WAL, busy_timeout, user_version ve secure_delete pragmaları."""
+    from sqlalchemy import text
+
+    db_file = tmp_path / "pragmas.db"
+    db = Database(db_file)
+    with db.engine.connect() as conn:
+        journal_mode = conn.execute(text("PRAGMA journal_mode")).scalar()
+        user_version = conn.execute(text("PRAGMA user_version")).scalar()
+        secure_delete = conn.execute(text("PRAGMA secure_delete")).scalar()
+        busy_timeout = conn.execute(text("PRAGMA busy_timeout")).scalar()
+
+    assert str(journal_mode).lower() == "wal"
+    assert user_version == SCHEMA_DB_VERSION
+    assert secure_delete == 1
+    assert busy_timeout == 5000
+    db.close()
+
+    # Bellek veritabanında WAL atlanır, sürüm ve secure_delete geçerlidir
+    mem_db = Database(MEMORY)
+    with mem_db.engine.connect() as conn:
+        mem_mode = conn.execute(text("PRAGMA journal_mode")).scalar()
+        mem_ver = conn.execute(text("PRAGMA user_version")).scalar()
+        mem_sec = conn.execute(text("PRAGMA secure_delete")).scalar()
+    assert str(mem_mode).lower() == "memory"
+    assert mem_ver == SCHEMA_DB_VERSION
+    assert mem_sec == 1
+    mem_db.close()
+
+
+def test_prune_old_sessions_and_retention(tmp_path: Path) -> None:
+    """Faz F (D19): session_retention_days ile eski oturumlar budanır."""
+    from codementor.config import load_settings
+
+    db = Database(tmp_path / "sessions.db")
+    now = utcnow()
+    with db.session() as s:
+        old_row = SessionRow(
+            session_id="old_s",
+            question_id="q1",
+            attempt_count=1,
+            current_hint_level=1,
+            updated_at=now - timedelta(days=100),
+        )
+        recent_row = SessionRow(
+            session_id="recent_s",
+            question_id="q2",
+            attempt_count=1,
+            current_hint_level=1,
+            updated_at=now - timedelta(days=10),
+        )
+        s.add(old_row)
+        s.add(recent_row)
+        s.commit()
+
+    # 90 günden eskiler silinir: 1 satır silinmeli
+    pruned = sessions.prune_old_sessions(db, days=90)
+    assert pruned == 1
+
+    with db.session() as s:
+        assert s.get(SessionRow, ("old_s", "q1")) is None
+        assert s.get(SessionRow, ("recent_s", "q2")) is not None
+    db.close()
+
+    # None retention_days olduğunda budama yapılmaz
+    settings = load_settings(
+        storage={"db_path": tmp_path / "sessions2.db", "session_retention_days": None}
+    )
+    db2 = Database.from_settings(settings)
+    with db2.session() as s:
+        s.add(
+            SessionRow(
+                session_id="old_s2",
+                question_id="q1",
+                attempt_count=1,
+                current_hint_level=1,
+                updated_at=now - timedelta(days=100),
+            )
+        )
+        s.commit()
+    # Tekrar from_settings ile açıldığında retention_days None olduğu için silinmez
+    db3 = Database.from_settings(settings)
+    with db3.session() as s:
+        assert s.get(SessionRow, ("old_s2", "q1")) is not None
+    db2.close()
+    db3.close()

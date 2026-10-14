@@ -1101,7 +1101,7 @@ codementor schema export --out schemas/
   `sha256(normalized_code | language | engine | question_id | hint_level | provider | model | prompt_version | rules_version | schema_version | pipeline)`; `rules_version` (`r2+…`) kural kimlikleri, `rules/`, `analysis/` (alt paketler ve `queries/**/*.scm` dahil), `validation/` ve `verify/` kaynakları ile `data/call_costs.yaml` ve `data/mentor_templates.yaml`'ın hash'idir (Faz 31, Faz 49); `pipeline` çıktıyı etkileyen ayarların imzasıdır, ör. `two_pass+verify:<sha256 öneki>` (Faz 35; Faz B'de genişledi, `pipeline/signature.py`): mod, doğrulama ve onarım ayarları, kural/prompt/doğrulayıcı ayarları, sağlayıcı ayarları, kontrol listeleri, Tier 1 etkinliği + seçilecek derleyicinin kimliği ve dosya damgası, soru içeriği ve referans çözüm damgası. İmza olay döngüsü dışında hesaplanır. Yarım ya da yedek sağlayıcıdan gelen rapor (`cacheable=False`) boş anahtarla yazılır: geçmişte durur, önbellekten dönmez
 - Önbellek isabeti `meta.cache_hit = true` ile işaretlenir; eval çalıştırmalarında önbellek **kapalıdır**.
 - **Oturum denemesi (Faz 49):** deneme analiz başında tek ifadeyle ayrılır (`INSERT … ON CONFLICT DO UPDATE … RETURNING attempt_count`); aynı oturumdan eşzamanlı gönderimler farklı deneme alır. İptal/hata ayrılan denemeyi geri verir (yalnız arada başka ayırma olmadıysa), yarıda kalan analiz ipucu merdivenini ilerletmez.
-- **Saklama (Faz 49):** `storage.max_analyses` (2000) en yeni kaydı tutar, fazlası her kayıtta budanır (`created_at` indeksli); masaüstü kod arşivi aynı sınırla, `desktop.log` açılışta 5 MB'ı aşmışsa `desktop.log.1`'e döner, tercihler atomik yazılır. Bugünkü şemaya uymayan eski `report_json` yok sayılır (önbellek ıskası, `GET` 404) ve loglanır.
+- **Saklama (Faz 49, Faz F):** `storage.max_analyses` (2000) en yeni kaydı tutar, fazlası her kayıtta budanır (`created_at` indeksli); `storage.session_retention_days` (90) günden eski `sessions` kayıtları açılışta budanır; masaüstü kod arşivi aynı sınırla, `desktop.log` açılışta 5 MB'ı aşmışsa `desktop.log.1`'e döner, tercihler atomik yazılır. Bugünkü şemaya uymayan eski `report_json` yok sayılır (önbellek ıskası, `GET` 404) ve loglanır.
 - **Soru bankası:** API/masaüstü süreç başına bir kez yükler ve orkestratöre verir; okunamazsa `503`.
 
 ---
@@ -1372,6 +1372,7 @@ max_concurrent_analyses = 4  # dolunca 503
 [storage]                    # Faz 10 (§11); yoksa CODEMENTOR_DB_PATH, o da yoksa ~/.codementor/codementor.db
 # db_path = "~/.codementor/codementor.db"
 max_analyses = 2000           # Faz 49: en yeni N analiz kaydı tutulur; fazlası budanır
+session_retention_days = 90   # Faz F: eski oturumların saklanacağı gün sayısı; None sınırsız
 
 [verify]                     # Faz 9 (§5.6); eşikler Faz 12 eval'inde ayarlanır
 evidence_window = 2
