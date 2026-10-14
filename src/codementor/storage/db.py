@@ -88,11 +88,17 @@ class Database:
             connect_args={"check_same_thread": False},
             poolclass=StaticPool if path == MEMORY else None,
         )
-        SQLModel.metadata.create_all(self.engine)
-        with self.engine.begin() as connection:  # create_all eski tabloya indeks eklemez
-            connection.execute(
-                text("CREATE INDEX IF NOT EXISTS ix_analyses_created_at ON analyses (created_at)")
-            )
+        try:
+            SQLModel.metadata.create_all(self.engine)
+            with self.engine.begin() as connection:  # create_all eski tabloya indeks eklemez
+                connection.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_analyses_created_at ON analyses (created_at)"
+                    )
+                )
+        except Exception:
+            self.engine.dispose()
+            raise
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Database:

@@ -1107,3 +1107,11 @@ def test_history_delete_click_does_not_open_row(app: App) -> None:
     item._canvas.event_generate("<Button-1>", x=2, y=2)
     app.update()
     assert len(opened) == 1  # karşılaştırma: satır bağı gerçekten çalışıyor
+
+
+def test_report_callback_exception_shows_toast(app: App) -> None:
+    toasts: list[str] = []
+    app.toast = toasts.append
+    app.report_callback_exception(RuntimeError, RuntimeError("deneme hatasi"), None)
+    assert len(toasts) == 1
+    assert "beklenmeyen" in toasts[0].lower()

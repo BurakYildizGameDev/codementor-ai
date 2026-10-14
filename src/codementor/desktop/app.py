@@ -75,12 +75,12 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.tracker = StageTracker()
         self.apply_settings()
         if not self.prefs.session_id:
-            self._new_session()
+            questions_controller.new_session(self)
         self.bridge = Bridge()
         self.connections = ConnectionsController(self, key_store or KeyStore())
         self.files = FileController(self)
         self._closing = False
-        self._last_code = ""
+        self._last_code: str = ""
         self._last_question_id: str | None = None
         self._last_counted: bool | None = None
         self._shown_analysis_id: str | None = None
@@ -260,7 +260,6 @@ class App(ctk.CTk):  # type: ignore[misc]
         )
 
     def on_escape(self) -> None:
-        """Esc yalnız analiz sayfasında durdurur (başka sayfada açılır liste kapatmak gibi)."""
         if self.current_view == "analyze":
             self.stop_analysis()
 
@@ -276,12 +275,8 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.toast("Analiz durduruldu.")
 
     def restart(self) -> None:
-        """İpucu merdivenini sıfırlar (`questions_controller`, Faz 54)."""
         self._last_counted = None
         questions_controller.restart(self)
-
-    def _new_session(self) -> None:
-        questions_controller.new_session(self)
 
     def _on_message(self, message: Message) -> None:
         if message.task.partition(":")[0] in ("probe", "test", "compilers", "toolchain"):
@@ -313,7 +308,6 @@ class App(ctk.CTk):  # type: ignore[misc]
             view.show_error(str(message.payload))
 
     # --- Dosyalar -----------------------------------------------------------------------
-
     def load_sample(self) -> None:
         questions_controller.load_sample(self)
 
@@ -321,14 +315,12 @@ class App(ctk.CTk):  # type: ignore[misc]
         history_controller.export(self, fmt)
 
     # --- Sorular ve geçmiş --------------------------------------------------------------
-
     def questions_for(self, language: Language, engine: Engine) -> list[QuestionPublic]:
         return questions_controller.questions_for(self.core, language, engine)
 
     def _filtered_questions(
         self, language: Language | None, difficulty: Difficulty | None
     ) -> list[QuestionPublic] | None:
-        """Filtrelenmiş sorular; banka okunamazsa None (görünüm 'okunamadı' der)."""
         return questions_controller.filtered(self.core, language, difficulty)
 
     def start_question(self, question: QuestionPublic) -> None:
@@ -362,14 +354,9 @@ class App(ctk.CTk):  # type: ignore[misc]
         return config_controller.locations(self)
 
     def write_config(self) -> None:
-        """Model ve varsayılan sağlayıcı seçimlerini `codementor.toml`'a işler (anahtar hariç)."""
         config_controller.write_config(self)
 
     def reload_config(self) -> None:
-        """`codementor.toml`'u (ve ortamı) yeniden okur; arayüz seçimleri yine üstüne uygulanır.
-
-        Bozuk dosya uygulanmaz. Veritabanı yolu gibi açılışta kurulanlar yeniden başlatma ister.
-        """
         config_controller.reload_config(self)
 
     def save_prefs(self, **changes: Any) -> None:
@@ -377,7 +364,6 @@ class App(ctk.CTk):  # type: ignore[misc]
         runtime.save_prefs(self.prefs, self.prefs_dir)
 
     # --- Döngü ve kapanış ---------------------------------------------------------------
-
     def _poll(self) -> None:
         if self._closing:
             return
@@ -394,3 +380,10 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.bridge.join("analyze", CLOSE_JOIN_S)
         self.core.close()
         self.destroy()
+
+    def report_callback_exception(
+        self, exc_type: type[BaseException], exc: BaseException, tb: Any
+    ) -> None:
+        """Tkinter olay geri çağrılarındaki beklenmeyen hataları yakalar (Faz F, O10)."""
+        log.error("Arayüzde beklenmeyen hata", exc_info=(exc_type, exc, tb))
+        self.toast("Beklenmeyen bir hata oldu; ayrıntı desktop.log'da.")

@@ -11,6 +11,7 @@ import contextlib
 import os
 import shutil
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
@@ -216,3 +217,21 @@ def clear_sources(directory: Path | None = None) -> int:
             path.unlink(missing_ok=True)
             count += 1
     return count
+
+
+def backup_corrupted_db(db_path: Path | str) -> Path:
+    """Bozuk SQLite dosyasını (varsa -wal ve -shm ile birlikte) `bozuk-YYYYAAGG-SSDDss` son
+    ekiyle yeniden adlandırır.
+    """
+    p = Path(db_path)
+    if str(p) == ":memory:" or not p.exists():
+        return p
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    target = p.with_name(f"{p.name}.bozuk-{stamp}")
+    p.rename(target)
+    for ext in ("-wal", "-shm"):
+        extra = p.with_name(p.name + ext)
+        if extra.exists():
+            with contextlib.suppress(OSError):
+                extra.rename(target.with_name(target.name + ext))
+    return target
