@@ -21,6 +21,7 @@ from codementor.config import CONFIG_FILE_ENV
 from codementor.desktop import connections_controller as controller_module
 from codementor.desktop import runtime
 from codementor.desktop.app import App
+from codementor.desktop.bridge import Cancellation
 from codementor.desktop.connections import PROVIDERS, KeyStore, Probe
 from codementor.desktop.views import analyze_view as analyze_view_module
 from codementor.models.enums import Difficulty, Engine, Language
@@ -1289,6 +1290,34 @@ def test_close_with_unsaved_changes_confirm(app: App) -> None:
     assert app.winfo_exists()
     assert not app._closing
     app.files.mark_clean()
+
+
+def test_close_while_busy_confirm(app: App) -> None:
+    """Faz F (F7): Analiz sürerken kapatma onay ister; Hayır ise pencere açık kalır."""
+    prompts: list[tuple[str, str]] = []
+
+    def reject(title: str, message: str, **_kwargs: Any) -> bool:
+        prompts.append((title, message))
+        return False
+
+    app.confirm = reject
+    app.analyze_view.set_busy(True)
+    app.close()
+    assert prompts
+    assert "sürüyor" in prompts[0][1]
+    assert app.winfo_exists()
+    assert not app._closing
+    app.analyze_view.set_busy(False)
+
+
+def test_close_while_downloading_confirm(app: App) -> None:
+    """Faz F (F7): Derleyici (zig) indirmesi sürerken de kapatma onay ister."""
+    app.connections.download_cancellation = Cancellation()
+    app.confirm = lambda *_a, **_k: False
+    app.close()
+    assert app.winfo_exists()
+    assert not app._closing
+    app.connections.download_cancellation = None
 
 
 def test_history_view_pagination_and_search(app: App) -> None:

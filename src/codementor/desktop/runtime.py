@@ -13,13 +13,16 @@ import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import TextIO
+from typing import TYPE_CHECKING, TextIO
 
 from pydantic import ValidationError
 
 from codementor import paths
 from codementor.config import CONFIG_FILE_ENV, DEFAULT_CONFIG_FILE, config_file
 from codementor.models.desktop import MAX_RECENT_FILES, DesktopPrefs
+
+if TYPE_CHECKING:
+    from codementor.desktop.app import App
 
 PREFS_FILE = "desktop.json"
 LOG_FILE = "desktop.log"
@@ -131,6 +134,18 @@ def save_prefs(prefs: DesktopPrefs, directory: Path | None = None) -> None:
     except OSError:
         with contextlib.suppress(OSError):
             temp.unlink(missing_ok=True)
+
+
+def confirm_close(app: App) -> bool:
+    """Kapanış onayları: kaydedilmemiş değişiklik ve süren iş (analiz/indirme) — Faz F (F5/F7)."""
+    if app.files.is_dirty and not app.confirm(
+        "Kaydedilmemiş değişiklik", "Değişiklikler kaybolacak. Devam edilsin mi?", parent=app
+    ):
+        return False
+    busy = app.analyze_view.busy or app.connections.download_cancellation is not None
+    if not busy:
+        return True
+    return app.confirm("Çıkış", "Analiz (ya da indirme) sürüyor. Çıkılsın mı?", parent=app)
 
 
 def remember_file(prefs: DesktopPrefs, path: str) -> DesktopPrefs:

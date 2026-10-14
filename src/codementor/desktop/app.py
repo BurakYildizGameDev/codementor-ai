@@ -380,9 +380,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.after(POLL_MS, self._poll)
 
     def close(self) -> None:
-        if self.files.is_dirty and not self.confirm(
-            "Kaydedilmemiş değişiklik", "Değişiklikler kaybolacak. Devam edilsin mi?", parent=self
-        ):
+        if not runtime.confirm_close(self):
             return
         self._closing = True
         self.bridge.cancel_all()
