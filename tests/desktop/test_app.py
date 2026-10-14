@@ -394,6 +394,24 @@ def test_api_key_saved_to_vault_and_process_env(app: App, store: KeyStore) -> No
     assert "GEMINI_API_KEY" not in os.environ
 
 
+def test_purge_legacy_keys_button(app: App, store: KeyStore) -> None:
+    """F8: 'Eski anahtarları temizle' düğmesi kalıntı anahtarları siler, sonucu bildirir."""
+    app.connections.check = lambda _name: None  # type: ignore[method-assign]
+    store.set("openai", "sk-eski-openai")
+    store.set("deepseek", "sk-eski-deepseek")
+    store.set("gemini", "sk-guncel-1234")
+
+    app.settings_view.purge_legacy_button.invoke()
+
+    assert "2 eski anahtar" in app.toast_label.cget("text")
+    assert store.get("openai") is None
+    assert store.get("deepseek") is None
+    assert store.get("gemini") == "sk-guncel-1234"
+
+    app.settings_view.purge_legacy_button.invoke()  # ikinci kez: silinecek yok
+    assert "bulunamadı" in app.toast_label.cget("text")
+
+
 def test_probe_results_update_cards_and_sidebar(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
     async def fake_probe(name: str, _settings: object) -> Probe:
         ready = name == "ollama"

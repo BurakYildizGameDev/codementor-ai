@@ -73,6 +73,8 @@ API_PROVIDERS = tuple(p.name for p in PROVIDERS if p.kind == "api")
 CLI_PROVIDERS = tuple(p.name for p in PROVIDERS if p.kind == "cli")
 # araçları kapatılamayan ajanlar: açık onay anahtarı gösterilir (ADR-0012, ADR-0017)
 TOOL_AGENTS = ("agy", "codex")
+# ADR-0021 ile kaldırılan sağlayıcılar. Kasada kalıntı anahtar bırakabilirler; F8 ile temizlenir.
+LEGACY_KEY_PROVIDERS = ("openai", "deepseek")
 
 Runner = Callable[..., ProcessResult]
 
@@ -119,6 +121,19 @@ class KeyStore:
         except Exception as exc:
             if type(exc).__name__ != "PasswordDeleteError":  # zaten yok
                 raise KeyStoreError(f"Anahtar silinemedi ({type(exc).__name__}).") from exc
+
+    def purge_legacy(self) -> int:
+        """ADR-0021: kaldırılan sağlayıcıların kasadaki kalıntı anahtarlarını siler.
+
+        Silinen anahtar sayısını döner; kasaya erişilemezse `KeyStoreError` yükseltir.
+        """
+        removed = 0
+        for provider in LEGACY_KEY_PROVIDERS:
+            if self.get(provider) is None:
+                continue
+            self.delete(provider)
+            removed += 1
+        return removed
 
 
 KeySource = Literal["vault", "environment", "missing"]

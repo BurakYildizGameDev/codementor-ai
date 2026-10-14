@@ -257,6 +257,18 @@ class ConnectionsController:
         self.render()
         self.check(name)
 
+    def purge_legacy_keys(self) -> None:
+        """ADR-0021: kaldırılan sağlayıcıların kasadaki kalıntı anahtarlarını temizler (F8)."""
+        try:
+            removed = self.store.purge_legacy()
+        except KeyStoreError as exc:
+            self.app.toast(str(exc))
+            return
+        if removed:
+            self.app.toast(f"{removed} eski anahtar kimlik kasasından silindi")
+        else:
+            self.app.toast("Silinecek eski anahtar bulunamadı")
+
     def login(self, name: str) -> None:
         try:
             open_login_console(name, self.app.settings.providers)

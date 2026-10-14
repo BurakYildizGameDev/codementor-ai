@@ -41,6 +41,7 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
         reload_config: Callable[[], None] | None = None,
         download: Callable[[], None] | None = None,
         cancel_download: Callable[[], None] | None = None,
+        purge_legacy: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(master, fg_color="transparent")
         self.grid_columnconfigure(0, weight=1)
@@ -146,6 +147,22 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
                 command=reload_config,
             )
             self.reload_config_button.grid(
+                row=btn_row, column=0, columnspan=2, sticky="w", pady=(8, 0)
+            )
+            btn_row += 1
+        if purge_legacy is not None:  # Faz F (F8): ADR-0021 ile kaldırılan anahtarların kalıntısı
+            self.purge_legacy_button = ctk.CTkButton(
+                where.body,
+                text="Eski anahtarları temizle",
+                height=32,
+                corner_radius=8,
+                fg_color=theme.SURFACE_2,
+                hover_color=theme.SURFACE_3,
+                text_color=theme.TEXT,
+                font=theme.font(12, "bold"),
+                command=purge_legacy,
+            )
+            self.purge_legacy_button.grid(
                 row=btn_row, column=0, columnspan=2, sticky="w", pady=(8, 0)
             )
 

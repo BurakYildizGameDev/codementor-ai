@@ -166,6 +166,7 @@ class App(ctk.CTk):  # type: ignore[misc]
             reload_config=self.reload_config,
             download=self.connections.download_compiler,
             cancel_download=self.connections.cancel_download,
+            purge_legacy=self.connections.purge_legacy_keys,
         )
         self.connections.attach(self.settings_view)
         self.views: dict[str, ctk.CTkFrame] = {

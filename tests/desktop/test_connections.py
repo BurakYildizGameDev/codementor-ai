@@ -111,6 +111,22 @@ def test_locked_vault_does_not_crash_startup(settings: Settings, vault: FakeVaul
     assert load_vault_keys(settings.providers, KeyStore(vault)) == set()
 
 
+def test_purge_legacy_removes_only_removed_providers(store: KeyStore, vault: FakeVault) -> None:
+    """ADR-0021/F8: eski openai/deepseek anahtarları silinir; güncel kayıt korunur."""
+    store.set("openai", "sk-eski-openai")
+    store.set("deepseek", "sk-eski-deepseek")
+    store.set("gemini", "sk-guncel")
+    assert store.purge_legacy() == 2
+    assert store.purge_legacy() == 0  # ikinci çağrı: silinecek bir şey kalmadı
+    assert vault.items == {(connections.KEYRING_SERVICE, "gemini"): "sk-guncel"}
+
+
+def test_purge_legacy_locked_vault_is_turkish_error(vault: FakeVault, store: KeyStore) -> None:
+    vault.broken = True
+    with pytest.raises(KeyStoreError, match="okunamadı"):
+        store.purge_legacy()
+
+
 # --- Ayarlar ---------------------------------------------------------------------------------
 
 
