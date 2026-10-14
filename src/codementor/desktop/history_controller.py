@@ -43,8 +43,11 @@ def export(app: App, fmt: str) -> None:
     )
     if not path:
         return
-    Path(path).write_text(render_export(report, fmt), encoding="utf-8")
-    app.toast(f"Rapor kaydedildi: {Path(path).name}")
+    try:
+        Path(path).write_text(render_export(report, fmt), encoding="utf-8")
+        app.toast(f"Rapor kaydedildi: {Path(path).name}")
+    except OSError as exc:
+        app.toast(f"Rapor kaydedilemedi: {exc.strerror or exc}")
 
 
 def history_rows(app: App) -> list[AnalysisRow]:

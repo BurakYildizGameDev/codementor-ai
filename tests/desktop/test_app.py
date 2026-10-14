@@ -1115,3 +1115,27 @@ def test_report_callback_exception_shows_toast(app: App) -> None:
     app.report_callback_exception(RuntimeError, RuntimeError("deneme hatasi"), None)
     assert len(toasts) == 1
     assert "beklenmeyen" in toasts[0].lower()
+
+
+def test_export_oserror_shows_toast(
+    app: App, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz F (F2): Dışa aktarmada OSError toast ile bildirilir."""
+    from tkinter import filedialog
+
+    # Bir dosya oluşturup alt dizini varmış gibi bir yol verelim (yazılamaz)
+    dosya = tmp_path / "dosya"
+    dosya.write_text("var", encoding="utf-8")
+    invalid_path = str(dosya / "alt" / "r.md")
+
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    analyze(app)
+    assert app.analyze_view.report is not None
+
+    toasts: list[str] = []
+    app.toast = toasts.append
+    monkeypatch.setattr(filedialog, "asksaveasfilename", lambda **_k: invalid_path)
+
+    app.export("md")
+    assert len(toasts) == 1
+    assert "kaydedilemedi" in toasts[0].lower()
