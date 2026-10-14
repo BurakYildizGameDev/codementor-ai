@@ -121,6 +121,7 @@
 - F11 sonrası tam takım: `uv run pytest -m "not live" -q` → **3435 passed, 15 skipped, 6 deselected** in 209s (+6 test: hepsi `tests/desktop/test_app.py`); `uv run ruff check .` → "All checks passed!"; `uv run ruff format --check .` → "460 files already formatted"; `uv run mypy src/` → "Success: no issues found in 206 source files".
 - F11 mutasyon kontrolü: `app.py`, `history_controller.py` ve `views/history_view.py` `git stash` ile geri alınınca yeni 6 pencere testi FAILED (`AttributeError: HistoryView object has no attribute loading`); `git stash pop` sonrası `git stash list` boş, çalışma ağacında yalnız bu maddenin 5 dosyası değişik.
 - F11 sonrası dosya satır sayıları: `app.py` 395 (< 400), `history_controller.py` 241, `views/history_view.py` 347, `tests/desktop/test_app.py` 1680. `connections.py` 402 (F8'den kalan, bölme önerisi "Sonraya").
+- F10 denetimi (2026-10-14): kritik/önemli bulgu yok, birleştirilebilir; 3 küçük bulgu (test kapsamı, `pull` iptali, model adı deseni) `docs/BulgularVeDuzeltilecekler.md` §10 Faz F ve Sonraya bölümüne yazıldı.
 
 ### Açık kalanlar
 - **F12 (bu dalda sıradaki madde):** Linux/macOS'ta "Oturum aç" (F12). Bu madde bitmeden Faz F "Durum" tablosunda 🚧 kalır.
@@ -491,3 +492,4 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 - ~~Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri~~ → Faz 26.
 - Faz F (F8 denetimi): `desktop/connections.py` 402 satır (> 400, AGENTS.md) — `KeyStore`, `KEYRING_SERVICE`, `KeyStoreError`, `LEGACY_KEY_PROVIDERS` ve sağlayıcı kataloğu sabitlerinin ayrı modüllere (`desktop/keystore.py`, `desktop/providers_catalog.py`) taşınması; `from codementor.desktop.connections import ...` çağrıları için yeniden dışa aktarma korunmalı (Faz G0'daki bölme disipliniyle aynı yaklaşım, testler değişmeden geçmeli).
 - Faz F (F11 kapsamı): `history_controller.open_history` kaydı hâlâ ana iş parçacığında okuyor (`get_analysis`/`get_row` + `runtime.load_source`) ve diskten kod yüklüyor; F11 yalnız liste/silme/temizleme ile sınırlı tutuldu, kayıt açmayı da arka plana almak Sonraya.
+- Faz F (F10 denetimi, 2026-10-14): küçük bulgular — `run_ollama_pull` içindeki `result.error` ve `result.timed_out` dalları test edilmiyor; model adı deseni `.` ve `/` karakterlerini kabul ediyor (`/x`, `../x` zararsız); `ollama pull` süreci iptal edilemiyor (köprüde `Cancellation`, arayüzde iptal düğmesi yok). Ayrıntı: `docs/BulgularVeDuzeltilecekler.md` §10 Faz F.

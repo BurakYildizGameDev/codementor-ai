@@ -880,6 +880,17 @@ tekrarlanabilir bir release'ten gelsin.
 - [ ] **400 satır:** `desktop/app.py` (494) ve `pipeline/orchestrator.py` (415) bölünür
 - [ ] Linux/macOS'ta "Oturum aç" (şu an yalnız Windows)
 
+**F10 denetimi (2026-10-14, `faz-denetim`):** Kritik ve Önemli bulgu yok → birleştirilebilir. Üç küçük bulgu:
+- **Küçük** — `desktop/services.py:110-114`: `run_ollama_pull` içinde `result.error` ve `result.timed_out`
+  dalları test edilmiyor (kapsam yalnız `returncode != 0` ve mutlu yol).
+- **Küçük** — `desktop/connections_controller.py:181`: `pull:` görevi iptal edilemez (köprüde
+  `Cancellation` yok, arayüzde iptal düğmesi yok); süreç yalnız `timeout_s=3600` ile sınırlı.
+- **Küçük** — `desktop/services.py:36, 90-93`: model adı deseni `.` ve `/` karakterlerini kabul ediyor;
+  `/x` ve `../x` geçer (tek argv öğesi olduğu için zararsız).
+- [ ] **F10 denetimi (küçük):** hata/zaman aşımı dallarına iki birim testi (`SequenceRunner`); model adı
+      deseninde baş karakter sınıfını ayırıp sıkılaştır
+- [ ] `ollama pull` iptal edilebilir olsun (Sonraya: köprüde `Cancellation` + arayüzde iptal düğmesi)
+
 ---
 
 ### Faz G — Sağlayıcı sağlamlığı ve kod temizliği (öncelik: orta-düşük)
