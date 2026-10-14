@@ -379,7 +379,8 @@ da dosya, açılamayan veritabanı) Türkçe mesaj ve **çıkış kodu 3** ile b
   ve tahmini maliyeti; raporlar Markdown / SARIF / JSON olarak dışa aktarılır.
 - **Bağlantılar:** her sağlayıcı için bir kart: model seçimi, **Oturum aç**, API anahtarı
   (Windows Kimlik Bilgisi Yöneticisi'nde, dosyaya yazılmaz), **Bağlantıyı dene**, **Varsayılan
-  yap**, **Derleyiciyi indir** (zig). Seçimler tek tuşla `codementor.toml`'a yazılır (yorumlar
+  yap**, **Derleyiciyi indir** (zig; kurulu zig eskiyse **Derleyiciyi güncelle**). Seçimler tek tuşla
+  `codementor.toml`'a yazılır (yorumlar
   korunur); CLI ve API de aynı modeli kullanır (ADR-0014).
 - **Editör:** Ctrl+F arama, **Son ▾** menüsünde son dosyalar, sürükle-bırak ile açma.
 

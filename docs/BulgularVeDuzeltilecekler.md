@@ -864,17 +864,17 @@ tekrarlanabilir bir release'ten gelsin.
 
 **Dal:** `faz/f-masaustu`
 
-- [ ] **O10:** bozuk/kilitli veritabanında hata diyaloğu + "yedekle ve sıfırla";
-      `report_callback_exception`
-- [ ] **O13:** dışa aktarma `OSError` kullanıcıya gösterilir
-- [ ] **O14:** temizlikten sonra `VACUUM` + `secure_delete`; son dosyalar listesi de temizlenir
-- [ ] **D19:** analiz sürerken tekil silme engellenir; WAL + `busy_timeout`; `user_version` ile
-      şema göçü (Sonraya: Faz 49 Ü9); eski oturumları budama (Sonraya: Faz 49)
-- [ ] Ctrl+S kaydetme; kaydedilmemiş değişiklik uyarısı
-- [ ] Geçmişte sayfalama ve arama (şu an son 50)
-- [ ] Kapanırken "analiz/indirme sürüyor" onayı
-- [ ] Keyring'deki eski OpenAI/DeepSeek anahtarlarını temizleme (Sonraya: Faz 37)
-- [ ] Kurulu zig sürümü eskiyse "güncelle" önerisi (Sonraya: Faz 29)
+- [x] **O10:** bozuk/kilitli veritabanında hata diyaloğu + "yedekle ve sıfırla";
+      `report_callback_exception` — **Faz F**
+- [x] **O13:** dışa aktarma `OSError` kullanıcıya gösterilir — **Faz F**
+- [x] **O14:** temizlikten sonra `VACUUM` + `secure_delete`; son dosyalar listesi de temizlenir — **Faz F**
+- [x] **D19:** analiz sürerken tekil silme engellenir; WAL + `busy_timeout`; `user_version` ile
+      şema göçü (Sonraya: Faz 49 Ü9); eski oturumları budama (Sonraya: Faz 49) — **Faz F**
+- [x] Ctrl+S kaydetme; kaydedilmemiş değişiklik uyarısı — **Faz F**
+- [x] Geçmişte sayfalama ve arama (şu an son 50) — **Faz F**
+- [x] Kapanırken "analiz/indirme sürüyor" onayı — **Faz F**
+- [x] Keyring'deki eski OpenAI/DeepSeek anahtarlarını temizleme (Sonraya: Faz 37) — **Faz F**
+- [x] Kurulu zig sürümü eskiyse "güncelle" önerisi (Sonraya: Faz 29) — **Faz F**
 - [ ] Bağlantılar'da `ollama pull` düğmesi (Sonraya: Faz 15)
 - [ ] SQLite çağrılarını iş parçacığına alma (Sonraya: Faz 26)
 - [ ] **400 satır:** `desktop/app.py` (494) ve `pipeline/orchestrator.py` (415) bölünür
