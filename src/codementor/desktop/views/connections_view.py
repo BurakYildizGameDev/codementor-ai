@@ -23,6 +23,10 @@ _COMPILER_TARGETS = {
     "python": "Python",
 }
 _ORIGINS = {"downloaded": "indirilen", "bundled": "gömülü"}  # PATH'teki araçta ek yok
+_DOWNLOAD_HINT = "C/C++/Unreal derleme denetimi için zig indirilir (bir kez, kullanıcı dizinine)."
+_UPDATE_HINT = "Güncelleme var: kurulu zig, yapılandırmadaki sürümden farklı."
+_DOWNLOAD_LABEL = "Derleyiciyi indir (~100 MB)"
+_UPDATE_LABEL = "Derleyiciyi güncelle"
 
 
 def _tool_label(compiler: CompilerStatus) -> str:
@@ -178,7 +182,7 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
         self.download_box = box
         self.download_button = ctk.CTkButton(
             box,
-            text="Derleyiciyi indir (~100 MB)",
+            text=_DOWNLOAD_LABEL,
             height=32,
             corner_radius=8,
             fg_color=theme.GOLD,
@@ -205,7 +209,7 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
         )
         self.download_text = muted_label(
             box,
-            "C/C++/Unreal derleme denetimi için zig indirilir (bir kez, kullanıcı dizinine).",
+            _DOWNLOAD_HINT,
             size=11,
             wraplength=360,
         )
@@ -249,12 +253,25 @@ class ConnectionsView(ctk.CTkFrame):  # type: ignore[misc]
         self.download_text.configure(text=text, text_color=theme.TEXT_SOFT if ok else theme.ERROR)
         self.download_box.grid(row=1, column=0, sticky="ew", pady=(12, 0))
 
+    def _show_download_button(self, *, update: bool) -> None:
+        """Düğmeyi bağlama göre etiketleyip gösterir (F9: güncelleme ya da ilk kurulum)."""
+        self.download_button.configure(text=_UPDATE_LABEL if update else _DOWNLOAD_LABEL)
+        self.download_button.grid(row=0, column=0, sticky="w")
+
     def show_compilers(
-        self, compilers: list[CompilerStatus], *, offer_download: bool = False
+        self,
+        compilers: list[CompilerStatus],
+        *,
+        offer_download: bool = False,
+        update_available: bool = False,
     ) -> None:
         if not self.downloading:
-            if offer_download:
-                self.download_button.grid(row=0, column=0, sticky="w")
+            if offer_download or update_available:
+                self._show_download_button(update=update_available)
+                self.download_text.configure(
+                    text=_UPDATE_HINT if update_available else _DOWNLOAD_HINT,
+                    text_color=theme.MUTED if update_available else theme.TEXT_SOFT,
+                )
                 self.download_box.grid(row=1, column=0, sticky="ew", pady=(12, 0))
             else:
                 self.download_box.grid_remove()

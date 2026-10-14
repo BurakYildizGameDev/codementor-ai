@@ -13,7 +13,12 @@ from codementor.report.markdown import to_markdown
 from codementor.report.sarif import to_sarif
 from codementor.validation.toolchain import compiler_statuses as toolchain_statuses
 from codementor.validation.toolchain import get_toolchain
-from codementor.validation.toolchain_install import installed_zig, platform_key, zig_root
+from codementor.validation.toolchain_install import (
+    installed_zig,
+    needs_update,
+    platform_key,
+    zig_root,
+)
 
 _MB = 1024 * 1024
 _C_FAMILY = ("c", "cpp", "unreal")
@@ -36,6 +41,11 @@ def offer_compiler_download(settings: Settings, compilers: list[CompilerStatus])
         and platform_key() in validation.zig.sources
         and installed_zig(zig_root(validation.toolchain_dir)) is None
     )
+
+
+def compiler_update_available(settings: Settings) -> bool:
+    """Kurulu zig, yapılandırmadaki sürümden/kaynaktan farklıysa güncelleme düğmesi (F9)."""
+    return needs_update(settings.validation)
 
 
 def describe_progress(event: DownloadProgress) -> tuple[str, float | None]:

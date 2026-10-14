@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import os
 import threading
 import zipfile
@@ -26,6 +27,7 @@ from codementor.validation.toolchain_install import (
     ToolchainInstallError,
     install_zig,
     installed_zig,
+    needs_update,
     platform_key,
 )
 
@@ -58,6 +60,17 @@ def _settings(tmp_path: Path, payload: bytes, **zig: object) -> ValidationSettin
 
 def _install(settings: ValidationSettings, **kwargs: object) -> Path:
     return install_zig(settings, platform=PLATFORM, verify=lambda _exe: True, **kwargs)  # type: ignore[arg-type]
+
+
+def _fake_install(settings: ValidationSettings, *, version: str, sha256: str) -> Path:
+    """Elle kurulmuş gibi dizin + işaretçi (ağ yok)."""
+    root = settings.toolchain_dir / "zig"
+    root.mkdir(parents=True, exist_ok=True)
+    exe = root / EXE
+    exe.write_bytes(b"v1")
+    marker = {"version": version, "sha256": sha256, "platform": PLATFORM}
+    (root / INSTALL_MARKER).write_text(json.dumps(marker), encoding="utf-8")
+    return exe
 
 
 def _leftovers(settings: ValidationSettings) -> list[str]:
@@ -461,6 +474,44 @@ def test_persistent_rename_lock_keeps_previous_install(
     assert exe.read_bytes() == b"v1"  # önceki kurulum yerinde
     assert installed_zig(settings.toolchain_dir / "zig") == exe
     assert _leftovers(settings) == []
+
+
+# --- Faz F (F9): kurulu zig güncel mi -------------------------------------------------------
+
+
+def test_needs_update_only_when_marker_differs(tmp_path: Path) -> None:
+    """Faz F (F9): işaretçideki sürüm/kaynak yapılandırmadan farklıysa güncelleme önerilir."""
+    settings = _settings(tmp_path, _wheel())
+    current = settings.zig.sources[PLATFORM].sha256
+
+    assert needs_update(settings) is False  # kurulum yok → güncelleme değil, eksik kurulum
+    _fake_install(settings, version=settings.zig.version, sha256=current)
+    assert needs_update(settings, platform=PLATFORM) is False  # güncel
+    _fake_install(settings, version="0.15.0", sha256=current)
+    assert needs_update(settings, platform=PLATFORM) is True  # eski sürüm
+    _fake_install(settings, version=settings.zig.version, sha256="0" * 64)
+    assert needs_update(settings, platform=PLATFORM) is True  # aynı sürüm, kaynak değişti
+
+
+def test_needs_update_false_on_missing_or_broken_marker(tmp_path: Path) -> None:
+    """Faz F (F9): yarım kurulum (işaretçisiz) ve bozuk işaretçi güncelleme sayılmaz."""
+    settings = _settings(tmp_path, _wheel())
+    root = settings.toolchain_dir / "zig"
+    root.mkdir(parents=True, exist_ok=True)
+    (root / EXE).write_bytes(b"v1")
+    assert needs_update(settings) is False  # işaretçi yok: kurulum tamamlanmamış
+    (root / INSTALL_MARKER).write_text("bozuk", encoding="utf-8")
+    assert needs_update(settings) is False
+    (root / INSTALL_MARKER).write_text("[1, 2]", encoding="utf-8")
+    assert needs_update(settings) is False
+
+
+def test_needs_update_false_without_configured_source(tmp_path: Path) -> None:
+    """Faz F (F9): bu platform için kaynak yoksa (adres/sha256) güncelleme önerilmez."""
+    settings = _settings(tmp_path, _wheel())
+    _fake_install(settings, version="0.15.0", sha256="0" * 64)
+    assert needs_update(settings) is False  # host platformu kaynak listesinde yok
+    assert needs_update(settings, platform="linux-aarch64") is False
 
 
 def test_rename_retry_is_bounded_and_only_for_permission(

@@ -82,6 +82,31 @@ def installed_zig(root: Path) -> Path | None:
         return None
 
 
+def installed_marker(root: Path) -> dict[str, object] | None:
+    """Kurulum işaretçisinin içeriği (`version`, `sha256`, `platform`); yoksa/bozuksa `None`."""
+    try:
+        data: object = json.loads((root / INSTALL_MARKER).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def needs_update(settings: ValidationSettings, *, platform: str | None = None) -> bool:
+    """Kurulu zig, yapılandırmadaki sürüm/kaynaktan farklı mı (Faz F, F9).
+
+    Kurulum yoksa, işaretçi okunamıyorsa ya da bu platform için kaynak tanımlı değilse
+    `False`: o durumda güncelleme değil, kurulum eksikliği söz konusudur.
+    """
+    root = zig_root(settings.toolchain_dir)
+    if installed_zig(root) is None:
+        return False
+    marker = installed_marker(root)
+    source = settings.zig.sources.get(platform or platform_key())
+    if marker is None or source is None:
+        return False
+    return marker.get("version") != settings.zig.version or marker.get("sha256") != source.sha256
+
+
 def _https_only(request: httpx.Request) -> None:
     if request.url.scheme != "https":
         raise ToolchainInstallError("İndirme https olmayan bir adrese yönlendirildi; durduruldu.")

@@ -28,6 +28,7 @@ from codementor.desktop.connections import (
 )
 from codementor.desktop.services import (
     compiler_statuses,
+    compiler_update_available,
     describe_progress,
     offer_compiler_download,
 )
@@ -124,8 +125,12 @@ class ConnectionsController:
         if kind == "compilers":
             if message.kind == "result" and self.view is not None:
                 compilers = cast(list[CompilerStatus], message.payload)  # bridge yükü Any
-                offer = offer_compiler_download(self.app.settings, compilers)
-                self.view.show_compilers(compilers, offer_download=offer)
+                settings = self.app.settings
+                self.view.show_compilers(
+                    compilers,
+                    offer_download=offer_compiler_download(settings, compilers),
+                    update_available=compiler_update_available(settings),
+                )
         elif kind == "toolchain":
             self._on_toolchain(message)
         elif kind == "probe":

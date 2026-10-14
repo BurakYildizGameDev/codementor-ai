@@ -21,9 +21,10 @@ from codementor.config import CONFIG_FILE_ENV
 from codementor.desktop import connections_controller as controller_module
 from codementor.desktop import runtime
 from codementor.desktop.app import App
-from codementor.desktop.bridge import Cancellation
+from codementor.desktop.bridge import Cancellation, Message
 from codementor.desktop.connections import PROVIDERS, KeyStore, Probe
 from codementor.desktop.views import analyze_view as analyze_view_module
+from codementor.models.api import CompilerStatus
 from codementor.models.enums import Difficulty, Engine, Language
 from codementor.models.provider import ProviderStatus
 from codementor.models.request import AnalysisRequest
@@ -717,6 +718,12 @@ def _toast(app: App) -> str:
     return str(app.toast_label.cget("text"))
 
 
+def _compilers_message(tool: str | None) -> Message:
+    """`bridge` sonucu gibi bir derleyici özeti mesajı (denetleyici doğrudan sürülür)."""
+    payload = [CompilerStatus(target="c", tool=tool)]
+    return Message(task="compilers", kind="result", payload=payload, generation=0)
+
+
 def test_compiler_download_progress_and_success(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
     proceed = threading.Event()
 
@@ -781,6 +788,42 @@ def test_compiler_download_cancel(app: App, monkeypatch: pytest.MonkeyPatch) -> 
     pump(app, lambda: not view.downloading)
     assert "iptal edildi" in str(view.download_text.cget("text"))
     assert view.download_button.grid_info()
+
+
+def test_compiler_update_button_when_installed_zig_is_old(
+    app: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz F (F9): kurulu zig eskiyken kart "Derleyiciyi güncelle" düğmesi gösterir."""
+    monkeypatch.setattr(controller_module, "compiler_update_available", lambda _settings: False)
+    view = app.settings_view
+    app.connections.handle(_compilers_message("zig (indirilen)"))
+    assert not view.download_box.grid_info()  # güncel: kutu (ve düğme) görünmez
+
+    monkeypatch.setattr(controller_module, "compiler_update_available", lambda _settings: True)
+    app.connections.handle(_compilers_message("zig (indirilen)"))
+    assert view.download_button.grid_info()
+    assert "güncelle" in str(view.download_button.cget("text")).lower()
+    assert "Güncelleme var" in str(view.download_text.cget("text"))
+
+
+def test_compiler_update_button_downloads_through_same_flow(
+    app: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz F (F9): güncelleme düğmesi mevcut indirme akışını (install_zig) kullanır."""
+    monkeypatch.setattr(controller_module, "compiler_update_available", lambda _settings: True)
+    done = threading.Event()
+
+    def fake_install(settings: object, **_kwargs: object) -> Path:
+        done.set()
+        return Path("/tc/zig/zig")
+
+    monkeypatch.setattr(controller_module, "install_zig", fake_install)
+    view = app.settings_view
+    app.connections.handle(_compilers_message("zig (indirilen)"))
+    view.download_button.invoke()
+    assert done.wait(5)
+    pump(app, lambda: not view.downloading)
+    assert "kuruldu" in _toast(app)
 
 
 def test_question_difficulty_filter(app: App) -> None:
