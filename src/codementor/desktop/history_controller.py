@@ -116,7 +116,7 @@ def delete_history(app: App, analysis_id: str) -> None:
 
 
 def clear_history(app: App) -> None:
-    """Tüm analiz geçmişini, saklanan kodları ve oturumları temizler (Faz 62)."""
+    """Tüm analiz geçmişini, saklanan kodları ve oturumları temizler (Faz 62, Faz F)."""
     if app.analyze_view.busy:  # biten analiz oturumu ve kaydı yeniden yazardı (denetim O2)
         app.toast("Analiz sürerken geçmiş temizlenemez; önce Durdur'a bas.")
         return
@@ -129,6 +129,7 @@ def clear_history(app: App) -> None:
     count = clear_analyses(app.core.database())
     clear_sessions(app.core.database())
     runtime.clear_sources(app.prefs_dir)
+    app.save_prefs(recent_files=[])
     app._shown_analysis_id = None
     app._last_code, app._last_question_id, app._last_counted = "", None, None
     app.analyze_view.report = None

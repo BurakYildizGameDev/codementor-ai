@@ -326,3 +326,23 @@ def test_new_analysis_saved_after_clear(db: Database) -> None:
     assert cache.get_analysis(db, fresh.analysis_id) == fresh
     assert cache.find_cached(db, "yeni") == fresh
     assert len(cache.list_analyses(db)) == 1
+
+
+def test_clear_analyses_vacuums_and_removes_bytes(tmp_path: Path) -> None:
+    """Faz F (O14): clear_analyses sonrası SQLite disk dosyasında silinen veri kalmaz."""
+    db_file = tmp_path / "secure.db"
+    db = Database(db_file)
+    marker = "BENZERSIZ_ISARET_9f3a"
+    report = _report().model_copy(update={"question_id": marker})
+    cache.save_analysis(db, report, key="k", session_id=None, latency_ms=5)
+
+    wal_file = tmp_path / "secure.db-wal"
+    combined_before = db_file.read_bytes() + (wal_file.read_bytes() if wal_file.exists() else b"")
+    assert marker.encode() in combined_before
+
+    deleted = cache.clear_analyses(db)
+    assert deleted == 1
+    db.close()
+
+    combined_after = db_file.read_bytes() + (wal_file.read_bytes() if wal_file.exists() else b"")
+    assert marker.encode() not in combined_after

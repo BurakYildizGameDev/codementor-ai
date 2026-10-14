@@ -201,6 +201,9 @@ def test_clear_history_confirmation_and_cleanup(app: App, prefs_dir: Path) -> No
     assert sessions.next_attempt(app.core.database(), "s1", "q1") == 2
 
     # 2. Onay verilirse temizlenir
+    app.save_prefs(recent_files=["test.c"])
+    assert app.prefs.recent_files == ["test.c"]
+
     def accept(title: str, message: str, **_kwargs: Any) -> bool:
         prompts.append((title, message))
         return True
@@ -211,6 +214,7 @@ def test_clear_history_confirmation_and_cleanup(app: App, prefs_dir: Path) -> No
     assert runtime.load_source(analysis_id, prefs_dir) is None
     assert app.analyze_view.report is None
     assert app._shown_analysis_id is None
+    assert app.prefs.recent_files == []
     # Oturumlar da silindi:
     assert sessions.next_attempt(app.core.database(), "s1", "q1") == 1
     assert "Geçmiş temizlendi (1 analiz)." in _toast(app)

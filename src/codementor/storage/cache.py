@@ -16,7 +16,7 @@ from sqlmodel import col, delete, select
 
 from codementor.log import get_logger
 from codementor.models.report import AnalysisReport
-from codementor.storage.db import AnalysisRow, Database
+from codementor.storage.db import MEMORY, AnalysisRow, Database
 
 log = get_logger("codementor.storage")
 
@@ -202,11 +202,20 @@ def delete_analysis(db: Database, analysis_id: str) -> bool:
 
 
 def clear_analyses(db: Database) -> int:
-    """Tüm analiz kayıtlarını siler (Faz 62); silinen satır sayısını döner."""
+    """Tüm analiz kayıtlarını siler (Faz 62); silinen satır sayısını döner.
+
+    Silme sonrası boş sayfaları sıfırlamak ve disk alanını geri kazanmak
+    için VACUUM ve WAL kontrol noktası işletilir (Faz F, O14).
+    """
     with db.session() as session:
         result = session.exec(delete(AnalysisRow))
         session.commit()
-        return int(result.rowcount)
+        deleted = int(result.rowcount)
+    if db.path != MEMORY:
+        with db.engine.connect() as c:
+            c.exec_driver_sql("VACUUM")
+            c.exec_driver_sql("PRAGMA wal_checkpoint(TRUNCATE)")
+    return deleted
 
 
 @dataclass(frozen=True)
