@@ -878,7 +878,8 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] Bağlantılar'da `ollama pull` düğmesi (Sonraya: Faz 15) — **Faz F**
 - [x] SQLite çağrılarını iş parçacığına alma (Sonraya: Faz 26) — **Faz F**
 - [ ] **400 satır:** `desktop/app.py` (494) ve `pipeline/orchestrator.py` (415) bölünür
-- [ ] Linux/macOS'ta "Oturum aç" (şu an yalnız Windows)
+- [x] Linux/macOS'ta "Oturum aç": Windows yeni konsol; Linux `x-terminal-emulator -e` (yoksa
+      `gnome-terminal --`); macOS `open -a Terminal`; terminal yoksa bildirimle elle komut — **Faz F**
 
 **F10 denetimi (2026-10-14, `faz-denetim`):** Kritik ve Önemli bulgu yok → birleştirilebilir. Üç küçük bulgu:
 - **Küçük** — `desktop/services.py:110-114`: `run_ollama_pull` içinde `result.error` ve `result.timed_out`

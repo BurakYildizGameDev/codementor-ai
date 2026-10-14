@@ -23,10 +23,10 @@ from codementor.desktop.connections import (
     key_source,
     load_vault_keys,
     model_suggestions,
-    open_login_console,
     probe,
     try_connection,
 )
+from codementor.desktop.login import LoginUnavailableError, open_login_console
 from codementor.desktop.services import (
     OllamaPullError,
     PullOutcome,
@@ -310,8 +310,12 @@ class ConnectionsController:
             self.app.toast("Silinecek eski anahtar bulunamadı")
 
     def login(self, name: str) -> None:
+        """CLI oturum açma penceresini açar; terminal yoksa komutu bildirimle söyler (F12)."""
         try:
             open_login_console(name, self.app.settings.providers)
+        except LoginUnavailableError as exc:
+            self.app.toast(str(exc).removeprefix(f"{name}: "))
+            return
         except (ProviderError, OSError) as exc:
             self._card_message(name, f"Oturum açma başlatılamadı: {exc}", False)
             return

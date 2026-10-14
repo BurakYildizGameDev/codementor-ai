@@ -20,7 +20,6 @@ from codementor.desktop.connections import (
     apply_overrides,
     key_source,
     load_vault_keys,
-    login_command,
     model_suggestions,
     parse_agy_models,
     parse_claude_status,
@@ -280,13 +279,6 @@ async def test_agy_without_model_still_discovers_models(settings: Settings) -> N
     assert result.status.detail.startswith("Önce bir model seç")
 
 
-def test_login_command_uses_absolute_path(settings: Settings) -> None:
-    cfg = cli_settings(settings).providers
-    assert login_command("claude_cli", cfg)[1:] == ["auth", "login"]
-    assert len(login_command("agy", cfg)) == 1
-    assert Path(login_command("agy", cfg)[0]).is_absolute()
-
-
 # --- Codex (Faz 28, ADR-0017) -----------------------------------------------------------------
 
 CODEX_MODELS = (
@@ -353,12 +345,6 @@ async def test_codex_probe_model_list_timeout_keeps_login(settings: Settings) ->
     assert result.models == []
 
 
-def test_codex_login_command(settings: Settings) -> None:
-    command = login_command("codex", cli_settings(settings).providers)
-    assert command[1:] == ["login"]
-    assert Path(command[0]).is_absolute()
-
-
 @pytest.mark.anyio
 async def test_try_connection_sends_no_temperature_and_room_for_reasoning(
     settings: Settings, monkeypatch: pytest.MonkeyPatch
@@ -395,34 +381,6 @@ async def test_try_connection_unparsed_reply_is_failure(
     message = await try_connection("anthropic", settings)
     assert message.startswith("Başarısız")
     assert "length" in message
-
-
-def test_login_env_strips_api_keys(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Faz 50: oturum açma konsolu API anahtarlarını miras almaz (yalnız CLI'nin kendi girişi)."""
-    from codementor.desktop.connections import login_env
-
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-gizli")
-    monkeypatch.setenv("GEMINI_API_KEY", "gizli")
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-gizli")
-    monkeypatch.setenv("CODEMENTOR_TEST_OZEL_ANAHTAR", "gizli")
-    monkeypatch.setenv("PATH_DISINDA_KALAN", "kalir")
-    providers = settings.providers.model_copy(
-        update={
-            "ollama": settings.providers.ollama.model_copy(
-                update={"api_key_env": "CODEMENTOR_TEST_OZEL_ANAHTAR"}
-            )
-        }
-    )
-    env = login_env(providers)
-    for name in (
-        "ANTHROPIC_API_KEY",
-        "GEMINI_API_KEY",
-        "OPENAI_API_KEY",
-        "CODEMENTOR_TEST_OZEL_ANAHTAR",
-    ):
-        assert name not in env
-    assert env["PATH_DISINDA_KALAN"] == "kalir"
-    assert "PATH" in env or "Path" in env
 
 
 @pytest.mark.anyio

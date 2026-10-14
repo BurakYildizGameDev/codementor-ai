@@ -15,6 +15,7 @@ MODULES = [
     "codementor.desktop.questions_controller",
     "codementor.desktop.history_controller",
     "codementor.desktop.config_controller",
+    "codementor.desktop.login",
     "codementor.desktop.self_check",
     "codementor.desktop.runtime",
     "codementor.desktop.config_writer",

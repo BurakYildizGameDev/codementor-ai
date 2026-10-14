@@ -354,7 +354,8 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
 
 ### 4.14 Platform ve dil kapsamı 🟡
 
-- **Durum:** Masaüstü pratikte Windows-öncelikli ("Oturum aç" yalnız Windows'ta, Faz F'de planlı).
+- **Durum:** Masaüstü "Oturum aç" Windows'ta yeni konsolda, Linux/macOS'ta sistem terminalinde
+  açılıyor (Faz F, F12); diğer masaüstü davranışları hâlâ pratikte Windows'ta deneniyor.
   Diller: C, C++, C#, Python, HTML, CSS. JavaScript/TypeScript, Java yok — bunlar öğrencilerin en çok
   kullandığı dillerden. Arayüz ve tüm mesajlar Türkçe.
 - **Neden önemli:** Türkçe odak bilinçli bir niş tercihi ve değerli; ama uluslararası görünürlüğü ve

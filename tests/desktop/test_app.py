@@ -23,6 +23,7 @@ from codementor.desktop import history_controller, runtime
 from codementor.desktop.app import App
 from codementor.desktop.bridge import Cancellation, Message
 from codementor.desktop.connections import PROVIDERS, KeyStore, Probe
+from codementor.desktop.login import LoginUnavailableError, manual_login_hint
 from codementor.desktop.services import PullOutcome
 from codementor.desktop.views import analyze_view as analyze_view_module
 from codementor.desktop.views import history_view as history_view_module
@@ -890,6 +891,41 @@ def test_ollama_pull_without_binary_warns_and_starts_nothing(
     assert "Ollama bulunamadı" in _toast(app)
     assert "Ollama bulunamadı" in str(card.detail.cget("text"))
     assert not app.bridge.is_running("pull:ollama")
+
+
+# --- Faz F (F12): Linux/macOS'ta "oturum aç" ------------------------------------------------
+
+
+def test_login_starts_console_and_points_to_check(
+    app: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """F12: kart eylemi oturum açma penceresini açar; kart kullanıcıyı Denetle'ye yönlendirir."""
+    seen: list[str] = []
+
+    def fake_open(name: str, _providers: object) -> None:
+        seen.append(name)
+
+    monkeypatch.setattr(controller_module, "open_login_console", fake_open)
+    app.connections.login("claude_cli")
+    card = app.settings_view.cards["claude_cli"]
+    assert seen == ["claude_cli"]
+    assert "Açılan pencerede oturum aç" in str(card.detail.cget("text"))
+
+
+def test_login_without_terminal_shows_command_toast(
+    app: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """F12: terminal yoksa hiçbir süreç başlamaz; bildirim elle çalıştırılacak komutu söyler."""
+    hint = manual_login_hint(["claude", "auth", "login"])
+
+    def unavailable(name: str, _providers: object) -> None:
+        raise LoginUnavailableError(name, hint)
+
+    monkeypatch.setattr(controller_module, "open_login_console", unavailable)
+    app.connections.login("claude_cli")
+    text = _toast(app)
+    assert "Terminalde şu komutu çalıştırın: claude auth login" in text
+    assert not text.strip().startswith("claude_cli:")  # sağlayıcı ön eki kullanıcıya gösterilmez
 
 
 def test_question_difficulty_filter(app: App) -> None:

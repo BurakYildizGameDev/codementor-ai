@@ -13,8 +13,6 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-import subprocess
-import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -366,37 +364,3 @@ async def try_connection(name: str, settings: Settings) -> str:
             f"(bitiş nedeni: {reason}); model yapılandırılmış çıktıyı desteklemiyor olabilir."
         )
     return f"Bağlantı çalışıyor ({result.model}, {result.latency_ms} ms)"
-
-
-def login_command(name: str, providers: ProvidersSettings) -> list[str]:
-    """Oturum açma için sabit argv (mutlak yol)."""
-    executable = resolve_executable(name, getattr(providers, name).command)
-    if name == "claude_cli":
-        return [executable, "auth", "login"]
-    return [executable, "login"] if name == "codex" else [executable]
-
-
-def open_login_console(name: str, providers: ProvidersSettings) -> None:
-    """Oturum açma komutunu yeni bir konsol penceresinde başlatır (etkileşimli; yalnız Windows)."""
-    if sys.platform != "win32":
-        raise ProviderError(name, "konsoldan oturum açma yalnızca Windows'ta destekleniyor")
-    argv = login_command(name, providers)
-    flags: Any = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
-    env = login_env(providers)
-    subprocess.Popen(argv, cwd=Path.home(), creationflags=flags, close_fds=True, env=env)
-
-
-def login_env(providers: ProvidersSettings) -> dict[str, str]:
-    """Oturum konsolunun ortamı: API anahtarı değişkenleri çıkarılır (Faz 50). Konsol
-    etkileşimlidir ve kasadan yüklenen anahtarlar süreç ortamındadır; CLI yalnız kendi
-    girişini kullanmalı, kullanıcı konsolda anahtarı da görmemeli."""
-    configured = {
-        str(env_name)
-        for config in providers.model_dump().values()
-        if isinstance(config, dict) and (env_name := config.get("api_key_env"))
-    }
-    return {
-        key: value
-        for key, value in os.environ.items()
-        if key not in configured and not key.upper().endswith("_API_KEY")
-    }
