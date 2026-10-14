@@ -111,18 +111,34 @@ def list_analyses(db: Database, limit: int = 50) -> list[AnalysisRow]:
 
 
 def list_analyses_page(
-    db: Database, *, limit: int, before: str | None
+    db: Database,
+    *,
+    limit: int = 50,
+    before: str | None = None,
+    search: str | None = None,
 ) -> tuple[list[AnalysisRow], str | None]:
-    """Sayfalı analiz listesi (API `GET /v1/analyses`, Faz E).
+    """Sayfalı analiz listesi (API `GET /v1/analyses`, Masaüstü Geçmiş, Faz E/F).
 
     Sıralama `created_at` azalan, eşitlikte `id` azalan. `before` verilirse o kimliğin
     satırından sonra gelenleri (daha eski olanları) döndürür; `before` bulunamazsa boş sayfa döner.
+    `search` verilirse soru kimliği, dil ve sağlayıcı alanlarında büyük/küçük harf duyarsız
+    arama yapar (% ve _ jokerleri kaçışlanır).
     `limit + 1` satır çekilir; fazlası varsa `next_cursor` son döndürülen satırın kimliğidir.
     """
     with db.session() as session:
         query = select(AnalysisRow).order_by(
             col(AnalysisRow.created_at).desc(), col(AnalysisRow.id).desc()
         )
+        if search is not None and search.strip():
+            clean = search.strip().replace("/", "//").replace("%", "/%").replace("_", "/_")
+            pattern = f"%{clean}%"
+            query = query.where(
+                or_(
+                    col(AnalysisRow.question_id).ilike(pattern, escape="/"),
+                    col(AnalysisRow.language).ilike(pattern, escape="/"),
+                    col(AnalysisRow.provider).ilike(pattern, escape="/"),
+                )
+            )
         if before is not None:
             before_row = session.get(AnalysisRow, before)
             if before_row is None:

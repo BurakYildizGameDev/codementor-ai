@@ -19,15 +19,20 @@ from codementor.storage.db import AnalysisRow
 log = get_logger("codementor.desktop")
 
 
+LoadPageFn = Callable[[int, str | None, str | None], tuple[list[AnalysisRow], str | None]]
+
+
 class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
     def __init__(
         self,
         master: Any,
-        load: Callable[[], list[AnalysisRow]],
-        on_open: Callable[[str], None],
+        load: Callable[[], list[AnalysisRow]] | None = None,
+        on_open: Callable[[str], None] = lambda _aid: None,
         on_delete: Callable[[str], None] | None = None,
         on_clear: Callable[[], None] | None = None,
         totals: Callable[[], str | None] | None = None,
+        is_busy: Callable[[], bool] | None = None,
+        load_page: LoadPageFn | None = None,
     ) -> None:
         super().__init__(master, fg_color="transparent")
         self._load = load
@@ -35,11 +40,24 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
         self._on_delete = on_delete
         self._on_clear = on_clear
         self._totals = totals
+        self._is_busy = is_busy
+
+        def _fallback_page(
+            limit: int, before: str | None, search: str | None
+        ) -> tuple[list[AnalysisRow], str | None]:
+            rows = self._load() if self._load is not None else []
+            return rows[:limit], None
+
+        self._load_page = load_page or _fallback_page
+        self._rows: list[AnalysisRow] = []
+        self._next_cursor: str | None = None
+        self._page_size = 50
+
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
 
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 16))
+        header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 12))
         header_frame.grid_columnconfigure(0, weight=1)
 
         page_header(header_frame, "Geçmiş", "Son analizlerin; açmak için bir satıra tıkla.").grid(
@@ -62,13 +80,41 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
         self.totals_label = ctk.CTkLabel(
             header_frame, text="", font=theme.font(12), text_color=theme.MUTED, anchor="w"
         )
-        self.totals_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        self.totals_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 0))
+
+        # Faz F (F6): Arama kutusu
+        search_frame = ctk.CTkFrame(self, fg_color="transparent")
+        search_frame.grid(row=1, column=0, sticky="ew", pady=(0, 12))
+        search_frame.grid_columnconfigure(0, weight=1)
+
+        self.search_entry = ctk.CTkEntry(
+            search_frame,
+            placeholder_text="Geçmişte ara (soru, dil, sağlayıcı)...",
+            font=theme.font(12),
+            height=30,
+        )
+        self.search_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+        self.search_entry.bind("<Return>", lambda _e: self.on_search())
+
+        self.search_btn = ctk.CTkButton(
+            search_frame,
+            text="Ara",
+            width=56,
+            height=30,
+            font=theme.font(12),
+            fg_color=theme.SURFACE_2,
+            hover_color=theme.SURFACE_3,
+            text_color=theme.TEXT,
+            command=self.on_search,
+        )
+        self.search_btn.grid(row=0, column=1)
 
         self.list = ctk.CTkScrollableFrame(
             self, fg_color="transparent", scrollbar_button_color=theme.SURFACE_3
         )
-        self.list.grid(row=1, column=0, sticky="nsew")
+        self.list.grid(row=2, column=0, sticky="nsew")
         self.list.grid_columnconfigure(0, weight=1)
+        self.load_more_btn: ctk.CTkButton | None = None
 
     def _handle_clear(self) -> None:
         if self._on_clear is not None:
@@ -78,25 +124,69 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
         if self._on_delete is not None:
             self._on_delete(analysis_id)
 
+    def on_search(self) -> None:
+        """Arama metni değiştiğinde veya Ara tıklandığında listeyi baştan tazeler."""
+        self.refresh()
+
     def refresh(self) -> None:
-        clear(self.list)
         self.totals_label.configure(text=self._totals_text())
+        search_text = self.search_entry.get().strip()
         try:
-            rows = self._load()
-        except Exception:  # veritabanı açılamazsa ekran yine açılır
-            rows = []
-        if not rows:
+            rows, next_cursor = self._load_page(self._page_size, None, search_text or None)
+        except Exception:
+            rows, next_cursor = [], None
+        self._rows = list(rows)
+        self._next_cursor = next_cursor
+        self._render_rows(search_active=bool(search_text))
+
+    def _render_rows(self, *, search_active: bool = False) -> None:
+        clear(self.list)
+        if not self._rows:
+            self.load_more_btn = None
             self.clear_btn.configure(state="disabled")
+            msg = (
+                "Arama kriterine uygun analiz bulunamadı."
+                if search_active
+                else "Henüz analiz yok. İlk denetimin burada görünecek."
+            )
             ctk.CTkLabel(
                 self.list,
-                text="Henüz analiz yok. İlk denetimin burada görünecek.",
+                text=msg,
                 font=theme.font(13),
                 text_color=theme.MUTED,
             ).grid(row=0, column=0, pady=40)
             return
         self.clear_btn.configure(state="normal")
-        for i, row in enumerate(rows):
+        for i, row in enumerate(self._rows):
             self._row(i, row)
+        if self._next_cursor is not None:
+            self.load_more_btn = ctk.CTkButton(
+                self.list,
+                text="Daha fazla yükle",
+                font=theme.font(12),
+                fg_color=theme.SURFACE_2,
+                hover_color=theme.SURFACE_3,
+                text_color=theme.TEXT,
+                height=32,
+                command=self._handle_load_more,
+            )
+            self.load_more_btn.grid(row=len(self._rows), column=0, sticky="ew", pady=(8, 16))
+        else:
+            self.load_more_btn = None
+
+    def _handle_load_more(self) -> None:
+        if self._next_cursor is None:
+            return
+        search_text = self.search_entry.get().strip()
+        try:
+            more_rows, next_cursor = self._load_page(
+                self._page_size, self._next_cursor, search_text or None
+            )
+        except Exception:
+            more_rows, next_cursor = [], None
+        self._rows.extend(more_rows)
+        self._next_cursor = next_cursor
+        self._render_rows(search_active=bool(search_text))
 
     def _totals_text(self) -> str:
         if self._totals is None:
@@ -151,9 +241,11 @@ class HistoryView(ctk.CTkFrame):  # type: ignore[misc]
             text_color=theme.MUTED,
         ).pack(side="left")
 
+        busy = bool(self._is_busy()) if self._is_busy is not None else False
         del_btn = ctk.CTkButton(
             item,
             text="Sil",
+            state="disabled" if busy else "normal",
             font=theme.font(11),
             fg_color="transparent",
             text_color=theme.MUTED,

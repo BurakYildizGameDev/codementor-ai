@@ -9,7 +9,7 @@ import threading
 import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -1050,6 +1050,46 @@ def test_clear_history_while_analysis_running_is_blocked(app: App, prefs_dir: Pa
     app.analyze_view.set_busy(False)
 
 
+def test_delete_history_while_analysis_running_is_blocked(app: App) -> None:
+    """Faz F (D19): Analiz sürerken tekil silme işlemi engellenir ve toast gösterilir."""
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    analyze(app)
+    report = app.analyze_view.report
+    assert report is not None
+    aid = report.analysis_id
+
+    app.analyze_view.set_busy(True)
+    app.delete_history(aid)
+    assert cache.get_analysis(app.core.database(), aid) is not None
+    assert "Analiz sürerken silinemez" in _toast(app)
+    app.analyze_view.set_busy(False)
+
+
+def test_history_view_delete_button_disabled_when_busy(app: App) -> None:
+    """Faz F (D19): Analiz meşgulken history_view satırlarındaki Sil butonu disabled olur."""
+    app.analyze_view.editor.set(LINKED_LIST, Language.C)
+    analyze(app)
+    app.analyze_view.set_busy(True)
+    app.history_view.refresh()
+
+    item = next(w for w in app.history_view.list.winfo_children() if isinstance(w, ctk.CTkFrame))
+    del_btn = next(
+        c for c in item.winfo_children() if isinstance(c, ctk.CTkButton) and c.cget("text") == "Sil"
+    )
+    assert del_btn.cget("state") == "disabled"
+    app.analyze_view.set_busy(False)
+    app.history_view.refresh()
+    item_normal = next(
+        w for w in app.history_view.list.winfo_children() if isinstance(w, ctk.CTkFrame)
+    )
+    del_btn_normal = next(
+        c
+        for c in item_normal.winfo_children()
+        if isinstance(c, ctk.CTkButton) and c.cget("text") == "Sil"
+    )
+    assert del_btn_normal.cget("state") == "normal"
+
+
 def test_clear_history_resets_last_attempt_state(app: App) -> None:
     """Denetim O2: temizlikten sonra aynı kod yeni deneme sayılır ("sayıldı" durumu kalmaz)."""
     app.analyze_view.editor.set(LINKED_LIST, Language.C)
@@ -1249,3 +1289,62 @@ def test_close_with_unsaved_changes_confirm(app: App) -> None:
     assert app.winfo_exists()
     assert not app._closing
     app.files.mark_clean()
+
+
+def test_history_view_pagination_and_search(app: App) -> None:
+    """Faz F (F6): Geçmiş ekranında sayfalama (50 + daha fazla) ve arama (% ve _ joker kaçışı)."""
+    db = app.core.database()
+    now = datetime.now(UTC)
+    with db.session() as s:
+        for i in range(60):
+            qid = (
+                "c-medium"
+                if i == 5
+                else ("c_underscore" if i == 6 else ("100%_done" if i == 7 else None))
+            )
+            s.add(
+                AnalysisRow(
+                    id=f"hist_{i:03d}",
+                    created_at=now + timedelta(seconds=i),
+                    cache_key=f"k_{i}",
+                    language="c",
+                    engine="none",
+                    question_id=qid,
+                    provider="ollama" if i % 2 == 0 else "fake",
+                    report_json="{}",
+                )
+            )
+        s.commit()
+
+    # 1. İlk yükleme: 50 satır ve Daha Fazla butonu görünür
+    app.history_view.search_entry.delete(0, "end")
+    app.history_view.refresh()
+    assert len(app.history_view._rows) == 50
+    assert app.history_view._next_cursor is not None
+
+    # 2. Daha fazla yükle: kalan 10 satır eklenir, toplam 60 satır olur ve buton gizlenir
+    app.history_view._handle_load_more()
+    assert len(app.history_view._rows) == 60
+    assert app.history_view._next_cursor is None
+
+    # 3. Arama: "c-medium" -> yalnız 1 eşleşen (c-medium)
+    app.history_view.search_entry.delete(0, "end")
+    app.history_view.search_entry.insert(0, "c-medium")
+    app.history_view.on_search()
+    assert len(app.history_view._rows) == 1
+    assert app.history_view._rows[0].question_id == "c-medium"
+
+    # 4. Joker kaçışı: "_" içeren arama ("c_") "c-medium" ile eşleşmez,
+    # sadece "c_underscore" ile eşleşir
+    app.history_view.search_entry.delete(0, "end")
+    app.history_view.search_entry.insert(0, "c_")
+    app.history_view.on_search()
+    assert len(app.history_view._rows) == 1
+    assert app.history_view._rows[0].question_id == "c_underscore"
+
+    # 5. Joker kaçışı: "%" içeren arama ("100%") sadece "100%_done" ile eşleşir
+    app.history_view.search_entry.delete(0, "end")
+    app.history_view.search_entry.insert(0, "100%")
+    app.history_view.on_search()
+    assert len(app.history_view._rows) == 1
+    assert app.history_view._rows[0].question_id == "100%_done"

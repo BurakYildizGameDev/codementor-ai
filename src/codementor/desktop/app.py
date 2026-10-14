@@ -154,6 +154,8 @@ class App(ctk.CTk):  # type: ignore[misc]
             on_delete=self.delete_history,
             on_clear=self.clear_history,
             totals=lambda: usage_totals_label(usage_totals(self.core.database())),
+            is_busy=lambda: self.analyze_view.busy,
+            load_page=self._history_page,
         )
         self.settings_view = ConnectionsView(
             stage,
@@ -333,21 +335,22 @@ class App(ctk.CTk):  # type: ignore[misc]
     def _history_rows(self) -> list[AnalysisRow]:
         return history_controller.history_rows(self)
 
+    def _history_page(
+        self, limit: int = 50, before: str | None = None, search: str | None = None
+    ) -> tuple[list[AnalysisRow], str | None]:
+        return history_controller.history_page(self, limit=limit, before=before, search=search)
+
     def open_history(self, analysis_id: str) -> None:
         history_controller.open_history(self, analysis_id)
 
     def delete_history(self, analysis_id: str) -> None:
-        """Kayıtlı bir analizi ve saklanan kodunu siler (Faz 62)."""
         history_controller.delete_history(self, analysis_id)
 
     def clear_history(self) -> None:
-        """Tüm analiz geçmişini, saklanan kodları ve oturumları temizler (Faz 62)."""
         history_controller.clear_history(self)
 
     # --- Ayarlar ve ortam ---------------------------------------------------------------
-
     def check_environment(self) -> None:
-        """Tüm sağlayıcıları ve derleyicileri yoklar (açılışta ve Bağlantılar ekranında)."""
         self.connections.refresh_all()
 
     def open_folder(self, path: str) -> None:

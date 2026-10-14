@@ -18,6 +18,7 @@ from codementor.storage.cache import (
     get_analysis,
     get_row,
     list_analyses,
+    list_analyses_page,
 )
 from codementor.storage.db import AnalysisRow
 from codementor.storage.sessions import clear_sessions
@@ -55,8 +56,17 @@ def history_rows(app: App) -> list[AnalysisRow]:
     return list_analyses(app.core.database())
 
 
+def history_page(
+    app: App, *, limit: int = 50, before: str | None = None, search: str | None = None
+) -> tuple[list[AnalysisRow], str | None]:
+    """Sayfalı ve filtreli geçmiş listesi döndürür (Faz F, F6)."""
+    return list_analyses_page(app.core.database(), limit=limit, before=before, search=search)
+
+
 def open_history(app: App, analysis_id: str) -> None:
-    """Seçilen geçmiş analizini açar ve editör ile sonuç panellerini günceller."""
+    """Seçilen geçmiş analizini açar ve editör ile sonuç panellerini günceller (Faz F)."""
+    if not app.files.confirm_discard():
+        return
     report = get_analysis(app.core.database(), analysis_id)
     if report is not None:
         app._shown_analysis_id = analysis_id
@@ -105,7 +115,10 @@ def open_history(app: App, analysis_id: str) -> None:
 
 
 def delete_history(app: App, analysis_id: str) -> None:
-    """Kayıtlı bir analizi ve saklanan kodunu siler (Faz 62)."""
+    """Kayıtlı bir analizi ve saklanan kodunu siler (Faz 62, Faz F)."""
+    if app.analyze_view.busy:
+        app.toast("Analiz sürerken silinemez; önce Durdur'a bas.")
+        return
     deleted_db = delete_analysis(app.core.database(), analysis_id)
     deleted_file = runtime.delete_source(analysis_id, app.prefs_dir)
     if not deleted_db and not deleted_file:

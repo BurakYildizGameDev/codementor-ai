@@ -442,3 +442,111 @@ def test_prune_old_sessions_and_retention(tmp_path: Path) -> None:
         assert s.get(SessionRow, ("old_s2", "q1")) is not None
     db2.close()
     db3.close()
+
+
+def test_list_analyses_page_pagination(db: Database) -> None:
+    """Faz F (F6): list_analyses_page 60 kayıtta 50 + 10 olarak sayfalar."""
+    now = datetime.now(UTC)
+    with db.session() as s:
+        for i in range(60):
+            s.add(
+                AnalysisRow(
+                    id=f"a_{i:03d}",
+                    created_at=now + timedelta(seconds=i),
+                    cache_key=f"k_{i}",
+                    language="c",
+                    engine="none",
+                    report_json="{}",
+                )
+            )
+        s.commit()
+
+    page1, cursor = cache.list_analyses_page(db, limit=50, before=None)
+    assert len(page1) == 50
+    assert cursor is not None
+    assert cursor == page1[-1].id
+
+    page2, cursor2 = cache.list_analyses_page(db, limit=50, before=cursor)
+    assert len(page2) == 10
+    assert cursor2 is None
+
+    # Toplam 60 farklı kayıt çekildi
+    all_ids = {r.id for r in page1} | {r.id for r in page2}
+    assert len(all_ids) == 60
+
+
+def test_list_analyses_page_search_and_escaping(db: Database) -> None:
+    """Faz F (F6): Soru/dil/sağlayıcı araması büyük/küçük harf duyarsızdır.
+    % ve _ karakterleri joker değildir.
+    """
+    now = datetime.now(UTC)
+    with db.session() as s:
+        s.add(
+            AnalysisRow(
+                id="1",
+                created_at=now + timedelta(seconds=1),
+                cache_key="k1",
+                language="c",
+                engine="none",
+                question_id="c-medium-1",
+                provider="ollama",
+                report_json="{}",
+            )
+        )
+        s.add(
+            AnalysisRow(
+                id="2",
+                created_at=now + timedelta(seconds=2),
+                cache_key="k2",
+                language="cpp",
+                engine="none",
+                question_id="cpp-hard",
+                provider="claude",
+                report_json="{}",
+            )
+        )
+        s.add(
+            AnalysisRow(
+                id="3",
+                created_at=now + timedelta(seconds=3),
+                cache_key="k3",
+                language="c",
+                engine="none",
+                question_id="c_medium_underscore",
+                provider="fake",
+                report_json="{}",
+            )
+        )
+        s.add(
+            AnalysisRow(
+                id="4",
+                created_at=now + timedelta(seconds=4),
+                cache_key="k4",
+                language="python",
+                engine="none",
+                question_id="100%_complete",
+                provider="openai",
+                report_json="{}",
+            )
+        )
+        s.commit()
+
+    # "c-medium" araması büyük-küçük harf duyarsız tekil eşleşir
+    rows, _ = cache.list_analyses_page(db, limit=10, search="C-Medium")
+    assert [r.id for r in rows] == ["1"]
+
+    # "_" karakteri joker olarak davranmaz: "c_medium" arandığında "c-medium-1" EŞLEŞMEZ
+    rows, _ = cache.list_analyses_page(db, limit=10, search="c_medium")
+    assert [r.id for r in rows] == ["3"]
+
+    # "%" karakteri joker olarak davranmaz: "100%" arandığında yalnızca id="4" eşleşir
+    rows, _ = cache.list_analyses_page(db, limit=10, search="100%")
+    assert [r.id for r in rows] == ["4"]
+
+    # Dil araması
+    rows, _ = cache.list_analyses_page(db, limit=10, search="cpp")
+    assert [r.id for r in rows] == ["2"]
+
+    # Sağlayıcı araması
+    rows, _ = cache.list_analyses_page(db, limit=10, search="ollama")
+    assert [r.id for r in rows] == ["1"]

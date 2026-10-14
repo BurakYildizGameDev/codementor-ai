@@ -61,8 +61,34 @@
 | B | ✅ (denetim sonraya) | faz/b-bulgu-kaybi-onbellek | 2026-10-13 | Claude Code / — |
 | K | ✅ (ADR-0028) | faz/k-kullanici-soru-token | 2026-10-13 | Claude Code / — |
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
-| D | ✅ (release etiketi kullanıcıda) | faz/d-public-release | 2026-10-13 | Claude Code / — |
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
+| F | ⚙️ sürüyor | faz/f-masaustu | 2026-10-14 | Antigravity / — |
+
+## Faz F — Notlar (masaüstü sağlamlık ve kullanılabilirlik; 2026-10-14)
+
+### Yapılanlar
+- **F0 (app.py controller'lara bölündü):** `history_controller.py` (141 satır) ve `config_controller.py` (89 satır) modülleri oluşturuldu; `app.py` 397 satıra düşürüldü (< 400).
+- **F1 (O10 Bozuk veritabanı kurtarma):** `runtime.backup_corrupted_db` (`codementor.db.bozuk-YYYYAAGG-SSDDss`), `launch.py` onaylı yedekleme kurtarma mekanizması ve `App.report_callback_exception` eklendi; `tests/desktop/test_launch_db.py` yazıldı. Windows dosya kilidi ve `gc.collect()` çözüldü.
+- **F2 (O13 Dışa aktarma hatası bildirimi):** `history_controller.export` içinde `OSError` yakalanıp Türkçe toast ile bildirildi; test eklendi.
+- **F3 (O14 Geçmişi temizle gizlilik ve disk temizliği):** `storage/cache.py::clear_analyses` içine `VACUUM` ve `PRAGMA wal_checkpoint(TRUNCATE)` eklendi; `clear_history`'ye `app.save_prefs(recent_files=[])` bağlanarak son dosyalar listesi temizlendi; `tests/unit/test_storage.py`'de `clear_analyses` sonrası diskte öğrenci kodu kalmadığı bayt düzeyinde doğrulandı; `tests/desktop/test_app.py`'de `recent_files` boşalması doğrulandı.
+- **F4 (D19 Veritabanı sağlamlığı ve meşguliyet kontrolleri):** SQLite bağlantı dinleyicisine `PRAGMA journal_mode=WAL`, `busy_timeout=5000`, `secure_delete=ON`, `user_version=1` (`_migrate`) eklendi; analiz sürerken (`app.analyze_view.busy`) `HistoryView` satırlarındaki "Sil" butonu `disabled` yapıldı ve `delete_history` çağrısı toast ile engellendi; `StorageSettings.session_retention_days = 90` varsayılanı `codementor.toml` ve `docs/mimari.md` §11, §17'ye işlendi; 90 günden eski oturumların açılışta budanması test edildi.
+- **F5 (D18 Dosya kaydetme, CRLF koruması ve kirli durum takibi):** `FileController`'a `save()`, `save_as()`, `confirm_discard()` metodları eklendi; dosya açma, sürükleme, geçmiş yükleme, soru seçme ve pencere kapatmada kaydedilmemiş değişiklik onayı sağlandı; Ctrl+S kısayolu bağlandı; orijinal satır sonu (`\r\n` / `\n`) kaydedilirken korundu; kaydetme hatası toast ile bildirildi; `CodeEditor.set()` içindeki `edit_modified(False)` sıfırlamasıyla programatik yüklemelerin yanlış dirty algısı önlendi.
+- **F6 (Geçmişte sayfalama ve arama):** `storage/cache.py::list_analyses_page`'e `search` parametresi eklendi; soru kimliği, dil ve sağlayıcı alanlarında büyük/küçük harf duyarsız `ilike` filtreleme yapıldı; SQL `LIKE` joker karakterleri (`%`, `_` ve `/`) kaçışlandı; `HistoryView` üstüne arama kutusu ve altta dinamik "Daha fazla yükle" butonu eklendi; 60 kayıt ile 50+10 sayfalama, "c-medium" tekil araması ve joker kaçışları birim ve masaüstü duman testleriyle doğrulandı.
+
+### Kararlar & Denetim Bulgusu
+- **Windows SQLite kilidi:** Bozuk dosyada `SQLModel.metadata.create_all` hata fırlattığında motor açık bağlantı tutuyordu; `Database.__init__` `except` bloğunda `self.engine.dispose()` ve `launch.py`'de `state.close()` + `gc.collect()` ile işletim sistemi dosya kilidi bırakıldı.
+- **Şema ayar bağımlılığı:** Denetim sırasında `Database.from_settings`'in henüz tanımlanmamış `session_retention_days` alanına erişimi yakalandı; `StorageSettings`'e alan ve `storage/sessions.py`'ye `prune_old_sessions` eklenerek tam uyum sağlandı.
+- **Tcl/Tk Widget Yaşam Döngüsü (F6):** `HistoryView.refresh()` sırasında `clear(self.list)` altındaki tüm widget'ları yok ettiği için `load_more_btn`'nin `_render_rows` içerisinde dinamik olarak yeniden üretilmesi sağlandı; böylece "bad window path name" Tcl hatası önlendi.
+
+### Doğrulama
+- `uv run ruff check .` → All checks passed!
+- `uv run ruff format --check .` → 460 files already formatted
+- `uv run mypy src/` → Success: no issues found in 206 source files
+- `uv run pytest tests/desktop/test_launch_db.py` → 4 passed in 0.35s
+- `uv run pytest tests/unit/test_tkinter_free_imports.py` → 9 passed in 5.11s
+- `uv run pytest tests/unit/test_storage.py` → 42 passed in 0.77s
+- `uv run pytest tests/desktop/test_app.py` → 59 passed in 56.12s
+- Dosya satır sayıları: `app.py` 399, `files.py` 129, `history_controller.py` 155, `config_controller.py` 89, `history_view.py` 273, `cache.py` 272 (< 400).
 
 ## Faz E — Notlar (web geçmişi, silme ve güvenlik başlıkları; 2026-10-13)
 
