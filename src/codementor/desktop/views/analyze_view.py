@@ -67,6 +67,7 @@ class AnalyzeActions:
     export: Callable[[str], None]
     questions: Callable[[Language, Engine], list[QuestionPublic]]
     notify: Callable[[str], None] | None = None  # kısa bildirim (toast; Faz 33)
+    on_code_change: Callable[[], None] | None = None  # kod değiştiğinde (Faz F)
 
 
 class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
@@ -91,7 +92,7 @@ class AnalyzeView(ctk.CTkFrame):  # type: ignore[misc]
         content.grid_columnconfigure(0, weight=5, uniform="content")
         content.grid_columnconfigure(1, weight=4, uniform="content")
         content.grid_rowconfigure(0, weight=1)
-        self.editor = CodeEditor(content, notify=actions.notify)
+        self.editor = CodeEditor(content, on_change=actions.on_code_change, notify=actions.notify)
         self.editor.grid(row=0, column=0, sticky="nsew", padx=(0, theme.GAP))
 
         self.panel = ctk.CTkScrollableFrame(

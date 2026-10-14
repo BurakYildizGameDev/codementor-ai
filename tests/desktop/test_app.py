@@ -1143,3 +1143,109 @@ def test_export_oserror_shows_toast(
     app.export("md")
     assert len(toasts) == 1
     assert "kaydedilemedi" in toasts[0].lower()
+
+
+def test_dirty_file_discard_confirm_and_save(
+    app: App, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz F (F5): Değişiklik yapıldığında açma onayı ve Ctrl+S ile kaydetme."""
+    src_file = tmp_path / "foo.c"
+    src_file.write_text("int foo() { return 1; }\n", encoding="utf-8")
+    bar_file = tmp_path / "bar.c"
+    bar_file.write_text("int bar() { return 2; }\n", encoding="utf-8")
+
+    app.files.load(str(src_file))
+    assert app.files.current_path == src_file
+    assert app.files.is_dirty is False
+
+    # Metni düzenle
+    app.analyze_view.editor.text.insert("end", "// ekleme\n")
+    app.update()
+    assert app.files.is_dirty is True
+
+    # Başka dosya açmayı dene; kullanıcı 'Hayır' derse iptal edilir
+    app.confirm = lambda *a, **k: False
+    app.files.open_recent(str(bar_file))
+    assert "// ekleme" in app.analyze_view.editor.get()
+    assert app.files.current_path == src_file
+
+    # Ctrl+S kısayolunu işlet (save)
+    toasts: list[str] = []
+    app.toast = toasts.append
+    app.files.save()
+    app.update()
+
+    assert app.files.is_dirty is False
+    assert "Kaydedildi: foo.c" in toasts[-1]
+    assert "// ekleme" in src_file.read_text(encoding="utf-8")
+
+    # Kaydettikten sonra başka dosya açınca confirm sorulmaz
+    asked = False
+
+    def no_confirm(*a: Any, **k: Any) -> bool:
+        nonlocal asked
+        asked = True
+        return True
+
+    app.confirm = no_confirm
+    app.files.open_recent(str(bar_file))
+    assert asked is False
+    assert "int bar()" in app.analyze_view.editor.get()
+
+
+def test_save_as_for_new_unsaved_file(
+    app: App, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Faz F (F5): Dosya yolu yoksa save() Farklı Kaydet açar."""
+    from tkinter import filedialog
+
+    new_file = tmp_path / "yeni.c"
+    app.files.current_path = None
+    app.files.mark_dirty()
+    monkeypatch.setattr(filedialog, "asksaveasfilename", lambda **_k: str(new_file))
+
+    app.files.save()
+    assert new_file.is_file()
+    assert app.files.is_dirty is False
+    assert app.files.current_path == new_file
+
+
+def test_save_preserves_original_crlf_newline(app: App, tmp_path: Path) -> None:
+    """Faz F (F5): Orijinal dosyanın CRLF satır sonları kaydedilirken korunur."""
+    crlf_file = tmp_path / "crlf.c"
+    crlf_file.write_bytes(b"int x;\r\nint y;\r\n")
+
+    app.files.load(str(crlf_file))
+    assert app.files._newline == "\r\n"
+    app.analyze_view.editor.text.insert("end", "int z;\n")
+    app.files.save()
+
+    raw = crlf_file.read_bytes()
+    assert b"\r\n" in raw
+    assert b"\n" not in raw.replace(b"\r\n", b"")
+
+
+def test_save_oserror_shows_toast(app: App, tmp_path: Path) -> None:
+    """Faz F (F5): Kaydetmede OSError oluşursa toast ile bildirilir."""
+    dosya = tmp_path / "dosya"
+    dosya.write_text("var", encoding="utf-8")
+    app.files.current_path = dosya / "alt" / "test.c"
+
+    toasts: list[str] = []
+    app.toast = toasts.append
+    app.files.save()
+    assert len(toasts) == 1
+    assert "kaydedilemedi" in toasts[0].lower()
+    app.files.is_dirty = False
+
+
+def test_close_with_unsaved_changes_confirm(app: App) -> None:
+    """Faz F (F5): Kaydedilmemiş değişiklik varken kapatma onay ister;
+    Hayır ise pencere açık kalır.
+    """
+    app.files.mark_dirty()
+    app.confirm = lambda *a, **k: False
+    app.close()
+    assert app.winfo_exists()
+    assert not app._closing
+    app.files.mark_clean()

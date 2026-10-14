@@ -131,6 +131,7 @@ class CodeEditor(ctk.CTkFrame):  # type: ignore[misc]
         self.text.delete("1.0", "end")
         self.text.insert("1.0", code)
         self.text.edit_reset()
+        self.text.edit_modified(False)
         self.text.mark_set("insert", "1.0")
         self.text.see("1.0")
         self.set_marks([])

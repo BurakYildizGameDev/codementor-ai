@@ -97,6 +97,8 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.bind_all("<Control-Return>", lambda _e: self.analyze())
         self.bind_all("<Escape>", lambda _e: self.on_escape())
+        for seq in ("<Control-s>", "<Control-S>"):
+            self.bind_all(seq, lambda _e: self.files.save())
         self.after(POLL_MS, self._poll)
         if check_on_start:
             self.after(300, self.check_environment)
@@ -129,6 +131,7 @@ class App(ctk.CTk):  # type: ignore[misc]
                 export=self.export,
                 questions=self.questions_for,
                 notify=self.toast,
+                on_code_change=self.files.mark_dirty,
             ),
             self.prefs.language,
         )
@@ -374,6 +377,10 @@ class App(ctk.CTk):  # type: ignore[misc]
         self.after(POLL_MS, self._poll)
 
     def close(self) -> None:
+        if self.files.is_dirty and not self.confirm(
+            "Kaydedilmemiş değişiklik", "Değişiklikler kaybolacak. Devam edilsin mi?", parent=self
+        ):
+            return
         self._closing = True
         self.bridge.cancel_all()
         # İptal zinciri (loop → CLI süreç ağacı) yorumlayıcı kapanmadan tamamlansın

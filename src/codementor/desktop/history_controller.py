@@ -64,6 +64,8 @@ def open_history(app: App, analysis_id: str) -> None:
         view.select(report.language, report.engine, report.question_id)
         code = runtime.load_source(analysis_id, app.prefs_dir)
         view.editor.set(code or "// Bu analizin kodu saklanmamış.\n", report.language)
+        app.files.current_path = None
+        app.files.is_dirty = False
         app.tracker.reset()
         app.tracker.finish()
         view.reset_results()
@@ -90,6 +92,8 @@ def open_history(app: App, analysis_id: str) -> None:
     view.select(lang, eng, row.question_id)
     code = runtime.load_source(analysis_id, app.prefs_dir)
     view.editor.set(code or "// Bu analizin kodu saklanmamış.\n", lang)
+    app.files.current_path = None
+    app.files.is_dirty = False
     app.tracker.reset()
     app.tracker.finish()
     view.reset_results()

@@ -76,8 +76,29 @@ class FileController:
     def __init__(self, app: App) -> None:
         self.app = app
         self.drop_enabled = False
+        self.current_path: Path | None = None
+        self.is_dirty = False
+        self._newline = "\n"
+
+    def mark_dirty(self) -> None:
+        self.is_dirty = True
+
+    def mark_clean(self) -> None:
+        self.is_dirty = False
+
+    def confirm_discard(self) -> bool:
+        """Kaydedilmemiş değişiklik varsa kullanıcıdan onay ister (Faz F)."""
+        if not self.is_dirty:
+            return True
+        return self.app.confirm(
+            "Kaydedilmemiş değişiklik",
+            "Değişiklikler kaybolacak. Devam edilsin mi?",
+            parent=self.app,
+        )
 
     def open_dialog(self) -> None:
+        if not self.confirm_discard():
+            return
         from tkinter import filedialog  # Tk'siz Python'da modül yine içe aktarılabilsin (CI)
 
         path = filedialog.askopenfilename(
@@ -92,6 +113,8 @@ class FileController:
 
     def open_recent(self, path: str) -> None:
         """Son dosyalardan açar; dosya artık yoksa listeden düşer."""
+        if not self.confirm_discard():
+            return
         if not Path(path).is_file():
             self._update_prefs(runtime.forget_file(self.app.prefs, path))
             self.app.toast(f"{Path(path).name} artık yok; listeden kaldırıldı.")
@@ -105,8 +128,15 @@ class FileController:
             if size > limit:
                 app.toast(f"Dosya çok büyük ({size // 1024} KB); sınır {limit // 1024} KB.")
                 return
+            raw = Path(path).read_bytes()
+            if b"\r\n" in raw:
+                self._newline = "\r\n"
+            elif b"\r" in raw:
+                self._newline = "\r"
+            else:
+                self._newline = "\n"
             # metin kipindeki gibi satır sonları `\n` (editör ve analiz aynı kodu görür)
-            code = decode_source(Path(path).read_bytes()).replace("\r\n", "\n").replace("\r", "\n")
+            code = decode_source(raw).replace("\r\n", "\n").replace("\r", "\n")
         except OSError as exc:
             app.toast(f"Dosya okunamadı: {exc.strerror or exc}")
             return
@@ -119,11 +149,53 @@ class FileController:
             view.select(language, Engine.NONE, view.question.id if view.question else None)
         view.editor.set(code, language)
         view.reset_results()
+        self.current_path = Path(path)
+        self.is_dirty = False
         self._update_prefs(runtime.remember_file(app.prefs, path))
         app.toast(f"{Path(path).name} açıldı")
 
+    def save(self) -> None:
+        """Açık dosyayı kaydeder; kayıtlı dosya yoksa Farklı Kaydet açar (Faz F)."""
+        if self.current_path is None:
+            self.save_as()
+            return
+        self._write_file(self.current_path)
+
+    def save_as(self) -> None:
+        """Dosyayı yeni bir adla kaydeder (Faz F)."""
+        from tkinter import filedialog
+
+        path = filedialog.asksaveasfilename(
+            title="Kaydet",
+            filetypes=[("Kaynak dosyaları", SOURCE_PATTERNS), ("Tüm dosyalar", "*.*")],
+            defaultextension=".c",
+        )
+        if not path:
+            return
+        self.current_path = Path(path)
+        self._newline = "\n"
+        self._write_file(self.current_path)
+
+    def _write_file(self, target: Path) -> None:
+        code = self.app.analyze_view.editor.get()
+        if self._newline == "\r\n":
+            content = code.replace("\n", "\r\n")
+        elif self._newline == "\r":
+            content = code.replace("\n", "\r")
+        else:
+            content = code
+        try:
+            target.write_bytes(content.encode("utf-8"))
+            self.is_dirty = False
+            self._update_prefs(runtime.remember_file(self.app.prefs, str(target)))
+            self.app.toast(f"Kaydedildi: {target.name}")
+        except OSError as exc:
+            self.app.toast(f"Dosya kaydedilemedi: {exc.strerror or exc}")
+
     def on_drop(self, data: str) -> None:
         """Bırakılan ilk dosyayı açar; klasörse içindeki kaynak dosyalarını seçtirir (Faz 33)."""
+        if not self.confirm_discard():
+            return
         dropped = parse_drop_data(data)
         paths = [p for p in dropped if Path(p).is_file()]
         if not paths:

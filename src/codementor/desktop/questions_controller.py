@@ -66,20 +66,28 @@ def filtered(
 
 
 def start(app: App, question: QuestionPublic) -> None:
-    """Soruyu editöre taşır ve analiz sayfasına geçer."""
+    """Soruyu editöre taşır ve analiz sayfasına geçer (Faz F)."""
+    if not app.files.confirm_discard():
+        return
     view = app.analyze_view
     view.select(question.language, question.engine, question.id)
     if view.editor.get().strip() in {s.strip() for s in SAMPLES.values()}:
         view.editor.set("", question.language)
+    app.files.current_path = None
+    app.files.is_dirty = False
     view.reset_results()
     app.navigate("analyze")
     view.editor.text.focus_set()
 
 
 def load_sample(app: App) -> None:
-    """Editörü seçili dilin örneğiyle doldurur ve sonuçları sıfırlar."""
+    """Editörü seçili dilin örneğiyle doldurur ve sonuçları sıfırlar (Faz F)."""
+    if not app.files.confirm_discard():
+        return
     view = app.analyze_view
     view.editor.set(SAMPLES[view.language], view.language)
+    app.files.current_path = None
+    app.files.is_dirty = False
     view.reset_results()
 
 
