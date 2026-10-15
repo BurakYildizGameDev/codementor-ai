@@ -1,0 +1,83 @@
+"""LLM oturumu (mimari §4 adım 6-10, §5.6): bir analizdeki tüm çağrıların token, onarım ve
+sağlayıcı uyarı sayaçları.
+
+G0'da `passes.py`'den ayrıldı (dosya 400 satırın altına insin); `passes.py` aynı sınıfı
+yeniden dışa aktarır, dolayısıyla `from codementor.pipeline.passes import LLMSession` çalışır.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from pydantic import BaseModel
+
+from codementor.config import Settings
+from codementor.models.pipeline import Stage
+from codementor.models.prompts import BuiltPrompt
+from codementor.models.provider import GenerationOptions, ProviderResult, TokenUsage
+from codementor.models.report import TokenSplit
+from codementor.models.verification import AnalysisVerification
+from codementor.pipeline.events import StageTimer
+from codementor.prompts.budget import estimate_messages, estimate_tokens
+from codementor.providers.base import LLMProvider
+
+
+@dataclass
+class LLMSession:
+    """Bir analizdeki tüm LLM çağrıları: token, onarım ve sağlayıcı uyarıları birikir."""
+
+    provider: LLMProvider
+    settings: Settings
+    timer: StageTimer
+    tokens_in: int = 0
+    tokens_out: int = 0
+    repair_attempts: int = 0
+    warnings: list[str] = field(default_factory=list)
+    provider_name: str | None = None
+    model: str | None = None
+    usage_estimated: bool = False
+    # Faz B: yanıt veren sağlayıcılar (fallback tespiti), LLM'in bir kısmı başarısız mı (rapor
+    # önbelleğe alınmaz) ve süre sınırında kullanılacak son doğrulanmış Geçiş A sonucu
+    providers: set[str] = field(default_factory=set)
+    incomplete: bool = False
+    checkpoint: AnalysisVerification | None = None
+    checkpoint_verified: bool = True
+    stage_tokens: dict[str, TokenSplit] = field(default_factory=dict)  # Faz K
+
+    def fail_part(self, warning: str) -> None:
+        """LLM'in bir kısmı başarısız: uyarı yazılır, rapor önbelleğe alınmaz."""
+        self.warnings.append(warning)
+        self.incomplete = True
+
+    async def call(
+        self, stage: Stage, built: BuiltPrompt, model: type[BaseModel]
+    ) -> ProviderResult:
+        with self.timer.stage(stage):
+            result = await self.provider.generate_structured(
+                built.messages, model, GenerationOptions()
+            )
+            usage = self._usage(built, result)
+            self.tokens_in += usage.input_tokens
+            self.tokens_out += usage.output_tokens
+            split = self.stage_tokens.get(stage, TokenSplit(input=0, output=0))
+            self.stage_tokens[stage] = TokenSplit(
+                input=split.input + usage.input_tokens, output=split.output + usage.output_tokens
+            )
+            self.timer.add_tokens(stage, usage.input_tokens + usage.output_tokens)
+        self.warnings.extend(result.warnings)
+        self.provider_name, self.model = result.provider, result.model
+        self.providers.add(result.provider)
+        return result
+
+    def _usage(self, built: BuiltPrompt, result: ProviderResult) -> TokenUsage:
+        """Sağlayıcı token bildirmediyse yaklaşık sayım (mimari §13, `usage_estimated`)."""
+        usage = result.usage
+        if usage.input_tokens or usage.output_tokens:
+            self.usage_estimated |= usage.estimated
+            return usage
+        self.usage_estimated = True
+        return TokenUsage(
+            input_tokens=estimate_messages(built.messages),
+            output_tokens=estimate_tokens(result.raw_text),
+            estimated=True,
+        )

@@ -5,12 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from codementor.config import Settings
 from codementor.models.enums import Difficulty
 from codementor.models.findings import Finding
 from codementor.models.pipeline import ALL_STAGES
 from codementor.models.report import AnalysisReport, ComplexityResult, ReportMeta, SocraticResult
 from codementor.models.request import NormalizedCode
 from codementor.models.validation import PolicyDecision
+from codementor.pipeline.cost import estimate_cost, load_pricing
 from codementor.pipeline.events import StageTimer
 from codementor.pipeline.passes import LLMSession
 from codementor.pipeline.versions import SCHEMA_VERSION, rules_version
@@ -81,6 +83,44 @@ def assemble_report(
             ),
         )
     report.meta.stage_latency_ms = stage_latencies(timer)
+    return report
+
+
+def assemble_with_cost(
+    *,
+    settings: Settings,
+    analysis_id: str,
+    code: NormalizedCode,
+    question_id: str | None,
+    difficulty: Difficulty | None,
+    parts: ReportParts,
+    llm: LLMSession | None,
+    prompt_version: str,
+    warnings: list[str],
+    timer: StageTimer,
+    rules_version_value: str | None = None,
+) -> AnalysisReport:
+    """Rapor + tahmini maliyet (G0: `Orchestrator._report` gövdesi buraya taşındı)."""
+    report = assemble_report(
+        analysis_id=analysis_id,
+        code=code,
+        question_id=question_id,
+        difficulty=difficulty,
+        parts=parts,
+        llm=llm,
+        prompt_version=prompt_version,
+        warnings=warnings,
+        timer=timer,
+        rules_version_value=rules_version_value,
+    )
+    meta = report.meta
+    meta.cost_est = estimate_cost(
+        load_pricing(settings.data.pricing_file),
+        meta.provider,
+        meta.model,
+        meta.tokens_in,
+        meta.tokens_out,
+    )
     return report
 
 

@@ -1,5 +1,6 @@
 """K0-K6 orkestratörü (mimari §4): katmanları sırayla çağırır; iş mantığı katman modüllerinde,
-aşamalar `stages.py` / `passes.py`, rapor montajı `assemble.py`'de."""
+aşamalar `stages.py` / `passes.py`, rapor montajı `assemble.py`, önbellek/kayıt akışı
+`cache_flow.py`, süre sınırı `deadline.py`'de (G0)."""
 
 from __future__ import annotations
 
@@ -23,25 +24,17 @@ from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest, LanguageHint, NormalizedCode
 from codementor.models.validation import SkipReason, Tier1Result, Toolchain
 from codementor.models.verification import FindingCheck
-from codementor.pipeline import stages
-from codementor.pipeline.assemble import ReportParts, assemble_report, from_cache
-from codementor.pipeline.cost import estimate_cost, load_pricing
+from codementor.pipeline import cache_flow, deadline, stages
+from codementor.pipeline.assemble import ReportParts, assemble_with_cost, from_cache
 from codementor.pipeline.events import EventBus, StageTimer
 from codementor.pipeline.ids import new_ulid
-from codementor.pipeline.passes import (
-    VERIFY_FAILED,
-    LLMOutcome,
-    LLMSession,
-    run_llm_passes,
-)
-from codementor.pipeline.signature import pipeline_signature, tier1_tool
+from codementor.pipeline.passes import LLMOutcome, LLMSession, run_llm_passes
 from codementor.pipeline.templates import degraded_socratic, early_exit_socratic, load_templates
-from codementor.pipeline.versions import SCHEMA_VERSION, rules_version
+from codementor.pipeline.versions import rules_version
 from codementor.prompts.budget import PromptBudgetError, PromptConfigError
 from codementor.prompts.mentoring import mentoring_profile
 from codementor.prompts.templates import prompt_version
 from codementor.providers.base import LLMProvider, ProviderError
-from codementor.providers.cli_agent import model_label
 from codementor.providers.factory import build_chain
 from codementor.questions.bank import QuestionBank, QuestionBankError, QuestionNotFoundError
 from codementor.storage import cache, sessions
@@ -153,13 +146,9 @@ class Orchestrator:
             raise
 
     def _release(self, run: _Run) -> None:
-        """Ayrılan denemeyi geri verir; bu da başarısız olursa asıl istisnayı örtmez."""
+        """Ayrılan denemeyi geri verir (gövde `cache_flow.release_attempt`, G0)."""
         assert self.db is not None
-        request = run.request
-        try:
-            sessions.release_attempt(self.db, request.session_id, request.question_id, run.attempt)
-        except Exception as exc:
-            log.warning("attempt_release_failed", error=type(exc).__name__)
+        cache_flow.release_attempt(self.db, run)
 
     async def _run_attempt(self, run: _Run, code: NormalizedCode) -> AnalysisTrace:
         request = run.request
@@ -187,31 +176,14 @@ class Orchestrator:
         # böylece yarıda kalan analiz yazılmaz ve ipucu merdiveni ilerlemez (Faz 19)
         await asyncio.sleep(0)
         if self.db is not None:
-            latency = sum(report.meta.stage_latency_ms.values())
-            cache.save_analysis(
+            cache_flow.save_report(
                 self.db,
+                run,
                 report,
                 key=key,
-                session_id=request.session_id,
-                latency_ms=latency,
+                profile=profile,
                 max_analyses=self.settings.storage.max_analyses,
-                cacheable=run.cacheable,
             )
-            run.saved = True
-            if run.advance:
-                counts = not report.meta.early_exit and not report.meta.degraded
-                if counts:
-                    sessions.record_attempt(
-                        self.db,
-                        request.session_id,
-                        request.question_id,
-                        attempt=run.attempt,
-                        hint_level=profile.hint_level,
-                    )
-                else:
-                    sessions.release_attempt(
-                        self.db, request.session_id, request.question_id, run.attempt
-                    )
         return AnalysisTrace(report, run.finding_checks)
 
     def _build_provider(self, name: str) -> LLMProvider:
@@ -266,36 +238,15 @@ class Orchestrator:
         provider: LLMProvider,
         version: str,
     ) -> str:
-        config = getattr(self.settings.providers, run.provider_name, None)
-        model = getattr(config, "model", None) or getattr(provider, "model", None)
-        model = model_label(model if isinstance(model, str) else None, config)
-        return cache.cache_key(
-            normalized_code=code.text,
-            language=code.language.value,
-            engine=code.engine.value,
-            question_id=run.request.question_id,
-            hint_level=profile.hint_level,
-            provider=run.provider_name,
-            model=model if isinstance(model, str) else None,
-            prompt_version=version,
-            rules_version=self._rules_version(),
-            schema_version=SCHEMA_VERSION,
-            pipeline=self._pipeline_signature(run, code),
-        )
+        """Önbellek anahtarı (gövde `cache_flow.cache_key`'de; G0)."""
+        return cache_flow.cache_key(self, run, code, profile, provider, version)
 
     def _mode(self, request: AnalysisRequest) -> PipelineMode:
         return request.options.mode or PipelineMode(self.settings.pipeline.mode)
 
     def _pipeline_signature(self, run: _Run, code: NormalizedCode) -> str:
-        """Önbellek anahtarı için çıktıyı etkileyen ayarlar (Faz 35; Faz B/O3 tamamladı)."""
-        validation = self._run_validation(run)
-        return pipeline_signature(
-            self.settings,
-            mode=self._mode(run.request),
-            validation=validation,
-            tool=tier1_tool(code, validation, self.toolchain),
-            question=run.question,
-        )
+        """Önbellek anahtarı için ayar imzası (gövde `cache_flow.run_signature`, G0)."""
+        return cache_flow.run_signature(self, run, code)
 
     async def _tier1(self, code: NormalizedCode, validation: ValidationSettings) -> Tier1Result:
         """Tier 1 iş parçacığında koşar (olay döngüsünü kilitlemez); görev iptal edilirse
@@ -315,10 +266,8 @@ class Orchestrator:
             raise
 
     def _run_validation(self, run: _Run) -> ValidationSettings:
-        """Analiz başına bir kez: önbellek imzası ve Tier 1 aynı ayarı görür."""
-        if run.validation is None:
-            run.validation = self._validation(run.request)
-        return run.validation
+        """Analiz başına bir kez: Tier 1 ayarı (gövde `cache_flow.validation_settings`; G0)."""
+        return cache_flow.validation_settings(self, run)
 
     def _validation(self, request: AnalysisRequest) -> ValidationSettings:
         # İstek Tier 1'i yalnız kapatabilir; yapılandırmada kapalıysa açamaz (Faz 47, ADR-0023)
@@ -411,28 +360,14 @@ class Orchestrator:
 
     @staticmethod
     def _timed_out(llm: LLMSession, limit: float | None) -> LLMOutcome:
-        """Süre sınırı: Geçiş A bittiyse doğrulanmış bulgular korunur, sorular şablondan
-        (Faz B, Y4); bitmediyse rapor statik analizle."""
-        if llm.checkpoint is None:
-            llm.warnings.append(
-                f"Analiz süre sınırı ({limit:g} sn) aşıldı; rapor statik analizle hazırlandı."
-            )
-            return LLMOutcome(verification=None, socratic=None)
-        llm.incomplete = True
-        if not llm.checkpoint_verified:
-            llm.warnings.append(VERIFY_FAILED)
-        llm.warnings.append(
-            f"Analiz süre sınırı ({limit:g} sn) aşıldı; bulgular korundu, mentor soruları "
-            "şablondan."
-        )
-        return LLMOutcome(verification=llm.checkpoint, socratic=None)
+        """Süre sınırı sonucu (gövde `deadline.timed_out`'da; G0): Geçiş A bittiyse doğrulanmış
+        bulgular korunur, sorular şablondan (Faz B, Y4); bitmediyse rapor statik analizle."""
+        return deadline.timed_out(llm, limit)
 
     @staticmethod
     def _remaining(run: _Run, limit: float | None) -> float | None:
-        """Toplam süre sınırından kalan saniye (Tier 0/1 ve statik aşama düşülmüş); yoksa None."""
-        if limit is None:
-            return None
-        return max(limit - (time.monotonic() - run.started), 0.0)
+        """Toplam süre sınırından kalan saniye (gövde `deadline.remaining`'de; G0)."""
+        return deadline.remaining(run.started, limit)
 
     def _report(
         self,
@@ -442,7 +377,9 @@ class Orchestrator:
         llm: LLMSession | None,
         version: str,
     ) -> AnalysisReport:
-        report = assemble_report(
+        """Raporu kurar ve maliyeti tahmin eder (gövde `assemble.assemble_with_cost`'ta; G0)."""
+        return assemble_with_cost(
+            settings=self.settings,
             analysis_id=run.analysis_id,
             code=code,
             question_id=run.request.question_id,
@@ -454,12 +391,3 @@ class Orchestrator:
             timer=run.timer,
             rules_version_value=self._rules_version(),
         )
-        meta = report.meta
-        meta.cost_est = estimate_cost(
-            load_pricing(self.settings.data.pricing_file),
-            meta.provider,
-            meta.model,
-            meta.tokens_in,
-            meta.tokens_out,
-        )
-        return report
