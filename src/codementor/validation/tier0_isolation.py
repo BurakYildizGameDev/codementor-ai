@@ -97,7 +97,15 @@ def _parse(result: ProcessResult, timeout_s: float) -> Tier0Result:
 
 
 def stopped(result: Tier0Result) -> bool:
-    """Sonuç, yalıtımın durdurma tanısı mı (süre, bellek, çökme ya da altyapı)."""
+    """Sonuç, yalıtımın durdurma tanısı mı (süre, bellek, çökme ya da altyapı).
+
+    D18: karar `Tier0Result.stopped` bayrağına dayanır — durdurma tanısı üreten tek yer
+    `_stopped(...)`; çağıran tanı metnine bakmaz, metin değişince sessizce bozulmaz. Metin
+    karşılaştırması yalnızca bayrağı taşımayan sonuçlar için yedek olarak kalır (eski bir işçi
+    sürecinden gelen JSON ya da elle kurulmuş sonuç).
+    """
+    if result.stopped:
+        return True
     return any(
         d.message in (FAILURE_MESSAGE, INFRA_MESSAGE) or d.message.startswith("Kodun sözdizimi")
         for d in result.diagnostics
@@ -108,4 +116,4 @@ def _stopped(message: str) -> Tier0Result:
     diagnostic = Diagnostic(
         tool="tree-sitter", severity="error", line=1, column=None, message=message
     )
-    return Tier0Result(diagnostics=[diagnostic])
+    return Tier0Result(diagnostics=[diagnostic], stopped=True)

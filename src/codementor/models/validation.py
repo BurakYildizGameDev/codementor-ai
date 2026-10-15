@@ -21,6 +21,11 @@ class Tier0Result(StrictModel):
 
     diagnostics: list[Diagnostic]
     truncated: bool = Field(default=False, description="Tanı sayısı üst sınıra takıldı")
+    # D18: durdurma artık yapısal; tanı metni değişse de çağıran sessizce bozulmaz
+    stopped: bool = Field(
+        default=False,
+        description="Yalıtım durdurma tanısı (süre/bellek/altyapı); analiz erken biter",
+    )
 
     @property
     def has_errors(self) -> bool:

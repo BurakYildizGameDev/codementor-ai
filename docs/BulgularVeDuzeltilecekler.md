@@ -544,7 +544,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | D15 | `report/markdown.py:14, 24, 61, 80-83` | LLM metni ve derleyici iletisi ham yazılıyor (yalnız `\|` kaçışlı); dosyada `<details>` HTML'i de var. HTML'e izin veren görüntüleyicide XSS. | `< > &` kaçışı. |
 | D16 | `models/request.py:36`, `storage/sessions.py:146` | `session_id` sahipsiz; kimliği bilen başkasının ipucu merdivenini ilerletir. Rastgele kimliklerle `sessions` tablosu büyütülebilir (bilinen). | Paylaşılan sunucu için belgeye yaz; ileride anahtara bağla. |
 | D17 | `web/src/lib/download.ts:10` | `revokeObjectURL` `click()`'ten hemen sonra; bazı tarayıcılarda indirme iptal olabilir (doğrulanmadı). | `setTimeout(..., 0)`. |
-| D18 | `validation/tier0_isolation.py:102` | Durdurma tanısı metinle tanınıyor (`startswith("Kodun sözdizimi")`); metin değişirse sessizce bozulur. | Yapısal bayrak. |
+| D18 ✅ G4 | `validation/tier0_isolation.py:102` | Durdurma tanısı metinle tanınıyor (`startswith("Kodun sözdizimi")`); metin değişirse sessizce bozulur. | Yapısal bayrak. |
 | D19 | `desktop/app.py:396`, `storage/db.py` | `delete_history` analiz sürerken engellenmiyor (`clear_history` engelliyor). Veritabanında WAL, `busy_timeout`, şema sürümü (`user_version`) yok. DB dosyası POSIX'te 0600 oluşturulmuyor (doğrulanmadı). | Engelle; WAL + `busy_timeout`; `user_version` ile göç. |
 | D20 | çeşitli | `cli/rules.py:20-25` `rules list` `[rules] disabled`'ı uygulamıyor. `--help` metinleri karışık dilli ("Show this message and exit."). `eval run --language` serbest metin. `buildinfo.py:15` maskesiz global logger. `build_exe.py:63-70` FastAPI/uvicorn'u gereksiz paketliyor. Kapanışta süren analiz/indirme için onay yok. `pyproject.toml`'da `authors`, `[project.urls]`, `classifiers`, `keywords` yok; GUI bağımlılıkları CLI kurulumuna zorunlu (`[desktop]` extra önerilir). | Tek tek. |
 
@@ -917,7 +917,7 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] **D12:** `_json_document` doğrusal tarama — **Faz G3**
 - [x] **D8-D11:** bozuk few-shot zarif bozulma, ölü kod ve test kancası,
       `LLMMarkupAnalysisOutput` şeması, olay döngüsündeki küçük G/Ç — **Faz G3**
-- [ ] **D18:** Tier 0 durdurma tanısı yapısal bayrakla
+- [x] **D18:** Tier 0 durdurma tanısı yapısal bayrakla (`Tier0Result.stopped`) — **Faz G4**
 - [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
       exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra
 - [ ] `ProviderResult`'a "şema zorlandı mı" yeteneği; `SchemaAdapter` kısıtlarını sağlayıcıya göre

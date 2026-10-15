@@ -16,6 +16,7 @@ from pydantic import ValidationError
 from codementor.config import ValidationSettings
 from codementor.ingest.normalize import normalize
 from codementor.models.enums import Language
+from codementor.models.findings import Diagnostic
 from codementor.models.request import LanguageHint, NormalizedCode
 from codementor.models.validation import Tier0Result
 from codementor.validation import tier0_isolation, tier0_worker
@@ -198,6 +199,24 @@ def test_memory_floor_rejects_unusable_limit() -> None:
 
 def test_regular_tier0_errors_are_not_stops() -> None:
     assert not stopped(run_tier0(_code("int main(void) { return 0 }\n")))
+
+
+def test_stopped_flag_is_structural_not_textual() -> None:
+    """D18: durdurma kararı bayraktan gelir; tanı metni değişse de `durduruldu` kalır."""
+    changed = Tier0Result(
+        diagnostics=[_syntax_error("Kodun sözdizimi denetimi başka bir metinle anlatıldı")],
+        stopped=True,
+    )
+    assert stopped(changed)
+    assert not stopped(Tier0Result(diagnostics=[_syntax_error("beklenmeyen '}' simgesi")]))
+    # işçi süreci sınırından geçerken (JSON) bayrak korunur
+    assert stopped(Tier0Result.model_validate_json(changed.model_dump_json()))
+    # `_stopped` tek durdurma üreticisi: bayrağı kendisi koyar
+    assert tier0_isolation._stopped("herhangi bir metin").stopped
+
+
+def _syntax_error(message: str) -> Diagnostic:
+    return Diagnostic(tool="tree-sitter", severity="error", line=1, column=None, message=message)
 
 
 def test_failure_log_omits_user_code(

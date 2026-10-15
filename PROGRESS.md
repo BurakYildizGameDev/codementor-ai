@@ -196,7 +196,21 @@
   `test_claude_unknown_subtype_is_retried` (kontrol: sıradan `subtype` yine denenir).
 - **Doğrulama (G2):** `ruff check`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada
   hatasız; `pytest -m "not live"` **3488 geçti**, 15 atlandı (D9-D11 sonrası 3482 → +6 test).
-- **Açık:** D14-D20 ve `schema_enforced` duruyor (D8-D11 ✅, G2 ✅); G4-G7 sırada.
+- **Açık:** D14-D20 ve `schema_enforced` duruyor (D8-D11 ✅, G2 ✅, G4 ✅); G5-G7 sırada.
+
+**G4 — D18: Tier 0 durdurma tanısı artık yapısal:**
+- `models/validation.Tier0Result`'a `stopped: bool = False` alanı eklendi; durdurma tanısı üreten tek
+  yer (`tier0_isolation._stopped`) bayrağı True kurar, `stopped()` önce bayrağa bakar. Böylece tanı
+  metni (`TIMEOUT_MESSAGE`/`FAILURE_MESSAGE`/`INFRA_MESSAGE`) değişse de erken çıkış kararı sessizce
+  bozulmaz. Metin karşılaştırması yalnızca bayrağı taşımayan sonuçlar (eski işçi JSON'u, elle kurulmuş
+  sonuç) için yedek kaldı; davranış bu yollarda değişmedi.
+- `Tier0Result` rapor şemasının parçası değil (`SCHEMA_MODELS`), bu yüzden `schemas/` ve web tipleri
+  yeniden üretilmedi.
+- Test: `tests/unit/test_tier0_isolation.py::test_stopped_flag_is_structural_not_textual` —
+  değiştirilmiş mesajlı ama bayraklı sonuç yine "durduruldu"; sıradan sözdizimi hatası değil; bayrak
+  JSON gidiş-dönüşünde (işçi süreci sınırı) korunuyor.
+- **Doğrulama (G4):** `ruff`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada hatasız;
+  `pytest -m "not live"` **3489 geçti**, 15 atlandı (G2 sonrası 3488 → +1 test).
 
 ## Faz F — Notlar (masaüstü sağlamlık ve kullanılabilirlik; 2026-10-14)
 
