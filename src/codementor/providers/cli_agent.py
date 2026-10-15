@@ -41,6 +41,7 @@ from codementor.providers._cli_common import (
     FIXED_SYSTEM,
     MAX_PROCESSES,
     MEMORY_MB,
+    CliPermanentError,
     CliTimeoutError,
     agent_limits,
     clip_warning,
@@ -78,6 +79,7 @@ __all__ = [
     "MEMORY_MB",
     "CliAgentProvider",
     "CliKind",
+    "CliPermanentError",
     "CliTimeoutError",
     "agent_limits",
     "clip_warning",
@@ -96,6 +98,37 @@ AGY_STALL_HINT = (
 )
 
 CliKind = Literal["claude_cli", "agy"]
+
+# G2 (O6): oturum/kimlik hataları kalıcıdır; yeniden denemek boşuna, kullanıcı giriş yapmalı
+# (`codex_cli._classify` ile aynı sözleşme: `ProviderConfigError.retryable = False`).
+_AUTH_HINTS: tuple[str, ...] = (
+    "not logged in",
+    "please run /login",
+    "claude login",
+    "unauthorized",
+    "authentication",
+    "invalid api key",
+    "oturum açıl",
+    "giriş yap",
+)
+# Giriş için kullanıcıya gösterilecek komut (metin ipucu bulunduğunda).
+_LOGIN_COMMAND: dict[CliKind, str] = {"claude_cli": "claude login", "agy": "agy"}
+# O6/G2: aynı çağrıyı yinelemekle düzelmeyecek deterministik Claude Code `subtype` hataları.
+# Kaynak: `claude -p --output-format json` sonuç nesnesi (`error_max_structured_output_retries`:
+# model şemaya uydurmayı bıraktı; `error_max_budget_usd`/`error_max_turns`: sınırlar tükendi).
+_PERMANENT_SUBTYPES: tuple[str, ...] = (
+    "error_max_structured_output_retries",
+    "error_max_budget_usd",
+    "error_max_turns",
+)
+
+
+def auth_error(provider: str, detail: str, command: str) -> ProviderError | None:
+    """Ayrıntı oturum/kimlik sorununa işaret ediyorsa yeniden denenmeyen hata (G2)."""
+    lowered = detail.lower()
+    if not any(hint in lowered for hint in _AUTH_HINTS):
+        return None
+    return ProviderConfigError(provider, f"oturum açılmamış; terminalde `{command}` çalıştırın")
 
 
 def model_label(model: str | None, config: object) -> str | None:
@@ -288,6 +321,9 @@ class CliAgentProvider:
             detail = (
                 short_error(result.stderr or result.stdout) or f"çıkış kodu {result.returncode}"
             )
+            auth = auth_error(self.name, detail, _LOGIN_COMMAND[self.kind])  # G2: kalıcı hata
+            if auth is not None:
+                raise auth
             raise ProviderRequestError(self.name, f"JSON çıktı alınamadı ({detail})")
         if self.kind == "claude_cli":
             return clip_warning(self._claude(data, model, start), result.truncated)
@@ -340,7 +376,7 @@ class CliAgentProvider:
             # agy --print-timeout doldu: tur başladı ama model süre içinde yanıt vermedi
             raise CliTimeoutError(self.name, f"agy süre içinde yanıt vermedi{hint}")
         if not text.strip():
-            raise ProviderUnavailableError(
+            raise CliPermanentError(
                 self.name,
                 "yanıt boş; `agy` oturumu açık mı? (etkileşimli `agy` ile giriş yapın)" + hint,
             )
@@ -367,8 +403,13 @@ def _claude_error(provider: str, data: Mapping[str, Any]) -> ProviderError:
         return ProviderRateLimitError(provider, f"hız sınırı (429): {detail}", retry_after=None)
     if isinstance(status, int) and status >= 500:
         return ProviderServerError(provider, f"sunucu hatası ({status}): {detail}", status=status)
+    auth = auth_error(provider, detail, _LOGIN_COMMAND["claude_cli"])  # G2: 401/kimlik kalıcı
+    if auth is not None:
+        return auth
     if isinstance(status, int) and status >= 400:
         return ProviderRequestError(
             provider, f"istek reddedildi ({status}): {detail}", status=status
         )
+    if as_text(data.get("subtype")) in _PERMANENT_SUBTYPES:  # G2/O6: tekrar denemek boşuna
+        return CliPermanentError(provider, f"CLI hatası: {detail}")
     return ProviderUnavailableError(provider, f"CLI hatası: {detail}")

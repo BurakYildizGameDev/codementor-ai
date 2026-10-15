@@ -46,6 +46,18 @@ _CMD_TARGET = re.compile(r'"%dp0%\\?([^"%]+\.exe)"', re.IGNORECASE)
 _MAX_ERROR_TEXT = 200
 
 
+class CliPermanentError(ProviderUnavailableError):
+    """Kalıcı CLI sorunu: yeniden denemek yeni süreç açar, sonuç değişmez (O6/G2).
+
+    Örnekler: boş yanıt (oturum kapalı / tur hiç başlamadı), bilinmeyen `subtype` hatası
+    (`error_max_structured_output_retries`) ya da yalnızca durum bilgisi taşıyan hata. Alt sınıf
+    olması sayesinde "sağlayıcı kullanılamıyor" olarak yakalanmaya devam eder, ama
+    `retryable = False` olduğu için fallback'e hemen geçilir (agy'de her deneme ~20 sn).
+    """
+
+    retryable = False
+
+
 class CliTimeoutError(ProviderUnavailableError):
     """CLI zaman aşımı yeniden denenmez: her deneme dakikalar sürer; fallback hemen geçsin."""
 

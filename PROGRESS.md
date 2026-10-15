@@ -171,8 +171,32 @@
   3479 → +3 test). Bir koşuda `tests/rules/test_engine.py::test_linear_time_large_input[html-*]`
   zaman sınırını aştı (38 s > 2 s); tek başına ve sonraki tam koşuda geçti → makine yükü kaynaklı,
   değişiklikle ilgisiz.
-- **Açık:** D14-D20 ve `schema_enforced` duruyor (D8-D11 ✅); G2 (O6 kalıcı CLI hatalarının yeniden
-  denenmesi) henüz başlamadı.
+- **Açık (D9-D11 sonrası):** D14-D20 ve `schema_enforced` duruyor; G2 sırada.
+
+**G2 — O6: kalıcı CLI hataları yeniden denenmiyor:**
+- `providers/cli_agent.py`'ye oturum/kimlik sınıflandırması eklendi: `_AUTH_HINTS` (İngilizce
+  `not logged in` / `please run /login` / `unauthorized` / `authentication` / `invalid api key` +
+  Türkçe `oturum açıl` / `giriş yap`) ve `auth_error(provider, detail, command)` →
+  `ProviderConfigError` (`retryable = False`, `codex_cli._classify` ile aynı sözleşme).
+- Claude sonuç nesnesindeki hata (`_claude_error`) artık kimlik ipucunu 429/5xx dallarından sonra,
+  4xx'ten önce kontrol eder: oturumu kapanmış CLI `ProviderUnavailableError` (yeniden denenir) değil,
+  "oturum açılmamış; terminalde `claude login` çalıştırın" mesajlı kalıcı hata verir. `data is None`
+  (JSON çıktı yok) yolunda stderr/`çıkış kodu` ayrıntısı da aynı sınıflandırmadan geçer; agy için
+  komut metni `agy`. 5xx ve 429 davranışı değişmedi (geçici → yeniden denenir).
+- `_cli_common.CliPermanentError(ProviderUnavailableError)` (`retryable = False`) eklendi
+  (`CliTimeoutError` deseni): agy'nin boş yanıtı ("oturum açık mı?"; MCP takılması dahil) ve
+  deterministik Claude `subtype`'ları (`error_max_structured_output_retries`, `error_max_budget_usd`,
+  `error_max_turns`) artık kalıcı. Böylece `agy` her biri ~20 sn süren 3 süreç açmıyor; sıradan
+  `subtype` hataları ve ağ benzeri hatalar eskisi gibi yeniden denenmeye devam ediyor
+  (ortak sözleşme testi `test_network_error_retried_then_unavailable` korunuyor).
+- Yeni testler (`tests/providers/test_cli_agent.py`): `test_logged_out_result_is_not_retried`
+  (`max_retries=2` ile bile sağlayıcı bir kez çağrılır), `test_logged_out_stderr_is_not_retried`,
+  `test_server_error_is_still_retried` (kontrol: 5xx iki kez denenir),
+  `test_agy_empty_response_is_not_retried`, `test_claude_permanent_subtype_is_not_retried`,
+  `test_claude_unknown_subtype_is_retried` (kontrol: sıradan `subtype` yine denenir).
+- **Doğrulama (G2):** `ruff check`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada
+  hatasız; `pytest -m "not live"` **3488 geçti**, 15 atlandı (D9-D11 sonrası 3482 → +6 test).
+- **Açık:** D14-D20 ve `schema_enforced` duruyor (D8-D11 ✅, G2 ✅); G4-G7 sırada.
 
 ## Faz F — Notlar (masaüstü sağlamlık ve kullanılabilirlik; 2026-10-14)
 

@@ -54,7 +54,7 @@ hiçbir dosya değiştirilmedi.
 | O3 | 🟡 | Önbellek | Anahtarda `tier1`, `rules.disabled`, prompt ayarları yok | 📖 | Önerilir |
 | O4 | 🟡 | Önbellek | Önbellekten dönen raporda eski `cost_est` | 🔬 | Önerilir |
 | O5 | 🟡 | Sağlayıcılar | CLI ajan çıktısı 64 KB'de kesiliyor, sonuç olayı kayboluyor | ❓ | Sonra |
-| O6 | 🟡 | Sağlayıcılar | Kalıcı CLI hataları 3 kez yeniden deneniyor | 📖 | Sonra |
+| O6 | 🟡 | Sağlayıcılar | Kalıcı CLI hataları 3 kez yeniden deneniyor | ✅ | G2 |
 | O7 | 🟡 | Config | BOM'lu toml uygulamayı tamamen durduruyor | ✅ | Evet |
 | O8 | 🟡 | Config | `.env` hiç okunmuyor; `.env.example` eski | ✅ | Evet |
 | O9 | 🟡 | Paketleme | Wheel'e varsayılan toml girmiyor | 📖 | Önerilir |
@@ -380,16 +380,22 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   akış biçiminde baş yerine son N bayt tutulsun.
 - **Test:** 64 KB'yi aşan sahte akış çıktısı → sonuç olayı okunuyor.
 
-### O6 — Kalıcı CLI hataları yeniden deneniyor 🟡 📖
+### O6 — Kalıcı CLI hataları yeniden deneniyor 🟡 📖 ✅ G2
 
 - **Dosya:** `providers/cli_agent.py:313-316, 345`
 - **Ne yanlış:** agy'nin "yanıt boş; oturum açık mı?" hatası (MCP takılması dahil) ve Claude'un
   bilinmeyen `subtype` hataları (ör. `error_max_structured_output_retries`)
   `ProviderUnavailableError` olduğu için yeniden denenebilir sayılıyor. Kalıcı bir oturum veya
   yapılandırma hatası için CLI 3 kez açılıyor (agy'de her biri ~20 sn).
-- **Düzeltme:** yeniden denenmeyen bir alt sınıf (`CliTimeoutError` gibi), ör.
-  `CliPermanentError`.
-- **Test:** boş yanıt / bilinmeyen subtype → tek çağrı.
+- **Düzeltme:** `_cli_common.CliPermanentError(ProviderUnavailableError)` (`retryable = False`);
+  agy boş yanıtı ve deterministik Claude `subtype`'ları (`error_max_structured_output_retries`,
+  `error_max_budget_usd`, `error_max_turns`) bu tipten döner. Oturum/kimlik ipuçları
+  (`auth_error`) `ProviderConfigError` ile kalıcıdır. Sıradan/ağ benzeri hatalar eskisi gibi
+  yeniden denenir (sözleşme testi korunuyor).
+- **Test:** `tests/providers/test_cli_agent.py`: `test_agy_empty_response_is_not_retried`,
+  `test_claude_permanent_subtype_is_not_retried`, `test_claude_unknown_subtype_is_retried`,
+  `test_logged_out_result_is_not_retried`, `test_logged_out_stderr_is_not_retried`,
+  `test_server_error_is_still_retried`.
 
 ### O7 — BOM'lu toml uygulamayı durduruyor 🟡 ✅ ✅ Faz C
 
@@ -903,13 +909,14 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] **G0:** `pipeline/orchestrator.py` (465→393) ve `pipeline/passes.py` (426→330) bölündü; yeni
       modüller `cache_flow.py`, `deadline.py`, `llm_session.py`, `verify_pass.py` — **Faz G0**
 - [x] **O5:** CLI ajanları için config'den çıktı sınırı (`ProcessLimits.output_limit`) — **Faz G1**
-- [ ] **O6:** kalıcı CLI hataları yeniden denenmez
+- [x] **O6:** kalıcı CLI hataları yeniden denenmez (oturum/kimlik, deterministik `subtype`, agy boş
+      yanıtı) — **Faz G2**
 - [x] **D1-D7:** onarım prompt etiketi (D1), `extract_json` tırnak hatası (D2), `RecursionError` (D3),
       çıplak `429`/`401` (D4), `finding_id` yeniden numaralama (D5), geçiş başına sağlayıcı/maliyet
       (D6), sızıntı sonrası yeniden üretim notu (D7) — **Faz G3**
 - [x] **D12:** `_json_document` doğrusal tarama — **Faz G3**
-- [ ] **D8-D11:** bozuk few-shot zarif bozulma, ölü kod ve test kancası,
-      `LLMMarkupAnalysisOutput` şeması, olay döngüsündeki küçük G/Ç
+- [x] **D8-D11:** bozuk few-shot zarif bozulma, ölü kod ve test kancası,
+      `LLMMarkupAnalysisOutput` şeması, olay döngüsündeki küçük G/Ç — **Faz G3**
 - [ ] **D18:** Tier 0 durdurma tanısı yapısal bayrakla
 - [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
       exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra

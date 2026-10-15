@@ -425,6 +425,65 @@ async def test_timeout_is_not_retried() -> None:
     assert len(runner.calls) == 1
 
 
+async def test_logged_out_result_is_not_retried() -> None:
+    """G2 (O6): Claude sonuç nesnesindeki oturum hatası kalıcı; `max_retries=2` olsa da tek
+    çağrı yapılır."""
+    stdout = claude_json(is_error=True, subtype="error", result="Not logged in · Please run /login")
+    runner = FakeRunner([ok(stdout), ok(claude_json(structured_output=ANSWER))])
+    with pytest.raises(ProviderConfigError, match="oturum açılmamış"):
+        await _run(_provider("claude_cli", runner, retries=2))
+    assert len(runner.calls) == 1
+
+
+async def test_logged_out_stderr_is_not_retried() -> None:
+    """G2: çıktı hiç JSON değilse stderr'deki oturum ipucu da kalıcı hataya döner."""
+    failed = ProcessResult(
+        returncode=1, stdout="", stderr="Error: Not logged in. Run `claude login`."
+    )
+    runner = FakeRunner([failed, ok(claude_json(structured_output=ANSWER))])
+    with pytest.raises(ProviderConfigError, match="oturum açılmamış"):
+        await _run(_provider("claude_cli", runner, retries=2))
+    assert len(runner.calls) == 1
+
+
+async def test_server_error_is_still_retried() -> None:
+    """G2 kontrolü: geçici (5xx) hata yeniden denenmeye devam ediyor."""
+    failing = ok(claude_json(is_error=True, subtype="error", api_error_status=500, result="dolu"))
+    runner = FakeRunner([failing, ok(claude_json(structured_output=ANSWER))])
+    result = await _run(_provider("claude_cli", runner, retries=2))
+    assert result.parsed == ANSWER
+    assert len(runner.calls) == 2
+
+
+async def test_claude_unknown_subtype_is_retried() -> None:
+    """O6: subtype yalnızca bilinen kalıcı hatalarda tek çağrıya düşer; sıradan hata denenir."""
+    stdout = claude_json(is_error=True, subtype="error_during_execution", result="takıldı")
+    runner = FakeRunner([ok(stdout), ok(claude_json(structured_output=ANSWER))])
+    result = await _run(_provider("claude_cli", runner, retries=2))
+    assert result.parsed == ANSWER
+    assert len(runner.calls) == 2
+
+
+async def test_claude_permanent_subtype_is_not_retried() -> None:
+    """O6: `error_max_structured_output_retries` deterministik; aynı prompt yinelenmez."""
+    stdout = claude_json(
+        is_error=True, subtype="error_max_structured_output_retries", result="şemaya uymadı"
+    )
+    runner = FakeRunner([ok(stdout), ok(claude_json(structured_output=ANSWER))])
+    with pytest.raises(ProviderUnavailableError, match="şemaya"):
+        await _run(_provider("claude_cli", runner, retries=2))
+    assert len(runner.calls) == 1
+
+
+async def test_agy_empty_response_is_not_retried() -> None:
+    """O6: agy boş yanıtı (oturum kapalı / tur başlamadı) kalıcı; ~20 sn'lik denemeler
+    tekrarlanmaz."""
+    runner = FakeRunner([ok(agy_json(response="", num_turns=0))])
+    with pytest.raises(ProviderUnavailableError, match="oturumu"):
+        await _run(_provider("agy", runner, retries=2))
+    assert len(runner.calls) == 1
+
+
 async def test_missing_model_config_error() -> None:
     runner = FakeRunner([])
     with pytest.raises(ProviderConfigError, match="model"):
