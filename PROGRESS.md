@@ -63,6 +63,26 @@
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
 | F | ✅ (elle deneme + denetim sonraya) | faz/f-masaustu | 2026-10-14 | Antigravity / — |
+| G | 🟡 (G1; G0, G2-G7 açık) | faz/g-saglayici | 2026-10-15 | Cline / — |
+
+## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15)
+
+**G1 — CLI ajan çıktısı 64 KB'de kesiliyordu (bulgu O5):**
+- `ProcessLimits.output_limit` eklendi (varsayılan `OUTPUT_LIMIT` = 64 KB). `_CappedReader` ve
+  `_supervise` sınırı bu alandan alır; derleyici (Tier 0/1) yolu varsayılanda kalır.
+- `CliConfig.output_limit_bytes` (65536-16777216, varsayılan 1 MB) config'ten gelir; `agent_limits`
+  bunu `ProcessLimits`'e geçirir, `claude_cli`/`agy`/`codex` aynı yolu kullanır (mimari §12: sınır
+  koda gömülmez).
+- Kesilme sonucu düşürmez: `ProviderResult.warnings`'e "Model yanıtı çok uzundu, kesildi." eklenir
+  (`_cli_common.clip_warning`) ve rapora `meta.warnings` olarak gider. Yanıt hiç ayrıştırılamadıysa
+  eski hata ("çıktı boyutu sınırı aşıldı") korunur.
+- Örnek yapılandırmalar (`codementor.toml`, `docs/mimari.md`) üç CLI sağlayıcısı için alanı gösterir.
+- **Doğrulama:** ruff ve `ruff format --check` temiz; `mypy src/` 207 dosyada hatasız;
+  `pytest -m "not live"` 3454 geçti, 15 atlandı, 6 deselected. Sahte CLI'ye `BOYUT:<n>` gürültü modu
+  eklendi: 200 KB çıktı varsayılan sınırla tam okunuyor; `output_limit_bytes=65536` ile yanıt
+  korunuyor + uyarı geliyor (Tier 1 sınırı değişmedi, `tests/unit/test_runner.py` geçiyor).
+- **Açık:** G0 (orchestrator/passes bölme) ve G2-G7 yapılmadı; O5'in "canlı doğrulanmadı" notu hâlâ
+  geçerli (gerçek `agy`/`codex` çıktısıyla elle deneme kullanıcıya bırakıldı).
 
 ## Faz F — Notlar (masaüstü sağlamlık ve kullanılabilirlik; 2026-10-14)
 

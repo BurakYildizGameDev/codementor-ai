@@ -368,7 +368,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 - **Düzeltme:** `from_cache` içinde `cost_est=None`, `usage_estimated=False`.
 - **Test:** önbellek dönüşünde `cost_est is None`.
 
-### O5 — CLI ajan çıktısı 64 KB'de kesiliyor 🟡 ❓
+### O5 — CLI ajan çıktısı 64 KB'de kesiliyor 🟡 ❓ ✅ Faz G1
 
 - **Dosyalar:** `validation/runner.py:37` (`OUTPUT_LIMIT`), `providers/cli_agent.py:257-260`,
   `providers/codex_cli.py:205-209`
@@ -898,7 +898,7 @@ tekrarlanabilir bir release'ten gelsin.
 
 **Dal:** `faz/g-saglayici`
 
-- [ ] **O5:** CLI ajanları için config'den çıktı sınırı (`ProcessLimits.output_limit`)
+- [x] **O5:** CLI ajanları için config'den çıktı sınırı (`ProcessLimits.output_limit`) — **Faz G1**
 - [ ] **O6:** kalıcı CLI hataları yeniden denenmez
 - [ ] **D1-D12:** onarım prompt etiketi, `extract_json` tırnak hatası, `RecursionError`, çıplak
       `429`/`401`, `finding_id` yeniden numaralama, geçiş başına sağlayıcı/maliyet, sızıntı sonrası
