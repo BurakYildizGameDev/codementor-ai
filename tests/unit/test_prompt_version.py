@@ -100,6 +100,34 @@ def test_prompt_version_detects_new_file(tmp_path: Path) -> None:
     assert prompt_version(directory) != first
 
 
+def test_prompt_version_scans_once_per_file_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D11: aynı şablon kümesinde iki analiz tek dizin taraması yapar (`rglob` casusu)."""
+    directory = tmp_path / "v1"
+    shutil.copytree(REPO_PROMPTS, directory)
+    scans: list[Path] = []
+    original = Path.rglob
+
+    def counting(self: Path, pattern: str) -> Any:
+        scans.append(self)
+        return original(self, pattern)
+
+    monkeypatch.setattr(Path, "rglob", counting)
+    first = prompt_version(directory)
+    assert prompt_version(directory) == first
+    assert scans == [directory]  # ikinci çağrı önbellekten: dizin yeniden listelenmedi
+
+    template = directory / "analysis.user.j2"
+    template.write_text(template.read_text(encoding="utf-8") + "\nek satır", encoding="utf-8")
+    assert prompt_version(directory) != first
+    assert scans == [directory]  # içerik değişti, dosya kümesi aynı: yine tarama yok
+
+    (directory / "yeni.j2").write_text("{{ x }}", encoding="utf-8")
+    assert prompt_version(directory) != first
+    assert scans == [directory, directory]  # küme değişti: tek yeniden tarama
+
+
 def test_rules_version_covers_analysis_and_call_costs(tmp_path: Path) -> None:
     """Faz 31: maliyet tablosu ya da analiz modülü değişince önbellek bayatlamamalı."""
     from codementor.pipeline.versions import hashed_sources, rules_version

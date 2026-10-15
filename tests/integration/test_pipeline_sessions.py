@@ -7,9 +7,11 @@ import asyncio
 
 import pytest
 
-from codementor.config import Settings
+from codementor.config import DataSettings, Settings
 from codementor.models.enums import Language
 from codementor.models.request import AnalysisOptions, AnalysisRequest
+from codementor.pipeline import orchestrator as orchestrator_module
+from codementor.pipeline import versions
 from codementor.pipeline.orchestrator import Orchestrator, PipelineError
 from codementor.providers.base import ProviderConfigError
 from codementor.providers.fake import FakeProvider, FakeReply
@@ -89,6 +91,41 @@ async def test_injected_question_bank_is_used(settings: Settings, fake: FakeFact
     orch = Orchestrator(
         settings, None, provider_factory=lambda _n: _fresh(fake, 0), questions=questions
     )
+    await orch.analyze(_request())
+    assert calls == [1]
+
+
+async def test_question_bank_loaded_once_per_orchestrator(
+    settings: Settings, db: Database, fake: FakeFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D11: banka enjekte edilmemişse aynı orkestratörde diskten bir kez okunur."""
+    loads: list[int] = []
+    original = QuestionBank.load_all.__func__
+
+    def counting(cls: type[QuestionBank], data: DataSettings) -> QuestionBank:
+        loads.append(1)
+        return original(cls, data)
+
+    monkeypatch.setattr(QuestionBank, "load_all", classmethod(counting))
+    orch = Orchestrator(settings, db, provider_factory=lambda _n: _fresh(fake, 0))
+    await orch.analyze(_request(cache=False))
+    await orch.analyze(_request(cache=False))
+    assert loads == [1]
+
+
+async def test_rules_version_reads_data_files_once_per_analysis(
+    settings: Settings, db: Database, fake: FakeFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D11: maliyet tablosu ve mentor şablonları aynı analizde bir kez okunur (anahtar + meta)."""
+    calls: list[int] = []
+    original = versions.rules_version
+
+    def counting(*args: object, **kwargs: object) -> str:
+        calls.append(1)
+        return original(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(orchestrator_module, "rules_version", counting)
+    orch = Orchestrator(settings, db, provider_factory=lambda _n: _fresh(fake, 0))
     await orch.analyze(_request())
     assert calls == [1]
 

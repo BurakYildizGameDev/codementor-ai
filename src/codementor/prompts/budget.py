@@ -10,11 +10,7 @@ from pydantic import BaseModel
 
 from codementor.config import ProviderConfig, Settings
 from codementor.models.provider import ChatMessage
-from codementor.providers.factory import (
-    PROVIDER_NAMES,
-    chain_names,
-    unknown_provider_reason,
-)
+from codementor.providers.factory import chain_names, unknown_provider_reason
 
 # Kod tokenlaştırıcıları İngilizce metinde ~4, kod ve Türkçede ~3 karakter/token verir;
 # temkinli olmak için 3 (fazla tahmin, taşmadan iyidir).
@@ -24,7 +20,6 @@ MIN_PROMPT_TOKENS = 1024  # bundan azı yapılandırma hatasıdır (kodu suçlam
 
 # Bütçe aşılırsa bu sırayla kırpılır. Kod, şema ve çekirdek kurallar hiçbir zaman kırpılmaz.
 TRIM_ORDER = ("fewshots", "checklist", "facts", "static_findings")
-TEST_PROVIDERS = frozenset({"fake"})  # testlerin FakeProvider'ı: varsayılan bağlam
 CHAIN_SEPARATOR = "→"  # FallbackProvider.name biçimi
 
 Render = Callable[[Mapping[str, int]], list[ChatMessage]]
@@ -80,16 +75,22 @@ def provider_chain(settings: Settings, provider: str | None) -> list[str]:
 
 
 def _single_budget(settings: Settings, name: str, schema: int) -> int:
+    """Tek sağlayıcının bütçesi.
+
+    Ad için yapılandırma bölümü varsa bağlam/çıktı payı oradan alınır; bölüm yoksa ama ad
+    yapılandırılmış zincirde (varsayılan + fallback) geçiyorsa prompt varsayılanları kullanılır:
+    zincirde tanımlı ad meşrudur (testlerin `FakeProvider`'ı da zincirde tanımlanır, üretim kodu
+    onu bilmez — D9). Ne bölümü ne zinciri olan ad yapılandırma hatasıdır; zincirden gelen
+    bilinmeyen ad zaten `providers.factory.build_provider`'da yakalanır.
+    """
     context = settings.prompts.default_context_tokens
     reserve = settings.prompts.reserve_output_tokens
-    if name not in TEST_PROVIDERS:
-        if name not in PROVIDER_NAMES:
-            raise PromptConfigError(f"Sağlayıcı {name!r}: {unknown_provider_reason(name)}")
-        config = getattr(settings.providers, name, None)
-        if not isinstance(config, ProviderConfig):  # PROVIDER_NAMES ile ProvidersSettings ayrışırsa
-            raise PromptConfigError(f"Sağlayıcı yapılandırması bulunamadı: {name}")
+    config: ProviderConfig | None = getattr(settings.providers, name, None)
+    if config is not None:
         context = config.context_tokens or config.num_ctx or context
         reserve = config.max_tokens or reserve
+    elif name not in chain_names(settings.providers, None):
+        raise PromptConfigError(f"Sağlayıcı {name!r}: {unknown_provider_reason(name)}")
     budget = context - reserve - schema
     if budget < MIN_PROMPT_TOKENS:
         raise PromptConfigError(

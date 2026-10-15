@@ -14,7 +14,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from codementor.config import ProviderConfig
+from codementor.config import ANTHROPIC_DEFAULT_MAX_TOKENS, ProviderConfig
 from codementor.models.provider import (
     ChatMessage,
     GenerationOptions,
@@ -37,7 +37,6 @@ from codementor.providers.base import ProviderConfigError, ProviderResponseError
 from codementor.providers.schema_adapter import SchemaAdapter
 
 API_VERSION = "2023-06-01"  # Messages API protokol sürümü (başlık), model/URL değil
-DEFAULT_MAX_TOKENS = 16000
 
 
 class AnthropicProvider:
@@ -71,7 +70,7 @@ class AnthropicProvider:
             raise ProviderConfigError(self.name, "en az bir kullanıcı mesajı gerekli")
         payload: dict[str, Any] = {
             "model": require_model(self.name, self.config),
-            "max_tokens": opts.max_tokens or DEFAULT_MAX_TOKENS,
+            "max_tokens": opts.max_tokens or ANTHROPIC_DEFAULT_MAX_TOKENS,
             "messages": turns,
             "output_config": {
                 "format": {"type": "json_schema", "schema": SchemaAdapter(output_model).anthropic()}

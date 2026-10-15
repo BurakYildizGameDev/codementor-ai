@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import unicodedata
 from functools import lru_cache
@@ -154,18 +155,51 @@ def render(directory: Path, name: str, **context: Any) -> str:
         raise PromptTemplateError(f"Şablon işlenemedi ({name}): {exc}") from exc
 
 
+def _names(root: Path) -> tuple[str, ...]:
+    """Ağaçtaki dosya adları (kök göreli, `/` ile, sıralı); `stat` çağrılmaz (D11).
+
+    Yalnızca girdi listesi okunur (`os.walk` + `scandir`; dizin girdilerinin türü işletim
+    sisteminden gelir). Dosya eklenip silinince değişir, içerik değişince değişmez; bu yüzden
+    şablon dosyası **kümesinin** önbellek anahtarı olarak güvenilir (dizin mtime'ı Windows'ta
+    1 ms çözünürlükte: art arda yapılan yazımları ayırt etmez).
+    """
+    names: list[str] = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames.sort()
+        rel = Path(dirpath).relative_to(root).as_posix()
+        prefix = "" if rel == "." else f"{rel}/"
+        names.extend(f"{prefix}{name}" for name in filenames)
+    return tuple(sorted(names))
+
+
+@lru_cache(maxsize=8)
+def _template_files(root: str, names: tuple[str, ...]) -> tuple[str, ...]:
+    """Şablon dosyalarının yolları; `names` değişmedikçe `rglob` yeniden çalışmaz (D11)."""
+    return tuple(
+        sorted(
+            str(p)
+            for p in Path(root).rglob("*")
+            if p.is_file() and p.suffix.lower() in TEMPLATE_SUFFIXES
+        )
+    )
+
+
 def prompt_version(directory: Path) -> str:
     """`"v1+" + sha256(şablonlar + few-shot'lar)[:8]`; satır sonu farkı sürümü değiştirmez.
 
-    Her analizde çağrılır; dosya listesi, boyut ve mtime değişmedikçe hash yeniden hesaplanmaz
-    (Faz 26, yalnızca `stat`).
+    Her analizde (ve her prompt kurulumunda) çağrılır: dosya kümesi değişmedikçe dizin taraması
+    yinelenmez, dosya boyutu ve mtime'ı değişmedikçe içerik okunup hash yeniden hesaplanmaz
+    (Faz 26 + D11, yalnızca `stat`).
     """
     root = _require_dir(directory)
-    files = tuple(
-        sorted(p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in TEMPLATE_SUFFIXES)
-    )
-    signature = tuple((str(p), p.stat().st_mtime_ns, p.stat().st_size) for p in files)
+    files = _template_files(str(root), _names(root))
+    signature = tuple((name, *_stamp(Path(name))) for name in files)
     return _hash_templates(str(root), signature)
+
+
+def _stamp(path: Path) -> tuple[int, int]:
+    stat = path.stat()
+    return stat.st_mtime_ns, stat.st_size
 
 
 @lru_cache(maxsize=8)

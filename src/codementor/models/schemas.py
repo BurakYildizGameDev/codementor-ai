@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from codementor.models.api import AnalysisPage, DeletedCount, Problem
 from codementor.models.llm_output import (
     LLMAnalysisOutput,
+    LLMMarkupAnalysisOutput,
     LLMSinglePassOutput,
     LLMSocraticOutput,
     LLMVerifyOutput,
@@ -26,6 +27,7 @@ JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
 SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "report.schema.json": AnalysisReport,
     "llm_analysis.schema.json": LLMAnalysisOutput,
+    "llm_markup_analysis.schema.json": LLMMarkupAnalysisOutput,  # HTML/CSS Geçiş A (D10, ADR-0015)
     "llm_socratic.schema.json": LLMSocraticOutput,
     "llm_single_pass.schema.json": LLMSinglePassOutput,
     "llm_verify.schema.json": LLMVerifyOutput,  # bulgu doğrulama geçişi (Faz 35)

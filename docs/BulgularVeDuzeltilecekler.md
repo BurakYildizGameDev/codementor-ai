@@ -529,9 +529,9 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | D6 ✅ G3 | `pipeline/llm_session.py`, `pipeline/cost.py` (`passes.py:79`) | Geçişler farklı sağlayıcılara düşerse `meta.provider/model` son çağrının; tüm tokenler o fiyatla hesaplanıyor. | Geçiş başına sağlayıcı/maliyet. |
 | D7 ✅ G3 | `pipeline/passes.py` (`run_pass_b`), `prompts/v1/socratic.user.j2` | Sızıntıdan sonra yeniden üretim aynı prompt + aynı ayarla; sıcaklığı sabit sağlayıcıda (claude_cli) büyük olasılıkla aynı sızıntı. | İçerik sızdırmayan "daha soyut sor" notu ekle. |
 | D8 ✅ G3 | `prompts/builder.py:64-72`, `orchestrator.py:161` | `FewShotError`, Jinja hataları, `FileNotFoundError` yakalanmıyor; bozuk few-shot YAML'ı her analizi 500 ile düşürüyor. | Yakalayıp `degraded` dön. |
-| D9 | `providers/anthropic.py:40`, `orchestrator.py:261`, `prompts/budget.py:27` | Ölü/tekrar kod: `DEFAULT_MAX_TOKENS` tekrarı, gereksiz `isinstance`, kullanılmayan `built` dönüşleri; üretimde `TEST_PROVIDERS={"fake"}` test kancası. | Temizle. |
-| D10 | `models/schemas.py:26-38` | `LLMMarkupAnalysisOutput` `SCHEMA_MODELS`'te yok; HTML/CSS LLM şeması `schemas/` altına yazılmıyor. | Ekle, `schemas/` yeniden üret. |
-| D11 | `prompts/builder.py`, `orchestrator.py` | Olay döngüsünde küçük bloklayan G/Ç: `prompt_version` her analizde `rglob`+`stat`; `_rules_version` veri dosyalarını 2 kez okuyor; `_question_bank` her istekte disk (CLI). | Önbellekle. |
+| D9 ✅ G3 | `providers/anthropic.py:40`, `orchestrator.py:261`, `prompts/budget.py:27` | Ölü/tekrar kod: `DEFAULT_MAX_TOKENS` tekrarı, gereksiz `isinstance`, kullanılmayan `built` dönüşleri; üretimde `TEST_PROVIDERS={"fake"}` test kancası. | Temizle. |
+| D10 ✅ G3 | `models/schemas.py:26-38` | `LLMMarkupAnalysisOutput` `SCHEMA_MODELS`'te yok; HTML/CSS LLM şeması `schemas/` altına yazılmıyor. | Ekle, `schemas/` yeniden üret. |
+| D11 ✅ G3 | `prompts/builder.py`, `orchestrator.py` | Olay döngüsünde küçük bloklayan G/Ç: `prompt_version` her analizde `rglob`+`stat`; `_rules_version` veri dosyalarını 2 kez okuyor; `_question_bank` her istekte disk (CLI). | Önbellekle. |
 | D12 ✅ G3 | `providers/cli_agent.py:108-126` | `_json_document` karesel (160 KB'de 2,7 sn; 64 KB sınırıyla ≤0,5 sn). O5'te sınır büyütülürse sorun olur. | Doğrusal tarama. |
 | D13 ✅ A2 | `prompts/templates.py:36-55` | Sınırlayıcı korumasında atlanan benzer karakterler: `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `﹤` varyantı, `«` (U+00AB), düz `&lt;/user_code&gt;`. | `_CONFUSABLES`'a ekle, `&lt;` biçimini desene kat. |
 | D14 | `api/auth.py:105`, `providers/health.py:105-133` | API anahtarı tanımlıyken bile `/health/ready`, `/docs`, `/openapi.json` açık; sağlayıcı/model adları, anahtar değişken adları, çalıştırılabilir yolları sızıyor. | Anahtar varken `/health/ready`'yi koru; `/health` açık kalsın. |
@@ -542,8 +542,9 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | D19 | `desktop/app.py:396`, `storage/db.py` | `delete_history` analiz sürerken engellenmiyor (`clear_history` engelliyor). Veritabanında WAL, `busy_timeout`, şema sürümü (`user_version`) yok. DB dosyası POSIX'te 0600 oluşturulmuyor (doğrulanmadı). | Engelle; WAL + `busy_timeout`; `user_version` ile göç. |
 | D20 | çeşitli | `cli/rules.py:20-25` `rules list` `[rules] disabled`'ı uygulamıyor. `--help` metinleri karışık dilli ("Show this message and exit."). `eval run --language` serbest metin. `buildinfo.py:15` maskesiz global logger. `build_exe.py:63-70` FastAPI/uvicorn'u gereksiz paketliyor. Kapanışta süren analiz/indirme için onay yok. `pyproject.toml`'da `authors`, `[project.urls]`, `classifiers`, `keywords` yok; GUI bağımlılıkları CLI kurulumuna zorunlu (`[desktop]` extra önerilir). | Tek tek. |
 
-**400 satır sınırı (AGENTS.md):** `desktop/app.py` 494, `pipeline/orchestrator.py` 415 satır →
-bölünmeli. Sınıra yakın: `analysis/extractor.py` 398, `desktop/views/analyze_view.py` 391,
+**400 satır sınırı (AGENTS.md):** `desktop/app.py` 395 (F0'da bölündü), `pipeline/orchestrator.py`
+420 satır → bölünmeli (D9-D11'de eklenen örnek başına önbellek alanlarıyla 415 → 420). Sınıra
+yakın: `analysis/extractor.py` 398, `desktop/views/analyze_view.py` 391,
 `desktop/connections.py` 387, `analysis/complexity_hint.py` 386, `desktop/viewmodel.py` 378.
 
 ---

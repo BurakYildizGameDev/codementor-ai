@@ -236,10 +236,15 @@ class GeminiConfig(ProviderConfig):
     api_key_env: str | None = "GEMINI_API_KEY"
 
 
+# Anthropic Messages API'de `max_tokens` zorunlu; adaptör de yapılandırma da tek bu değeri
+# kullanır (D9: ikinci bir sabit yok). Düşünme de bu bütçeden harcar.
+ANTHROPIC_DEFAULT_MAX_TOKENS = 16000
+
+
 class AnthropicConfig(ProviderConfig):
     base_url: str | None = "https://api.anthropic.com"
     api_key_env: str | None = "ANTHROPIC_API_KEY"
-    max_tokens: int | None = Field(default=16000, ge=1)  # düşünme de bu bütçeden harcar
+    max_tokens: int | None = Field(default=ANTHROPIC_DEFAULT_MAX_TOKENS, ge=1)
     context_tokens: int | None = Field(default=200000, ge=1024)
 
 

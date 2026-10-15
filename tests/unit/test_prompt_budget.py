@@ -139,7 +139,10 @@ def test_budget_from_provider_config() -> None:
     assert budget("ollama") == 8192 - 1000 - schema  # num_ctx
     assert budget("gemini") == 20_000 - 2000 - schema  # max_tokens çıktı payı
     assert budget("anthropic") == 16_384 - 1000 - schema  # context_tokens yok → varsayılan
-    assert budget("fake") == 16_384 - 1000 - schema  # test sağlayıcısı
+    # zincirde yapılandırılmış ama bölümü olmayan ad (testlerin FakeProvider'ı): varsayılanlar
+    chained = _settings(default="fake", fallback=[])
+    assert context_budget(chained, "fake", LLMAnalysisOutput) == 16_384 - 1000 - schema
+    assert context_budget(chained, None, LLMAnalysisOutput) == 16_384 - 1000 - schema
 
 
 def test_budget_is_smallest_in_fallback_chain() -> None:

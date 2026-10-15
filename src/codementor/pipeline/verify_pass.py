@@ -50,7 +50,7 @@ async def run_pass_verify(
                 settings=llm.settings,
                 provider=provider,
             )
-        parsed, _ = await call_structured(llm, "llm_v", built, LLMVerifyOutput)
+        parsed = await call_structured(llm, "llm_v", built, LLMVerifyOutput)
     except (ProviderError, PromptBudgetError, PromptTemplateError) as exc:
         llm.fail_part(f"{VERIFY_FAILED} ({exc})")
         return verification, 0

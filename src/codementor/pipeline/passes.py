@@ -188,7 +188,7 @@ async def run_pass_b(
         if output is None:
             if regenerated and rebuild is not None:
                 prompt = rebuild(True)
-            parsed, _ = await run_pass_socratic_schema(llm, prompt)
+            parsed = await run_pass_socratic_schema(llm, prompt)
             if parsed is None:
                 return None
             output = parsed
@@ -202,13 +202,17 @@ async def run_pass_b(
 
 async def call_structured[M: BaseModel](
     llm: LLMSession, stage: Stage, built: BuiltPrompt, model: type[M]
-) -> tuple[M | None, BuiltPrompt]:
-    """Yanıtı şemaya uydur (`max_repair_attempts` kez onarımlı); olmazsa None."""
+) -> M | None:
+    """Yanıtı şemaya uydur (`max_repair_attempts` kez onarımlı); olmazsa None.
+
+    Onarım sırasında kurulan prompt yalnızca bu çağrıya hizmet eder; çağıranlar tek kullanımlık
+    `BuiltPrompt` dönüşünü kullanmıyordu (D9), bu yüzden dönüş yalnız ayrıştırılmış sonuç.
+    """
     result = await llm.call(stage, built, model)
     for attempt in range(llm.settings.pipeline.max_repair_attempts + 1):
         parsed, check = check_schema(model, parsed=result.parsed, raw_text=result.raw_text)
         if parsed is not None:
-            return parsed, built
+            return parsed
         if attempt == llm.settings.pipeline.max_repair_attempts:
             break
         llm.repair_attempts += 1
@@ -216,12 +220,10 @@ async def call_structured[M: BaseModel](
             built, raw_text=result.raw_text, errors=check.errors, settings=llm.settings
         )
         result = await llm.call(stage, built, model)
-    return None, built
+    return None
 
 
-async def run_pass_socratic_schema(
-    llm: LLMSession, built: BuiltPrompt
-) -> tuple[LLMSocraticOutput | None, BuiltPrompt]:
+async def run_pass_socratic_schema(llm: LLMSession, built: BuiltPrompt) -> LLMSocraticOutput | None:
     """Sokratik yanıtı şemaya uydur (onarımlı)."""
     return await call_structured(llm, "llm_b", built, LLMSocraticOutput)
 

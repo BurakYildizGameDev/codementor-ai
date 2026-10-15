@@ -131,16 +131,47 @@
   (`v1+00000000`) yapar ve `run.cacheable = False` işaretler: rapor LLM geçişi yapılmadan statik
   analizle `degraded` döner, kurulum düzeltildiğinde yeniden üretilir (önbellekten gelmez).
   Tier 0 ve doğrulama geçişleri de aynı tipi yakalar. Uyarı metni "Few-shot" içerir.
+- **D9 — ölü/tekrar kod temizliği:** `providers/anthropic.py`'deki ikinci `DEFAULT_MAX_TOKENS`
+  kaldırıldı; tek kaynak `config.ANTHROPIC_DEFAULT_MAX_TOKENS` (hem `AnthropicConfig.max_tokens`
+  varsayılanı hem adaptörün `opts.max_tokens or ...` yedeği). `prompts/budget._single_budget`'teki
+  `PROVIDER_NAMES`/`isinstance` denetimi ve üretimdeki `TEST_PROVIDERS = {"fake"}` test kancası
+  silindi: ad için yapılandırma bölümü varsa bağlam/çıktı payı oradan, yoksa ad yapılandırılmış
+  zincirde geçiyorsa prompt varsayılanları (testlerin `FakeProvider`'ı zincirde tanımlanır, üretim
+  kodu onu bilmez); ne bölümü ne zinciri olan ad yine `PromptConfigError`. `passes.call_structured`
+  ve `run_pass_socratic_schema` artık kullanılmayan tek kullanımlık `BuiltPrompt`'u döndürmüyor
+  (yalnız ayrıştırılmış sonuç); `verify_pass.run_pass_verify` ve `run_pass_b` çağrıları güncellendi.
+- **D10 — HTML/CSS LLM şeması dışa aktarılıyor:** `LLMMarkupAnalysisOutput` (ADR-0015)
+  `SCHEMA_MODELS`'e eklendi ve `schemas/llm_markup_analysis.schema.json` üretildi
+  (`uv run codementor schema export --out schemas/`); `test_schema_export.py` beklenen dosya
+  listesine ve "sistem alanı sızdırmaz" denetimine eklendi. UI tip listesi (`gen-types.mjs`)
+  yalnız `UI_SCHEMAS`'ı üretir; web tipleri değişmedi.
+- **D11 — olay döngüsündeki küçük G/Ç önbelleğe alındı:** `prompts/templates.prompt_version`
+  dosya kümesini artık `_names` (stat'sız `os.walk`/`scandir`) anahtarıyla önbelleğe alıp `rglob`
+  taramasını küme değişmedikçe yinelemiyor — dizin mtime'ı Windows'ta ~1 ms çözünürlükte olduğu
+  için anahtar olarak güvenilmez (ölçüldü), bu yüzden dosya adı kümesinin kendisi kullanıldı;
+  içerik değişimi yine boyut+mtime imzasından gelir. `Orchestrator._rules_version` ve
+  `_question_bank` örnek başına bir kez çalışır: aynı analizde önbellek anahtarı ile rapor
+  `meta`'sı aynı sürümü paylaşır (önceden maliyet tablosu + mentor şablonları iki kez okunuyordu)
+  ve enjekte edilmeyen banka aynı orkestratörde diskten tekrar yüklenmez. Örnek istek/örnekleme
+  başına kurulduğu için (API, masaüstü, CLI, eval) tazelik korunur. Yeni testler:
+  `test_prompt_version.py::test_prompt_version_scans_once_per_file_set`,
+  `test_pipeline_sessions.py::{test_question_bank_loaded_once_per_orchestrator,
+  test_rules_version_reads_data_files_once_per_analysis}` (son ikisi düzeltme öncesi `[1, 1]`
+  görüyordu; defekt kanıtlandı).
 
-- **Prompt sürümü:** `repair.user.j2` ve `socratic.user.j2` değiştiği için hash
+- **Prompt sürümü (D6-D8):** `repair.user.j2` ve `socratic.user.j2` değiştiği için hash
   `v1+3fa9c2d1` → **`v1+632620d8`**; `tests/golden/report_example.json` ve
-  `src/codementor/api/examples/report.json` güncellendi.
-- **Doğrulama:** `ruff check`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada hatasız;
-  `pytest -m "not live"` **3479 geçti**, 15 atlandı, 6 deselected (G1 sonrası 3454 → +25 yeni test:
-  D6 maliyet, D1 neden metni/guard, D7 soyut not, D8 şablon bozulması — `tests/unit/test_prompt_degrade.py`
-  4 test + `tests/integration/test_pipeline.py` 2 kabul testi). Prompt hash'i D8'de değişmedi
-  (`v1+632620d8`), golden dosyalar dokunulmadı.
-- **Açık:** D8-D11, D14-D20 ve `schema_enforced` duruyor; G2 (O6 kalıcı CLI hatalarının yeniden
+  `src/codementor/api/examples/report.json` güncellendi. **Doğrulama (D6-D8):** `pytest -m "not live"`
+  **3479 geçti**, 15 atlandı, 6 deselected (G1 sonrası 3454 → +25 test: D6 maliyet, D1 neden
+  metni/guard, D7 soyut not, D8 şablon bozulması).
+- **Prompt sürümü:** D9-D11'de şablon/few-shot dosyalarına dokunulmadı → hash `v1+632620d8`
+  sabit; golden dosyalar güncellenmedi.
+- **Doğrulama (D9-D11):** `ruff check`/`ruff format --check` temiz (467 dosya); `mypy src/` 211
+  dosyada hatasız; `pytest -m "not live"` **3482 geçti**, 15 atlandı, 6 deselected (D8 sonrası
+  3479 → +3 test). Bir koşuda `tests/rules/test_engine.py::test_linear_time_large_input[html-*]`
+  zaman sınırını aştı (38 s > 2 s); tek başına ve sonraki tam koşuda geçti → makine yükü kaynaklı,
+  değişiklikle ilgisiz.
+- **Açık:** D14-D20 ve `schema_enforced` duruyor (D8-D11 ✅); G2 (O6 kalıcı CLI hatalarının yeniden
   denenmesi) henüz başlamadı.
 
 ## Faz F — Notlar (masaüstü sağlamlık ve kullanılabilirlik; 2026-10-14)

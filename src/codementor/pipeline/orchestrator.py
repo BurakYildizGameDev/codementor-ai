@@ -107,6 +107,10 @@ class Orchestrator:
     tier1_runner: Runner = run_process
     # Faz 49: API/masaüstü süreç başına yüklenmiş bankayı verir; yoksa her istekte diskten
     questions: Callable[[], QuestionBank] | None = None
+    # D11: enjekte edilmeyen banka ve veri dosyası sürümü örnek başına bir kez okunur. Örnek
+    # istek/örnekleme başına kurulduğu için (API, masaüstü, CLI, eval) tazelik korunur.
+    _bank: QuestionBank | None = field(default=None, init=False, repr=False, compare=False)
+    _rules: str | None = field(default=None, init=False, repr=False, compare=False)
 
     async def analyze(self, request: AnalysisRequest) -> AnalysisReport:
         """§4 yaşam döngüsü. Kullanıcı hatasında `PipelineError`; sağlayıcı hatası bozulmadır."""
@@ -232,13 +236,21 @@ class Orchestrator:
             raise PipelineError(str(exc), "invalid") from exc
 
     def _question_bank(self) -> QuestionBank:
+        """Soru bankası (D11). Enjekte edilmişse çağıran kendi önbelleğini yönetir (state.py);
+        yoksa örnek başına bir kez diskten yüklenir (banka salt okunur)."""
         if self.questions is not None:
             return self.questions()
-        return QuestionBank.load_all(self.settings.data)
+        if self._bank is None:
+            self._bank = QuestionBank.load_all(self.settings.data)
+        return self._bank
 
     def _rules_version(self) -> str:
-        data = self.settings.data
-        return rules_version(data.call_costs_file, data.mentor_templates_file)
+        """Kural/veri sürümü (D11). Aynı analizde önbellek anahtarı ve rapor `meta`'sı aynı değeri
+        kullanır; maliyet tablosu ve mentor şablonları istek başına bir kez okunur."""
+        if self._rules is None:
+            data = self.settings.data
+            self._rules = rules_version(data.call_costs_file, data.mentor_templates_file)
+        return self._rules
 
     def _cache_key(
         self,
