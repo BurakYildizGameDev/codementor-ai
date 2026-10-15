@@ -63,9 +63,27 @@
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
 | F | ✅ (elle deneme + denetim sonraya) | faz/f-masaustu | 2026-10-14 | Antigravity / — |
-| G | 🟡 (G1; G0, G2-G7 açık) | faz/g-saglayici | 2026-10-15 | Cline / — |
+| G | 🟡 (G0-G1; G2-G7 açık) | faz/g-saglayici | 2026-10-15 | Cline / — |
 
 ## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15)
+
+**G0 — `orchestrator.py` ve `passes.py` bölündü (dosya başına 400 satır kuralı):**
+- `pipeline/orchestrator.py` 465 → 393 satır. Yeni modüller: `cache_flow.py` (önbellek anahtarı/imza,
+  Tier 1 ayarı, deneme geri alma, rapor kaydı) ve `deadline.py` (`_timed_out`, `_remaining` gövdeleri).
+  `Orchestrator` yöntemleri ince sarmalayıcı kaldı (`self._validation(...)`, `self._tier1(...)`,
+  `self._remaining(...)`): testler `monkeypatch.setattr(Orchestrator, ...)` ile yamıyor, adlar korundu.
+- `pipeline/passes.py` 426 → 330 satır. Yeni modüller: `llm_session.py` (`LLMSession`) ve
+  `verify_pass.py` (`VERIFY_STAGES`, `VERIFY_FAILED`, `run_pass_verify`). Onarım/sokratik prompt kuran
+  `run_pass_a`, `_socratic` ve `call_structured` bilinçli olarak `passes.py`'de kaldı: testler
+  `passes.build_repair_messages` / `passes.build_socratic_messages`'i yamıyor.
+- `passes.py` taşınan adları `__all__` ile yeniden dışa aktarır (`pipeline/assemble.py` ve
+  `eval/runner.py` değişmedi). `verify_pass.run_pass_verify`, `call_structured`'i çağrı anında alır
+  (döngüsel içe aktarma olmasın diye).
+- `Orchestrator._report` gövdesi `assemble.assemble_with_cost` oldu (rapor + maliyet tahmini);
+  `pipeline/assemble.py` 145 satır (< 400). `desktop/app.py` zaten 395 satır (F0).
+- **Doğrulama:** davranış değişmedi — değişen dosyalar yalnız `src/` (test yok); `ruff` ve
+  `ruff format --check` temiz; `mypy src/` 211 dosyada hatasız; `pytest -m "not live"` 3454 geçti,
+  15 atlandı, 6 deselected (G0 öncesiyle aynı sayılar).
 
 **G1 — CLI ajan çıktısı 64 KB'de kesiliyordu (bulgu O5):**
 - `ProcessLimits.output_limit` eklendi (varsayılan `OUTPUT_LIMIT` = 64 KB). `_CappedReader` ve
@@ -81,7 +99,7 @@
   `pytest -m "not live"` 3454 geçti, 15 atlandı, 6 deselected. Sahte CLI'ye `BOYUT:<n>` gürültü modu
   eklendi: 200 KB çıktı varsayılan sınırla tam okunuyor; `output_limit_bytes=65536` ile yanıt
   korunuyor + uyarı geliyor (Tier 1 sınırı değişmedi, `tests/unit/test_runner.py` geçiyor).
-- **Açık:** G0 (orchestrator/passes bölme) ve G2-G7 yapılmadı; O5'in "canlı doğrulanmadı" notu hâlâ
+- **Açık:** G2-G7 yapılmadı; O5'in "canlı doğrulanmadı" notu hâlâ
   geçerli (gerçek `agy`/`codex` çıktısıyla elle deneme kullanıcıya bırakıldı).
 
 ## Faz F — Notlar (masaüstü sağlamlık ve kullanılabilirlik; 2026-10-14)

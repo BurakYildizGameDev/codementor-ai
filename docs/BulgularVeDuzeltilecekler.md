@@ -877,7 +877,8 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] Kurulu zig sürümü eskiyse "güncelle" önerisi (Sonraya: Faz 29) — **Faz F**
 - [x] Bağlantılar'da `ollama pull` düğmesi (Sonraya: Faz 15) — **Faz F**
 - [x] SQLite çağrılarını iş parçacığına alma (Sonraya: Faz 26) — **Faz F**
-- [ ] **400 satır:** `desktop/app.py` (494) ve `pipeline/orchestrator.py` (415) bölünür
+- [x] **400 satır:** `desktop/app.py` (494→395, F0) ve `pipeline/orchestrator.py` (465→393) +
+      `passes.py` (426→330) bölündü — **Faz G0**
 - [x] Linux/macOS'ta "Oturum aç": Windows yeni konsol; Linux `x-terminal-emulator -e` (yoksa
       `gnome-terminal --`); macOS `open -a Terminal`; terminal yoksa bildirimle elle komut — **Faz F**
 
@@ -898,6 +899,8 @@ tekrarlanabilir bir release'ten gelsin.
 
 **Dal:** `faz/g-saglayici`
 
+- [x] **G0:** `pipeline/orchestrator.py` (465→393) ve `pipeline/passes.py` (426→330) bölündü; yeni
+      modüller `cache_flow.py`, `deadline.py`, `llm_session.py`, `verify_pass.py` — **Faz G0**
 - [x] **O5:** CLI ajanları için config'den çıktı sınırı (`ProcessLimits.output_limit`) — **Faz G1**
 - [ ] **O6:** kalıcı CLI hataları yeniden denenmez
 - [ ] **D1-D12:** onarım prompt etiketi, `extract_json` tırnak hatası, `RecursionError`, çıplak
