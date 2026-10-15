@@ -248,6 +248,9 @@ class CliConfig(ProviderConfig):
 
     command: str | None = None
     timeout_s: int = Field(default=300, ge=1)
+    # G1: CLI'lar her parça/olay için ayrı satır yazıyor; derleyici sınırı (64 KB) ajan yanıtını
+    # kesiyordu. stdout ve stderr ayrı ayrı bu sınıra tabidir.
+    output_limit_bytes: int = Field(default=1_048_576, ge=65_536, le=16_777_216)
 
 
 class ClaudeCliConfig(CliConfig):

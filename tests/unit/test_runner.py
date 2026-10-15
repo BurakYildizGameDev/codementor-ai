@@ -131,6 +131,17 @@ def test_output_capped() -> None:
     assert len(result.stderr.encode()) == OUTPUT_LIMIT
 
 
+def test_output_limit_follows_process_limits() -> None:
+    """G1: sınır `ProcessLimits.output_limit`'ten gelir; derleyici varsayılanı değişmedi."""
+    code = "import sys; sys.stdout.write('x' * 140_000)"
+    limits = ProcessLimits(timeout_s=10, memory_mb=512, output_limit=100_000)
+    result = _py(code, limits=limits)
+    assert result.returncode == 0
+    assert result.truncated
+    assert len(result.stdout.encode()) == 100_000
+    assert OUTPUT_LIMIT == 64 * 1024  # Tier 1 (derleyici) sınırı
+
+
 def test_process_not_reading_stdin_does_not_deadlock() -> None:
     result = _py("print('ok')", stdin="x" * 2_000_000)
     assert result.stdout.strip() == "ok"

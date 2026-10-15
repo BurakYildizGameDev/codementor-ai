@@ -43,6 +43,7 @@ from codementor.providers._cli_common import (
     MEMORY_MB,
     CliTimeoutError,
     agent_limits,
+    clip_warning,
     profile_env,
     render_prompt,
     resolve_executable,
@@ -79,6 +80,7 @@ __all__ = [
     "CliKind",
     "CliTimeoutError",
     "agent_limits",
+    "clip_warning",
     "model_label",
     "profile_env",
     "render_prompt",
@@ -225,7 +227,7 @@ class CliAgentProvider:
         stdin = render_prompt(messages)
         if self.kind == "agy":
             stdin = encode_stdin(stdin)
-        limits = agent_limits(self.config.timeout_s)
+        limits = agent_limits(self.config.timeout_s, self.config.output_limit_bytes)
         start = time.perf_counter()
 
         async def once() -> ProviderResult:
@@ -263,8 +265,10 @@ class CliAgentProvider:
             )
             raise ProviderRequestError(self.name, f"JSON çıktı alınamadı ({detail})")
         if self.kind == "claude_cli":
-            return self._claude(data, model, start)
-        return self._agy(data, model, start, result.stdout, result.stderr)
+            return clip_warning(self._claude(data, model, start), result.truncated)
+        return clip_warning(
+            self._agy(data, model, start, result.stdout, result.stderr), result.truncated
+        )
 
     def _claude(self, data: Mapping[str, Any], model: str, start: float) -> ProviderResult:
         if data.get("is_error") or data.get("subtype") not in (None, "success"):

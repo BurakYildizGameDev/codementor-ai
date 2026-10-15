@@ -93,17 +93,20 @@ command = "claude"
 model = "claude-opus-5-5"
 context_tokens = 200000        # prompt bütçesi (mimari §5.4.5)
 timeout_s = 300
+output_limit_bytes = 1048576   # stdout/stderr sınırı (65536-16777216); kesilirse rapora uyarı (G1)
 
 [providers.agy]                # Antigravity CLI; deneysel, araç kapatma bayrağı yok (ADR-0012)
 command = "agy"
 model = ""
 timeout_s = 300
+output_limit_bytes = 1048576   # CLI her parça/olay için satır yazıyor; 64 KB yanıtı kesiyordu (G1)
 allow_tool_agent = false       # true: öğrenci kodunu araç çalıştırabilen ajana vermeyi kabul et
 
 [providers.codex]              # OpenAI Codex CLI; ChatGPT oturumu (`codex login`), salt okunur sandbox (ADR-0017)
 command = "codex"
 model = ""                     # `codex debug models` listesinden, ör. "gpt-5.5"
 timeout_s = 300
+output_limit_bytes = 1048576   # stdout/stderr sınırı; kesilirse rapora uyarı (G1)
 allow_tool_agent = false       # true: öğrenci kodunu dosya okuyabilen ajana vermeyi kabul et
 
 [providers.anthropic]

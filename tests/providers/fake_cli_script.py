@@ -1,7 +1,8 @@
 """Sahte `claude`/`agy`/`codex` (Faz 25, 28): gerçek `run_process` ile başlatılır, yanıtlar.
 
 Yanıtın yapılandırılmış çıktısı; argv, çalışma dizini, ortam adları ve stdin'i taşır. stdin'de
-`UYU:<yol>` varsa yola işaret dosyası yazar ve uzun süre uyur (iptal testi).
+`UYU:<yol>` varsa yola işaret dosyası yazar ve uzun süre uyur (iptal testi); `BOYUT:<n>` varsa
+ayrıştırıcıyı bozmayan n bayt gürültü yazar (çıktı sınırı testi, G1).
 """
 
 import json
@@ -9,6 +10,14 @@ import os
 import re
 import sys
 import time
+
+
+def noise(total: int) -> bytes:
+    """`bilgi:` önekli gürültü satırları: JSONL/JSON ayrıştırmasını bozmaz (G1)."""
+    if total <= 0:
+        return b""
+    line = b"bilgi: " + b"x" * 800 + b"\n"
+    return line * max(1, total // len(line))
 
 
 def main() -> None:
@@ -20,6 +29,8 @@ def main() -> None:
         with open(sleeper.group(1), "w", encoding="utf-8") as marker:
             marker.write(str(os.getpid()))
         time.sleep(60)
+    sized = re.search(r"BOYUT:(\d+)", stdin)
+    filler = noise(int(sized.group(1))) if sized else b""
     probe = {
         "argv": sys.argv[1:],
         "cwd": os.getcwd(),
@@ -40,7 +51,10 @@ def main() -> None:
             },
             {"type": "turn.completed", "usage": usage},
         ]
-        out.write("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events).encode())
+        parts = [json.dumps(e, ensure_ascii=False).encode() + b"\n" for e in events]
+        if filler:  # yanıttan SONRA: kesilse bile agent_message ayakta kalır (G1)
+            parts.insert(2, filler)
+        out.write(b"".join(parts))
         out.flush()
         return
     if "--sandbox" in sys.argv:  # agy: NDJSON `user` olayı girer, `init` + `result` olayları çıkar
@@ -51,6 +65,7 @@ def main() -> None:
             result = {"status": "ERROR", "response": "", "error": f"stream input: {exc}"}
         events = [{"event": "init", "init": {}}, {"event": "result", "result": result}]
         out.write("bilgi: sahte agy başladı\n".encode())  # gürültü satırı ayrıştırmayı bozmamalı
+        out.write(filler)
         out.write("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events).encode())
         out.flush()
         return
@@ -63,6 +78,7 @@ def main() -> None:
         "usage": usage,
     }
     out.write("bilgi: sahte CLI başladı\n".encode())  # gürültü satırı ayrıştırmayı bozmamalı
+    out.write(filler)  # sonuç nesnesinden ÖNCE: kesilme hâlinde JSON kaybolur (G1)
     out.write((json.dumps(reply, ensure_ascii=False) + "\n").encode())
     out.flush()
 

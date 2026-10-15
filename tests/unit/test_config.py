@@ -185,3 +185,15 @@ def test_storage_max_analyses_default(tmp_path: Path, monkeypatch: pytest.Monkey
     monkeypatch.setenv(CONFIG_FILE_ENV, str(tmp_path / "yok.toml"))
     assert load_settings().storage.max_analyses == 2000
     assert load_settings(storage={"max_analyses": None}).storage.max_analyses is None
+
+
+def test_cli_output_limit_bytes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """G1: CLI çıktı sınırı sağlayıcı başına 64 KB-16 MB; varsayılan 1 MB."""
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(tmp_path / "yok.toml"))
+    settings = load_settings()
+    for name in ("claude_cli", "agy", "codex"):
+        assert getattr(settings.providers, name).output_limit_bytes == 1_048_576
+    with pytest.raises(ValueError, match="output_limit_bytes"):  # derleyici sınırı (64 KB) altı
+        load_settings(providers={"claude_cli": {"output_limit_bytes": 1024}})
+    with pytest.raises(ValueError, match="output_limit_bytes"):  # 16 MB üstü
+        load_settings(providers={"agy": {"output_limit_bytes": 20_000_000}})

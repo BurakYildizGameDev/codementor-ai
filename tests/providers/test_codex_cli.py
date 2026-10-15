@@ -26,6 +26,7 @@ from codementor.providers import (
     ProviderResponseError,
     RetryPolicy,
 )
+from codementor.providers._cli_common import CLIPPED_WARNING
 from codementor.providers.cli_agent import CliTimeoutError
 from codementor.providers.codex_cli import CodexCliProvider
 from codementor.providers.schema_adapter import SchemaAdapter
@@ -145,6 +146,7 @@ async def test_limits_and_profile_env(monkeypatch: pytest.MonkeyPatch) -> None:
     await _run(provider)
     call = runner.calls[0]
     assert call["limits"].timeout_s == provider.config.timeout_s
+    assert call["limits"].output_limit == provider.config.output_limit_bytes  # G1
     assert call["env"]["CODEX_HOME"] == "C:/codex-home"
     assert "OPENAI_API_KEY" not in call["env"]
 
@@ -226,3 +228,11 @@ async def test_cancelled_process_raises_cancelled() -> None:
     runner = FakeRunner([ProcessResult(returncode=-1, stdout="", stderr="", cancelled=True)])
     with pytest.raises(asyncio.CancelledError):
         await _run(_provider(runner))
+
+
+async def test_truncated_output_adds_warning() -> None:
+    # G1 (O5): kesilme sonucu düşürmez; kullanıcıya Türkçe uyarı gider
+    runner = FakeRunner([ok(events(message(json.dumps(ANSWER))), truncated=True)])
+    result = await _run(_provider(runner))
+    assert result.parsed == ANSWER
+    assert CLIPPED_WARNING in result.warnings

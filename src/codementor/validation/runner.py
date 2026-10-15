@@ -10,7 +10,9 @@ Kullanıcı kodu güvenilmezdir (§12) ve Docker yalıtımı yoktur; önlemler s
   `CPATH`, `*_INCLUDE_PATH`, `GCC_EXEC_PREFIX`, API anahtarları vb. geçmez.
 - Süreç ağacı her durumda (normal çıkış, zaman aşımı, beklenmedik hata) öldürülür:
   POSIX'te süreç grubu, Windows'ta Job Object.
-- stdout ve stderr ayrı ayrı `OUTPUT_LIMIT` baytla sınırlı; fazlası okunup atılır.
+- stdout ve stderr ayrı ayrı `ProcessLimits.output_limit` baytla sınırlı; fazlası okunup atılır.
+  Varsayılan derleyici sınırıdır (`OUTPUT_LIMIT`); CLI ajanları çok satırlı akış yazdığı için
+  config'ten daha büyük bir sınır verir (G1).
 - POSIX: `RLIMIT_CPU`, `RLIMIT_CORE=0`, `RLIMIT_FSIZE`, (derleyicilerde) `RLIMIT_AS`.
   Sınırlar `preexec_fn` yerine küçük bir Python başlatıcısında uygulanıp `execv` ile
   derleyiciye geçilir: `preexec_fn` çok iş parçacıklı sunucuda fork sonrası kilitlenebilir.
@@ -73,6 +75,7 @@ class ProcessLimits:
     limit_address_space: bool = True  # dotnet gibi büyük sanal alan ayıranlar için False
     max_processes: int = MAX_PROCESSES  # Windows Job Object; CLI ajanları daha fazlasını açar
     file_size_bytes: int = _FILE_SIZE_LIMIT  # POSIX RLIMIT_FSIZE
+    output_limit: int = OUTPUT_LIMIT  # stdout/stderr başına bayt; CLI ajanları daha büyüğünü ister
 
 
 @dataclass(frozen=True)
@@ -89,11 +92,12 @@ class ProcessResult:
 
 
 class _CappedReader(threading.Thread):
-    """Akışı sonuna kadar okur (süreç tıkanmasın), ilk `OUTPUT_LIMIT` baytı saklar."""
+    """Akışı sonuna kadar okur (süreç tıkanmasın), ilk `limit` baytı saklar."""
 
-    def __init__(self, stream: IO[bytes]) -> None:
+    def __init__(self, stream: IO[bytes], limit: int = OUTPUT_LIMIT) -> None:
         super().__init__(daemon=True)
         self._stream = stream
+        self._limit = limit
         self._chunks: list[bytes] = []
         self._size = 0
         self._lock = threading.Lock()
@@ -103,7 +107,7 @@ class _CappedReader(threading.Thread):
         try:
             while chunk := self._stream.read(_CHUNK):
                 with self._lock:
-                    room = OUTPUT_LIMIT - self._size
+                    room = self._limit - self._size
                     if len(chunk) > room:
                         self.truncated = True
                         chunk = chunk[:room]
@@ -289,7 +293,9 @@ def run_process(
                 tree.kill(proc)
                 proc.wait()
                 return ProcessResult(None, "", "", error="Job Object kurulamadı")
-            return _supervise(proc, tree, stdin.encode("utf-8"), limits.timeout_s, cancel)
+            return _supervise(
+                proc, tree, stdin.encode("utf-8"), limits.timeout_s, cancel, limits.output_limit
+            )
         except Exception as exc:  # sözleşme: istisna fırlatma, süreci asla sızdırma
             tree.kill(proc)
             return ProcessResult(None, "", "", error=f"{type(exc).__name__}: {exc}")
@@ -334,11 +340,12 @@ def _supervise(
     data: bytes,
     timeout_s: float,
     cancel: threading.Event | None = None,
+    output_limit: int = OUTPUT_LIMIT,
 ) -> ProcessResult:
     assert proc.stdin is not None
     assert proc.stdout is not None
     assert proc.stderr is not None
-    out, err = _CappedReader(proc.stdout), _CappedReader(proc.stderr)
+    out, err = _CappedReader(proc.stdout, output_limit), _CappedReader(proc.stderr, output_limit)
     feeder = threading.Thread(target=_feed_stdin, args=(proc.stdin, data), daemon=True)
     for thread in (feeder, out, err):
         thread.start()

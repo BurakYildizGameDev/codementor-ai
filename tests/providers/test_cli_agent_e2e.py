@@ -19,6 +19,7 @@ from codementor.config import AgyConfig, ClaudeCliConfig, CodexConfig
 from codementor.models.llm_output import LLMSocraticOutput
 from codementor.models.provider import ChatMessage, GenerationOptions
 from codementor.providers import RetryPolicy
+from codementor.providers._cli_common import CLIPPED_WARNING
 from codementor.providers.cli_agent import CliAgentProvider
 from codementor.providers.codex_cli import CodexCliProvider
 
@@ -163,3 +164,39 @@ async def test_codex_fake_stdin_only_schema_file_and_clean_env(
     assert not Path(argv[argv.index("--cd") + 1]).exists()  # geçici kök silindi
     assert result.provider == "codex"
     assert result.usage.output_tokens == 7
+
+
+# --------------------------------------------------------- çıktı sınırı (G1, bulgu O5)
+
+
+async def test_large_cli_output_is_read_completely(tmp_path: Path) -> None:
+    """G1 (O5): 200 KB'lık akış varsayılan sınırla (1 MB) tam okunur; 64 KB'de kesiliyordu."""
+    fake = make_fake_cli(tmp_path, "claude")
+    result = await _provider("claude_cli", fake).generate_structured(
+        _messages(" BOYUT:200000"), LLMSocraticOutput, GenerationOptions()
+    )
+    probe = result.parsed
+    assert probe is not None
+    assert probe["argv"]  # sonuç nesnesi sınırın içinde kaldı
+    assert result.warnings == []
+
+
+async def test_clipped_codex_output_warns_but_keeps_answer(tmp_path: Path) -> None:
+    """G1: sınır config'ten gelir; kesilen akışta yanıt korunur ve uyarı eklenir."""
+    fake = make_fake_cli(tmp_path, "codex")
+    config = CodexConfig(
+        command=str(fake),
+        model="gpt-5.5",
+        allow_tool_agent=True,
+        timeout_s=30,
+        output_limit_bytes=65_536,
+    )
+    provider = CodexCliProvider(config, retry=RetryPolicy(max_retries=0))
+    result = await provider.generate_structured(
+        _messages(" BOYUT:200000"), LLMSocraticOutput, GenerationOptions()
+    )
+    probe = result.parsed
+    assert probe is not None  # `agent_message` sınırın içinde kaldı
+    assert probe["argv"]
+    assert result.warnings == [CLIPPED_WARNING]
+    assert result.usage.output_tokens == 0  # `turn.completed` kesildi

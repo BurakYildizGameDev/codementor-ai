@@ -1411,17 +1411,20 @@ command = "claude"
 context_tokens = 200000        # prompt bütçesi (§5.4.5); her sağlayıcıda tanımlanabilir
 model = "claude-opus-5-5"
 timeout_s = 300
+output_limit_bytes = 1048576   # CLI çıktı sınırı (65536-16777216); kesilirse rapora uyarı (G1)
 
 [providers.agy]                # ADR-0012; deneysel
 command = "agy"
 model = ""
 timeout_s = 300
+output_limit_bytes = 1048576   # akış biçimli çıktı 64 KB'ye sığmıyor (G1)
 allow_tool_agent = false       # araçları kapatılamayan ajan: açık onay gerekir
 
 [providers.codex]              # ADR-0017; ChatGPT oturumu (`codex login`)
 command = "codex"
 model = ""                     # `codex debug models` listesinden
 timeout_s = 300
+output_limit_bytes = 1048576   # JSONL olay akışı; kesilirse rapora uyarı (G1)
 allow_tool_agent = false       # dosya okuyabilen ajan: açık onay gerekir
 
 [providers.anthropic]

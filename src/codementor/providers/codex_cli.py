@@ -46,6 +46,7 @@ from codementor.providers.base import (
 from codementor.providers.cli_agent import (
     CliTimeoutError,
     agent_limits,
+    clip_warning,
     profile_env,
     render_prompt,
     resolve_executable,
@@ -164,7 +165,7 @@ class CodexCliProvider:
             raise ProviderConfigError(NAME, "en az bir kullanıcı mesajı gerekli")
         schema = json.dumps(SchemaAdapter(output_model).openai_strict(), ensure_ascii=False)
         stdin = render_prompt(messages)
-        limits = agent_limits(self.config.timeout_s)
+        limits = agent_limits(self.config.timeout_s, self.config.output_limit_bytes)
         start = time.perf_counter()
 
         async def once() -> ProviderResult:
@@ -213,15 +214,18 @@ class CodexCliProvider:
             if event.get("type") == "turn.completed" and isinstance(event.get("usage"), dict):
                 usage = event["usage"]
         text = texts[-1]
-        return ProviderResult(
-            raw_text=text,
-            parsed=parse_json_object(text),
-            usage=TokenUsage(
-                input_tokens=as_int(usage.get("input_tokens")),
-                output_tokens=as_int(usage.get("output_tokens")),
+        return clip_warning(
+            ProviderResult(
+                raw_text=text,
+                parsed=parse_json_object(text),
+                usage=TokenUsage(
+                    input_tokens=as_int(usage.get("input_tokens")),
+                    output_tokens=as_int(usage.get("output_tokens")),
+                ),
+                latency_ms=elapsed_ms(start),
+                model=model,
+                finish_reason=None,
+                provider=NAME,
             ),
-            latency_ms=elapsed_ms(start),
-            model=model,
-            finish_reason=None,
-            provider=NAME,
+            result.truncated,
         )

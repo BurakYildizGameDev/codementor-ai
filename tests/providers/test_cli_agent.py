@@ -26,6 +26,7 @@ from codementor.providers import (
     ProviderUnavailableError,
     RetryPolicy,
 )
+from codementor.providers._cli_common import CLIPPED_WARNING
 from codementor.providers.cli_agent import (
     FIXED_SYSTEM,
     CliAgentProvider,
@@ -169,14 +170,27 @@ async def test_limits_and_profile_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("USERPROFILE", "C:/Users/test")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-baska-saglayici-anahtari-123")
     runner = FakeRunner([ok(claude_json(structured_output=ANSWER))])
-    await _run(_provider("claude_cli", runner))
+    provider = _provider("claude_cli", runner)
+    await _run(provider)
     call = runner.calls[0]
     assert call["limits"].timeout_s == 300
     assert call["limits"].max_processes > 8
     assert call["limits"].file_size_bytes > 1024 * 1024
+    assert call["limits"].output_limit == provider.config.output_limit_bytes  # G1
     assert call["env"]["USERPROFILE"] == "C:/Users/test"
     assert call["env"]["DISABLE_AUTOUPDATER"] == "1"
     assert "OPENAI_API_KEY" not in call["env"]  # başka sağlayıcıların anahtarları geçmez
+
+
+async def test_output_limit_bytes_comes_from_config() -> None:
+    # G1 (O5): sınır config'ten gelir; varsayılanı (1 MB) 64 KB yanıtı kesiyordu
+    runner = FakeRunner([ok(claude_json(structured_output=ANSWER))])
+    config = ClaudeCliConfig(command=EXE, model="m", output_limit_bytes=131_072)
+    provider = CliAgentProvider(
+        "claude_cli", config, retry=RetryPolicy(max_retries=0), runner=runner
+    )
+    await _run(provider)
+    assert runner.calls[0]["limits"].output_limit == 131_072
 
 
 def test_render_prompt_delimits_roles() -> None:
@@ -372,6 +386,14 @@ async def test_truncated_stderr_does_not_discard_valid_stdout() -> None:
 async def test_truncated_without_result_is_response_error() -> None:
     with pytest.raises(ProviderResponseError):
         await _run(_provider("claude_cli", FakeRunner([ok('{"type"', truncated=True)])))
+
+
+async def test_truncated_output_adds_warning() -> None:
+    # G1: kesilme sonucu düşürmez; rapora gidecek Türkçe uyarı eklenir
+    runner = FakeRunner([ok(claude_json(structured_output=ANSWER), truncated=True)])
+    result = await _run(_provider("claude_cli", runner))
+    assert result.parsed == ANSWER
+    assert result.warnings == [CLIPPED_WARNING]
 
 
 @pytest.mark.parametrize(
