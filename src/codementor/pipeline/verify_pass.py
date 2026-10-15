@@ -14,6 +14,7 @@ from codementor.pipeline.llm_session import LLMSession
 from codementor.pipeline.stages import VerifyArgs
 from codementor.prompts.budget import PromptBudgetError
 from codementor.prompts.builder import build_verify_messages
+from codementor.prompts.templates import PromptTemplateError
 from codementor.providers.base import ProviderError
 from codementor.verify.proof import apply_verdicts, redact_reasons, verify_targets
 
@@ -50,7 +51,7 @@ async def run_pass_verify(
                 provider=provider,
             )
         parsed, _ = await call_structured(llm, "llm_v", built, LLMVerifyOutput)
-    except (ProviderError, PromptBudgetError) as exc:
+    except (ProviderError, PromptBudgetError, PromptTemplateError) as exc:
         llm.fail_part(f"{VERIFY_FAILED} ({exc})")
         return verification, 0
     if parsed is None:

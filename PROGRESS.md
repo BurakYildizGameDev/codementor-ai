@@ -123,12 +123,23 @@
   ikinci turda `rebuild(True)` ile prompt'u yeniden kurar. Not, sabit sıcaklıklı sağlayıcılarda
   (claude_cli) aynı sızıntının tekrarlanmasını azaltmayı amaçlar; `prompt_b` süresi her kurulumda
   ölçülür (yeniden üretimde ikinci pencere, `stage_latency_ms` son değeri taşır).
+- **D8 — bozuk prompt şablonu raporu düşürmez:** `prompts/templates.py`'ye `PromptTemplateError(ValueError)`
+  eklendi; eksik/okunamayan şablon dizini ve Jinja `TemplateError` (şablon dosya adıyla) artık bu tipe
+  dönüşüyor, ham `FileNotFoundError` yükselmiyor. `builder._fewshots` `FewShotError`'ı da aynı tipe
+  çevirir (bozuk YAML tüm raporu bozar → tek tek örnek atlanmaz). `orchestrator.prompt_version(...)`
+  hatayı yakalayıp `prompt_templates_unreadable` günlüğüyle sürümü `UNAVAILABLE_VERSION`
+  (`v1+00000000`) yapar ve `run.cacheable = False` işaretler: rapor LLM geçişi yapılmadan statik
+  analizle `degraded` döner, kurulum düzeltildiğinde yeniden üretilir (önbellekten gelmez).
+  Tier 0 ve doğrulama geçişleri de aynı tipi yakalar. Uyarı metni "Few-shot" içerir.
+
 - **Prompt sürümü:** `repair.user.j2` ve `socratic.user.j2` değiştiği için hash
   `v1+3fa9c2d1` → **`v1+632620d8`**; `tests/golden/report_example.json` ve
   `src/codementor/api/examples/report.json` güncellendi.
-- **Doğrulama:** `ruff check`/`ruff format --check` temiz; `mypy src/` 211 dosyada hatasız;
-  `pytest -m "not live"` **3473 geçti**, 15 atlandı, 6 deselected (G1 sonrası 3454 → +19 yeni test:
-  D6 maliyet, D1 neden metni/guard, D7 soyut not).
+- **Doğrulama:** `ruff check`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada hatasız;
+  `pytest -m "not live"` **3479 geçti**, 15 atlandı, 6 deselected (G1 sonrası 3454 → +25 yeni test:
+  D6 maliyet, D1 neden metni/guard, D7 soyut not, D8 şablon bozulması — `tests/unit/test_prompt_degrade.py`
+  4 test + `tests/integration/test_pipeline.py` 2 kabul testi). Prompt hash'i D8'de değişmedi
+  (`v1+632620d8`), golden dosyalar dokunulmadı.
 - **Açık:** D8-D11, D14-D20 ve `schema_enforced` duruyor; G2 (O6 kalıcı CLI hatalarının yeniden
   denenmesi) henüz başlamadı.
 

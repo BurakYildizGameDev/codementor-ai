@@ -45,15 +45,22 @@ from codementor.prompts.budget import (
     estimate_tokens,
     fit_to_budget,
 )
-from codementor.prompts.fewshot import fewshot_view, load_fewshots, select_fewshots
+from codementor.prompts.fewshot import FewShotError, fewshot_view, load_fewshots, select_fewshots
 from codementor.prompts.mentoring import mentoring_profile
 from codementor.prompts.summary import Detail, digest_facts, select_function_hints
-from codementor.prompts.templates import guard_delimiters, prompt_version, render
+from codementor.prompts.templates import (
+    PromptTemplateError,
+    guard_delimiters,
+    prompt_version,
+    render,
+)
 
 FEWSHOT_DIR = "fewshots"
 MAX_REPAIR_RAW_CHARS = 8000
 MAX_REPAIR_ERRORS = 20
 MAX_REPAIR_ERROR_CHARS = 300
+# D8: bozuk few-shot dosyası analizi 500 ile düşürmez; bozulmaya (degraded) iner.
+FEWSHOT_WARNING = "Few-shot örnekleri okunamadı"
 # D1: onarım prompt'unun giriş cümlesi nedene göre; karmaşıklık onarımında "şemaya uymadı"
 # demek modeli yanlış yola sokuyordu.
 REPAIR_REASONS: dict[RepairReason, str] = {
@@ -71,13 +78,22 @@ _FACT_DETAILS: tuple[Detail, ...] = ("full", "brief")
 
 @lru_cache(maxsize=4)
 def _fewshots(directory: Path, version: str) -> tuple[FewShotExample, ...]:
-    """Sürüm anahtarı dosya değişince önbelleği geçersiz kılar."""
+    """Few-shot örnekleri; sürüm anahtarı dosya değişince önbelleği geçersiz kılar.
+
+    D8: bozuk örnek dosyası (`FewShotError`) ham istisna olarak sızmaz; `PromptTemplateError`'a
+    çevrilir ki çağıran analiz 500 ile düşmeden bozulmaya (degraded) inebilsin. Dizin hiç yoksa
+    yalnızca log'a yazılır (few-shot'lar isteğe bağlı).
+    """
     del version
     path = directory / FEWSHOT_DIR
     if not path.is_dir():
         log.warning("prompt_fewshot_dir_missing", path=str(path))
         return ()
-    return tuple(load_fewshots(path))
+    try:
+        return tuple(load_fewshots(path))
+    except FewShotError as exc:
+        log.warning("prompt_fewshot_invalid", path=str(path), error=str(exc)[:300])
+        raise PromptTemplateError(f"{FEWSHOT_WARNING} ({exc})") from exc
 
 
 def _tidy(text: str) -> str:

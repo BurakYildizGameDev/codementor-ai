@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import shutil
+from pathlib import Path
+
 import pytest
 
 from codementor.config import Settings
@@ -9,6 +12,7 @@ from codementor.models.enums import CompilationStatus, FindingSource, PipelineMo
 from codementor.models.pipeline import ALL_STAGES, StageEvent
 from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.pipeline.orchestrator import Orchestrator, PipelineError
+from codementor.prompts.templates import UNAVAILABLE_VERSION
 from codementor.providers.fake import FakeReply
 from codementor.rules.registry import all_rules
 from codementor.storage.db import Database
@@ -206,6 +210,46 @@ async def test_degraded_report_not_cached(
     report = await orchestrator(settings, db, provider).analyze(_request())
     assert not report.meta.cache_hit
     assert len(provider.calls) == 2
+
+
+def _with_prompts_dir(settings: Settings, directory: Path) -> Settings:
+    """Aynı ayarlar, farklı şablon dizini (D8 senaryoları)."""
+    return settings.model_copy(
+        update={"prompts": settings.prompts.model_copy(update={"dir": directory})}
+    )
+
+
+async def test_broken_fewshot_degrades_without_raising(
+    settings: Settings, db: Database, fake: FakeFactory, tmp_path: Path
+) -> None:
+    """D8 kabul kriteri: bozuk few-shot YAML'ı analizi düşürmez; rapor bozulmuş (degraded) döner."""
+    prompts = tmp_path / "v1"
+    shutil.copytree(settings.prompts.dir, prompts)
+    (prompts / "fewshots" / "bozuk.yaml").write_text("id: [bozuk\n", encoding="utf-8")
+    provider = fake(analysis_reply(), socratic_reply())
+    report = await orchestrator(_with_prompts_dir(settings, prompts), db, provider).analyze(
+        _request()
+    )
+    assert report.meta.degraded
+    assert provider.calls == []  # prompt kurulamadı: LLM hiç çağrılmadı
+    assert report.findings  # statik bulgular korunur
+    assert any("Few-shot" in w for w in report.meta.warnings)
+    assert report.meta.prompt_version.startswith("v1+")  # dizin okunabildi: gerçek sürüm
+
+
+async def test_missing_prompt_dir_degrades_and_is_not_cached(
+    settings: Settings, db: Database, fake: FakeFactory, tmp_path: Path
+) -> None:
+    """Şablon dizini yoksa ham `FileNotFoundError` yükselmez (D8); sürüm yer tutucu olur ve
+    rapor önbelleğe alınmaz (kurulum düzelince yeniden üretilsin)."""
+    broken = _with_prompts_dir(settings, tmp_path / "yok")
+    provider = fake(analysis_reply(), socratic_reply())
+    report = await orchestrator(broken, db, provider).analyze(_request())
+    assert report.meta.degraded
+    assert report.meta.prompt_version == UNAVAILABLE_VERSION
+    assert provider.calls == []
+    again = await orchestrator(broken, db, provider).analyze(_request())
+    assert not again.meta.cache_hit
 
 
 async def test_hint_level_rises_per_session_submission(

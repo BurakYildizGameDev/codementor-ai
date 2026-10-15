@@ -9,9 +9,23 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateError
 
 TEMPLATE_SUFFIXES = (".j2", ".yaml", ".yml")
+
+# D8: şablon dizini okunamadığında `prompt_version` yerine geçen sürüm etiketi; rapor `degraded`
+# olur ve bu koşulda önbelleğe alınmaz (`prompt_version` biçimiyle uyumlu: `v1+8 hex`).
+UNAVAILABLE_VERSION = "v1+00000000"
+
+
+class PromptTemplateError(ValueError):
+    """Şablon dizini/dosyası okunamadı ya da işlenemedi (D8).
+
+    Kurulum eksikse (dizin yok) analiz hiç başlayamaz; tek bir şablon bozuksa çağıran taraf
+    bozulmaya düşer (rapor statik analizle hazırlanır) — ham `FileNotFoundError`/`TemplateError`
+    yerine tek, yakalanabilir hata türü.
+    """
+
 
 # `<user_code>` / `</user_code>` kullanıcı verisinde geçerse sınırlayıcıyı kırmasın diye açılı
 # ayraç `&lt;` yapılır (mimari §12). Eşleşme bir "iskelet" üzerinde aranır: görünmez karakterler
@@ -110,7 +124,7 @@ def guard_delimiters(text: str) -> str:
 
 def _require_dir(directory: Path) -> Path:
     if not directory.is_dir():
-        raise FileNotFoundError(f"Prompt şablon dizini bulunamadı: {directory}")
+        raise PromptTemplateError(f"Prompt şablon dizini bulunamadı: {directory}")
     return directory.resolve()
 
 
@@ -129,8 +143,15 @@ def _environment(directory: Path) -> Environment:
 
 
 def render(directory: Path, name: str, **context: Any) -> str:
-    """`directory/name` şablonunu işler; tanımsız değişken hata verir."""
-    return _environment(_require_dir(directory)).get_template(name).render(**context).strip()
+    """`directory/name` şablonunu işler; tanımsız değişken hata verir.
+
+    Jinja hataları (sözdizimi, eksik şablon, tanımsız değişken) `PromptTemplateError`'a çevrilir
+    (D8): çağıranlar bunu bozulma olarak ele alır, analiz 500 ile düşmez.
+    """
+    try:
+        return _environment(_require_dir(directory)).get_template(name).render(**context).strip()
+    except TemplateError as exc:
+        raise PromptTemplateError(f"Şablon işlenemedi ({name}): {exc}") from exc
 
 
 def prompt_version(directory: Path) -> str:

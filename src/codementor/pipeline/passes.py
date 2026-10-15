@@ -37,6 +37,7 @@ from codementor.prompts.builder import (
     build_single_pass_messages,
     build_socratic_messages,
 )
+from codementor.prompts.templates import PromptTemplateError
 from codementor.providers.base import ProviderError
 from codementor.verify.schema_check import check_schema
 
@@ -303,7 +304,7 @@ async def run_llm_passes(
         checked = await _socratic(
             llm, verify, verification, pass_a, profile, attempt, first, provider
         )
-    except (ProviderError, PromptBudgetError, PromptConfigError) as exc:
+    except (ProviderError, PromptBudgetError, PromptConfigError, PromptTemplateError) as exc:
         llm.incomplete = True
         warning = f"Mentor soruları üretilemedi ({exc}); şablon sorular kullanıldı."
         return LLMOutcome(verification, None, [warning])
@@ -351,9 +352,10 @@ async def _socratic(
                 prompt, settings=llm.settings, provider=provider, abstract=abstract
             )
 
+    initial = rebuild(False)
     return await run_pass_b(
         llm,
-        rebuild(False),
+        initial,
         verify,
         profile.hint_level,
         first,

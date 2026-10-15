@@ -12,7 +12,7 @@ import pytest
 from codementor.prompts.builder import (
     build_analysis_messages,
 )
-from codementor.prompts.templates import prompt_version
+from codementor.prompts.templates import PromptTemplateError, prompt_version
 from tests.unit.prompt_helpers import (
     REPO_PROMPTS,
     analysis_input,
@@ -61,7 +61,8 @@ def test_built_prompt_carries_version(tmp_path: Path) -> None:
 
 
 def test_missing_template_dir_error_is_turkish(tmp_path: Path) -> None:
-    with pytest.raises(FileNotFoundError, match="Prompt şablon dizini bulunamadı"):
+    # D8: ham FileNotFoundError yerine yakalanabilir PromptTemplateError (çağıran bozulmaya iner)
+    with pytest.raises(PromptTemplateError, match="Prompt şablon dizini bulunamadı"):
         build_analysis_messages(
             analysis_input(tmp_path), settings=prompt_settings(tmp_path / "yok")
         )

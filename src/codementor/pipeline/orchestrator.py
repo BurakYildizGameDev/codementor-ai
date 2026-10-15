@@ -33,7 +33,7 @@ from codementor.pipeline.templates import degraded_socratic, early_exit_socratic
 from codementor.pipeline.versions import rules_version
 from codementor.prompts.budget import PromptBudgetError, PromptConfigError
 from codementor.prompts.mentoring import mentoring_profile
-from codementor.prompts.templates import prompt_version
+from codementor.prompts.templates import UNAVAILABLE_VERSION, PromptTemplateError, prompt_version
 from codementor.providers.base import LLMProvider, ProviderError
 from codementor.providers.factory import build_chain
 from codementor.questions.bank import QuestionBank, QuestionBankError, QuestionNotFoundError
@@ -158,7 +158,17 @@ class Orchestrator:
             provider = (self.provider_factory or self._build_provider)(name)
         except ProviderError as exc:
             raise PipelineError(f"Sağlayıcı kullanılamıyor: {exc}", "provider") from exc
-        version = prompt_version(self.settings.prompts.dir)
+        try:
+            version = prompt_version(self.settings.prompts.dir)
+        except PromptTemplateError as exc:
+            # D8: şablon dizini okunamazsa prompt kurulamaz. Analiz ham `FileNotFoundError` ile
+            # 500'e düşmez: sürüm yer tutucu olur, LLM geçişi bozulmaya iner ve rapor statik
+            # analizle üretilir. Rapor önbelleğe alınmaz (kurulum düzelince yeniden üretilsin).
+            log.error(
+                "prompt_templates_unreadable", error=type(exc).__name__, detail=str(exc)[:300]
+            )
+            version = UNAVAILABLE_VERSION
+            run.cacheable = False
         # Denetim Y-2: imza derleyici keşfi ve dosya stat'ı yapar (zig sondası 30 sn sürebilir);
         # olay döngüsünü kilitlemesin
         key = await asyncio.to_thread(self._cache_key, run, code, profile, provider, version)
@@ -330,7 +340,12 @@ class Orchestrator:
                     outcome = await run_llm_passes(
                         llm, static, verify, profile, mode=mode, provider=run.provider_name
                     )
-            except (ProviderError, PromptBudgetError, PromptConfigError) as exc:
+            except (
+                ProviderError,
+                PromptBudgetError,
+                PromptConfigError,
+                PromptTemplateError,
+            ) as exc:
                 outcome = LLMOutcome(verification=None, socratic=None)
                 llm.warnings.append(
                     f"Model kullanılamadı ({exc}); rapor statik analizle hazırlandı."
