@@ -139,6 +139,25 @@ async def test_leak_regenerates_once(settings: Settings, db: Database, fake: Fak
     assert "```" not in report.socratic.guiding_questions[0]
 
 
+async def test_leak_regeneration_asks_for_abstraction(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """D7: sızıntıdan sonraki yeniden üretim prompt'unda "daha soyut sor" notu olur."""
+    leaky = "Şunu dene:\n```c\nNode *next = cur->next;\nfree(cur);\n```"
+    provider = fake(analysis_reply(), socratic_reply(leaky), socratic_reply())
+    report = await orchestrator(settings, db, provider).analyze(_request())
+    assert len(provider.calls) == 3
+    assert report.socratic is not None
+    assert report.socratic.leak_check == "regenerated"
+    first_prompt = provider.calls[1].messages[-1].content
+    second_prompt = provider.calls[2].messages[-1].content
+    assert "daha soyut sor" not in first_prompt
+    assert "daha soyut sor" in second_prompt
+    note = second_prompt.split("## Dikkat", 1)[1]  # not, sızan yanıtı tekrar etmez
+    assert "Şunu dene" not in note
+    assert "```" not in note
+
+
 async def test_leak_twice_falls_back_to_template(
     settings: Settings, db: Database, fake: FakeFactory
 ) -> None:

@@ -63,7 +63,7 @@
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
 | F | ✅ (elle deneme + denetim sonraya) | faz/f-masaustu | 2026-10-14 | Antigravity / — |
-| G | 🟡 (G0-G1; G2-G7 açık) | faz/g-saglayici | 2026-10-15 | Cline / — |
+| G | 🟡 (G0-G3; G2, G4-G7 açık) | faz/g-saglayici | 2026-10-15 | Cline / — |
 
 ## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15)
 
@@ -101,6 +101,36 @@
   korunuyor + uyarı geliyor (Tier 1 sınırı değişmedi, `tests/unit/test_runner.py` geçiyor).
 - **Açık:** G2-G7 yapılmadı; O5'in "canlı doğrulanmadı" notu hâlâ
   geçerli (gerçek `agy`/`codex` çıktısıyla elle deneme kullanıcıya bırakıldı).
+
+**G3 — düşük öncelikli D serisi bulguları (`docs/BulgularVeDuzeltilecekler.md` §5):**
+- **İlk parti (commit `5f51dec`):** D2 (`extract_json` tırnak durumu yalnız `{` içinde izlenir),
+  D3 (`codex_cli._events` `RecursionError`), D4 (`429`/`401` kelime sınırlı regex),
+  D5 (`apply_verdicts` yeni `finding_id`'yi `FindingCheck`'e yazar), D12 (`_json_document` doğrusal
+  tarama).
+- **D6 — geçiş başına sağlayıcı/maliyet:** `LLMSession.stage_providers/stage_models` yerine
+  `stage_usage: dict[tuple[str, str, str], TokenSplit]` — anahtar `(aşama, sağlayıcı, model)`.
+  Aynı aşama fallback ile iki sağlayıcıya bölünürse tokenler ayrı gruplanır;
+  `cost_of_stages(pricing, usage)` her grubu kendi modelinin fiyatıyla çarpar. Fiyatı olmayan ya da
+  sıfır tokenlı grup varsa `meta.cost_est` `None` (uydurma maliyet yazılmaz). `meta.provider/model`
+  sözleşmesi değişmedi (son çağrının değerleri; raporda belgeli).
+- **D1 — onarım prompt'unda doğru neden:** `guard_delimiters` artık `validation_errors` etiketini de
+  nötrler (Pydantic `extra_forbidden` mesajı modelin uydurduğu anahtar adını taşıyor ve veri bloğunu
+  kapatabiliyordu). `build_repair_messages(..., cause=...)` + `REPAIR_REASONS` ile giriş cümlesi
+  nedene göre; `_repair_cause` şema dışı bir neden varsa onu seçer (karmaşıklık onarımında
+  "şemaya uymadı" denmiyor).
+- **D7 — sızıntı sonrası yeniden üretim notu:** `build_socratic_messages(..., abstract=True)`
+  prompt'un sonuna içerik sızdırmayan "daha soyut sor" notunu ekler; `run_pass_b(..., rebuild=...)`
+  ikinci turda `rebuild(True)` ile prompt'u yeniden kurar. Not, sabit sıcaklıklı sağlayıcılarda
+  (claude_cli) aynı sızıntının tekrarlanmasını azaltmayı amaçlar; `prompt_b` süresi her kurulumda
+  ölçülür (yeniden üretimde ikinci pencere, `stage_latency_ms` son değeri taşır).
+- **Prompt sürümü:** `repair.user.j2` ve `socratic.user.j2` değiştiği için hash
+  `v1+3fa9c2d1` → **`v1+632620d8`**; `tests/golden/report_example.json` ve
+  `src/codementor/api/examples/report.json` güncellendi.
+- **Doğrulama:** `ruff check`/`ruff format --check` temiz; `mypy src/` 211 dosyada hatasız;
+  `pytest -m "not live"` **3473 geçti**, 15 atlandı, 6 deselected (G1 sonrası 3454 → +19 yeni test:
+  D6 maliyet, D1 neden metni/guard, D7 soyut not).
+- **Açık:** D8-D11, D14-D20 ve `schema_enforced` duruyor; G2 (O6 kalıcı CLI hatalarının yeniden
+  denenmesi) henüz başlamadı.
 
 ## Faz F — Notlar (masaüstü sağlamlık ve kullanılabilirlik; 2026-10-14)
 

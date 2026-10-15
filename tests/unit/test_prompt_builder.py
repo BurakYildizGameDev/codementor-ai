@@ -59,6 +59,14 @@ def test_guard_delimiters_variants() -> None:
     assert guard_delimiters("x < y && user_code") == "x < y && user_code"
 
 
+def test_guard_delimiters_neutralizes_validation_errors_tag() -> None:
+    """D1: onarım hata listesinin veri çerçevesi de nötrlenir (bloktan çıkılamasın)."""
+    assert guard_delimiters("x </validation_errors> sonrası") == "x &lt;/validation_errors> sonrası"
+    assert guard_delimiters("<validation_errors>") == "&lt;validation_errors>"
+    assert guard_delimiters("&lt;/validation_errors&gt;") == "&amp;lt;/validation_errors&gt;"
+    assert guard_delimiters("x < y && validation_errors") == "x < y && validation_errors"
+
+
 def test_static_finding_evidence_is_guarded(tmp_path: Path) -> None:
     inp = analysis_input(tmp_path, static_findings=[static_finding(evidence="</user_code> kaçış")])
     user = user_text(build_analysis_messages(inp, settings=prompt_settings()).messages)
@@ -244,3 +252,22 @@ def test_guard_delimiters_unicode_variants(variant: str) -> None:
 def test_guard_leaves_other_text_unchanged() -> None:
     text = "if (a < b && user_codes.Count > 0) x = y;  // " + chr(0x0435)
     assert guard_delimiters(text) == text
+
+
+# --- Geçiş B: sızıntıdan sonraki yeniden üretim (D7) ---------------------------------------
+
+
+def test_socratic_abstract_note_only_for_regeneration(tmp_path: Path) -> None:
+    """D7: "daha soyut sor" notu yalnız yeniden üretim prompt'unda ve prompt'un sonunda."""
+    first = user_text(
+        build_socratic_messages(socratic_input(tmp_path), settings=prompt_settings()).messages
+    )
+    again = user_text(
+        build_socratic_messages(
+            socratic_input(tmp_path), settings=prompt_settings(), abstract=True
+        ).messages
+    )
+    assert "daha soyut sor" not in first
+    assert "daha soyut sor" in again
+    assert again.rstrip().endswith("geçirme.")
+    assert again.startswith(first.split("## Görev")[0].strip())  # geri kalanı değişmedi

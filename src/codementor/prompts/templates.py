@@ -29,11 +29,16 @@ _ROLE = r"(?:user|system|assistant)(?![a-z0-9_])"
 # okuyabilir); iskelet küçük harfe katlandığı için `&LT;` de yakalanır.
 # Denetim: noktalı virgülsüz `&lt` ve sayısal `&#60;` / `&#x3c;` biçimleri de açılıştır.
 _OPEN = r"(?:<|&(?:lt|#0*60|#x0*3c);?)"
+# Faz G (D1): veri çerçeveleri de nötrlenir. `user_code` yanında `validation_errors`:
+# Pydantic `extra_forbidden` mesajı modelin uydurduğu anahtar adını taşır (ör.
+# `</validation_errors>`), o etiket onarım prompt'unda veri bloğunu kapatıp sonrasını talimat
+# gibi okutabilirdi.
+_DATA_TAGS = r"(?:user_code|validation_errors)"
 # Denetim: boşluk tekrarları iyelik (`*+`): ardışık `\s*/?\s*` boşluk koşusunda karesel
 # geri izleme yapıyordu (39 bin boşlukta 3,5 sn). Öznitelik değeri tembel `[^<>]*?`: `&` içeren
 # değer (`role="a&b"`) de yakalanır, eşleşme `>` ya da `&gt;`'de durur.
 _DELIMITER = re.compile(
-    rf"{_OPEN}\s*+(?:/\s*+)?user_code"
+    rf"{_OPEN}\s*+(?:/\s*+)?{_DATA_TAGS}"
     rf"|{_OPEN}\s*+/\s*+{_ROLE}"
     rf"|{_OPEN}\s*+(?:system|assistant)"
     # öznitelikli: değer boşluk ve `/` dahil her şeyi alır, doğrudan kapanışta durur (doğrusal)

@@ -22,6 +22,14 @@ from codementor.prompts.budget import estimate_messages, estimate_tokens
 from codementor.providers.base import LLMProvider
 
 
+def _accumulate(current: TokenSplit | None, usage: TokenUsage) -> TokenSplit:
+    """Token toplamına ekle (sayaç ilk kez görülüyorsa sıfırdan başlar)."""
+    base = current or TokenSplit(input=0, output=0)
+    return TokenSplit(
+        input=base.input + usage.input_tokens, output=base.output + usage.output_tokens
+    )
+
+
 @dataclass
 class LLMSession:
     """Bir analizdeki tüm LLM çağrıları: token, onarım ve sağlayıcı uyarıları birikir."""
@@ -43,6 +51,10 @@ class LLMSession:
     checkpoint: AnalysisVerification | None = None
     checkpoint_verified: bool = True
     stage_tokens: dict[str, TokenSplit] = field(default_factory=dict)  # Faz K
+    # Faz G (D6): (aşama, sağlayıcı, model) → token. Fallback'te aynı aşamanın ikinci çağrısı
+    # yedeğe düşebilir; maliyet her çağrı grubunu kendi fiyatıyla hesaplar
+    # (bkz. `cost.cost_of_stages`). Aşama bazlı toplam `stage_tokens`'ta kalır (rapor alanı).
+    stage_usage: dict[tuple[str, str, str], TokenSplit] = field(default_factory=dict)
 
     def fail_part(self, warning: str) -> None:
         """LLM'in bir kısmı başarısız: uyarı yazılır, rapor önbelleğe alınmaz."""
@@ -59,10 +71,9 @@ class LLMSession:
             usage = self._usage(built, result)
             self.tokens_in += usage.input_tokens
             self.tokens_out += usage.output_tokens
-            split = self.stage_tokens.get(stage, TokenSplit(input=0, output=0))
-            self.stage_tokens[stage] = TokenSplit(
-                input=split.input + usage.input_tokens, output=split.output + usage.output_tokens
-            )
+            key = (stage, result.provider, result.model)
+            self.stage_usage[key] = _accumulate(self.stage_usage.get(key), usage)
+            self.stage_tokens[stage] = _accumulate(self.stage_tokens.get(stage), usage)
             self.timer.add_tokens(stage, usage.input_tokens + usage.output_tokens)
         self.warnings.extend(result.warnings)
         self.provider_name, self.model = result.provider, result.model

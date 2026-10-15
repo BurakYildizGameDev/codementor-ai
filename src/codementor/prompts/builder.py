@@ -34,6 +34,7 @@ from codementor.models.prompts import (
 )
 from codementor.models.provider import ChatMessage
 from codementor.models.request import NormalizedCode
+from codementor.models.verification import RepairReason
 from codementor.prompts.budget import (
     CHARS_PER_TOKEN,
     MESSAGE_OVERHEAD_TOKENS,
@@ -53,6 +54,13 @@ FEWSHOT_DIR = "fewshots"
 MAX_REPAIR_RAW_CHARS = 8000
 MAX_REPAIR_ERRORS = 20
 MAX_REPAIR_ERROR_CHARS = 300
+# D1: onarım prompt'unun giriş cümlesi nedene göre; karmaşıklık onarımında "şemaya uymadı"
+# demek modeli yanlış yola sokuyordu.
+REPAIR_REASONS: dict[RepairReason, str] = {
+    "schema": "Önceki yanıtın şemaya uymadı ya da JSON olarak çözülemedi.",
+    "complexity_unparsable": "Önceki yanıtın karmaşıklık gerekçesi çözümlenemedi.",
+    "unjustified_conflict": "Önceki yanıtın karmaşıklığı statik ipucuyla gerekçesiz çelişiyor.",
+}
 _BLANK_RUNS = re.compile(r"\n{3,}")
 log = get_logger("codementor.prompts")
 
@@ -198,9 +206,17 @@ def _severity_order(findings: list[Finding]) -> list[Finding]:
 
 
 def build_socratic_messages(
-    inp: SocraticPromptInput, *, settings: Settings | None = None, provider: str | None = None
+    inp: SocraticPromptInput,
+    *,
+    settings: Settings | None = None,
+    provider: str | None = None,
+    abstract: bool = False,
 ) -> BuiltPrompt:
-    """Geçiş B: doğrulanmış analizden Sokratik sorular (`LLMSocraticOutput`). Kırpılmaz."""
+    """Geçiş B: doğrulanmış analizden Sokratik sorular (`LLMSocraticOutput`). Kırpılmaz.
+
+    `abstract` (D7): sızıntıdan sonraki yeniden üretimde şablona "daha soyut sor" notu eklenir;
+    sıcaklığı sabit sağlayıcılarda aynı sızıntının tekrarlanmasını engellemek içindir.
+    """
     settings = settings or get_settings()
     directory = settings.prompts.dir
     question: QuestionContext | None = inp.question
@@ -211,6 +227,7 @@ def build_socratic_messages(
         "code_view": guard_delimiters(_code_view(inp.code, settings)),
         "findings": _severity_order(inp.findings),
         "complexity": inp.complexity,
+        "abstract": abstract,
         "profile": mentoring_profile(question.difficulty if question else None, inp.attempt),
     }
     budget = context_budget(settings, provider, LLMSocraticOutput)
@@ -271,11 +288,13 @@ def build_repair_messages(
     *,
     raw_text: str,
     errors: list[str],
+    cause: RepairReason = "schema",
     settings: Settings | None = None,
 ) -> BuiltPrompt:
     """Onarım: özgün konuşma + modelin (bütçeye göre kırpılmış) yanıtı + doğrulama hataları.
 
-    Hatalar ve ham yanıt veri olarak çerçevelenir, sınırlayıcı koruması uygulanır. Özgün
+    Hatalar ve ham yanıt veri olarak çerçevelenir, sınırlayıcı koruması uygulanır. Giriş cümlesi
+    `cause`'a göre seçilir (D1): şema hatası ile karmaşıklık gerekçesi ayrı anlatılır. Özgün
     prompt'un bütçesi aşılmaz: ham yanıt payı kalan yere göre küçülür; yer yoksa
     `PromptBudgetError`.
     """
@@ -285,6 +304,7 @@ def build_repair_messages(
         render(
             settings.prompts.dir,
             "repair.user.j2",
+            reason_text=REPAIR_REASONS.get(cause, REPAIR_REASONS["schema"]),
             errors=shown,
             omitted_errors=len(errors) - len(shown),
         )

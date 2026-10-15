@@ -521,18 +521,18 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 
 | Kimlik | Dosya | Bulgu | Düzeltme |
 |---|---|---|---|
-| D1 | `prompts/v1/repair.user.j2:1-4`, `prompts/templates.py:28` | Hatalar `<validation_errors>` içine konuyor ama `guard_delimiters` bu etiketi nötrlemiyor; Pydantic `extra_forbidden` `loc`'u modelin uydurduğu anahtar adını taşır. Karmaşıklık onarımında da "şemaya uymadı" deniyor (yanıltıcı). | Etiketi guard listesine ekle; onarım nedenine göre metin. |
-| D2 | `verify/schema_check.py:26-40` | `extract_json` düz yazıdaki tek bir `"` karakterinden sonra JSON'u bulamıyor (`Model "notu: {"a": 1}` → `None`, ajan doğruladı). | Tırnak durumunu yalnız `{` içinde izle. |
-| D3 | `providers/codex_cli.py:78` | `_events` yalnız `ValueError` yakalıyor; derin iç içe JSON'da `RecursionError` sızar. `agy_stream` ve `_http` ikisini de yakalıyor. | `RecursionError` ekle. |
-| D4 | `providers/codex_cli.py:59-60` | `_LIMIT_HINTS`'teki çıplak `"429"` ve `_LOGIN_HINTS`'teki `"401"` her alt dizgeyle eşleşir ("line 429"). | Kelime sınırlı regex. |
-| D5 | `verify/proof.py:110, 133` | `apply_verdicts` bulguları yeniden numaralıyor ama `FindingCheck.finding_id` eski kimliği tutuyor. | Yeni kimliği yaz. |
-| D6 | `pipeline/passes.py:79` | Geçişler farklı sağlayıcılara düşerse `meta.provider/model` son çağrının; tüm tokenler o fiyatla hesaplanıyor. | Geçiş başına sağlayıcı/maliyet. |
-| D7 | `pipeline/passes.py:160-171` | Sızıntıdan sonra yeniden üretim aynı prompt + aynı ayarla; sıcaklığı sabit sağlayıcıda (claude_cli) büyük olasılıkla aynı sızıntı. | İçerik sızdırmayan "daha soyut sor" notu ekle. |
+| D1 ✅ G3 | `prompts/v1/repair.user.j2:1-4`, `prompts/templates.py:28` | Hatalar `<validation_errors>` içine konuyor ama `guard_delimiters` bu etiketi nötrlemiyor; Pydantic `extra_forbidden` `loc`'u modelin uydurduğu anahtar adını taşır. Karmaşıklık onarımında da "şemaya uymadı" deniyor (yanıltıcı). | Etiketi guard listesine ekle; onarım nedenine göre metin. |
+| D2 ✅ G3 | `verify/schema_check.py:26-40` | `extract_json` düz yazıdaki tek bir `"` karakterinden sonra JSON'u bulamıyor (`Model "notu: {"a": 1}` → `None`, ajan doğruladı). | Tırnak durumunu yalnız `{` içinde izle. |
+| D3 ✅ G3 | `providers/codex_cli.py:78` | `_events` yalnız `ValueError` yakalıyor; derin iç içe JSON'da `RecursionError` sızar. `agy_stream` ve `_http` ikisini de yakalıyor. | `RecursionError` ekle. |
+| D4 ✅ G3 | `providers/codex_cli.py:59-60` | `_LIMIT_HINTS`'teki çıplak `"429"` ve `_LOGIN_HINTS`'teki `"401"` her alt dizgeyle eşleşir ("line 429"). | Kelime sınırlı regex. |
+| D5 ✅ G3 | `verify/proof.py:110, 133` | `apply_verdicts` bulguları yeniden numaralıyor ama `FindingCheck.finding_id` eski kimliği tutuyor. | Yeni kimliği yaz. |
+| D6 ✅ G3 | `pipeline/llm_session.py`, `pipeline/cost.py` (`passes.py:79`) | Geçişler farklı sağlayıcılara düşerse `meta.provider/model` son çağrının; tüm tokenler o fiyatla hesaplanıyor. | Geçiş başına sağlayıcı/maliyet. |
+| D7 ✅ G3 | `pipeline/passes.py` (`run_pass_b`), `prompts/v1/socratic.user.j2` | Sızıntıdan sonra yeniden üretim aynı prompt + aynı ayarla; sıcaklığı sabit sağlayıcıda (claude_cli) büyük olasılıkla aynı sızıntı. | İçerik sızdırmayan "daha soyut sor" notu ekle. |
 | D8 | `prompts/builder.py:64-72`, `orchestrator.py:161` | `FewShotError`, Jinja hataları, `FileNotFoundError` yakalanmıyor; bozuk few-shot YAML'ı her analizi 500 ile düşürüyor. | Yakalayıp `degraded` dön. |
 | D9 | `providers/anthropic.py:40`, `orchestrator.py:261`, `prompts/budget.py:27` | Ölü/tekrar kod: `DEFAULT_MAX_TOKENS` tekrarı, gereksiz `isinstance`, kullanılmayan `built` dönüşleri; üretimde `TEST_PROVIDERS={"fake"}` test kancası. | Temizle. |
 | D10 | `models/schemas.py:26-38` | `LLMMarkupAnalysisOutput` `SCHEMA_MODELS`'te yok; HTML/CSS LLM şeması `schemas/` altına yazılmıyor. | Ekle, `schemas/` yeniden üret. |
 | D11 | `prompts/builder.py`, `orchestrator.py` | Olay döngüsünde küçük bloklayan G/Ç: `prompt_version` her analizde `rglob`+`stat`; `_rules_version` veri dosyalarını 2 kez okuyor; `_question_bank` her istekte disk (CLI). | Önbellekle. |
-| D12 | `providers/cli_agent.py:108-126` | `_json_document` karesel (160 KB'de 2,7 sn; 64 KB sınırıyla ≤0,5 sn). O5'te sınır büyütülürse sorun olur. | Doğrusal tarama. |
+| D12 ✅ G3 | `providers/cli_agent.py:108-126` | `_json_document` karesel (160 KB'de 2,7 sn; 64 KB sınırıyla ≤0,5 sn). O5'te sınır büyütülürse sorun olur. | Doğrusal tarama. |
 | D13 ✅ A2 | `prompts/templates.py:36-55` | Sınırlayıcı korumasında atlanan benzer karakterler: `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `﹤` varyantı, `«` (U+00AB), düz `&lt;/user_code&gt;`. | `_CONFUSABLES`'a ekle, `&lt;` biçimini desene kat. |
 | D14 | `api/auth.py:105`, `providers/health.py:105-133` | API anahtarı tanımlıyken bile `/health/ready`, `/docs`, `/openapi.json` açık; sağlayıcı/model adları, anahtar değişken adları, çalıştırılabilir yolları sızıyor. | Anahtar varken `/health/ready`'yi koru; `/health` açık kalsın. |
 | D15 | `report/markdown.py:14, 24, 61, 80-83` | LLM metni ve derleyici iletisi ham yazılıyor (yalnız `\|` kaçışlı); dosyada `<details>` HTML'i de var. HTML'e izin veren görüntüleyicide XSS. | `< > &` kaçışı. |
@@ -903,10 +903,12 @@ tekrarlanabilir bir release'ten gelsin.
       modüller `cache_flow.py`, `deadline.py`, `llm_session.py`, `verify_pass.py` — **Faz G0**
 - [x] **O5:** CLI ajanları için config'den çıktı sınırı (`ProcessLimits.output_limit`) — **Faz G1**
 - [ ] **O6:** kalıcı CLI hataları yeniden denenmez
-- [ ] **D1-D12:** onarım prompt etiketi, `extract_json` tırnak hatası, `RecursionError`, çıplak
-      `429`/`401`, `finding_id` yeniden numaralama, geçiş başına sağlayıcı/maliyet, sızıntı sonrası
-      yeniden üretim notu, bozuk few-shot zarif bozulma, ölü kod ve test kancası,
-      `LLMMarkupAnalysisOutput` şeması, olay döngüsündeki küçük G/Ç, `_json_document` doğrusal
+- [x] **D1-D7:** onarım prompt etiketi (D1), `extract_json` tırnak hatası (D2), `RecursionError` (D3),
+      çıplak `429`/`401` (D4), `finding_id` yeniden numaralama (D5), geçiş başına sağlayıcı/maliyet
+      (D6), sızıntı sonrası yeniden üretim notu (D7) — **Faz G3**
+- [x] **D12:** `_json_document` doğrusal tarama — **Faz G3**
+- [ ] **D8-D11:** bozuk few-shot zarif bozulma, ölü kod ve test kancası,
+      `LLMMarkupAnalysisOutput` şeması, olay döngüsündeki küçük G/Ç
 - [ ] **D18:** Tier 0 durdurma tanısı yapısal bayrakla
 - [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
       exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra

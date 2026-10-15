@@ -12,7 +12,7 @@ from codementor.models.pipeline import ALL_STAGES
 from codementor.models.report import AnalysisReport, ComplexityResult, ReportMeta, SocraticResult
 from codementor.models.request import NormalizedCode
 from codementor.models.validation import PolicyDecision
-from codementor.pipeline.cost import estimate_cost, load_pricing
+from codementor.pipeline.cost import cost_of_stages, load_pricing
 from codementor.pipeline.events import StageTimer
 from codementor.pipeline.passes import LLMSession
 from codementor.pipeline.versions import SCHEMA_VERSION, rules_version
@@ -114,12 +114,9 @@ def assemble_with_cost(
         rules_version_value=rules_version_value,
     )
     meta = report.meta
-    meta.cost_est = estimate_cost(
-        load_pricing(settings.data.pricing_file),
-        meta.provider,
-        meta.model,
-        meta.tokens_in,
-        meta.tokens_out,
+    # D6: her çağrı grubu kendi sağlayıcı/model fiyatıyla (fallback'te geçişler karışabilir)
+    meta.cost_est = (
+        cost_of_stages(load_pricing(settings.data.pricing_file), llm.stage_usage) if llm else None
     )
     return report
 

@@ -6,10 +6,12 @@ Listede olmayan sağlayıcı/model (ör. abonelikle çalışan claude_cli, yerel
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
 
 from codementor.models.eval import PricingFile
+from codementor.models.report import TokenSplit
 from codementor.questions._loader import DataFileError, load_model
 
 PER_TOKENS = 1_000_000
@@ -47,3 +49,26 @@ def estimate_cost(
     if price is None:
         return None
     return (tokens_in * price.input_per_mtok + tokens_out * price.output_per_mtok) / PER_TOKENS
+
+
+def cost_of_stages(
+    pricing: PricingFile | None,
+    usage: Mapping[tuple[str, str, str], TokenSplit],
+) -> float | None:
+    """Geçiş başına maliyetlerin toplamı (D6); anahtar `(aşama, sağlayıcı, model)`.
+
+    Fallback'te aşamalar — hatta aynı aşamanın ikinci çağrısı — farklı sağlayıcıya düşebilir;
+    tüm tokenleri son çağrının fiyatıyla hesaplamak yanlış olurdu. Fiyatı bilinmeyen bir çağrı
+    grubu varsa toplam `None` döner (kısmi toplam yanıltıcı olurdu), hiç token harcanmadıysa da
+    `None`.
+    """
+    total, priced = 0.0, 0
+    for (_stage, provider, model), split in usage.items():
+        if not (split.input or split.output):
+            continue
+        cost = estimate_cost(pricing, provider, model, split.input, split.output)
+        if cost is None:
+            return None
+        total += cost
+        priced += 1
+    return total if priced else None

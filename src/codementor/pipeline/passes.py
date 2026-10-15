@@ -25,7 +25,7 @@ from codementor.models.llm_output import (
 from codementor.models.pipeline import Stage
 from codementor.models.prompts import BuiltPrompt, MentoringProfile, SocraticPromptInput
 from codementor.models.report import SocraticResult
-from codementor.models.verification import AnalysisVerification, SocraticVerification
+from codementor.models.verification import AnalysisVerification, RepairReason, SocraticVerification
 from codementor.pipeline.llm_session import LLMSession
 from codementor.pipeline.stages import StaticAnalysis, VerifyArgs
 from codementor.pipeline.verify_pass import VERIFY_FAILED, VERIFY_STAGES, run_pass_verify
@@ -88,6 +88,11 @@ PASS_A_FAILED = (
 )
 
 
+def _repair_cause(reasons: list[RepairReason]) -> RepairReason:
+    """Onarım prompt'unun giriş cümlesi (D1): şema dışındaki neden varsa o anlatılır."""
+    return next((reason for reason in reasons if reason != "schema"), "schema")
+
+
 async def run_pass_a[M: BaseModel](
     llm: LLMSession,
     built: BuiltPrompt,
@@ -113,12 +118,15 @@ async def run_pass_a[M: BaseModel](
                 schema_first_try = check.ok
             llm.timer.note(verify_stage, SCHEMA_OK if check.ok else SCHEMA_INVALID)
             errors = check.errors
+            cause: RepairReason = "schema"
             verification: AnalysisVerification | None = None
             analysis: AnalysisOutput | None = None
             if parsed is not None:
                 analysis = extract(parsed)
                 verification = verify.analysis(analysis, schema_first_try)
-                errors = verification.repair.errors if verification.repair else []
+                if verification.repair is not None:
+                    errors = verification.repair.errors
+                    cause = _repair_cause(verification.repair.reasons)  # D1: doğru giriş cümlesi
                 last_valid = (parsed, analysis, verification)
         if not errors:
             return parsed, PassA(output=analysis, verification=verification)
@@ -131,7 +139,11 @@ async def run_pass_a[M: BaseModel](
             llm.checkpoint_verified = not llm.settings.pipeline.verify_findings
         try:
             built = build_repair_messages(
-                built, raw_text=result.raw_text, errors=errors, settings=llm.settings
+                built,
+                raw_text=result.raw_text,
+                errors=errors,
+                cause=cause,
+                settings=llm.settings,
             )
             result = await llm.call(llm_stage, built, model)
         except (ProviderError, PromptBudgetError):
@@ -162,13 +174,20 @@ async def run_pass_b(
     first: LLMSocraticOutput | None = None,
     *,
     name_concept: bool,
+    rebuild: Callable[[bool], BuiltPrompt] | None = None,
 ) -> SocraticVerification | None:
     """Sokratik geçiş: şema onarımı + sızıntıda 1 kez yeniden üretim. `first` verilirse
-    (tek geçiş) ilk yanıt odur. Sonuç None ise şablona düşülür."""
-    output = first
+    (tek geçiş) ilk yanıt odur. Sonuç None ise şablona düşülür.
+
+    `rebuild` (D7): `True` ile çağrıldığında yeniden üretim prompt'unu (soyut soru notuyla)
+    yeniden kurar; verilmezse aynı prompt yeniden gönderilir.
+    """
+    output, prompt = first, built
     for regenerated in (False, True):
         if output is None:
-            parsed, _ = await run_pass_socratic_schema(llm, built)
+            if regenerated and rebuild is not None:
+                prompt = rebuild(True)
+            parsed, _ = await run_pass_socratic_schema(llm, prompt)
             if parsed is None:
                 return None
             output = parsed
@@ -313,18 +332,31 @@ async def _socratic(
         if isinstance(pass_a.output, LLMAnalysisOutput) and verification.complexity is not None
         else None
     )
-    with llm.timer.stage("prompt_b"):
-        built_b = build_socratic_messages(
-            SocraticPromptInput(
-                code=verify.code,
-                question=verify.question,
-                findings=issues_only(verification.findings),
-                complexity=complexity,
-                attempt=attempt,
-            ),
-            settings=llm.settings,
-            provider=provider,
-        )
+    prompt = SocraticPromptInput(
+        code=verify.code,
+        question=verify.question,
+        findings=issues_only(verification.findings),
+        complexity=complexity,
+        attempt=attempt,
+    )
+
+    def rebuild(abstract: bool) -> BuiltPrompt:
+        """D7: sızıntıdan sonraki yeniden üretim için prompt (soyut soru notuyla).
+
+        Her kurulum `prompt_b` süresi ölçülür; yeniden üretimde aynı aşama ikinci kez
+        ölçülür (`stage_latency_ms` son pencereyi taşır).
+        """
+        with llm.timer.stage("prompt_b"):
+            return build_socratic_messages(
+                prompt, settings=llm.settings, provider=provider, abstract=abstract
+            )
+
     return await run_pass_b(
-        llm, built_b, verify, profile.hint_level, first, name_concept=profile.name_concept
+        llm,
+        rebuild(False),
+        verify,
+        profile.hint_level,
+        first,
+        name_concept=profile.name_concept,
+        rebuild=rebuild,
     )

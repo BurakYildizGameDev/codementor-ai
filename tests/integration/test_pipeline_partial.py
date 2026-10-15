@@ -12,9 +12,10 @@ import pytest
 
 from codementor.config import Settings
 from codementor.models.enums import FindingSource, PipelineMode
+from codementor.models.eval import ModelPrice, PricingFile
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisOptions, AnalysisRequest
-from codementor.pipeline import passes
+from codementor.pipeline import assemble, passes
 from codementor.pipeline.assemble import from_cache
 from codementor.pipeline.events import EventBus, StageTimer
 from codementor.pipeline.ids import new_ulid
@@ -92,6 +93,18 @@ async def test_failed_repair_keeps_verified_findings(
     prompt_b = provider.calls[2].messages[-1].content
     assert CONFLICT not in prompt_b  # doğrulanmamış karmaşıklık soruya taşınmaz
     assert not await _served_from_cache(settings, db, fake)
+
+
+async def test_complexity_repair_prompt_names_the_real_cause(
+    settings: Settings, db: Database, fake: FakeFactory
+) -> None:
+    """D1: karmaşıklık çelişkisinde onarım prompt'u doğru nedeni söyler (şema hatası değil)."""
+    provider = fake(analysis_reply(CONFLICT), analysis_reply(CONFLICT), socratic_reply())
+    await orchestrator(settings, db, provider).analyze(_request())
+    assert len(provider.calls) >= 2
+    repair_prompt = provider.calls[1].messages[-1].content
+    assert "statik ipucuyla gerekçesiz çelişiyor" in repair_prompt
+    assert "şemaya uymadı" not in repair_prompt
 
 
 async def test_no_valid_reply_still_degrades(
@@ -295,3 +308,45 @@ def test_from_cache_clears_cost() -> None:
     assert cached.meta.cost_est is None
     assert cached.meta.usage_estimated is False
     assert (cached.meta.tokens_in, cached.meta.tokens_out) == (0, 0)
+
+
+# --- D6: geçiş başına sağlayıcı ve maliyet ------------------------------------------------------
+
+
+async def test_cost_prices_each_stage_with_its_provider(
+    settings: Settings, db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D6: Geçiş B yedeğe düşerse iki geçiş kendi sağlayıcı fiyatıyla hesaplanır.
+
+    Eski davranışta tüm tokenler son çağrının (yedek) fiyatıyla çarpılırdı; test bu sayıyı
+    ayrıca hesaplayıp eşitsizliği doğrular.
+    """
+    pricing = PricingFile(
+        version=1,
+        prices=[
+            ModelPrice(
+                provider="fake", model="fake-model", input_per_mtok=1.0, output_per_mtok=2.0
+            ),
+            ModelPrice(
+                provider="yedek", model="fake-model", input_per_mtok=10.0, output_per_mtok=20.0
+            ),
+        ],
+    )
+    monkeypatch.setattr(assemble, "load_pricing", lambda _path: pricing)
+    primary = _named("fake", analysis_reply(), FakeReply(error="500"))
+    backup = _named("yedek", socratic_reply())
+    chain = FallbackProvider([primary, backup])
+    report = await Orchestrator(settings, db, provider_factory=lambda _n: chain).analyze(_request())
+
+    meta = report.meta
+    stages = meta.stage_tokens
+    assert (meta.provider, meta.model) == ("yedek", "fake-model")  # son çağrının sağlayıcısı
+    per_stage = (
+        stages["llm_a"].input * 1.0
+        + stages["llm_a"].output * 2.0
+        + stages["llm_b"].input * 10.0
+        + stages["llm_b"].output * 20.0
+    ) / 1_000_000
+    assert meta.cost_est == pytest.approx(per_stage)
+    all_at_backup_price = (meta.tokens_in * 10.0 + meta.tokens_out * 20.0) / 1_000_000
+    assert meta.cost_est != pytest.approx(all_at_backup_price)

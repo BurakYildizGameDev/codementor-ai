@@ -13,8 +13,8 @@ from codementor.models.eval import ModelPrice, PricingFile
 from codementor.models.llm_output import LLMSocraticOutput
 from codementor.models.prompts import BuiltPrompt
 from codementor.models.provider import ChatMessage, GenerationOptions, ProviderResult, TokenUsage
-from codementor.models.report import ReportMeta
-from codementor.pipeline.cost import estimate_cost, load_pricing
+from codementor.models.report import ReportMeta, TokenSplit
+from codementor.pipeline.cost import cost_of_stages, estimate_cost, load_pricing
 from codementor.pipeline.events import EventBus, StageTimer
 from codementor.pipeline.passes import LLMSession
 from codementor.providers.fake import FakeProvider
@@ -93,6 +93,54 @@ def test_unpriced_model_cost_none(tmp_path: Path) -> None:
     assert estimate_cost(PRICING, "openai", "m", 0, 0) is None
     assert estimate_cost(None, "openai", "m", 10, 10) is None
     assert load_pricing(tmp_path / "yok.yaml") is None
+
+
+STAGE_PRICING = PricingFile(
+    version=1,
+    prices=[
+        ModelPrice(provider="a", model="m", input_per_mtok=1.0, output_per_mtok=2.0),
+        ModelPrice(provider="b", model="m", input_per_mtok=10.0, output_per_mtok=20.0),
+    ],
+)
+
+
+def test_cost_of_stages_prices_each_stage_with_its_provider() -> None:
+    """D6: geçişler farklı sağlayıcıya düşerse her geçiş kendi modelin fiyatıyla hesaplanır."""
+    usage = {
+        ("llm_a", "a", "m"): TokenSplit(input=0, output=1_000_000),
+        ("llm_b", "b", "m"): TokenSplit(input=0, output=1_000_000),
+    }
+    assert cost_of_stages(STAGE_PRICING, usage) == pytest.approx(22.0)
+    # hepsi son sağlayıcının fiyatıyla hesaplansaydı 40.0 çıkardı (eski davranış)
+    all_backup = {
+        ("llm_a", "b", "m"): TokenSplit(input=0, output=1_000_000),
+        ("llm_b", "b", "m"): TokenSplit(input=0, output=1_000_000),
+    }
+    assert cost_of_stages(STAGE_PRICING, all_backup) == pytest.approx(40.0)
+
+
+def test_cost_of_stages_splits_same_stage_by_provider() -> None:
+    """D6: aynı geçişin ikinci çağrısı yedeğe düştüyse iki fiyat ayrı ayrı toplanır."""
+    usage = {
+        ("llm_b", "a", "m"): TokenSplit(input=0, output=1_000_000),
+        ("llm_b", "b", "m"): TokenSplit(input=0, output=1_000_000),
+    }
+    assert cost_of_stages(STAGE_PRICING, usage) == pytest.approx(22.0)
+
+
+def test_cost_of_stages_none_when_a_stage_is_unpriced() -> None:
+    """Fiyatsız bir geçiş varsa kısmi toplam yanıltıcı olur: None."""
+    usage = {
+        ("llm_a", "openai", "m"): TokenSplit(input=0, output=10),
+        ("llm_b", "bilinmeyen", "m"): TokenSplit(input=0, output=10),
+    }
+    assert cost_of_stages(PRICING, usage) is None
+
+
+def test_cost_of_stages_none_without_spending() -> None:
+    assert cost_of_stages(PRICING, {}) is None
+    zero = {("llm_a", "openai", "m"): TokenSplit(input=0, output=0)}
+    assert cost_of_stages(PRICING, zero) is None
 
 
 def test_repo_pricing_file_loads() -> None:
