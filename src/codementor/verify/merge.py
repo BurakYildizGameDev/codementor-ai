@@ -6,7 +6,7 @@ Aynı kategori + satır farkı ≤ 2 olan statik ve LLM bulgusu tek bulgu olur (
 
 from __future__ import annotations
 
-from codementor.models.enums import FindingKind, FindingSource
+from codementor.models.enums import AuditCategory, FindingKind, FindingSource
 from codementor.models.findings import Finding
 from codementor.verify.confidence import CONFIRMED_CONFIDENCE
 
@@ -30,10 +30,20 @@ def _dedupe_llm(findings: list[Finding]) -> list[Finding]:
     return unique
 
 
+def _order_key(finding: Finding) -> tuple[int, str, AuditCategory]:
+    """Rapor sırası: satır, kural kimliği, kategori (`number_findings` ile aynı)."""
+    return (finding.line_start, finding.rule_id or "", finding.category)
+
+
 def number_findings(findings: list[Finding]) -> list[Finding]:
     """Satır sırasıyla `F-001…` kimlikleri (statik motorla aynı sıralama)."""
-    ordered = sorted(findings, key=lambda f: (f.line_start, f.rule_id or "", f.category))
+    ordered = sorted(findings, key=_order_key)
     return [f.model_copy(update={"id": f"F-{i:03d}"}) for i, f in enumerate(ordered, start=1)]
+
+
+def renumbered_ids(findings: list[Finding]) -> dict[str, str]:
+    """Eski kimlik → `number_findings` sonrası yeni kimlik (D5: karar kayıtları eşleşsin)."""
+    return {f.id: f"F-{i:03d}" for i, f in enumerate(sorted(findings, key=_order_key), start=1)}
 
 
 def merge_findings(static: list[Finding], llm: list[Finding]) -> list[Finding]:

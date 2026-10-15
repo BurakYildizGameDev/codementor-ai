@@ -19,7 +19,11 @@ _FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL | re.IGNORECASE)
 
 def _object_spans(text: str) -> list[tuple[int, int]]:
     """Dengeli `{...}` blokları, en dıştakiler önce; tek geçiş (§12: 4 MB yanıtta da doğrusal).
-    Metin sabitlerindeki ayraçlar sayılmaz; eşsiz `}` yok sayılır."""
+    Metin sabitlerindeki ayraçlar sayılmaz; eşsiz `}` yok sayılır.
+
+    D2: tırnak durumu yalnız bir nesnenin İÇİNDE izlenir. Aksi hâlde başlıktaki tek bir `"`
+    (`Model "notu: {"a": 1}`) metnin geri kalanını "dizi içi" sayıp nesneyi bulunamaz kılıyordu.
+    """
     spans: list[tuple[int, int]] = []
     stack: list[int] = []
     in_string = escaped = False
@@ -31,7 +35,7 @@ def _object_spans(text: str) -> list[tuple[int, int]]:
                 escaped = True
             elif ch == '"':
                 in_string = False
-        elif ch == '"':
+        elif stack and ch == '"':
             in_string = True
         elif ch == "{":
             stack.append(i)

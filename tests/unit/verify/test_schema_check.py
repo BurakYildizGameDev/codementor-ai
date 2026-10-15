@@ -42,6 +42,12 @@ def test_prose_around_object_extracted() -> None:
     assert value is not None
 
 
+def test_prose_quote_before_object_does_not_hide_it() -> None:
+    """D2: düz yazıdaki tırnak tırnak durumunu erken açıp nesneyi görünmez kılıyordu."""
+    assert extract_json('Model "notu: {"a": 1}') == {"a": 1}
+    assert extract_json('alıntı: "yarım {"a": 1}') == {"a": 1}
+
+
 def test_braces_inside_strings_do_not_confuse() -> None:
     data = VALID | {"guiding_questions": ["`if (x) { y(); }` ne yapar?"]}
     value, check = check_schema(LLMSocraticOutput, parsed=None, raw_text="x " + json.dumps(data))

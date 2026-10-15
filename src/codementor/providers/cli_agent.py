@@ -109,23 +109,48 @@ def model_label(model: str | None, config: object) -> str | None:
 
 def _json_document(stdout: str, marker: str) -> dict[str, Any] | None:
     """Çıktının sonundaki, `marker` alanını taşıyan JSON belgesi. Önünde bilgi satırları ya da
-    model metni olabilir; sahte bir satır yerine CLI'nin kendi sonuç nesnesi seçilir."""
+    model metni olabilir; sahte bir satır yerine CLI'nin kendi sonuç nesnesi seçilir.
+
+    D12: adaylar tek geçişte yığınla çıkarılır ve yalnız kapanışı metnin sonuna kadar boşluk
+    kalan aday ayrıştırılır. Aksi hâlde her `{` konumundan yeniden ayrıştırma karesel sürüyordu.
+    """
     decoder = json.JSONDecoder()
     text = stdout.strip()
-    position = len(text)
-    while position > 0:
-        start = text.rfind("{", 0, position)
-        if start < 0:
-            return None
-        try:
-            data, end = decoder.raw_decode(text, start)
-        except (ValueError, RecursionError):
-            position = start
+    end_of_text = len(text.rstrip())
+    for start, end in reversed(_object_spans(text)):
+        if end != end_of_text:
             continue
-        if isinstance(data, dict) and marker in data and not text[end:].strip():
+        try:
+            data, parsed_end = decoder.raw_decode(text, start)
+        except (ValueError, RecursionError):
+            continue
+        if isinstance(data, dict) and marker in data and not text[parsed_end:].strip():
             return data
-        position = start
     return None
+
+
+def _object_spans(text: str) -> list[tuple[int, int]]:
+    """Eşleşen `{...}` blokları (en içteki önce), tek geçişte; tırnak içindeki ayraçlar
+    sayılmaz ve eşsiz `}` yok sayılır. Kapanmayan ayraç (önündeki düz yazıda bir `{`) önceki
+    adayların eşleşmesini bozmaz."""
+    spans: list[tuple[int, int]] = []
+    stack: list[int] = []
+    in_string = escaped = False
+    for i, ch in enumerate(text):
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+        elif stack and ch == '"':
+            in_string = True
+        elif ch == "{":
+            stack.append(i)
+        elif ch == "}" and stack:
+            spans.append((stack.pop(), i + 1))
+    return spans
 
 
 def _served_model(served: object, requested: str) -> str:

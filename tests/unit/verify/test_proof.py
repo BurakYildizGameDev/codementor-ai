@@ -123,6 +123,19 @@ def test_leaky_reason_redacted() -> None:
     assert [c.kept for c in redacted] == [c.kept for c in result.checks]
 
 
+def test_checks_point_to_renumbered_findings() -> None:
+    """D5: bulgu düşünce liste yeniden numaralanır; karar kaydı da yeni kimliği göstermeli."""
+    result = apply_verdicts(FINDINGS, _output(_proven_input(1), _unproven(2), _proven_input(3)))
+    assert [(c.line_start, c.finding_id) for c in result.checks] == [
+        (3, "F-001"),
+        (8, "F-008"),  # atılan bulgu artık raporda değil: kaydı eski kimliğinde kalır
+        (9, "F-003"),
+    ]
+    assert [c.finding_id for c in result.checks if c.kept] == [
+        f.id for f in result.findings if f.source is FindingSource.LLM
+    ]
+
+
 def test_suggestions_not_verify_targets() -> None:
     """Faz 36: öneri somut hatalı girdiyle kanıtlanamaz; doğrulamaya girmez, korunur."""
     suggestion = _finding(4).model_copy(update={"kind": "suggestion", "severity": Severity.LOW})

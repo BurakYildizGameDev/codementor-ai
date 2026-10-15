@@ -20,7 +20,7 @@ from codementor.models.enums import AuditCategory, FindingKind, FindingSource
 from codementor.models.findings import Finding
 from codementor.models.llm_output import LLMFindingVerdict, LLMVerifyOutput
 from codementor.models.verification import FindingCheck, ProofBasis
-from codementor.verify.merge import number_findings
+from codementor.verify.merge import number_findings, renumbered_ids
 
 SCALING_CATEGORIES = frozenset({AuditCategory.PERFORMANCE, AuditCategory.GARBAGE_COLLECTION})
 
@@ -127,6 +127,16 @@ def apply_verdicts(findings: list[Finding], output: LLMVerifyOutput) -> ProofRes
                 "kanıtlayamadı; bulgu atıldı."
             )
     remaining = [f for f in findings if f.id not in dropped_ids]
+    if dropped_ids:
+        # D5: bulgular yeniden numaralandığı için KORUNAN bulguların karar kaydı da yeni kimliği
+        # göstermeli; atılan bulgunun kaydı eski kimliğiyle kalır (artık raporda olmayan bulgu).
+        new_ids = renumbered_ids(remaining)
+        checks = [
+            c.model_copy(update={"finding_id": new_ids.get(c.finding_id, c.finding_id)})
+            if c.kept
+            else c
+            for c in checks
+        ]
     return ProofResult(
         findings=number_findings(remaining) if dropped_ids else findings,
         checks=checks,

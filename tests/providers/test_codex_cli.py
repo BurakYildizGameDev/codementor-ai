@@ -28,7 +28,7 @@ from codementor.providers import (
 )
 from codementor.providers._cli_common import CLIPPED_WARNING
 from codementor.providers.cli_agent import CliTimeoutError
-from codementor.providers.codex_cli import CodexCliProvider
+from codementor.providers.codex_cli import CodexCliProvider, _classify, _events
 from codementor.providers.schema_adapter import SchemaAdapter
 from codementor.validation.runner import ProcessLimits, ProcessResult
 from tests.providers.contract import SleepRecorder
@@ -236,3 +236,26 @@ async def test_truncated_output_adds_warning() -> None:
     result = await _run(_provider(runner))
     assert result.parsed == ANSWER
     assert CLIPPED_WARNING in result.warnings
+
+
+# ------------------------------------------------------- bozuk girdi dayanıklılığı (D3, D4)
+
+
+def test_deeply_nested_json_line_is_skipped() -> None:
+    """D3: derin iç içe JSON satırı `RecursionError` sızdırıyordu (agy_stream de yakalar)."""
+    deep = '{"a": ' + "[" * 10_000 + "]" * 10_000 + "}"
+    assert _events(deep + "\n" + events({"type": "turn.completed"})) == [{"type": "turn.completed"}]
+
+
+@pytest.mark.parametrize("detail", ["satır 4291: bilinmeyen simge", "kod 4010"])
+def test_hint_numbers_need_word_boundaries(detail: str) -> None:
+    """D4: çıplak `429`/`401` her alt dizgeyle eşleşiyordu (`line 4291`)."""
+    assert isinstance(_classify(detail), ProviderRequestError)
+
+
+@pytest.mark.parametrize(
+    ("detail", "error"),
+    [("HTTP 429", ProviderRateLimitError), ("HTTP 401", ProviderConfigError)],
+)
+def test_hint_numbers_match_with_word_boundaries(detail: str, error: type[Exception]) -> None:
+    assert isinstance(_classify(detail), error)

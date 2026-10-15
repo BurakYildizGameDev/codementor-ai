@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import sys
 import threading
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,6 +33,7 @@ from codementor.providers.cli_agent import (
     CliAgentProvider,
     CliKind,
     CliTimeoutError,
+    _json_document,
     render_prompt,
     resolve_executable,
 )
@@ -535,6 +537,20 @@ async def test_claude_thinking_budget_env(budget: int | None, expected: str | No
 def test_thinking_tokens_not_negative() -> None:
     with pytest.raises(ValueError, match="greater than or equal"):
         ClaudeCliConfig(thinking_tokens=-1)
+
+
+def test_json_document_is_linear_on_hostile_output() -> None:
+    """D12: 160 KB'lık iç içe `{` yığınında her adaydan ayrıştırma karesel sürüyordu."""
+    hostile = '{"k": ' * 25_000 + '"v"' + "}" * 25_000 + "\nmodel metni"
+    start = time.perf_counter()
+    assert _json_document(hostile, "type") is None
+    assert time.perf_counter() - start < 0.25
+
+
+def test_json_document_after_unclosed_brace_in_prose() -> None:
+    """D12: düz yazıdaki kapanmayan `{` sonraki gerçek sonuç nesnesini gizlememeli."""
+    stdout = "model metni {\n" + json.dumps({"type": "result", "x": 1})
+    assert _json_document(stdout, "type") == {"type": "result", "x": 1}
 
 
 def test_model_label_marks_thinking_budget() -> None:

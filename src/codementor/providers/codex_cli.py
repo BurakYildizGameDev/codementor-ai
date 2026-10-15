@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import tempfile
 import threading
 import time
@@ -57,8 +58,27 @@ from codementor.validation.runner import ProcessResult, Runner, run_process
 
 NAME = "codex"
 SCHEMA_FILE = "schema.json"
-_LOGIN_HINTS = ("not logged in", "codex login", "unauthorized", "401")
-_LIMIT_HINTS = ("usage limit", "rate limit", "429", "too many requests")
+# D4: HTTP kodları kelime sınırlı regex; çıplak `"429"` "line 4291" ile de eşleşiyordu.
+Hint = str | re.Pattern[str]
+_LOGIN_HINTS: tuple[Hint, ...] = (
+    "not logged in",
+    "codex login",
+    "unauthorized",
+    re.compile(r"\b401\b"),
+)
+_LIMIT_HINTS: tuple[Hint, ...] = (
+    "usage limit",
+    "rate limit",
+    re.compile(r"\b429\b"),
+    "too many requests",
+)
+
+
+def _hits(hints: tuple[Hint, ...], lowered: str) -> bool:
+    """Metin ipuçları alt dize, `re.Pattern` olanlar `search` ile (`lowered` küçük harfli)."""
+    return any(
+        hint.search(lowered) if isinstance(hint, re.Pattern) else hint in lowered for hint in hints
+    )
 
 
 class CodexUsageLimitError(ProviderRateLimitError):
@@ -76,7 +96,8 @@ def _events(stdout: str) -> list[dict[str, Any]]:
             continue
         try:
             data = json.loads(line)
-        except ValueError:
+        except (ValueError, RecursionError):
+            # D3: derin iç içe JSON `RecursionError` sızdırıyordu (agy_stream ve _http yakalıyor)
             continue
         if isinstance(data, dict):
             found.append(data)
@@ -98,11 +119,11 @@ def _failure(events: list[dict[str, Any]]) -> str | None:
 
 def _classify(detail: str) -> ProviderError:
     lowered = detail.lower()
-    if any(hint in lowered for hint in _LIMIT_HINTS):
+    if _hits(_LIMIT_HINTS, lowered):
         return CodexUsageLimitError(
             NAME, f"kullanım sınırı: {short_error(detail)}", retry_after=None
         )
-    if any(hint in lowered for hint in _LOGIN_HINTS):
+    if _hits(_LOGIN_HINTS, lowered):
         return ProviderConfigError(NAME, "oturum açılmamış; terminalde `codex login` çalıştırın")
     return ProviderRequestError(NAME, f"Codex hatası: {short_error(detail)}")
 
