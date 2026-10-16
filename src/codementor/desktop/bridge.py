@@ -24,7 +24,7 @@ from codementor.models.pipeline import StageEvent
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest
 from codementor.pipeline.events import EventBus
-from codementor.pipeline.orchestrator import PipelineError
+from codementor.pipeline.run_state import PipelineError
 from codementor.validation.toolchain_install import ToolchainInstallError
 
 MessageKind = Literal["event", "result", "error"]

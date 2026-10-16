@@ -6,10 +6,8 @@ from __future__ import annotations
 
 import asyncio
 import threading
-import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Literal
 
 import structlog
 
@@ -19,16 +17,21 @@ from codementor.ingest.normalize import normalize
 from codementor.log import get_logger
 from codementor.models.enums import PipelineMode
 from codementor.models.prompts import MentoringProfile, QuestionContext
-from codementor.models.questions import Question
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest, LanguageHint, NormalizedCode
 from codementor.models.validation import SkipReason, Tier1Result, Toolchain
-from codementor.models.verification import FindingCheck
 from codementor.pipeline import cache_flow, deadline, stages
 from codementor.pipeline.assemble import ReportParts, assemble_with_cost, from_cache
 from codementor.pipeline.events import EventBus, StageTimer
 from codementor.pipeline.ids import new_ulid
 from codementor.pipeline.passes import LLMOutcome, LLMSession, run_llm_passes
+from codementor.pipeline.run_state import (
+    BANK_UNREADABLE,
+    AnalysisTrace,
+    PipelineError,
+    ProviderFactory,
+    Run,
+)
 from codementor.pipeline.templates import degraded_socratic, early_exit_socratic, load_templates
 from codementor.pipeline.versions import rules_version
 from codementor.prompts.budget import PromptBudgetError, PromptConfigError
@@ -44,55 +47,10 @@ from codementor.validation.runner import Runner, run_process
 from codementor.validation.tier0_isolation import STOP_WARNING, check_syntax, stopped
 from codementor.validation.tier1 import run_tier1
 
-ProviderFactory = Callable[[str], LLMProvider]
-
-
 # Tier 1'in geçici atlanma nedenleri: bu raporlar önbelleğe girmez (denetim O-3)
 _TRANSIENT_SKIPS = frozenset({SkipReason.TIMEOUT, SkipReason.TOOL_ERROR})
 
-PipelineErrorKind = Literal["too_large", "invalid", "not_found", "provider", "unavailable"]
-
 log = get_logger("codementor.pipeline")
-BANK_UNREADABLE = "Soru bankası okunamadı; ayrıntı sunucu log'unda."
-
-
-class PipelineError(Exception):
-    """Analiz hiç yapılamadı (CLI çıkış kodu 3, API 413/422/404/503); mesaj Türkçe."""
-
-    def __init__(self, message: str, kind: PipelineErrorKind) -> None:
-        super().__init__(message)
-        self.kind: PipelineErrorKind = kind
-
-
-@dataclass
-class _Run:
-    """Tek analizin durumu."""
-
-    request: AnalysisRequest
-    timer: StageTimer
-    provider_name: str
-    attempt: int = 1
-    started: float = field(default_factory=time.monotonic)
-    question: Question | None = None
-    context: QuestionContext | None = None
-    warnings: list[str] = field(default_factory=list)
-    finding_checks: list[FindingCheck] = field(default_factory=list)
-    saved: bool = False  # analiz kaydedildi: deneme artık geri alınmaz (Faz 49)
-    advance: bool = True  # Faz 61: advance_hint=False iken ayırma/kayıt yapılmaz
-    cacheable: bool = True  # Faz B (Y5): fallback ya da yarım LLM sonucu önbelleğe girmez
-    validation: ValidationSettings | None = None  # isteğe göre Tier 1 ayarı (bir kez)
-
-    @property
-    def analysis_id(self) -> str:
-        return self.timer.analysis_id
-
-
-@dataclass(frozen=True)
-class AnalysisTrace:
-    """Rapor ve öğrenciye gösterilmeyen iç kayıtlar (eval için; Faz 39)."""
-
-    report: AnalysisReport
-    finding_checks: list[FindingCheck]
 
 
 @dataclass
@@ -120,12 +78,12 @@ class Orchestrator:
         """`analyze` ile aynı; ek olarak doğrulama geçişi kararlarını döndürür (önbellekten
         gelen raporda boştur)."""
         name = request.provider or self.settings.providers.default
-        run = _Run(request, StageTimer(new_ulid(), self.bus), name)
+        run = Run(request, StageTimer(new_ulid(), self.bus), name)
         # analiz boyunca yazılan her log satırı `analysis_id` taşır (mimari §13, Faz 50)
         with structlog.contextvars.bound_contextvars(analysis_id=run.analysis_id):
             return await self._traced(run)
 
-    async def _traced(self, run: _Run) -> AnalysisTrace:
+    async def _traced(self, run: Run) -> AnalysisTrace:
         request = run.request
         code = await self._ingest(run)
         if self.db is not None:
@@ -149,12 +107,12 @@ class Orchestrator:
                 self._release(run)
             raise
 
-    def _release(self, run: _Run) -> None:
+    def _release(self, run: Run) -> None:
         """Ayrılan denemeyi geri verir (gövde `cache_flow.release_attempt`, G0)."""
         assert self.db is not None
         cache_flow.release_attempt(self.db, run)
 
-    async def _run_attempt(self, run: _Run, code: NormalizedCode) -> AnalysisTrace:
+    async def _run_attempt(self, run: Run, code: NormalizedCode) -> AnalysisTrace:
         request = run.request
         name = run.provider_name
         profile = mentoring_profile(run.context.difficulty if run.context else None, run.attempt)
@@ -207,7 +165,7 @@ class Orchestrator:
         use = request.options.use_cache
         return self.settings.pipeline.use_cache if use is None else use
 
-    async def _ingest(self, run: _Run) -> NormalizedCode:
+    async def _ingest(self, run: Run) -> NormalizedCode:
         """Doğrulama + dil tespiti iş parçacığında: regex/ayrıştırma olay döngüsünü kilitlemesin
         (Faz A1, K2)."""
         request = run.request
@@ -254,7 +212,7 @@ class Orchestrator:
 
     def _cache_key(
         self,
-        run: _Run,
+        run: Run,
         code: NormalizedCode,
         profile: MentoringProfile,
         provider: LLMProvider,
@@ -266,7 +224,7 @@ class Orchestrator:
     def _mode(self, request: AnalysisRequest) -> PipelineMode:
         return request.options.mode or PipelineMode(self.settings.pipeline.mode)
 
-    def _pipeline_signature(self, run: _Run, code: NormalizedCode) -> str:
+    def _pipeline_signature(self, run: Run, code: NormalizedCode) -> str:
         """Önbellek anahtarı için ayar imzası (gövde `cache_flow.run_signature`, G0)."""
         return cache_flow.run_signature(self, run, code)
 
@@ -287,7 +245,7 @@ class Orchestrator:
             cancel.set()
             raise
 
-    def _run_validation(self, run: _Run) -> ValidationSettings:
+    def _run_validation(self, run: Run) -> ValidationSettings:
         """Analiz başına bir kez: Tier 1 ayarı (gövde `cache_flow.validation_settings`; G0)."""
         return cache_flow.validation_settings(self, run)
 
@@ -299,7 +257,7 @@ class Orchestrator:
 
     async def _analyze(
         self,
-        run: _Run,
+        run: Run,
         code: NormalizedCode,
         provider: LLMProvider,
         version: str,
@@ -393,13 +351,13 @@ class Orchestrator:
         return deadline.timed_out(llm, limit)
 
     @staticmethod
-    def _remaining(run: _Run, limit: float | None) -> float | None:
+    def _remaining(run: Run, limit: float | None) -> float | None:
         """Toplam süre sınırından kalan saniye (gövde `deadline.remaining`'de; G0)."""
         return deadline.remaining(run.started, limit)
 
     def _report(
         self,
-        run: _Run,
+        run: Run,
         code: NormalizedCode,
         parts: ReportParts,
         llm: LLMSession | None,

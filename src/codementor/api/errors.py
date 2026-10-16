@@ -14,7 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from codementor.log import get_logger
 from codementor.models.api import PROBLEM_JSON, Problem
-from codementor.pipeline.orchestrator import BANK_UNREADABLE, PipelineError, PipelineErrorKind
+from codementor.pipeline.run_state import BANK_UNREADABLE, PipelineError, PipelineErrorKind
 from codementor.questions import QuestionBankError
 
 log = get_logger("codementor.api")

@@ -7,7 +7,8 @@ from dataclasses import dataclass, field
 from codementor.api.guard import AnalysisSlots, RateLimiter
 from codementor.config import Settings
 from codementor.pipeline.events import EventBus
-from codementor.pipeline.orchestrator import Orchestrator, ProviderFactory
+from codementor.pipeline.orchestrator import Orchestrator
+from codementor.pipeline.run_state import ProviderFactory
 from codementor.questions.bank import QuestionBank
 from codementor.storage.db import Database
 

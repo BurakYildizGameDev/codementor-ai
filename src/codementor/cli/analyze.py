@@ -28,7 +28,8 @@ from codementor.languages import language_for_file
 from codementor.models.enums import Engine, Language, PipelineMode, Severity
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisOptions, AnalysisRequest
-from codementor.pipeline.orchestrator import Orchestrator, PipelineError
+from codementor.pipeline.orchestrator import Orchestrator
+from codementor.pipeline.run_state import PipelineError
 from codementor.report.cli_render import print_report
 from codementor.report.markdown import to_markdown
 from codementor.report.progress import ProgressLine

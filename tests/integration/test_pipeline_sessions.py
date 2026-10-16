@@ -12,7 +12,8 @@ from codementor.models.enums import Language
 from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.pipeline import orchestrator as orchestrator_module
 from codementor.pipeline import versions
-from codementor.pipeline.orchestrator import Orchestrator, PipelineError
+from codementor.pipeline.orchestrator import Orchestrator
+from codementor.pipeline.run_state import PipelineError
 from codementor.providers.base import ProviderConfigError
 from codementor.providers.fake import FakeProvider, FakeReply
 from codementor.questions import QuestionBank, QuestionBankError

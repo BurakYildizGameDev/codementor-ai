@@ -17,7 +17,8 @@ from codementor.models.pipeline import StageEvent
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest
 from codementor.pipeline.events import EventBus
-from codementor.pipeline.orchestrator import Orchestrator, PipelineError
+from codementor.pipeline.orchestrator import Orchestrator
+from codementor.pipeline.run_state import PipelineError
 
 log = get_logger("codementor.api")
 

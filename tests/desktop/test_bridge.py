@@ -23,7 +23,7 @@ from codementor.desktop.services import render_export
 from codementor.models.pipeline import StageEvent
 from codementor.models.report import AnalysisReport
 from codementor.models.request import AnalysisRequest
-from codementor.pipeline.orchestrator import PipelineError
+from codementor.pipeline.run_state import PipelineError
 from codementor.storage import sessions
 from codementor.storage.cache import list_analyses
 from tests.desktop.conftest import StallingProvider

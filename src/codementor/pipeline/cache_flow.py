@@ -22,19 +22,20 @@ from codementor.storage import cache, sessions
 from codementor.storage.db import Database
 
 if TYPE_CHECKING:
-    from codementor.pipeline.orchestrator import Orchestrator, _Run
+    from codementor.pipeline.orchestrator import Orchestrator
+    from codementor.pipeline.run_state import Run
 
 log = get_logger("codementor.pipeline")
 
 
-def validation_settings(orch: Orchestrator, run: _Run) -> ValidationSettings:
+def validation_settings(orch: Orchestrator, run: Run) -> ValidationSettings:
     """Analiz başına bir kez: önbellek imzası ve Tier 1 aynı ayarı görür."""
     if run.validation is None:
         run.validation = orch._validation(run.request)  # analiz başına bir kez, isteğe göre
     return run.validation
 
 
-def run_signature(orch: Orchestrator, run: _Run, code: NormalizedCode) -> str:
+def run_signature(orch: Orchestrator, run: Run, code: NormalizedCode) -> str:
     """Önbellek anahtarı için çıktıyı etkileyen ayarlar (Faz 35; Faz B/O3 tamamladı)."""
     validation = validation_settings(orch, run)
     return pipeline_signature(
@@ -48,7 +49,7 @@ def run_signature(orch: Orchestrator, run: _Run, code: NormalizedCode) -> str:
 
 def cache_key(
     orch: Orchestrator,
-    run: _Run,
+    run: Run,
     code: NormalizedCode,
     profile: MentoringProfile,
     provider: LLMProvider,
@@ -73,7 +74,7 @@ def cache_key(
     )
 
 
-def release_attempt(db: Database, run: _Run) -> None:
+def release_attempt(db: Database, run: Run) -> None:
     """Ayrılan denemeyi geri verir; bu da başarısız olursa asıl istisnayı örtmez."""
     request = run.request
     try:
@@ -84,7 +85,7 @@ def release_attempt(db: Database, run: _Run) -> None:
 
 def save_report(
     db: Database,
-    run: _Run,
+    run: Run,
     report: AnalysisReport,
     *,
     key: str,

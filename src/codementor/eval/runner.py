@@ -31,8 +31,9 @@ from codementor.models.request import AnalysisOptions, AnalysisRequest
 from codementor.models.verification import FindingCheck
 from codementor.pipeline.cost import load_pricing
 from codementor.pipeline.events import EventBus
-from codementor.pipeline.orchestrator import Orchestrator, PipelineError, ProviderFactory
+from codementor.pipeline.orchestrator import Orchestrator
 from codementor.pipeline.passes import SCHEMA_INVALID, SCHEMA_OK
+from codementor.pipeline.run_state import PipelineError, ProviderFactory
 from codementor.pipeline.versions import SCHEMA_VERSION, rules_version
 from codementor.prompts.templates import prompt_version
 from codementor.providers.base import LLMProvider, NamedProvider, ProviderUnavailableError

@@ -11,7 +11,8 @@ from codementor.config import Settings
 from codementor.models.enums import CompilationStatus, FindingSource, PipelineMode
 from codementor.models.pipeline import ALL_STAGES, StageEvent
 from codementor.models.request import AnalysisOptions, AnalysisRequest
-from codementor.pipeline.orchestrator import Orchestrator, PipelineError
+from codementor.pipeline.orchestrator import Orchestrator
+from codementor.pipeline.run_state import PipelineError
 from codementor.prompts.templates import UNAVAILABLE_VERSION
 from codementor.providers.fake import FakeReply
 from codementor.rules.registry import all_rules
