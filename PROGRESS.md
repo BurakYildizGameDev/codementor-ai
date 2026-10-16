@@ -63,7 +63,7 @@
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
 | F | ✅ (elle deneme + denetim sonraya) | faz/f-masaustu | 2026-10-14 | Antigravity / — |
-| G | 🟡 (G0-G7 + D20 ✅; kalan: `orchestrator.py` 421→<400, D16 belge notu, kapanış) | faz/g-saglayici | 2026-10-16 | Cline / — |
+| G | ✅ | faz/g-sagayici | 2026-10-16 | Cline / — |
 
 ## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15)
 
@@ -335,7 +335,11 @@ Doğrulama: `ruff check`/`ruff format --check` temiz (470 dosya), `mypy src/` 21
 
 ### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15; G4+ denetimiyle güncellendi)
 
-Durum: **G0-G4, G4+, G5/D20, G6 (altı maddenin tamamı) ve G7 bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5 → `48f4e16` G6 denetim düzeltmeleri → `c403070` G7 → `c1a1b91` G5+D20 ve ADR-0030). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3524 geçti / 15 atlandı** (G5 sonrası).
+Durum: **G0-G4, G4+, G5/D20, G6 (altı maddenin tamamı) ve G7 bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5 → `48f4e16` G6 denetim düzeltmeleri → `c403070` G7 → `c1a1b91` G5+D20 ve ADR-0030). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3524 geçti / 15 atlandı** (G5 sonrası). **Kapanış (2026-10-16):** `orchestrator.py` 421 → **379**
+satır (`Run`/`AnalysisTrace`/`PipelineError` ailesi `pipeline/run_state.py`'ye taşındı; içe aktarımlar
+tek yönlü), D16 belge notu `docs/mimari.md` §12'ye yazıldı. Son ölçüm: `ruff check` +
+`ruff format --check` temiz (**471 dosya**), `mypy src/` hatasız (**213 dosya**),
+`pytest -m "not live"` **3524 geçti / 15 atlandı** (3:34).
 
 **Düzeltme (G4 sonrası denetim):** listenin ilk sürümü D14/D15/D17/D19'u açık sanıyordu; kaynağı §5
 tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D17 **Faz E**, D19 **Faz F**
@@ -361,11 +365,23 @@ Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`Bulgula
    - **Kullanıcı kararı (G5-5):** `pyproject.toml` `[desktop]` extra **yapılmadı** (CI/release/exe
      derlemesini etkiliyor).
    - **ADR-0030:** `primary_name` protokol eklemesi karar kaydına geçti.
-4. **D16:** `session_id` sahipliği **sadece belgeye** yazılır (kod değişmez; paylaşılan sunucu uyarısı).
-5. **Dosya bölme:** `pipeline/orchestrator.py` şu an **420 satır** (> 400 sınırı) — Faz G kabulü
-   "iki büyük dosya < 400" istiyor; `passes.py` **366** satır ve sınıra yakın (ölçüm: 2026-10-15). — *orta-küçük, saf refactor*
-6. **Faz G kapanışı:** G0-G7 testleri + dört denetim (ruff/format/mypy/pytest) + §3.1 Linux taklidi +
-    G5-4 exe duman testi çıktısı rapora; `PROGRESS.md` durum satırı ✅'e çekilir.
+4. **D16:** ✅ **tamam** — `session_id` sahipliği **yalnız belgeye** yazıldı (kod değişmedi):
+   `docs/mimari.md` §12 tehdit tablosuna satır eklendi ("`session_id` yetki sırrı değildir; yerel tek
+   kullanıcı varsayımıdır; paylaşılan sunucuda kimlik anahtara bağlanmalı — Sonraya"); `Bulgular` D16
+   satırı ✅ ve §10 kutusuna not düşüldü.
+5. **Dosya bölme:** ✅ **tamam** — `pipeline/orchestrator.py` **421 → 379 satır**; `Run`,
+   `AnalysisTrace`, `PipelineError`, `PipelineErrorKind`, `ProviderFactory` ve `BANK_UNREADABLE`
+   `pipeline/run_state.py`'ye taşındı. Bağımlılık yönü artık tek yönlü (`cache_flow`/`deadline` →
+   `run_state`); `api/`, `cli/`, `desktop/`, `eval/` içe aktarımları yeni modüle çevrildi. `passes.py`
+   **366** satır (< 400). **Kapanış denetimi bulgusu:** `providers/cli_agent.py` **420 satır** (> 400;
+   Faz G'de dört kez değişti) — kapsam dışı, "Sonraya"ya yazıldı.
+6. **Faz G kapanışı:** ✅ **tamam** — `ruff check` / `ruff format --check` temiz (**471 dosya**),
+   `mypy src/` hatasız (**213 dosya**), `pytest -m "not live"` **3524 geçti / 15 atlandı / 6 seçilmedi**
+   (3:34). §3.1 Linux taklidi, G5-4 exe duman testi (`sc.json` `"ok": true`) ve dört denetim (dal içi
+   G6, G4 sonrası, G5/D20, kapanış öncesi) `docs/DEVIR_FAZ_E_J.md`'de. Durum satırı ✅'e çekildi.
+   - **Ortam notu:** bu makinede `make` yok; `make check` yerine dört komut tek tek koşuldu
+     (`uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src/`,
+     `uv run pytest -m "not live"`).
 
 Sonraki faz: **Faz H** (`faz/h-kurallar`) — 7 yeni statik kural (CSS×3, C++×3, C, C#) + bilinen
 kaçırma/yanlış pozitifler (CPP-OWN-001, C-MEM-001, UNITY-GC-001, UE-GC-001) + ölçüm işleri; her kural
@@ -532,8 +548,9 @@ yük altında 38 sn'yi geçip düşebiliyor; tek başına geçiyor.
 ~~`system_errors` ağ hatalarını "dosya işlemi" diye anar~~ (G6-4: çözüldü); ~~`report/usage` →
 `storage.cache.UsageTotals` katman bağımlılığı~~ (G6-4: çözüldü);
 `detect.py` `<meta …` deseni çok büyük girdide karesele yakın (40 KB'de ölçülmedi);
-`guard_delimiters` `&lt;` için idempotent değil; ~~`primary` sağlayıcı adı `getattr` ile~~ (G6-5: çözüldü); 400 satır:
-`orchestrator.py`, `passes.py`, `desktop/app.py` (Faz G).
+`guard_delimiters` `&lt;` için idempotent değil; ~~`primary` sağlayıcı adı `getattr` ile~~ (G6-5: çözüldü);
+~~400 satır: `orchestrator.py` (421 → 379; kapanış oturumu), `passes.py` (366), `desktop/app.py` (395)~~
+— üçü de < 400; kalan tek sınır aşımı `providers/cli_agent.py` 420 (kapanış denetimi, Sonraya).
 
 ## Faz D — Notlar (public belgeler ve otomatik release; 2026-10-13)
 Kaynak: `docs/BulgularVeDuzeltilecekler.md` P5-P9, P11, O1, O17, O18, D20.
@@ -700,6 +717,11 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 - **`docs/mimari.md` §20 ADR tablosu boşlukları (denetim notu, 2026-10-16):** tabloda ADR-0024, 0025,
   0028 ve 0029 satırları yok (0026/0027 var; ADR-0030 eklendi). Karar dosyaları `docs/adr/` altında
   mevcut; tablo satırları kapsam dışı olduğu için bu fazda eklenmedi.
+- **`providers/cli_agent.py` 420 satır (kapanış denetimi, 2026-10-16):** Faz G'de dört kez değişti
+  (G1 çıktı sınırı, G2/O6 kalıcı CLI hataları, G6 `usage` katmanı + `primary_name`, D2-D4 ayrıştırma)
+  ve 400 satır sınırını aştı. Öneri: Claude/agy'ye özgü olay ayrıştırma (`_events`,
+  `structured_output`, `modelUsage`) `providers/cli_events.py`'ye alınabilir; ortak yardımcılar zaten
+  `_cli_common.py`'de. Faz G kabul kriteri yalnız `orchestrator.py`/`passes.py` olduğundan kapsam dışı.
 - **Public öncesi zorunlu (kullanıcı, 2026-10-13):** Y2 — `tests/fixtures/llm_responses/unity03_reference.cs`
   bankadaki unity-03 referans çözümüyle (`private/`) karşılaştırılacak; aynı/benzerse yapay bir
   çözümle değiştirilip golden'lar yeniden üretilecek. GitHub'da secret scanning, push protection,

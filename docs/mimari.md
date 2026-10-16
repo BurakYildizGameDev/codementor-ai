@@ -1124,6 +1124,7 @@ codementor schema export --out schemas/
 | Bağımlılık riski | Zararlı paket | `uv.lock` sabitleme; CI'da `pip-audit --strict` (kilitli çalışma zamanı bağımlılıkları) ve web için `npm audit --omit=dev --audit-level=high` (Faz 50) |
 | Yerel servisin dışarı açılması | `--host 0.0.0.0` | Varsayılan `127.0.0.1`; dışa açma belgelenmiş uyarıyla (anahtar ve Host listesi durumunu söyler) |
 | Tarayıcı üzerinden yerel API'ye erişim / kota harcatma | DNS rebinding; istekte `provider: "claude_cli"`, `options.tier1: true` | Host doğrulaması; sağlayıcı izin listesi; istek Tier 1'i yalnız kapatır; CORS yalnız yapılandırılan kökenler (Faz 47, ADR-0023) |
+| İpucu merdiveni durumunun sahiplenilmemesi | Kimliği bilen istemci başkasının `session_id`'siyle gönderip seviyeyi ilerletir; rastgele kimliklerle `sessions` tablosu şişer (D16) | Belge notu (Faz G): `session_id` **bir yetki sırrı değildir** — yerel, tek kullanıcılı çalışma varsayımıdır (varsayılan `127.0.0.1`, `api.allowed_hosts` loopback). Paylaşılan sunucuda kimlik sunucu tarafında üretilip bir anahtara/oturuma bağlanmalıdır; bu yapılana kadar paylaşılan sunucuda çalıştırılmamalı (`--host` uyarısı bunu söyler). Anahtara bağlama **Sonraya** (Faz G kapsamı dışı) |
 
 ---
 

@@ -542,7 +542,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | D13 ✅ A2 | `prompts/templates.py:36-55` | Sınırlayıcı korumasında atlanan benzer karakterler: `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `﹤` varyantı, `«` (U+00AB), düz `&lt;/user_code&gt;`. | `_CONFUSABLES`'a ekle, `&lt;` biçimini desene kat. |
 | D14 ✅ E (+G4 sertleştirme) | `api/auth.py:105`, `providers/health.py:105-133` | API anahtarı tanımlıyken bile `/health/ready`, `/docs`, `/openapi.json` açık; sağlayıcı/model adları, anahtar değişken adları, çalıştırılabilir yolları sızıyor. | Anahtar varken `/health/ready`'yi koru; `/health` açık kalsın. |
 | D15 ✅ E | `report/markdown.py:14, 24, 61, 80-83` | LLM metni ve derleyici iletisi ham yazılıyor (yalnız `\|` kaçışlı); dosyada `<details>` HTML'i de var. HTML'e izin veren görüntüleyicide XSS. | `< > &` kaçışı. |
-| D16 | `models/request.py:36`, `storage/sessions.py:146` | `session_id` sahipsiz; kimliği bilen başkasının ipucu merdivenini ilerletir. Rastgele kimliklerle `sessions` tablosu büyütülebilir (bilinen). | Paylaşılan sunucu için belgeye yaz; ileride anahtara bağla. |
+| D16 ✅ G (belge notu) | `models/request.py:36`, `storage/sessions.py:146` | `session_id` sahipsiz; kimliği bilen başkasının ipucu merdivenini ilerletir. Rastgele kimliklerle `sessions` tablosu büyütülebilir (bilinen). | `docs/mimari.md` §12'ye tehdit satırı olarak yazıldı (Faz G; kod değişmedi): `session_id` yetki sırrı değil, yerel tek kullanıcı varsayımı. Kimliği anahtara bağlama Sonraya. |
 | D17 ✅ E | `web/src/lib/download.ts:10` | `revokeObjectURL` `click()`'ten hemen sonra; bazı tarayıcılarda indirme iptal olabilir (doğrulanmadı). | `setTimeout(..., 0)`. |
 | D18 ✅ G4 | `validation/tier0_isolation.py:102` | Durdurma tanısı metinle tanınıyor (`startswith("Kodun sözdizimi")`); metin değişirse sessizce bozulur. | Yapısal bayrak. |
 | D19 ✅ F | `desktop/app.py:396`, `storage/db.py` | `delete_history` analiz sürerken engellenmiyor (`clear_history` engelliyor). Veritabanında WAL, `busy_timeout`, şema sürümü (`user_version`) yok. DB dosyası POSIX'te 0600 oluşturulmuyor (doğrulanmadı). | Engelle; WAL + `busy_timeout`; `user_version` ile göç. |
@@ -1031,7 +1031,8 @@ Faz A-I'ya girmeyen, ihtiyaç doğunca ele alınacak maddeler:
 - [ ] OpenAI katı mod kısıtlarının canlı doğrulanması (sağlayıcı geri gelirse)
 - [ ] JS (tarayıcı) desteği; cppcheck/clang-tidy entegrasyonu; VS Code eklentisi; Rust/Go
       (README yol haritası v1.1/v2.0)
-- [ ] `session_id`'yi kimlik/anahtara bağlama (paylaşılan sunucu, D16)
+- [ ] `session_id`'yi kimlik/anahtara bağlama (paylaşılan sunucu, D16) — belge notu
+      **Faz G**'de yazıldı (`docs/mimari.md` §12, tehdit satırı)
 
 ---
 

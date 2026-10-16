@@ -783,10 +783,14 @@ dosyada hatasız, `pytest -m "not live"` **3520 geçti / 15 atlandı**.
 **G6 denetimi (dal içi):** `docs/mimari.md` §5.5.1/§16 doküman senkronu ve `.tmp_full.log`/`.tmp_g1.log`
 artıklarının repodan çıkarılması `48f4e16` commit'iyle kapandı (`.gitignore`'a `.tmp_*.log` eklendi).
 
-**Faz G kabul:** G0-G7 testleri; iki büyük dosya < 400 (**açık:** `pipeline/orchestrator.py` 421 satır —
-G0'da 393'e inmişti, G6/G7 eklemeleriyle sınırı yine aştı; bölünmesi ayrı iş olarak duruyor);
-dört denetim; §3.1 Linux taklidi; G5-4 exe duman testi çıktısı rapora. **Kalan:** `orchestrator.py`
-bölünmesi, D16 belge notu, `PROGRESS.md` durum satırının ✅'e çekilmesi.
+**Faz G kabul:** G0-G7 testleri; iki büyük dosya < 400 (**kapandı (kapanış oturumu):**
+`pipeline/orchestrator.py` **379 satır** — G0'da 393'e inmiş, G6/G7 eklemeleriyle 421'e çıkmıştı;
+kalan veri sözleşmesi `pipeline/run_state.py`'ye alındı, `cache_flow` artık `orchestrator`'ı yalnız
+`Orchestrator` için içe aktarır; `passes.py` 366 satır);
+dört denetim; §3.1 Linux taklidi; G5-4 exe duman testi çıktısı rapora. **Kalan yok:** D16 belge notu
+`docs/mimari.md` §12'ye yazıldı (kod değişmedi), `PROGRESS.md` durum satırı ✅'e çekildi. Kapanış
+ölçümü: `ruff check` + `ruff format --check` temiz (471 dosya), `mypy src/` 213 dosyada hatasız,
+`pytest -m "not live"` **3524 geçti / 15 atlandı** (3:34).
 
 ---
 
