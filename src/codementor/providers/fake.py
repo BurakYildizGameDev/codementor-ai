@@ -25,6 +25,7 @@ from codementor.models.provider import (
 )
 from codementor.providers._http import parse_json_object
 from codementor.providers.base import (
+    NamedProvider,
     ProviderConfigError,
     ProviderError,
     ProviderRateLimitError,
@@ -72,7 +73,7 @@ class FakeCall:
 
 
 @dataclass
-class FakeProvider:
+class FakeProvider(NamedProvider):
     """Senaryodan yanıt veren sağlayıcı."""
 
     script: list[FakeReply]

@@ -37,6 +37,7 @@ from codementor.models.provider import (
 from codementor.providers._common import as_int, as_text, elapsed_ms, require_model
 from codementor.providers._http import parse_json_object
 from codementor.providers.base import (
+    NamedProvider,
     ProviderConfigError,
     ProviderError,
     ProviderRateLimitError,
@@ -128,7 +129,7 @@ def _classify(detail: str) -> ProviderError:
     return ProviderRequestError(NAME, f"Codex hatası: {short_error(detail)}")
 
 
-class CodexCliProvider:
+class CodexCliProvider(NamedProvider):
     """`codex exec --json --output-schema` ile yapılandırılmış çıktı."""
 
     capabilities = ProviderCapabilities(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from codementor.providers.base import (
     LLMProvider,
+    NamedProvider,
     ProviderConfigError,
     ProviderError,
     ProviderRateLimitError,
@@ -27,6 +28,7 @@ __all__ = [
     "FakeReply",
     "FallbackProvider",
     "LLMProvider",
+    "NamedProvider",
     "ProviderConfigError",
     "ProviderError",
     "ProviderRateLimitError",

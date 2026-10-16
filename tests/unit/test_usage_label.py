@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from codementor.models.report import ReportMeta, TokenSplit
+from codementor.models.usage import UsageTotals
+from codementor.report import usage
 from codementor.report.usage import (
     format_count,
     usage_breakdown,
@@ -12,7 +16,7 @@ from codementor.report.usage import (
     usage_label,
     usage_totals_label,
 )
-from codementor.storage.cache import UsageTotals
+from codementor.storage import cache
 
 
 def _meta(**kw: object) -> ReportMeta:
@@ -91,3 +95,24 @@ def test_totals_label() -> None:
 )
 def test_format_count(value: int, text: str) -> None:
     assert format_count(value) == text
+
+
+# --- Faz G6: `UsageTotals` `models/` katmanında; rapor katmanı depoyu bilmiyor --------------------
+
+
+def test_usage_totals_defined_in_models_layer() -> None:
+    """Tek tanım yeri `models.usage`; `storage.cache` ve `report.usage` onu oradan dışa aktarır."""
+    assert UsageTotals.__module__ == "codementor.models.usage"
+    assert cache.UsageTotals is UsageTotals
+    assert usage.UsageTotals is UsageTotals
+
+
+def test_report_layer_does_not_import_storage() -> None:
+    """Kabul ölçütü (G6): `rg -n "from codementor.storage" src/codementor/report` boş kalmalı."""
+    report_dir = Path(usage.__file__).parent
+    offenders = sorted(
+        path.name
+        for path in report_dir.rglob("*.py")
+        if "codementor.storage" in path.read_text(encoding="utf-8")
+    )
+    assert offenders == []

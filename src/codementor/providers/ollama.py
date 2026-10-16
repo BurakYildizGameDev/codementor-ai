@@ -29,13 +29,13 @@ from codementor.providers._common import (
     require_model,
 )
 from codementor.providers._http import HttpTransport, parse_json_object
-from codementor.providers.base import RetryPolicy
+from codementor.providers.base import NamedProvider, RetryPolicy
 from codementor.providers.schema_adapter import SchemaAdapter
 
 DEFAULT_NUM_CTX = OllamaConfig().num_ctx or 16384
 
 
-class OllamaProvider:
+class OllamaProvider(NamedProvider):
     """Yerel Ollama sunucusu."""
 
     name = "ollama"

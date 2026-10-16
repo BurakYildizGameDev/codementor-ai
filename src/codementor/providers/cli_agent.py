@@ -60,6 +60,7 @@ from codementor.providers.agy_stream import (
     result_event,
 )
 from codementor.providers.base import (
+    NamedProvider,
     ProviderConfigError,
     ProviderError,
     ProviderRateLimitError,
@@ -205,7 +206,7 @@ def _mapping(value: object) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
-class CliAgentProvider:
+class CliAgentProvider(NamedProvider):
     """`claude -p` ya da `agy -p` ile yapılandırılmış çıktı."""
 
     capabilities = ProviderCapabilities(

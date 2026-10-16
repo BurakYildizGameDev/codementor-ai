@@ -185,3 +185,13 @@ async def test_long_retry_after_gives_up_immediately(
         await _call(harness)
     assert harness.request_count == 1
     assert sleep.delays == []
+
+
+def test_primary_name_is_adapter_name(harness: Harness) -> None:
+    """Faz G6: zincirsiz adaptör birincil sağlayıcı olarak kendi adını bildirir.
+
+    Önbelleğe yazma kararı (`orchestrator`) bu adı kullanır; adaptörün `name` alanı zincirde
+    birleştirilmiş ad olabildiği için ayrı bir özellik gerekiyor.
+    """
+    provider = harness.make()
+    assert provider.primary_name == harness.name == provider.name

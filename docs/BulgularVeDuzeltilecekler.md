@@ -927,8 +927,12 @@ tekrarlanabilir bir release'ten gelsin.
       korunuyor — **Faz G6**
 - [x] **G6 (parça 3):** `UserQuestionDraft.from_question` artık yalnız *tamamen* varsayılan olan listeleri
       boşaltıyor; `['genel', 'dizi']` düzenle→kaydet gidiş-dönüşünde korunuyor — **Faz G6**
-- [ ] **G6 (kalan):** `cli/errors.describe` ağ hatası metni; `UsageTotals` → `models/`;
-      `LLMProvider.primary_name`
+- [x] **G6 (parça 4):** `cli/errors.describe` ağ hatalarını (`ConnectionError`/`TimeoutError`) artık
+      "dosya işlemi" diye anmıyor; `UsageTotals` `models/usage.py`'ye taşındı, rapor katmanı depo
+      katmanını bilmiyor (`rg -n "from codementor.storage" src/codementor/report` boş) — **Faz G6**
+- [x] **G6 (parça 5):** `LLMProvider.primary_name` protokolü + ortak `NamedProvider` tabanı;
+      `orchestrator` `getattr(provider, "chain", …)` yoklaması yerine bu özelliği kullanıyor —
+      **Faz G6**
 - [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
       exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra
 - [ ] `ProviderResult`'a "şema zorlandı mı" yeteneği; `SchemaAdapter` kısıtlarını sağlayıcıya göre

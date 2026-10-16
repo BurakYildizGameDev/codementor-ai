@@ -9,13 +9,13 @@ uymayan eski `report_json` yok sayılır (geçmiş/GET çökmez); `max_analyses`
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
 
 from sqlalchemy import and_, case, func, or_
 from sqlmodel import col, delete, select
 
 from codementor.log import get_logger
 from codementor.models.report import AnalysisReport
+from codementor.models.usage import UsageTotals
 from codementor.storage.db import MEMORY, AnalysisRow, Database
 
 log = get_logger("codementor.storage")
@@ -232,17 +232,6 @@ def clear_analyses(db: Database) -> int:
             c.exec_driver_sql("VACUUM")
             c.exec_driver_sql("PRAGMA wal_checkpoint(TRUNCATE)")
     return deleted
-
-
-@dataclass(frozen=True)
-class UsageTotals:
-    """Kayıtlı analizlerin toplam kullanımı (Geçmiş ekranı, Faz K). Önbellek isabetleri 0 token
-    ve maliyetsiz kaydedilir: toplam gerçekten harcananı gösterir."""
-
-    analyses: int
-    tokens_in: int
-    tokens_out: int
-    cost: float | None  # hiçbir kayıtta fiyat yoksa None
 
 
 def usage_totals(db: Database) -> UsageTotals:

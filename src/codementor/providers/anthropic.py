@@ -33,13 +33,18 @@ from codementor.providers._common import (
     require_model,
 )
 from codementor.providers._http import HttpTransport, parse_json_object
-from codementor.providers.base import ProviderConfigError, ProviderResponseError, RetryPolicy
+from codementor.providers.base import (
+    NamedProvider,
+    ProviderConfigError,
+    ProviderResponseError,
+    RetryPolicy,
+)
 from codementor.providers.schema_adapter import SchemaAdapter
 
 API_VERSION = "2023-06-01"  # Messages API protokol sürümü (başlık), model/URL değil
 
 
-class AnthropicProvider:
+class AnthropicProvider(NamedProvider):
     """Claude modelleri."""
 
     name = "anthropic"

@@ -32,12 +32,33 @@ class LLMProvider(Protocol):
     name: str
     capabilities: ProviderCapabilities
 
+    @property
+    def primary_name(self) -> str:
+        """Zincirin başında gerçekten çağrılan sağlayıcının adı (Faz G6).
+
+        Tek sağlayıcıda `name`'dir; geri dönüş zincirinde ilk halka. Önbellek yalnızca birincil
+        sağlayıcı yanıt verdiğinde geçerlidir (`orchestrator`), bu yüzden çağıran `chain` gibi
+        sağlayıcıya özel alanları yoklamaz.
+        """
+        ...
+
     async def generate_structured(
         self,
         messages: list[ChatMessage],
         output_model: type[BaseModel],
         options: GenerationOptions,
     ) -> ProviderResult: ...
+
+
+class NamedProvider:
+    """Zincirsiz sağlayıcılar `NamedProvider`'dan türer: `primary_name` = `name` (Faz G6)."""
+
+    name: str
+
+    @property
+    def primary_name(self) -> str:
+        """Tek sağlayıcıda birincil ad kendi adıdır."""
+        return self.name
 
 
 class ProviderError(Exception):

@@ -3,6 +3,7 @@
 `analyze` çıkış kodları: 0 tamam · 1 yüksek önemli bulgu · 2 derleme başarısız (erken çıkış) ·
 3 sistem hatası. Sistem hatası (okunamayan yapılandırma ya da dosya, açılamayan veritabanı,
 bozuk veri) traceback yerine Türkçe tek satırla ve 3 koduyla biter; CI onu bulgu sanmaz.
+Ağ hataları (Faz G6) "dosya işlemi" gibi anılmaz: `describe` onları `ağ hatası: …` diye yazar.
 """
 
 from __future__ import annotations
@@ -20,6 +21,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from codementor.questions._loader import DataFileError
 
 EXIT_SYSTEM_ERROR = 3
+
+# G6: ağ hataları `OSError` alt sınıfıdır; "dosya işlemi başarısız" demek yanıltıyordu
+NETWORK_ERRORS: tuple[type[OSError], ...] = (ConnectionError, TimeoutError)
 
 # `typer.Exit` / click istisnaları bu listede yok: bilinçli çıkışlar olduğu gibi geçer
 SYSTEM_ERRORS: tuple[type[BaseException], ...] = (
@@ -39,6 +43,10 @@ def describe(exc: BaseException) -> str:
         return f"geçersiz değer ({exc.error_count()} hata): {exc.errors()[0]['msg']}"
     if isinstance(exc, SQLAlchemyError):
         return f"veritabanı açılamadı: {type(exc).__name__}"
+    if isinstance(exc, NETWORK_ERRORS):
+        target = f" ({exc.filename})" if exc.filename else ""
+        detail = exc.strerror or str(exc) or "bağlantı kurulamadı ya da zaman aşımı"
+        return f"ağ hatası{target}: {detail}"
     if isinstance(exc, OSError):
         target = f" ({exc.filename})" if exc.filename else ""
         return f"dosya işlemi başarısız{target}: {exc.strerror or exc}"

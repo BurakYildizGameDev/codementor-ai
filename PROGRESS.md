@@ -250,9 +250,32 @@
 - **Doğrulama (G6-1/2):** `ruff check`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada
   hatasız; `pytest -m "not live"` **3494 geçti / 15 atlandı** (G4+ sonrası 3490 → +4 test).
 
+**G6 (parça 4-5) — ağ hata metni, `UsageTotals` katmanı, `primary_name`:**
+- **Ağ hatası metni:** `cli/errors.py::describe` artık `ConnectionError`/`TimeoutError` (`OSError` alt
+  sınıfları; `NETWORK_ERRORS`) için `ağ hatası (hedef): ayrıntı` yazıyor; ayrıntı yoksa
+  "bağlantı kurulamadı ya da zaman aşımı". Dosya hatalarının "dosya işlemi başarısız" metni ve
+  `system_errors` çıkış kodu 3 değişmedi.
+- **Katman:** `UsageTotals` `storage/cache.py`'den `models/usage.py`'ye taşındı (veri sözleşmesi);
+  `storage.cache` ve `report.usage` onu oradan içe aktarıyor. `rg -n "from codementor.storage"
+  src/codementor/report` artık boş: rapor katmanı depo katmanını bilmiyor.
+- **`primary_name`:** `LLMProvider` protokolüne `primary_name` özelliği eklendi. Zincirsiz adaptörler
+  ortak `NamedProvider` tabanından türüyor (ollama, gemini, anthropic, claude_cli/agy, codex, fake ve
+  eval'in `StaticOnlyProvider`'ı) ve kendi `name`'ini döndürüyor; `FallbackProvider` zincirin ilk
+  halkasını. `orchestrator` artık `getattr(provider, "chain", [provider])` yoklamıyor: `run.cacheable`
+  kararı `provider.primary_name` üzerinden veriliyor.
+- Testler: `tests/unit/test_cli_errors.py` (5; ağ/dosya ayrımı, ayrıntısız zaman aşımı, `system_errors`
+  çıkış 3 ve traceback'siz metin), `tests/unit/test_usage_label.py` (+2; tek tanım yeri ve rapor
+  katmanında `storage` içe aktarımı yok), `tests/providers/test_factory.py` (+3; zincirin ilk halkası,
+  tek sağlayıcı), `tests/providers/test_contract.py` (+1, her adaptörde `primary_name == name`).
+- **Doğrulama (G6-4/5):** `ruff check`/`ruff format --check` temiz (469 dosya); `mypy src/` 212 dosyada
+  hatasız; `pytest -m "not live"` **3511 geçti / 15 atlandı** (G6-3 sonrası 3496 → +15 test).
+- Tamamlanan altı maddenin kabul ölçütleri: dosya baytları değişmiyor, `['genel', 'dizi']` kayıpsız,
+  ağ hatası metni test edilmiş, rapor katmanında `storage` içe aktarımı yok, önbellek/fallback testleri
+  yeşil.
+
 ### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15; G4+ denetimiyle güncellendi)
 
-Durum: **G0-G4, G4+ ve G6 parça 1-3 tamam ve commit'li** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → G6-3). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3496 geçti / 15 atlandı**.
+Durum: **G0-G4, G4+ ve G6 (altı maddenin tamamı) bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → G6-4/5). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3511 geçti / 15 atlandı**.
 
 **Düzeltme (G4 sonrası denetim):** listenin ilk sürümü D14/D15/D17/D19'u açık sanıyordu; kaynağı §5
 tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D17 **Faz E**, D19 **Faz F**
@@ -262,10 +285,10 @@ sertleştirmesi bu oturumda yapıldı (G4+).
 
 Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`BulgularVeDuzeltilecekler.md` güncellemesi):
 
-1. **G6 (denetimden ertelenen 6 madde):** ✅ parça 1-3 yapıldı (`desktop/config_writer`: dizi tablosu
-   koruması + satır sonu (CRLF/LF) koruması; `models/questions.from_question` artık yalnız tamamen
-   varsayılan listeleri boşaltıyor, `['genel', 'dizi']` düzenle→kaydet kayıpsız); kalan: `cli/errors.describe`
-   ağ hatası metni, `UsageTotals`'ın `models/` katmanına taşınması, `LLMProvider.primary_name`. — *3 parça kaldı*
+1. **G6 (denetimden ertelenen 6 madde):** ✅ **tamam** — parça 1-3: `desktop/config_writer` dizi
+   tablosu + satır sonu (CRLF/LF) koruması ve `models/questions.from_question` (yalnız tamamen varsayılan
+   listeler boşalıyor, `['genel', 'dizi']` düzenle→kaydet kayıpsız); parça 4-5: `cli/errors.describe` ağ
+   hatası metni, `UsageTotals` → `models/usage.py`, `LLMProvider.primary_name`. — *kalan yok*
 2. **G7:** `ProviderResult.schema_enforced` (anthropic/openai_compat `strict` → True, CLI'lar False) +
    token tahmininin `usage` ile `log.debug("token_estimate_ratio")` kalibrasyonu (davranış değişmez). — *küçük*
 3. **G5 / D20:** `buildinfo.py` maskesiz logger → `get_logger`; `--help` İngilizce metni (Typer'la
@@ -443,10 +466,10 @@ yük altında 38 sn'yi geçip düşebiliyor; tek başına geçiyor.
 **Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3355 geçti, 15 atlandı.
 **Ertelenen (Sonraya):** ~~`config_writer` dizi tablosunu (`[[providers.x]]`) ezer, CRLF'yi LF yazar~~ (G6: çözüldü);
 ~~`from_question` `genel` etiketini/varsayılan kısıtı düzenlemede siler~~ (G6 parça 3: çözüldü);
-`system_errors` ağ
-hatalarını "dosya işlemi" diye anar; `report/usage` → `storage.cache.UsageTotals` katman bağımlılığı;
+~~`system_errors` ağ hatalarını "dosya işlemi" diye anar~~ (G6-4: çözüldü); ~~`report/usage` →
+`storage.cache.UsageTotals` katman bağımlılığı~~ (G6-4: çözüldü);
 `detect.py` `<meta …` deseni çok büyük girdide karesele yakın (40 KB'de ölçülmedi);
-`guard_delimiters` `&lt;` için idempotent değil; `primary` sağlayıcı adı `getattr` ile; 400 satır:
+`guard_delimiters` `&lt;` için idempotent değil; ~~`primary` sağlayıcı adı `getattr` ile~~ (G6-5: çözüldü); 400 satır:
 `orchestrator.py`, `passes.py`, `desktop/app.py` (Faz G).
 
 ## Faz D — Notlar (public belgeler ve otomatik release; 2026-10-13)

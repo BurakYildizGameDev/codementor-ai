@@ -134,3 +134,24 @@ async def test_broken_json_does_not_trigger_fallback() -> None:
 def test_empty_chain_rejected() -> None:
     with pytest.raises(ProviderConfigError):
         FallbackProvider([])
+
+
+# --- Faz G6: birincil sağlayıcı adı -------------------------------------------------------------
+
+
+def test_fallback_primary_name_is_first_link() -> None:
+    """Zincirin `name` alanı birleşik addır; önbellek kararı için ilk halka gerekir (G6)."""
+    chain = FallbackProvider([_fake("a"), _fake("b")])
+    assert chain.name == "a→b"
+    assert chain.primary_name == "a"
+
+
+def test_chain_primary_name_is_configured_default() -> None:
+    chain = build_chain(Settings(providers=ProvidersSettings(fallback=["gemini"])))
+    assert isinstance(chain, FallbackProvider)
+    assert chain.primary_name == "ollama"
+
+
+def test_single_provider_primary_name_is_own_name() -> None:
+    provider = build_provider("ollama", ProvidersSettings())
+    assert provider.primary_name == provider.name == "ollama"

@@ -35,13 +35,13 @@ from codementor.providers._common import (
     require_model,
 )
 from codementor.providers._http import HttpTransport, parse_json_object
-from codementor.providers.base import RetryPolicy
+from codementor.providers.base import NamedProvider, RetryPolicy
 from codementor.providers.schema_adapter import SchemaAdapter
 
 TokenField = Literal["max_completion_tokens", "max_tokens"]
 
 
-class OpenAICompatProvider:
+class OpenAICompatProvider(NamedProvider):
     """OpenAI uyumlu uç, katı `json_schema` modu (Gemini, ADR-0020).
 
     `token_field`: çıktı sınırının alan adı (Gemini `max_tokens`); `seed`: sağlayıcı

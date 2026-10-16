@@ -368,7 +368,8 @@ class Orchestrator:
         if outcome is None:
             outcome = self._timed_out(llm, limit)
         run.warnings += [*llm.warnings, *outcome.warnings]
-        primary = getattr(provider, "chain", [provider])[0].name
+        # G6: sağlayıcı kendi birincil adını bildirir; `getattr(provider, "chain", ...)` yok
+        primary = provider.primary_name
         run.cacheable = run.cacheable and not llm.incomplete and llm.providers <= {primary}
 
         parts = ReportParts(policy=policy, degraded=outcome.verification is None)

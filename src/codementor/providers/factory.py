@@ -130,6 +130,11 @@ class FallbackProvider:
         self.name = "→".join(p.name for p in self.chain)
         self.capabilities = self.chain[0].capabilities
 
+    @property
+    def primary_name(self) -> str:
+        """Zincirin ilk halkası: önbellek kararı buna göre verilir (Faz G6)."""
+        return self.chain[0].primary_name
+
     async def generate_structured(
         self, messages: list[ChatMessage], output_model: type[BaseModel], options: GenerationOptions
     ) -> ProviderResult:

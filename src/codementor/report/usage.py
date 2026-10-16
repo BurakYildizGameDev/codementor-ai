@@ -4,7 +4,7 @@ metni gösterir (`web/src/lib/usage.ts`)."""
 from __future__ import annotations
 
 from codementor.models.report import ReportMeta
-from codementor.storage.cache import UsageTotals
+from codementor.models.usage import UsageTotals
 
 # Faz K: aşama → kullanıcıya görünen ad; sıra raporda bu sıradır
 STAGE_NAMES = {"llm_a": "Analiz", "llm_v": "Doğrulama", "llm_b": "Mentor soruları"}

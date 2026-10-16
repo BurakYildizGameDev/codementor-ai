@@ -35,7 +35,7 @@ from codementor.pipeline.orchestrator import Orchestrator, PipelineError, Provid
 from codementor.pipeline.passes import SCHEMA_INVALID, SCHEMA_OK
 from codementor.pipeline.versions import SCHEMA_VERSION, rules_version
 from codementor.prompts.templates import prompt_version
-from codementor.providers.base import LLMProvider, ProviderUnavailableError
+from codementor.providers.base import LLMProvider, NamedProvider, ProviderUnavailableError
 from codementor.providers.cli_agent import model_label
 from codementor.providers.factory import build_chain
 
@@ -47,7 +47,7 @@ Progress = Callable[[int, int, SampleResult], None]
 
 
 @dataclass
-class StaticOnlyProvider:
+class StaticOnlyProvider(NamedProvider):
     """LLM'siz taban çizgisi: her çağrı hemen başarısız olur (pipeline statik rapora düşer)."""
 
     name: str = STATIC_ONLY
