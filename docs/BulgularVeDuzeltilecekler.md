@@ -987,12 +987,24 @@ tekrarlanabilir bir release'ten gelsin.
       notu); yerine C-BUF-002 alındı (7 kural sayısı korundu) — **Faz H1 kararı**
 
 **Bilinen kaçırmalar ve yanlış pozitifler** (Sonraya'dan):
-- [ ] CPP-OWN-001 erken `return`/istisna yolunda atlanan `delete`
-- [ ] C-MEM-001 aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi
-- [ ] UNITY-GC-001 kullanıcı `struct`'ı için `new` yanlış bulgusu
-- [ ] UE-GC-001 `TArray<AActor*>`/`TMap<…, UObject*>` alanları; UCLASS olmayan sınıfta doğru öneri
-- [ ] CS-PERF-001 `IList`/`IReadOnlyList`/`ICollection`
-- [ ] Sıcak yol tespiti sınıf tabanını (MonoBehaviour/UCLASS) denetler
+- [x] CPP-OWN-001 erken `return`/istisna yolunda atlanan `delete` — **Faz H2:** eşleşen çiftin
+      arasında aynı kapsamda erken çıkış varsa tür `issue`'ya yükseltildi (`rules/cpp.py`,
+      `_jump_positions`/`_skipped_deletes`; fixture `early_return.cpp`, `throw_path.cpp`,
+      `other_scope_return.cpp`, `lambda_between.cpp`)
+- [x] C-MEM-001 aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi — **Faz 32'de kapandı**,
+      Faz H2'de fixture'la sabitlendi (`negative/passed_to_freeing_helper.c`)
+- [x] UNITY-GC-001 kullanıcı `struct`'ı için `new` yanlış bulgusu — **Faz 32'de kapandı**, H2'de
+      sabitlendi (`negative/user_struct_new.cs`)
+- [x] UE-GC-001 `TArray<AActor*>`/`TMap<…, UObject*>` alanları; UCLASS olmayan sınıfta doğru öneri —
+      **Faz 32'de kapandı**, H2'de sabitlendi (`positive/container_fields.h`,
+      `positive/plain_class_pointer.h`, `tests/rules/test_unreal_gc.py`)
+- [~] CS-PERF-001 `IList`/`IReadOnlyList`/`ICollection` — `IList` çalışıyor (`positive/ilist_parameter.cs`);
+      `IReadOnlyList`/`ICollection` **bilinçli kaçırma** (`call_costs.py::_LIST_INTERFACES = {"IList"}`,
+      Faz 21 kararı: IReadOnlyList LINQ, ICollection bir `HashSet` de olabilir). Devir "bulgu VAR"
+      diyor; çözücü genişletmesi onay bekliyor — **Faz H2 açık kalemi**
+- [x] Sıcak yol tespiti sınıf tabanını (MonoBehaviour/UCLASS) denetler — **Faz 32'de kapandı**, H2'de
+      fixture'la sabitlendi (`update_in_plain_class.cs`, `same_name_plain_class.cs`,
+      `same_name_plain_struct.cpp`)
 - [ ] Kural bazında öneri türü (Faz 36 açık maddesi)
 - [ ] `call_costs.yaml`: `memset`/`memcpy`, `GetAllActorsOfClass`, `TArray::Remove`, C#
       `RemoveAll`/`RemoveAt(0)`/`Insert(0,…)`

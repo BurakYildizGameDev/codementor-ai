@@ -93,6 +93,8 @@ C standardı `fflush`'ı yalnızca çıkış akışları için tanımlar; `stdin
 
 Nesnenin ömrü elle yönetiliyor. Arada bir istisna ya da erken `return` olursa `delete` çalışır mı? Sahipliği kim taşıyor?
 
+*Kapsam ve sınırlar:* Aynı kapsamda aynı ada atanan tahsis ile `delete` eşleşirse öneri, eşleşmezse hata. Eşleşse bile arada aynı kapsamda erken çıkış (`return`/`throw`/`goto`/`break`/`continue`) varsa `delete` atlanabilir sayıldığı için hata verilir; lambda gövdesindeki atlamalar dışarıdan çıkış sayılmaz.
+
 ### CPP-PERF-001 — Büyük nesne değerle geçiriliyor
 
 Bu parametre değerle geçiriliyor; her çağrıda kapsayıcının tamamı kopyalanır. Fonksiyon bu kopyayı değiştirmeye ya da saklamaya ihtiyaç duyuyor mu?

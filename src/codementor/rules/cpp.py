@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from bisect import bisect_left
+from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 
 from tree_sitter import Node
@@ -36,7 +36,9 @@ class NakedNewDelete(Rule):
     Aynı kapsamda aynı ada atanan tahsis ile o adın serbest bırakılması eşleşiyorsa (Faz 52)
     ömür en azından tutarlı yönetiliyor demektir → bulgu `suggestion`; eşleşmeyen tahsis ya da
     serbest bırakma `issue` kalır (başka bir işaretçinin `delete`'i sızıntıyı örtmez). Kurucu ve
-    yıkıcı farklı kapsamdır (tek başına yıkıcı doğru anlamına gelmez).
+    yıkıcı farklı kapsamdır (tek başına yıkıcı doğru anlamına gelmez). Eşleşse bile `new` ile
+    `delete` arasında aynı kapsamda erken çıkış (`return`, `throw`, `goto`, `break`, `continue`)
+    varsa `delete` atlanabilir: bulgu yine `issue` olur (Faz H2).
     """
 
     id = "CPP-OWN-001"
@@ -48,6 +50,12 @@ class NakedNewDelete(Rule):
     languages = frozenset({Language.CPP})
     category = AuditCategory.MEMORY_SAFETY
     default_severity = Severity.MEDIUM
+    catalog_note = (
+        "Aynı kapsamda aynı ada atanan tahsis ile `delete` eşleşirse öneri, eşleşmezse hata. "
+        "Eşleşse bile arada aynı kapsamda erken çıkış (`return`/`throw`/`goto`/`break`/"
+        "`continue`) varsa `delete` atlanabilir sayıldığı için hata verilir; lambda gövdesindeki "
+        "atlamalar dışarıdan çıkış sayılmaz."
+    )
 
     def check(self, ctx: RuleContext) -> list[Finding]:
         owners: dict[int, str] = {}  # new_expression başlangıç baytı → atandığı ad
@@ -70,23 +78,108 @@ class NakedNewDelete(Rule):
             elif (target := _new_target(n)) is not None:
                 owners[target[0].start_byte] = target[1]
         # Eşleşme anahtarı (kapsam, aile, ad); aileler new↔delete ve new[]↔delete[]
-        allocated = {
+        allocated: dict[int, tuple[str, bool, str | None]] = {
             n.start_byte: (ctx.scope_key(line(n)), _is_array_new(n), owners.get(n.start_byte))
             for n in news
         }
-        freed = {
+        freed: dict[int, tuple[str, bool, str | None]] = {
             n.start_byte: (ctx.scope_key(line(n)), _is_array_delete(n), _owner(_deleted(n)))
             for n in deletes
         }
         alloc_keys = {key for key in allocated.values() if key[2]}
         free_keys = {key for key in freed.values() if key[2]}
+        skipped = _skipped_deletes(ctx, news, deletes, allocated, freed)
         found: list[Finding] = []
         for node in sorted(news + deletes, key=lambda n: n.start_byte):
             key = allocated.get(node.start_byte) or freed[node.start_byte]
             paired = key in (free_keys if node.type == "new_expression" else alloc_keys)
-            kind = FindingKind.SUGGESTION if paired else FindingKind.ISSUE
+            kind = (
+                FindingKind.SUGGESTION
+                if paired and node.start_byte not in skipped
+                else FindingKind.ISSUE
+            )
             found.append(self.finding(ctx, line(node), kind=kind))
         return found
+
+
+_JUMPS = (
+    "return_statement",
+    "throw_statement",
+    "goto_statement",
+    "break_statement",
+    "continue_statement",
+)
+
+
+def _jump_positions(ctx: RuleContext) -> dict[str, list[int]]:
+    """Kapsam kimliği → o kapsamdan çıkabilecek atlamaların başlangıç baytları (sıralı).
+
+    Lambda gövdesindeki atlamalar dışarıdan çıkış değildir; sayılmaz (lambda aralıkları
+    iç içe ya da ayrık olduğundan en içteki aralık ikili aramayla bulunur).
+    """
+    lambdas = sorted(
+        (n.start_byte, n.end_byte) for n in ctx.nodes_in(ctx.root, "lambda_expression")
+    )
+    starts = [start for start, _ in lambdas]
+    positions: dict[str, list[int]] = {}
+    for node in ctx.nodes_in(ctx.root, *_JUMPS):
+        index = bisect_right(starts, node.start_byte) - 1
+        if index >= 0 and node.start_byte < lambdas[index][1]:
+            continue
+        positions.setdefault(ctx.scope_key(line(node)), []).append(node.start_byte)
+    return {scope: sorted(offsets) for scope, offsets in positions.items()}
+
+
+def _matched_pairs(
+    news: list[Node],
+    deletes: list[Node],
+    allocated: dict[int, tuple[str, bool, str | None]],
+    freed: dict[int, tuple[str, bool, str | None]],
+) -> list[tuple[Node, Node]]:
+    """Sahibi belli ve anahtarı eşleşen `new`/`delete` çiftleri (belge sırasıyla)."""
+    by_key: dict[tuple[str, bool, str | None], list[Node]] = {}
+    for node in deletes:
+        key = freed[node.start_byte]
+        if key[2]:
+            by_key.setdefault(key, []).append(node)
+    pairs: list[tuple[Node, Node]] = []
+    taken: dict[tuple[str, bool, str | None], int] = {}
+    for node in news:
+        key = allocated[node.start_byte]
+        bucket = by_key.get(key)
+        if bucket is None:
+            continue
+        index = taken.get(key, 0)
+        while index < len(bucket) and bucket[index].start_byte < node.start_byte:
+            index += 1
+        if index < len(bucket):
+            pairs.append((node, bucket[index]))
+            taken[key] = index + 1
+    return pairs
+
+
+def _skips_delete(positions: list[int], new: Node, delete: Node) -> bool:
+    """`new` ile `delete` arasında aynı kapsamda erken çıkış var mı (çift başına O(log n))."""
+    return bisect_left(positions, delete.start_byte) > bisect_right(positions, new.start_byte)
+
+
+def _skipped_deletes(
+    ctx: RuleContext,
+    news: list[Node],
+    deletes: list[Node],
+    allocated: dict[int, tuple[str, bool, str | None]],
+    freed: dict[int, tuple[str, bool, str | None]],
+) -> set[int]:
+    """Erken çıkış yüzünden serbest bırakması atlanabilen `new`/`delete` bayt konakları.
+
+    Eşleşen çiftin iki ucu da işaretlenir; bulgu türü ikisinde de `issue` olur (Faz H2).
+    """
+    positions = _jump_positions(ctx)
+    skipped: set[int] = set()
+    for new, delete in _matched_pairs(news, deletes, allocated, freed):
+        if _skips_delete(positions.get(ctx.scope_key(line(new)), []), new, delete):
+            skipped.update({new.start_byte, delete.start_byte})
+    return skipped
 
 
 def _owner(raw: str) -> str:

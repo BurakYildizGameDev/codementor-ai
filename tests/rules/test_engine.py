@@ -421,6 +421,14 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
             Language.C,
             Engine.NONE,
         ),
+        # Faz H2: CPP-OWN-001 erken çıkış taraması (tek kapsamda çok sayıda new/delete/return)
+        (
+            "int f(int x){\n"
+            + ("int* p = new int(x); if (x > 0) { return 0; } delete p;" * 4 + "\n") * 165
+            + "return 1;}\n",
+            Language.CPP,
+            Engine.NONE,
+        ),
     ],
     ids=[
         "c-malloc",
@@ -460,6 +468,8 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
         "cpp-endl-in-loop",
         "cpp-push-back-no-reserve",
         "c-scanf-string",
+        # Faz H2
+        "cpp-new-delete-early-return",
     ],
 )
 def test_linear_time_large_input(text: str, language: Language, engine: Engine) -> None:
