@@ -179,3 +179,26 @@ def test_icollection_stays_unknown() -> None:
         Language.CSHARP,
     )
     assert costs == {"zs.Contains": None}
+
+
+def test_icollection_with_linq_still_unknown() -> None:
+    """Faz H2: `using System.Linq` olsa da `ICollection<T>.Contains` örnek metottur.
+
+    LINQ uzantısına bağlanmaz (alıcı bir `HashSet` olabilir) → maliyet yine bilinmez.
+    """
+    costs = _costs(
+        "using System.Collections.Generic;\nusing System.Linq;\nclass A { "
+        "void F(ICollection<int> zs) {\n    zs.Contains(1);\n} }\n",
+        Language.CSHARP,
+    )
+    assert costs == {"zs.Contains": None}
+
+
+def test_ireadonlylist_contains_costs_linear() -> None:
+    """Faz H2: `IReadOnlyList<T>.Contains` LINQ'tir → `Enumerable.Contains` = n."""
+    costs = _costs(
+        "using System.Collections.Generic;\nusing System.Linq;\nclass A { "
+        "void F(IReadOnlyList<int> ys) {\n    ys.Contains(1);\n} }\n",
+        Language.CSHARP,
+    )
+    assert costs == {"Enumerable.Contains": "n"}

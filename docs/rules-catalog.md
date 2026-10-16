@@ -133,6 +133,8 @@ LINQ her çağrıda yineleyici ve çoğu zaman temsilci nesneleri ayırır; bu s
 
 `List.Contains`/`IndexOf`/`Remove` elemanı bulmak için listeyi baştan sona tarar ve bu bir döngünün içinde. Toplam maliyet ne olur? Hangi veri yapısı bu aramayı daha hızlı yapar?
 
+*Kapsam ve sınırlar:* Döngü içinde `Contains`/`IndexOf`/`Remove`… çağrısı aranır; alıcının tipi çözülmüş olmalıdır (`List`, `Array`, `LinkedList`, `Queue`, `Stack` ya da `Enumerable`). `IList<T>` `List` maliyetiyle eşlenir; `IReadOnlyList<T>.Contains` örnek metodu olmadığından LINQ'tir ve `using System.Linq` varsa `Enumerable.Contains` olarak bulgu verir. `ICollection<T>.Contains` bilinçli kaçırmadır: örnek metottur, alıcı bir `HashSet` de olabilir (Faz 21 kararı). Tipleri çözülemeyen alıcılar (`var`, akış) susar.
+
 ### CSS-ACC-001 — Odak göstergesi kaldırılmış
 
 `outline: none` klavyeyle gezen kullanıcının kaldığı yeri gösteren tek işareti siliyor. Bu kutu odaklandığında ekranda ne değişiyor?

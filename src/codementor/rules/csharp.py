@@ -10,7 +10,7 @@ from codementor.models.findings import Finding
 from codementor.rules.base import Rule, RuleContext
 from codementor.rules.registry import register_rule
 
-_LINEAR_COLLECTIONS = frozenset({"List", "Array", "LinkedList", "Queue", "Stack"})
+_LINEAR_COLLECTIONS = frozenset({"List", "Array", "LinkedList", "Queue", "Stack", "Enumerable"})
 _LINEAR_SEARCH = frozenset({"Contains", "IndexOf", "LastIndexOf", "Remove", "Find", "Exists"})
 _STRING_TYPES = frozenset({"string", "String"})
 _STRING_NODES = frozenset(
@@ -114,6 +114,14 @@ class LinearSearchInLoop(Rule):
     languages = frozenset({Language.CSHARP})
     category = AuditCategory.PERFORMANCE
     default_severity = Severity.MEDIUM
+    catalog_note = (
+        "Döngü içinde `Contains`/`IndexOf`/`Remove`… çağrısı aranır; alıcının tipi çözülmüş "
+        "olmalıdır (`List`, `Array`, `LinkedList`, `Queue`, `Stack` ya da `Enumerable`). "
+        "`IList<T>` `List` maliyetiyle eşlenir; `IReadOnlyList<T>.Contains` örnek metodu "
+        "olmadığından LINQ'tir ve `using System.Linq` varsa `Enumerable.Contains` olarak bulgu "
+        "verir. `ICollection<T>.Contains` bilinçli kaçırmadır: örnek metottur, alıcı bir `HashSet` "
+        "de olabilir (Faz 21 kararı). Tipleri çözülemeyen alıcılar (`var`, akış) susar."
+    )
 
     def check(self, ctx: RuleContext) -> list[Finding]:
         return [

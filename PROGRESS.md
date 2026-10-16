@@ -465,7 +465,7 @@ CPP-OWN-001'di ve **kural düzeltildi**.
 | C-MEM-001 aynı dosyadaki `free` eden kullanıcı fonksiyonu | bulgu yok — zaten doğru (Faz 32) | `C-MEM-001/negative/passed_to_freeing_helper.c` |
 | UNITY-GC-001 kullanıcı `struct`'ı için `new` | bulgu yok — zaten doğru (Faz 32) | `UNITY-GC-001/negative/user_struct_new.cs` |
 | UE-GC-001 `TArray<AActor*>`/`TMap<…, UObject*>`; UCLASS olmayan sınıfta doğru öneri | bulgu var + `_UNREFLECTED` sorusu — zaten doğru (Faz 32) | `UE-GC-001/positive/container_fields.h`, `positive/plain_class_pointer.h`, `tests/rules/test_unreal_gc.py` |
-| CS-PERF-001 `IList` | bulgu var (Faz 21 `IList → List.` eşlemesi) | `CS-PERF-001/positive/ilist_parameter.cs` |
+| CS-PERF-001 `IList` + `IReadOnlyList` | bulgu var: `IList` → `List.Contains` (Faz 21), `IReadOnlyList.Contains` → `Enumerable.Contains` (H2) | `positive/ilist_parameter.cs`, `positive/ireadonlylist_linq_contains.cs` |
 | Sıcak yol: MonoBehaviour/UCLASS tabanı yoksa sayılmaz | sayılmıyor — zaten doğru (Faz 32) | `UNITY-GC-001/negative/update_in_plain_class.cs`, `UNITY-PERF-001/positive/same_name_plain_class.cs`, `UE-PERF-001/positive/same_name_plain_struct.cpp` |
 
 - **CPP-OWN-001 düzeltmesi (`rules/cpp.py`):** eşleşen `new`–`delete` çifti arasında **aynı kapsamda**
@@ -481,12 +481,18 @@ CPP-OWN-001'di ve **kural düzeltildi**.
 - **Kapsam notu:** kural yalnızca *tür* yükseltmesi yaptı; satır/eşleşme mantığı (Faz 52) değişmedi,
   bu yüzden mevcut `new_delete.cpp` / `array_new.cpp` fixture'ları öneri olarak geçmeye devam ediyor.
   `catalog_note` eklendi (katalogda "Kapsam ve sınırlar" satırı).
-- **CS-PERF-001 sınırı (açık kalem):** `IList<T>` çözülüyor; `IReadOnlyList<T>`/`ICollection<T>`
-  **bilinçli kaçırma**dır — `analysis/call_costs.py` bunları eşlemez (`_LIST_INTERFACES = {"IList"}`;
-  `IReadOnlyList.Contains` örnek metodu değil LINQ'dir, `ICollection` bir `HashSet` de olabilir →
-  projenin "emin değilsen sus" ilkesi, Faz 21 kararı). Devir H2 tablosu bu iki tip için "bulgu VAR"
-  diyor; davranışı değiştirmek çözücü (resolver) sözleşmesini genişletmek demek olduğundan
-  **onay bekliyor** (aşağıda "Sonraya").
+- **CS-PERF-001 `IReadOnlyList`/`ICollection` (onay sonrası uygulandı):** kök neden `using System.Linq`
+  altında `IReadOnlyList<T>.Contains` **zaten** `Enumerable.Contains` (n) olarak çözülüyordu; eksik
+  olan kuralın `Enumerable` alıcısını tanımamasıydı → `rules/csharp.py::_LINEAR_COLLECTIONS`'a
+  `"Enumerable"` eklendi. `ICollection` ise **bilinçli kaçırma** olarak korundu: `ICollection<T>.
+  Contains` örnek metottur (alıcı bir `HashSet` olabilir) ve C# çözümlemesinde LINQ uzantısı
+  *bağlanmaz*; bunun için `analysis/call_costs.py::_INSTANCE_METHODS` ile LINQ aday üretimi
+  engellendi (yani `ICollection` eskiden yanlışlıkla `Enumerable.Contains`'e bağlanıyordu — bu
+  düzeltme aynı zamanda bir doğruluk iyileştirmesi, Faz 21 kararının kodda karşılığı).
+  Kapsam `catalog_note` ile yazıldı. Fixture'lar: `positive/ireadonlylist_linq_contains.cs`,
+  `negative/icollection_in_loop.cs`, `negative/readonly_list_outside_loop.cs`; çözücü davranışı
+  `tests/unit/test_call_costs.py::test_icollection_with_linq_still_unknown` ve
+  `::test_ireadonlylist_contains_costs_linear` ile sabitlendi.
 - **Süre:** `tests/rules/test_engine.py::test_linear_time_large_input` listesine H2 vakası eklendi
   (tek kapsamda 660 `new`–`delete` çifti + 660 `return`; 36 490 bayt / 168 satır — kısıtlar
   40 960 bayt ve 600 satır). İlk deneme satır sınırını aştı (`CodeTooLargeError: 732 satır`); vaka
@@ -495,18 +501,18 @@ CPP-OWN-001'di ve **kural düzeltildi**.
   kutuları işaretlendi; `docs/rules-catalog.md` `codementor rules doc` ile yeniden üretildi (yalnız
   CPP-OWN-001 kapsam satırı değişti — kural sayısı 41 aynı).
 - **Doğrulama:** `ruff check` temiz, `ruff format --check` 474 dosya, `mypy src/` hatasız (216 dosya),
-  `pytest -m "not live"` **3582 geçti / 15 atlandı / 6 seçilmedi** (3:30) — H2 öncesi 3577'ye göre
-  **+5 test** (4 yeni CPP-OWN-001 fixture'ı + 1 süre vakası).
+  `pytest -m "not live"` **3587 geçti / 15 atlandı / 6 seçilmedi** (3:33) — H2 öncesi 3577'ye göre
+  **+10 test** (4 CPP-OWN-001 fixture'ı, 1 süre vakası, 3 CS-PERF-001 fixture'ı, 2 çözücü testi).
 
 
 
 Sonraki faz: **Faz H** (`faz/h-kurallar`) — **H1 ve H2 bitti**; devir tablosundaki yedinci kural olan
 C# "döngüde `string +=`" zaten `CS-ALLOC-001` olduğundan yerine C-BUF-002 alındı (yukarıdaki tablo);
-H2'de altı satır denetlendi, CPP-OWN-001 erken çıkış düzeltmesi yapıldı, kalan beş satır fixture'la
-sabitlendi. Sırada H3 (analiz verisi: `call_costs`, `parse_bigo`, C# 11 ham metin maskeleme, Unreal
-stub, `-fdiagnostics-column-unit=byte`) ve H4 (statik dev eval + README ölçüm satırları). Faz J
-isteğe bağlı. **Onay bekleyen tek kalem:** CS-PERF-001'in `IReadOnlyList`/`ICollection` satırı
-(çözücü genişletmesi gerektirir; `docs/BulgularVeDuzeltilecekler.md` §10 ve yukarıdaki H2 kaydı).
+H2'de altı satır denetlendi, CPP-OWN-001 erken çıkış düzeltmesi ve CS-PERF-001 `IReadOnlyList`
+çözümü yapıldı, kalan satırlar fixture'la sabitlendi (`ICollection` bilinçli kaçırma). Sırada H3
+(analiz verisi: `call_costs`, `parse_bigo`, C# 11 ham metin maskeleme, Unreal stub,
+`-fdiagnostics-column-unit=byte`) ve H4 (statik dev eval + README ölçüm satırları). Faz J isteğe
+bağlı.
 
 Bilinen kararsız test (değişiklikle ilgisiz): `tests/rules/test_engine.py::test_linear_time_large_input[html-*]`
 yük altında 38 sn'yi geçip düşebiliyor; tek başına geçiyor.

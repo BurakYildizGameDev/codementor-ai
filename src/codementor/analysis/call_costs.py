@@ -56,6 +56,11 @@ CSHARP_COLLECTIONS = frozenset(
 _INDEXABLE = frozenset({"Array", "List", "IList", "IReadOnlyList"})
 # `IReadOnlyList<T>`'te `Contains`/`IndexOf` örnek metodu yok: o çağrılar LINQ'tir (Faz 21 denetimi)
 _LIST_INTERFACES = frozenset({"IList"})
+# Arayüzün kendi örnek metodu varsa LINQ uzantısı bağlanmaz: `ICollection<T>.Contains` örnek
+# metottur, alıcı bir `HashSet` de olabilir → maliyet tahmin edilmez (Faz 21 kararı, Faz H2)
+_INSTANCE_METHODS = {
+    "ICollection": frozenset({"Contains", "Add", "Remove", "Clear", "CopyTo"}),
+}
 _COUNTED = CSHARP_COLLECTIONS - {"IEnumerable"}
 _CONSTANT_WITHOUT_ARGS = {
     "Enumerable.First": None,
@@ -115,7 +120,10 @@ class CostResolver:
                 found.append(f"List.{call.method}")
         elif receiver[:1].isupper():
             found.append(f"{receiver}.{call.method}")  # statik: Array.Sort, GameObject.Find
-        collection = declared in CSHARP_COLLECTIONS or call.chained
+        collection = (
+            declared in CSHARP_COLLECTIONS
+            and call.method not in _INSTANCE_METHODS.get(declared or "", frozenset())
+        ) or call.chained
         if self.using_linq and collection:
             found.append(f"Enumerable.{call.method}")
         return found

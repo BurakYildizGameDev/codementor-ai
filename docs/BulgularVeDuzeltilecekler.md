@@ -998,10 +998,12 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] UE-GC-001 `TArray<AActor*>`/`TMap<…, UObject*>` alanları; UCLASS olmayan sınıfta doğru öneri —
       **Faz 32'de kapandı**, H2'de sabitlendi (`positive/container_fields.h`,
       `positive/plain_class_pointer.h`, `tests/rules/test_unreal_gc.py`)
-- [~] CS-PERF-001 `IList`/`IReadOnlyList`/`ICollection` — `IList` çalışıyor (`positive/ilist_parameter.cs`);
-      `IReadOnlyList`/`ICollection` **bilinçli kaçırma** (`call_costs.py::_LIST_INTERFACES = {"IList"}`,
-      Faz 21 kararı: IReadOnlyList LINQ, ICollection bir `HashSet` de olabilir). Devir "bulgu VAR"
-      diyor; çözücü genişletmesi onay bekliyor — **Faz H2 açık kalemi**
+- [x] CS-PERF-001 `IList`/`IReadOnlyList`/`ICollection` — **Faz H2:** `IList` → `List.Contains`;
+      `IReadOnlyList<T>.Contains` örnek metodu olmadığından LINQ'tir ve `using System.Linq` ile
+      `Enumerable.Contains` olarak bulgu verir (`rules/csharp.py::_LINEAR_COLLECTIONS`'a `Enumerable`,
+      fixture `positive/ireadonlylist_linq_contains.cs`). `ICollection<T>.Contains` **bilinçli
+      kaçırma**: örnek metottur, alıcı bir `HashSet` de olabilir → `call_costs.py::_INSTANCE_METHODS`
+      LINQ adayını engeller (`negative/icollection_in_loop.cs`, `tests/unit/test_call_costs.py`)
 - [x] Sıcak yol tespiti sınıf tabanını (MonoBehaviour/UCLASS) denetler — **Faz 32'de kapandı**, H2'de
       fixture'la sabitlendi (`update_in_plain_class.cs`, `same_name_plain_class.cs`,
       `same_name_plain_struct.cpp`)
