@@ -33,7 +33,7 @@ soruyu veriyor. Web arayüzü: [docs/img/web-live.png](docs/img/web-live.png).</
 | | |
 |---|---|
 | **Diller** | C, C++, C#, Python, HTML, CSS + Unity ve Unreal motor bağlamı |
-| **Statik kurallar** | 34 deterministik kural ([katalog](docs/rules-catalog.md)) |
+| **Statik kurallar** | 41 deterministik kural ([katalog](docs/rules-catalog.md)) |
 | **Ön doğrulama** | tree-sitter (her zaman) + gcc / clang / Roslyn (kuruluysa; yoksa tek tıkla zig) |
 | **LLM** | Claude Code CLI (varsayılan), Codex, Anthropic API, Ollama, Gemini |
 | **Eval** | 166 elle etiketlenmiş örnek, dev/test ayrımlı (dev 96 / test 70) |
@@ -137,7 +137,7 @@ flowchart LR
 |---|---|
 | **K0 Giriş** | Satır sonu/kodlama normalizasyonu, dil ve motor tespiti, boyut sınırı |
 | **K1 Ön doğrulama** | Tier 0: tree-sitter `ERROR`/`MISSING` → Türkçe tanı. Tier 1: gcc/clang `-fsyntax-only`, Roslyn; kod **çalıştırılmaz** |
-| **K2 Statik analiz** | tree-sitter sorgularıyla olgular (döngüler, çağrılar, tahsisler), Big-O ipucu, 34 kural |
+| **K2 Statik analiz** | tree-sitter sorgularıyla olgular (döngüler, çağrılar, tahsisler), Big-O ipucu, 41 kural |
 | **K3 Prompt** | Numaralı kod, olgular, dile/motora özgü kontrol listesi, few-shot; kod `<user_code>` içinde veri olarak |
 | **K4 LLM** | İki geçiş (analiz → mentorluk), şema onarımı, isteğe bağlı bulgu doğrulama geçişi |
 | **K5 Doğrulama** | JSON şeması, satır kanıtı, statik ipucuyla Big-O uyumu, sızıntı koruması |
@@ -343,7 +343,7 @@ uv run codementor analyze kod.c                                   # Rich panel
 uv run codementor analyze kod.cs --engine unity --format sarif --out rapor.sarif
 uv run codementor questions list                                  # 64 görevlik soru bankası
 uv run codementor questions add sorum.yaml                        # kendi görevini ekle
-uv run codementor rules list                                      # 34 statik kural
+uv run codementor rules list                                      # 41 statik kural
 ```
 
 **Derleyici (isteğe bağlı):** gcc/clang (C/C++/Unreal Tier 1) ve .NET SDK (C# Tier 1,

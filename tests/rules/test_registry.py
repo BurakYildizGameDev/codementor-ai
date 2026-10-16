@@ -80,6 +80,7 @@ def test_c_rules_only_for_c() -> None:
     assert not any(i.startswith("C-") for i in _ids(Language.CPP, Engine.NONE))
     assert _ids(Language.C, Engine.NONE) == {
         "C-BUF-001",
+        "C-BUF-002",
         "C-IO-001",
         "C-UB-001",
         "C-MEM-001",

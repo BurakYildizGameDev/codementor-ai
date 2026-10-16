@@ -7,11 +7,12 @@ Statik kurallar (mimari §5.3.3, §8.2). "LLM" tespitli maddeler burada değil,
 `data/checklists/` altındaki kontrol listelerindedir. Bir kural `codementor.toml`
 içinde `[rules] disabled = ["KURAL-ID"]` ile kapatılabilir.
 
-Toplam: 34 kural.
+Toplam: 41 kural.
 
 | ID | Başlık | Dil | Motor | Kategori | Önem | Tür |
 |---|---|---|---|---|---|---|
 | C-BUF-001 | Sınır denetimsiz tampon fonksiyonu | c | — | memory_safety | high | hata |
+| C-BUF-002 | Sınırı olmayan scanf %s | c | — | memory_safety | high | hata |
 | C-IO-001 | scanf dönüş değeri denetlenmiyor | c | — | input_handling | medium | hata |
 | C-MEM-001 | Serbest bırakılmayan bellek | c | — | resource_leak | high | hata |
 | C-MEM-002 | realloc sonucu aynı işaretçiye atanıyor | c | — | memory_safety | high | hata |
@@ -20,10 +21,16 @@ Toplam: 34 kural.
 | C-UB-001 | fflush(stdin) | c | — | undefined_behavior | medium | hata |
 | CPP-OWN-001 | Çıplak new/delete | cpp | — | memory_safety | medium | hata |
 | CPP-PERF-001 | Büyük nesne değerle geçiriliyor | cpp | — | performance | low | hata |
+| CPP-PERF-002 | Döngüde tam metin kopyası | cpp | — | performance | medium | hata |
+| CPP-PERF-003 | Döngüde std::endl | cpp | — | performance | low | öneri |
+| CPP-PERF-004 | Reserve olmadan push_back | cpp | — | performance | low | öneri |
 | CPP-SP-001 | Döngüsel shared_ptr şüphesi | cpp | — | resource_leak | high | hata |
 | CS-ALLOC-001 | Döngüde string birleştirme | csharp | — | garbage_collection | medium | hata |
 | CS-ALLOC-002 | Sıcak yolda LINQ | csharp | — | garbage_collection | medium | hata |
 | CS-PERF-001 | Döngüde doğrusal arama | csharp | — | performance | medium | hata |
+| CSS-ACC-001 | Odak göstergesi kaldırılmış | css | — | accessibility | medium | hata |
+| CSS-LAYOUT-001 | Sabit yükseklikte metin kutusu | css | — | edge_case | low | öneri |
+| CSS-LAYOUT-002 | Negatif margin ile ortalama | css | — | maintainability | low | öneri |
 | CSS-MAINT-001 | Çok sayıda !important | css | — | maintainability | low | hata |
 | CSS-MAINT-002 | Boş kural bloğu | css | — | maintainability | low | hata |
 | CSS-STD-001 | Aynı blokta yinelenen özellik | css | — | maintainability | low | hata |
@@ -51,6 +58,12 @@ Toplam: 34 kural.
 ### C-BUF-001 — Sınır denetimsiz tampon fonksiyonu
 
 `gets`, `strcpy`, `strcat` ve `sprintf` hedef tamponun boyutunu bilmez; girdi tampondan uzunsa bellek taşar. Hedefin kaç bayt aldığını nereden biliyorsun?
+
+### C-BUF-002 — Sınırı olmayan scanf %s
+
+`%s` hedefe kaç karakter yazacağını bilmez; kullanıcı tampondan uzun bir girdi yazarsa ne olur ve genişliği kim belirlemeli?
+
+*Kapsam ve sınırlar:* Yalnızca `scanf`/`fscanf` ve yalnızca biçim metin sabiti olduğunda çalışır. Genişlikli (`%99s`) ve atama yapmayan (`%*s`) dönüşümler, `sscanf` ile sınırı olmayan `%[` taraması kapsam dışıdır (muhafazakâr).
 
 ### C-IO-001 — scanf dönüş değeri denetlenmiyor
 
@@ -84,6 +97,24 @@ Nesnenin ömrü elle yönetiliyor. Arada bir istisna ya da erken `return` olursa
 
 Bu parametre değerle geçiriliyor; her çağrıda kapsayıcının tamamı kopyalanır. Fonksiyon bu kopyayı değiştirmeye ya da saklamaya ihtiyaç duyuyor mu?
 
+### CPP-PERF-002 — Döngüde tam metin kopyası
+
+`s = s + x` her turda s'in tamamını yeni bir tampona kopyalar. n tur dönen bir döngüde toplam kaç karakter kopyalanır ve `s += x` bunu nasıl değiştirir?
+
+*Kapsam ve sınırlar:* Yalnızca döngü gövdesindeki `s = s + …` biçimi (aynı yalın ad sağda yaprak olarak) aranır; `s += …`, `s.append(…)`, döngü dışı atamalar ve `this->alan = this->alan + …` kapsam dışıdır.
+
+### CPP-PERF-003 — Döngüde std::endl
+
+`std::endl` satır sonu eklemekle kalmaz, tamponu da her turda boşaltır. Döngü 10 000 kez dönüyorsa alt katmana kaç yazma çağrısı iner?
+
+*Kapsam ve sınırlar:* Yalnızca `std::endl` yazımı ve döngü gövdesi aranır; `using namespace std;` ile yazılan yalın `endl`, `std::flush` ve döngü dışı kullanımlar kapsam dışıdır (muhafazakâr).
+
+### CPP-PERF-004 — Reserve olmadan push_back
+
+Döngünün kaç kez döneceği belli ve her turda kapsayıcıya bir eleman ekleniyor. Kapasite dolduğunda `push_back` ne yapmak zorunda kalır ve bu döngüde kaç kez olur?
+
+*Kapsam ve sınırlar:* Yalnızca sınırı bilinen `for`/aralık döngüleri, yalın adlı kapsayıcılar (`std::vector`/`std::deque`/`std::list`/`TArray`/`TSet`) ve koşulsuz `push_back`/`emplace_back` sayılır; erken `return`/`break`/koşul varsa susar. Aynı alıcı için fonksiyonda bir `reserve`/`resize` çağrısı varsa bulgu verilmez: sıralama denetlenmez. Unreal'daki `TArray::Add` için UE-MEM-001 geçerlidir.
+
 ### CPP-SP-001 — Döngüsel shared_ptr şüphesi
 
 Bu alan, kendisini de `shared_ptr` ile tutan bir nesneyi gösteriyor. İki nesne birbirini tutarsa sayaçları hiç sıfıra iner mi? Bağlardan biri sahiplik gerektirmiyorsa hangi tür daha uygun olur?
@@ -99,6 +130,24 @@ LINQ her çağrıda yineleyici ve çoğu zaman temsilci nesneleri ayırır; bu s
 ### CS-PERF-001 — Döngüde doğrusal arama
 
 `List.Contains`/`IndexOf`/`Remove` elemanı bulmak için listeyi baştan sona tarar ve bu bir döngünün içinde. Toplam maliyet ne olur? Hangi veri yapısı bu aramayı daha hızlı yapar?
+
+### CSS-ACC-001 — Odak göstergesi kaldırılmış
+
+`outline: none` klavyeyle gezen kullanıcının kaldığı yeri gösteren tek işareti siliyor. Bu kutu odaklandığında ekranda ne değişiyor?
+
+*Kapsam ve sınırlar:* Yalnızca `:focus` (ama `:focus-visible` değil) içeren bloklar taranır: `outline: none` yanında aynı blokta `border`/`box-shadow`/`background`/`text-decoration` varsa ya da aynı seçici için ayrı bir `:focus-visible` kuralı yazılmışsa susar.
+
+### CSS-LAYOUT-001 — Sabit yükseklikte metin kutusu
+
+Kutunun yüksekliği pikselle sabitlenmiş. Metin uzayınca, yazı tipi büyüyünce ya da ekran daralınca fazlası nereye gider ve bunu kim fark eder?
+
+*Kapsam ve sınırlar:* Yalnızca `height: <sayı>px` aranır; `min-height`/`max-height`, yüzde ve `rem` ile tümü görsel öğelerden (`img`, `svg`, `canvas`, `video`, `iframe`, `input` …) oluşan seçiciler kapsam dışıdır. Kutunun gerçekten metin içerdiği doğrulanamaz.
+
+### CSS-LAYOUT-002 — Negatif margin ile ortalama
+
+Kutu `left: 50%` ile sağa itilip yarı genişliği kadar geri çekiliyor. Genişlik değişince o sabit sayı ne olur? Aynı sonucu genişlikten bağımsız nasıl alırsın?
+
+*Kapsam ve sınırlar:* `position: absolute|fixed`, `left: 50%` ve negatif `margin-left` üçlüsü aynı blokta aranır; `transform: translateX(-50%)` gibi genişlikten bağımsız yöntemler kapsam dışıdır.
 
 ### CSS-MAINT-001 — Çok sayıda !important
 

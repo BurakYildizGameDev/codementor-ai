@@ -1,0 +1,15 @@
+.gutter {
+  margin-left: -20px;
+}
+
+.slider {
+  position: absolute;
+  left: 40%;
+  margin-left: -20px;
+}
+
+.side {
+  position: relative;
+  left: 50%;
+  margin-left: -20px;
+}

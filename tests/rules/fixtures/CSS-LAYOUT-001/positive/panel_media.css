@@ -1,0 +1,10 @@
+/* EXPECT: 3, 8 */
+.panel {
+  height: 320px;
+}
+
+@media (max-width: 600px) {
+  .panel {
+    height: 480px;
+  }
+}

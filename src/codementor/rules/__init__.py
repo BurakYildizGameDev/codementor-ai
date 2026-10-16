@@ -7,8 +7,10 @@ from __future__ import annotations
 
 from codementor.rules import (
     c,
+    c_buffer,
     c_memory,
     cpp,
+    cpp_perf,
     csharp,
     css,
     html,
@@ -24,8 +26,10 @@ __all__ = [
     "all_rules",
     "applicable_rules",
     "c",
+    "c_buffer",
     "c_memory",
     "cpp",
+    "cpp_perf",
     "csharp",
     "css",
     "html",

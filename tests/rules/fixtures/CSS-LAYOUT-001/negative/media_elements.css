@@ -1,0 +1,11 @@
+img {
+  height: 200px;
+}
+
+video, iframe {
+  height: 320px;
+}
+
+svg.icon {
+  height: 24px;
+}

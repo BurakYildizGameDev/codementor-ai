@@ -976,12 +976,15 @@ tekrarlanabilir bir release'ten gelsin.
 **Dal:** `faz/h-kurallar`
 
 **Yeni kurallar** (her biri pozitif/negatif fixture ve katalog satırıyla):
-- [ ] CSS (3 kural, en zayıf dil): `outline:none` + focus göstergesi yok, sabit `px` yükseklik
-      taşması, `position:absolute` + margin ile ortalama
-- [ ] C++: döngüde `std::string +`/`+=` karesel, döngüde `std::endl`, `reserve` olmadan
-      döngüde `push_back`
-- [ ] C: genişlik sınırı olmayan `scanf("%s")`
-- [ ] C#: döngüde `string +=`
+- [x] CSS (3 kural, en zayıf dil): `outline:none` + focus göstergesi yok (**CSS-ACC-001**), sabit `px`
+      yükseklik taşması (**CSS-LAYOUT-001**, öneri), `position:absolute` + margin ile ortalama
+      (**CSS-LAYOUT-002**, öneri) — **Faz H1**
+- [x] C++: döngüde `std::string s = s + x` karesel (**CPP-PERF-002**), döngüde `std::endl`
+      (**CPP-PERF-003**, öneri), `reserve` olmadan döngüde `push_back` (**CPP-PERF-004**, öneri)
+      — **Faz H1** (`rules/cpp_perf.py`)
+- [x] C: genişlik sınırı olmayan `scanf("%s")` (**C-BUF-002**, `rules/c_buffer.py`) — **Faz H1**
+- [x] C#: döngüde `string +=` — **YAPILMADI, gereksiz:** kural zaten var (`CS-ALLOC-001`, devir §8.2
+      notu); yerine C-BUF-002 alındı (7 kural sayısı korundu) — **Faz H1 kararı**
 
 **Bilinen kaçırmalar ve yanlış pozitifler** (Sonraya'dan):
 - [ ] CPP-OWN-001 erken `return`/istisna yolunda atlanan `delete`

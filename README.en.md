@@ -35,7 +35,7 @@ submits it without ever seeing the bug. CodeMentor reverses that flow:
 | | |
 |---|---|
 | **Languages** | C, C++, C#, Python, HTML, CSS + Unity and Unreal engine context |
-| **Static rules** | 34 deterministic rules ([catalog, Turkish](docs/rules-catalog.md)) |
+| **Static rules** | 41 deterministic rules ([catalog, Turkish](docs/rules-catalog.md)) |
 | **Pre-validation** | tree-sitter (always) + gcc / clang / Roslyn when installed (or one-click zig) |
 | **LLM providers** | Claude Code CLI (default), Codex CLI, Anthropic API, Ollama, Gemini |
 | **Interfaces** | Windows desktop app (.exe), web UI (React), CLI, REST API + SSE |
@@ -48,7 +48,7 @@ submits it without ever seeing the bug. CodeMentor reverses that flow:
 2. **K1 Pre-validation:** tree-sitter (Tier 0) and the local compiler in syntax-only mode
    (Tier 1). User code is **never executed**; compilers get it via stdin, in an empty temp dir,
    with a sanitised environment and OS resource limits.
-3. **K2 Static analysis:** facts (loops, calls, allocations), Big-O hint, 34 rules.
+3. **K2 Static analysis:** facts (loops, calls, allocations), Big-O hint, 41 rules.
 4. **K3–K4 LLM:** pass A (analysis + extra findings) and pass B (mentoring questions), with
    schema repair and an optional finding-verification pass.
 5. **K5 Verification:** JSON schema, line evidence, Big-O agreement with the static hint, leak

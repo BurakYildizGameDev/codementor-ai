@@ -385,6 +385,42 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
             Language.C,
             Engine.NONE,
         ),
+        # Faz H: yeni kurallar (CSS-ACC-001, CSS-LAYOUT-001/002, CPP-PERF-002..004, C-BUF-002)
+        (("a:focus{outline:none;}" * 3 + "\n") * 600, Language.CSS, Engine.NONE),
+        ((".k{height:200px;}" * 4 + "\n") * 580, Language.CSS, Engine.NONE),
+        (
+            (".c{position:absolute;left:50%;margin-left:-100px;}" * 2 + "\n") * 400,
+            Language.CSS,
+            Engine.NONE,
+        ),
+        (
+            "#include <string>\nvoid f(int n){std::string s;\nfor(int i=0;i<n;++i){s = s"
+            + ' + "x"' * 5000
+            + ";}}\n",
+            Language.CPP,
+            Engine.NONE,
+        ),
+        (
+            "#include <iostream>\nvoid f(int n){for(int i=0;i<n;++i){\n"
+            + ("std::cout << i << std::endl;" * 4 + "\n") * 356
+            + "}}\n",
+            Language.CPP,
+            Engine.NONE,
+        ),
+        (
+            "#include <vector>\nvoid f(int n){std::vector<int> v;\n"
+            + ("for(int i=0;i<n;++i){v.push_back(i);}" * 4 + "\n") * 270
+            + "}\n",
+            Language.CPP,
+            Engine.NONE,
+        ),
+        (
+            "#include <stdio.h>\nvoid f(void){char b[8];\n"
+            + ('scanf("%s", b);' * 5 + "\n") * 520
+            + "}\n",
+            Language.C,
+            Engine.NONE,
+        ),
     ],
     ids=[
         "c-malloc",
@@ -416,6 +452,14 @@ def _timed(text: str, language: Language, engine: Engine) -> float:
         "c-deep-and-chain",
         "c-loop-condition-chain",
         "c-deep-blocks-many-checks",
+        # Faz H: yeni kurallar (CSS-ACC-001, CSS-LAYOUT-001/002, CPP-PERF-002..004, C-BUF-002)
+        "css-focus-outline",
+        "css-fixed-height",
+        "css-margin-center",
+        "cpp-string-copy-chain",
+        "cpp-endl-in-loop",
+        "cpp-push-back-no-reserve",
+        "c-scanf-string",
     ],
 )
 def test_linear_time_large_input(text: str, language: Language, engine: Engine) -> None:

@@ -404,9 +404,60 @@ Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`Bulgula
    tablosuna `G` satırı eklendi ve `F` satırı "sürüyor 3/0/10" → "tam 12/0/0" düzeltildi).
 
 
-Sonraki faz: **Faz H** (`faz/h-kurallar`) — 7 yeni statik kural (CSS×3, C++×3, C, C#) + bilinen
-kaçırma/yanlış pozitifler (CPP-OWN-001, C-MEM-001, UNITY-GC-001, UE-GC-001) + ölçüm işleri; her kural
-pozitif/negatif fixture ve katalog satırıyla gelir. Faz J isteğe bağlı.
+### Faz H — H1: 7 yeni statik kural (kayıt: 2026-10-16)
+
+Dal `faz/h-kurallar` (`faz/g-saglayici` uç noktası `b67c94d` üstüne açıldı). Devir §8.2 tablosundaki
+**yedi kuralın tamamı** yazıldı; C#'ta "döngüde `string +=`" zaten `CS-ALLOC-001` olduğu için alınmadı
+(devir notu). Kural sayısı **34 → 41**.
+
+| Kural | Dil | Kategori / Önem / Tür | Modül |
+|---|---|---|---|
+| CSS-ACC-001 — Odak göstergesi kaldırılmış | CSS | accessibility / medium / hata | `rules/css.py` |
+| CSS-LAYOUT-001 — Sabit yükseklikte metin kutusu | CSS | edge_case / low / öneri | `rules/css.py` |
+| CSS-LAYOUT-002 — Negatif margin ile ortalama | CSS | maintainability / low / öneri | `rules/css.py` |
+| CPP-PERF-002 — Döngüde tam metin kopyası | C++ | performance / medium / hata | **yeni** `rules/cpp_perf.py` |
+| CPP-PERF-003 — Döngüde `std::endl` | C++ | performance / low / öneri | `rules/cpp_perf.py` |
+| CPP-PERF-004 — `reserve` olmadan `push_back` | C++ | performance / low / öneri | `rules/cpp_perf.py` |
+| C-BUF-002 — Sınırı olmayan `scanf("%s")` | C | memory_safety / high / hata | **yeni** `rules/c_buffer.py` |
+
+- **Dosya bölme:** `cpp.py` ve `c.py` 359 satırdı; yedi kuralı oraya eklemek 400 satır sınırını aşacaktı
+  (AGENTS.md kod stili). Bu yüzden C++ performans kuralları `rules/cpp_perf.py`'ye (CPP-PERF-001
+  `cpp.py`'de kaldı), C tampon kuralı `rules/c_buffer.py`'ye taşındı — `c.py`/`c_memory.py` kalıbının
+  aynısı. İki modül `rules/__init__.py`'de kayda girer; `docs/mimari.md` paket haritasındaki `rules/`
+  modül listesi gerçek içerikle yazıldı.
+- **Muhafazakâr sınırlar (her biri `catalog_note` ile katalogda yazılı):** CSS-ACC-001 yalnız `:focus`
+  bloklarını tarar (aynı blokta `border`/`box-shadow`/`background`… ya da ayrı `:focus-visible` kuralı
+  varsa susar); CSS-LAYOUT-001 yalnız `height: <sayı>px` (yüzde, `rem`, `min/max-height` ve tümü görsel
+  öğelerden oluşan seçiciler kapsam dışı); CPP-PERF-002 yalnız `s = s + …` (aynı yalın ad sağda yaprak);
+  CPP-PERF-003 yalnız `std::endl` yazımı (yalın `endl`, `std::flush` dışı); CPP-PERF-004 yalnız sınırı
+  bilinen `for`/aralık döngüleri + koşulsuz `push_back`/`emplace_back` + `reserve`/`resize` yoksa;
+  C-BUF-002 yalnız `scanf`/`fscanf` + biçim metin sabiti (`%99s` sınırlı, `%*s` atamasız; `sscanf` ve
+  `%[` taraması kapsam dışı — bilinçli kaçırma, negatif fixture'la sabitlendi).
+- **Fixture:** 7 kural × (2 pozitif + 2-3 negatif) = **32 dosya**, `tests/rules/fixtures/{ID}/…`;
+  `tests/rules/test_all_rules.py` klasörleri otomatik bulur (kayıt/katalog değişikliği gerekmedi).
+- **Süre:** `tests/rules/test_engine.py::test_linear_time_large_input` listesine **7 kötü niyetli 40 KB
+  vaka** eklendi (CSS odak / sabit yükseklik / negatif margin, 5 000 terimli `+` zinciri, döngü içi
+  `std::endl`, `push_back`, `scanf`); hepsi < 2 sn (kısıt: ≤ 40 960 bayt, ≤ 600 satır).
+- **Katalog/belge:** `uv run codementor rules doc` → `docs/rules-catalog.md` "Toplam: 41 kural";
+  `README.md` (3 yer) ve `README.en.md` (2 yer) kural sayısı 34 → 41.
+- **Değişen testler (yalnız sayı bekleyenler):** `tests/unit/test_cli_rules.py` ("Kurallar (41)",
+  `Engine.NONE` kümesi, CPP+Unreal kümesi) ve `tests/rules/test_registry.py::test_c_rules_only_for_c`
+  (C kümesi). Davranış testleri değişmedi.
+- **Doğrulama:** `ruff check` temiz, `ruff format --check` **474 dosya**, `mypy src/` hatasız (**216
+  dosya**), `pytest -m "not live"` **3577 geçti / 15 atlandı / 6 seçilmedi** (3:01) — H1 öncesi 3524'e
+  göre **+53 test** (32 fixture + 7 süre + 7 "her kuralın fixture'ı var" + 7 katalog türü).
+- **Bilinçli sonda hatası (kayıt):** `selectors` alan adı tree-sitter-css'te yok; sonda betiği bunu
+  yakaladı, `_selectors` konum çocuğuna çevrildi. Fixture'sız kural yazmanın riski burada somutlaştı.
+- **Sonraki (Faz H kalanı):** H2 bilinen kaçırma/yanlış pozitifler, H3 analiz verisi (`call_costs`,
+  `parse_bigo`, C# 11 ham metin maskeleme, Unreal stub, `-fdiagnostics-column-unit=byte`), H4 statik dev
+  eval + README ölçüm satırları. Kapanışta `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` §4.8'deki "34 kural"
+  sayısı/dökümü de güncellenecek (`CHANGELOG.md`'ye §3.7 gereği dokunulmaz).
+
+
+Sonraki faz: **Faz H** (`faz/h-kurallar`) — **H1 bitti**; devir tablosundaki yedinci kural olan C#
+"döngüde `string +=`" zaten `CS-ALLOC-001` olduğundan yerine C-BUF-002 alındı (yukarıdaki tablo);
+sırada H2 (bilinen kaçırma/yanlış pozitifler), H3 (analiz verisi), H4 (statik dev eval + ölçüm).
+Faz J isteğe bağlı.
 
 Bilinen kararsız test (değişiklikle ilgisiz): `tests/rules/test_engine.py::test_linear_time_large_input[html-*]`
 yük altında 38 sn'yi geçip düşebiliyor; tek başına geçiyor.

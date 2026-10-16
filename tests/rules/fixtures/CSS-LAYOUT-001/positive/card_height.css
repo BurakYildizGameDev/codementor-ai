@@ -1,0 +1,4 @@
+/* EXPECT: 3 */
+.kart {
+  height: 200px;
+}

@@ -1,0 +1,6 @@
+/* EXPECT: 5 */
+.modal {
+  position: absolute;
+  left: 50%;
+  margin-left: -200px;
+}

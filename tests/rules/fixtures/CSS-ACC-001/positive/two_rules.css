@@ -1,0 +1,8 @@
+/* EXPECT: 3, 7 */
+a:focus {
+  outline: 0;
+}
+
+button:focus {
+  outline: none;
+}

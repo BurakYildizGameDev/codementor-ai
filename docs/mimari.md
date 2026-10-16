@@ -1281,7 +1281,9 @@ codementor-ai/
 │   ├── validation/    tier0.py  tier0_isolation.py  tier0_worker.py  tier1.py  toolchain.py  runner.py  include_guard.py  diagnostics.py  policy.py
 │   ├── analysis/      parsers.py  extractor.py  complexity_hint.py  call_costs.py
 │   │   └── queries/   c/*.scm  cpp/*.scm  csharp/*.scm
-│   ├── rules/         base.py  registry.py  c.py  cpp.py  csharp.py  unity.py  unreal.py
+│   ├── rules/         base.py  registry.py  engine.py  catalog.py  c.py  c_buffer.py  c_memory.py
+│   │                  cpp.py  cpp_perf.py  csharp.py  css.py  html.py  html_balance.py  python.py
+│   │                  unity.py  unreal.py
 │   ├── questions/     bank.py  checklists.py
 │   ├── prompts/       builder.py  budget.py  fewshot.py
 │   ├── providers/     base.py  schema_adapter.py  fake.py  ollama.py  openai_compat.py  anthropic.py  factory.py
