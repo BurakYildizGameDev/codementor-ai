@@ -34,5 +34,9 @@ requirements-audit.txt
 coverage.xml
 htmlcov/
 
+# Geçici log/debug artıkları (Faz G denetimi: .tmp_*.log yanlışlıkla commit edilmişti)
+.tmp_*.log
+*.tmp.log
+
 # Kişisel notlar (repoya girmez)
 linkedin metini.md

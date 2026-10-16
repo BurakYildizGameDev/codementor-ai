@@ -454,6 +454,10 @@ class LLMProvider(Protocol):
     name: str
     capabilities: ProviderCapabilities
 
+    @property
+    def primary_name(self) -> str:  # Faz G6: zincirin başında gerçekten çağrılan sağlayıcı
+        ...
+
     async def generate_structured(
         self,
         messages: list[ChatMessage],
@@ -1270,7 +1274,7 @@ codementor-ai/
 ├── src/codementor/
 │   ├── config.py
 │   ├── paths.py       kaynak kökü, göreli yol çözümü (Faz 23, ADR-0016)
-│   ├── models/        enums.py  request.py  facts.py  findings.py  llm_output.py  report.py  bigo.py
+│   ├── models/        enums.py  request.py  facts.py  findings.py  llm_output.py  report.py  bigo.py  usage.py (Faz G6)
 │   ├── ingest/        normalize.py  detect.py
 │   ├── validation/    tier0.py  tier0_isolation.py  tier0_worker.py  tier1.py  toolchain.py  runner.py  include_guard.py  diagnostics.py  policy.py
 │   ├── analysis/      parsers.py  extractor.py  complexity_hint.py  call_costs.py
