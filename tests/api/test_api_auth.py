@@ -99,6 +99,33 @@ async def test_delete_without_key_rejected_and_record_kept(
     assert deleted.status_code == 204
 
 
+async def test_trailing_slash_and_encoding_do_not_escape_key(
+    client_for: ClientFactory, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D14 sertleştirme: `%76` yazımı ve sondaki `/` (FastAPI 307'si) korumayı atlamaz."""
+    monkeypatch.setenv(KEY_ENV, KEY)
+    client = client_for(cfg=_with_key(settings))
+    for path in (
+        "/docs/",
+        "/redoc/",
+        "/openapi.json/",
+        "/health/ready/",
+        "/docs/oauth2-redirect/",
+    ):
+        without = await client.get(path)
+        assert without.status_code == 401, f"{path} başlıksız 401 olmalı (307 değil)"
+        with_key = await client.get(path, headers={"X-API-Key": KEY})
+        assert with_key.status_code in {200, 307}, f"{path} başlıklı normal yanıt vermeli"
+    # yüzde kodlamalı `/v1` yazımı da korunur (Starlette `scope["path"]`'i çözer)
+    assert (await client.get("/%76%31/rules")).status_code == 401
+    assert (await client.get("/%76%31/rules", headers={"X-API-Key": KEY})).status_code == 200
+    # kodsuz yol varyantları rotaya ulaşmıyor (yönlendirme ile sızmıyor)
+    assert (await client.get("//v1/rules")).status_code == 404
+    # `/health` ve sondaki `/` yönlendirmesi açık kalır
+    assert (await client.get("/health")).status_code == 200
+    assert (await client.get("/health/")).status_code == 307
+
+
 async def test_internal_endpoints_protected_with_key(
     client_for: ClientFactory, settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:

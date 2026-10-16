@@ -63,7 +63,7 @@
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
 | F | ✅ (elle deneme + denetim sonraya) | faz/f-masaustu | 2026-10-14 | Antigravity / — |
-| G | 🟡 (G0-G4 ✅; G5-G7 + D14-D17, D19-D20, `schema_enforced` açık) | faz/g-saglayici | 2026-10-15 | Cline / — |
+| G | 🟡 (G0-G4 ✅; G5-G7 + D16/D20, `schema_enforced` açık — D14-D19 Faz E/F'te kapandı) | faz/g-saglayici | 2026-10-15 | Cline / — |
 
 ## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15)
 
@@ -213,35 +213,54 @@
 - **Doğrulama (G4):** `ruff`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada hatasız;
   `pytest -m "not live"` **3489 geçti**, 15 atlandı (G2 sonrası 3488 → +1 test).
 
-### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15, oturum sonu)
+**G4+ — D14 yeniden denetimi (Faz E'de kapanmış bulundu) + sertleştirme:**
+- Denetim: `api/auth.py` zaten `PROTECTED_EXACT_PATHS` (`/health/ready`, `/docs`, `/redoc`,
+  `/openapi.json`, `/docs/oauth2-redirect`) + `_is_protected` içeriyor ve `tests/api/test_api_auth.py::`
+  `test_internal_endpoints_protected_with_key` bu davranışı kapsıyordu (Faz E, `f8a2be4`); `tests/api`
+  **123 test** yeşil. Yani D14'ün asıl kodu eksik değildi, **kalan açık doküman işaretiydi**.
+- Ampirik atlatma denemesi (`%76%31/rules`, `//v1/rules`, `/v1//rules`, `/v1/./rules`, büyük harf):
+  koruma atlanmıyor — Starlette `URL.path`/eşleştirme ikisi de çözülmüş `scope["path"]` kullanıyor,
+  yüzde kodlamalı `/v1` yazımı 401 veriyor.
+- **Gerçek bulgu:** korumalı tam yolların sondaki `/` varyantları (`/docs/`, `/openapi.json/`,
+  `/health/ready/`) anahtar denetiminden önce FastAPI `redirect_slashes` 307'sini döndürüyordu (içerik
+  sızmıyordu ama tutarsızdı). `_is_protected` artık `path.rstrip("/") in PROTECTED_EXACT_PATHS`
+  kullanıyor; `/health/` açık kalıyor (307 → `/health`).
+- Test: `tests/api/test_api_auth.py::test_trailing_slash_and_encoding_do_not_escape_key` — 5 yolun
+  sondaki `/` varyantı başlıksız **401** (307 değil), başlıklıyken 200/307; `%76%31` varyantı
+  başlıksız 401/başlıklı 200; `//v1/rules` 404; `/health` 200, `/health/` 307.
+- Doğrulama: `ruff check`/`format --check` temiz (467 dosya), `mypy src/` 211 dosyada hatasız;
+  `pytest -m "not live"` **3490 geçti**, 15 atlandı (G4 sonrası 3489 → +1 test);
+  `npx vitest run src/lib/download.test.ts` 1 geçti (web değişmedi, doğrulama amaçlı).
+
+### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15; G4+ denetimiyle güncellendi)
 
 Durum: **G0-G4 tamam ve commit'li** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4).
 Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3489 geçti / 15 atlandı**.
 
+**Düzeltme (G4 sonrası denetim):** listenin ilk sürümü D14/D15/D17/D19'u açık sanıyordu; kaynağı §5
+tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D17 **Faz E**, D19 **Faz F**
+(kod + test var; `tests/api` 123 test, `test_markdown_html_escaping`, `web/src/lib/download.test.ts`,
+`tests/unit/test_storage.py` pragma testi yeşil). Tablo satırları ✅ işaretlendi; D14'ün sondaki `/`
+sertleştirmesi bu oturumda yapıldı (G4+).
+
 Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`BulgularVeDuzeltilecekler.md` güncellemesi):
 
-1. **D14 (G5 öncesi güvenlik):** anahtar tanımlıyken `/health/ready`, `/docs`, `/openapi.json` korunur;
-   `/health` açık kalır (`api/auth.py`, `providers/health.py`). — *küçük*
-2. **D15:** `report/markdown.py` dışa aktarımında `< > &` kaçışı (LLM/derleyici metni ham yazılıyordu). — *küçük*
-3. **D17:** `web/src/lib/download.ts` `revokeObjectURL` → `setTimeout(..., 0)`. — *çok küçük*
-4. **G6 (denetimden ertelenen 6 madde):** `desktop/config_writer` dizi tablosu koruması + CRLF koruması,
+1. **G6 (denetimden ertelenen 6 madde):** `desktop/config_writer` dizi tablosu koruması + CRLF koruması,
    `models/questions.from_question` kayıplı etiketler, `cli/errors.describe` ağ hatası metni,
    `UsageTotals`'ın `models/` katmanına taşınması, `LLMProvider.primary_name`. — *küçük ama 6 parça*
-5. **G7:** `ProviderResult.schema_enforced` (anthropic/openai_compat `strict` → True, CLI'lar False) +
+2. **G7:** `ProviderResult.schema_enforced` (anthropic/openai_compat `strict` → True, CLI'lar False) +
    token tahmininin `usage` ile `log.debug("token_estimate_ratio")` kalibrasyonu (davranış değişmez). — *küçük*
-6. **D19:** `delete_history` analiz sürerken engellenir; SQLite WAL + `busy_timeout` + `user_version` göçü;
-   DB dosyası POSIX'te 0600. — *orta (en büyük kalem)*
-7. **G5 / D20:** `buildinfo.py` maskesiz logger → `get_logger`; `--help` İngilizce metni (Typer'la
+3. **G5 / D20:** `buildinfo.py` maskesiz logger → `get_logger`; `--help` İngilizce metni (Typer'la
    Türkçeleştirilemiyorsa rapora "değiştirilemedi" yaz, kendi `--help`'ini yazma); `eval run --language`
    → `Language` enum (geçersiz değer çıkış 2); `build_exe.py` `EXCLUDES`'a `fastapi`/`uvicorn`/`starlette`
    + **exe duman testi** (`--onedir` derleme ~3-5 dk, `.exe --self-check sc.json` çıkış 0, `"ok": true`;
    geçmezse geri al); `cli/rules.py` `rules list` `[rules] disabled`'ı uygular. — *orta*
    - **Kullanıcı kararı (G5-5):** `pyproject.toml` `[desktop]` extra **yapılmayacak** (CI/release/exe
      derlemesini etkiliyor); gerekçe rapora yazılacak.
-8. **D16:** `session_id` sahipliği **sadece belgeye** yazılır (kod değişmez; paylaşılan sunucu uyarısı).
-9. **Dosya bölme:** `pipeline/orchestrator.py` şu an **420 satır** (> 400 sınırı) — Faz G kabulü
+4. **D16:** `session_id` sahipliği **sadece belgeye** yazılır (kod değişmez; paylaşılan sunucu uyarısı).
+5. **Dosya bölme:** `pipeline/orchestrator.py` şu an **420 satır** (> 400 sınırı) — Faz G kabulü
    "iki büyük dosya < 400" istiyor; `passes.py` **366** satır ve sınıra yakın (ölçüm: 2026-10-15). — *orta-küçük, saf refactor*
-10. **Faz G kapanışı:** G0-G7 testleri + dört denetim (ruff/format/mypy/pytest) + §3.1 Linux taklidi +
+6. **Faz G kapanışı:** G0-G7 testleri + dört denetim (ruff/format/mypy/pytest) + §3.1 Linux taklidi +
     G5-4 exe duman testi çıktısı rapora; `PROGRESS.md` durum satırı ✅'e çekilir.
 
 Sonraki faz: **Faz H** (`faz/h-kurallar`) — 7 yeni statik kural (CSS×3, C++×3, C, C#) + bilinen

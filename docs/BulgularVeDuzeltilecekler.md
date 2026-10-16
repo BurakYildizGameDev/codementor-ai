@@ -540,12 +540,12 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | D11 ✅ G3 | `prompts/builder.py`, `orchestrator.py` | Olay döngüsünde küçük bloklayan G/Ç: `prompt_version` her analizde `rglob`+`stat`; `_rules_version` veri dosyalarını 2 kez okuyor; `_question_bank` her istekte disk (CLI). | Önbellekle. |
 | D12 ✅ G3 | `providers/cli_agent.py:108-126` | `_json_document` karesel (160 KB'de 2,7 sn; 64 KB sınırıyla ≤0,5 sn). O5'te sınır büyütülürse sorun olur. | Doğrusal tarama. |
 | D13 ✅ A2 | `prompts/templates.py:36-55` | Sınırlayıcı korumasında atlanan benzer karakterler: `˂` (U+02C2), `❮` (U+276E), `❰` (U+2770), `﹤` varyantı, `«` (U+00AB), düz `&lt;/user_code&gt;`. | `_CONFUSABLES`'a ekle, `&lt;` biçimini desene kat. |
-| D14 | `api/auth.py:105`, `providers/health.py:105-133` | API anahtarı tanımlıyken bile `/health/ready`, `/docs`, `/openapi.json` açık; sağlayıcı/model adları, anahtar değişken adları, çalıştırılabilir yolları sızıyor. | Anahtar varken `/health/ready`'yi koru; `/health` açık kalsın. |
-| D15 | `report/markdown.py:14, 24, 61, 80-83` | LLM metni ve derleyici iletisi ham yazılıyor (yalnız `\|` kaçışlı); dosyada `<details>` HTML'i de var. HTML'e izin veren görüntüleyicide XSS. | `< > &` kaçışı. |
+| D14 ✅ E (+G4 sertleştirme) | `api/auth.py:105`, `providers/health.py:105-133` | API anahtarı tanımlıyken bile `/health/ready`, `/docs`, `/openapi.json` açık; sağlayıcı/model adları, anahtar değişken adları, çalıştırılabilir yolları sızıyor. | Anahtar varken `/health/ready`'yi koru; `/health` açık kalsın. |
+| D15 ✅ E | `report/markdown.py:14, 24, 61, 80-83` | LLM metni ve derleyici iletisi ham yazılıyor (yalnız `\|` kaçışlı); dosyada `<details>` HTML'i de var. HTML'e izin veren görüntüleyicide XSS. | `< > &` kaçışı. |
 | D16 | `models/request.py:36`, `storage/sessions.py:146` | `session_id` sahipsiz; kimliği bilen başkasının ipucu merdivenini ilerletir. Rastgele kimliklerle `sessions` tablosu büyütülebilir (bilinen). | Paylaşılan sunucu için belgeye yaz; ileride anahtara bağla. |
-| D17 | `web/src/lib/download.ts:10` | `revokeObjectURL` `click()`'ten hemen sonra; bazı tarayıcılarda indirme iptal olabilir (doğrulanmadı). | `setTimeout(..., 0)`. |
+| D17 ✅ E | `web/src/lib/download.ts:10` | `revokeObjectURL` `click()`'ten hemen sonra; bazı tarayıcılarda indirme iptal olabilir (doğrulanmadı). | `setTimeout(..., 0)`. |
 | D18 ✅ G4 | `validation/tier0_isolation.py:102` | Durdurma tanısı metinle tanınıyor (`startswith("Kodun sözdizimi")`); metin değişirse sessizce bozulur. | Yapısal bayrak. |
-| D19 | `desktop/app.py:396`, `storage/db.py` | `delete_history` analiz sürerken engellenmiyor (`clear_history` engelliyor). Veritabanında WAL, `busy_timeout`, şema sürümü (`user_version`) yok. DB dosyası POSIX'te 0600 oluşturulmuyor (doğrulanmadı). | Engelle; WAL + `busy_timeout`; `user_version` ile göç. |
+| D19 ✅ F | `desktop/app.py:396`, `storage/db.py` | `delete_history` analiz sürerken engellenmiyor (`clear_history` engelliyor). Veritabanında WAL, `busy_timeout`, şema sürümü (`user_version`) yok. DB dosyası POSIX'te 0600 oluşturulmuyor (doğrulanmadı). | Engelle; WAL + `busy_timeout`; `user_version` ile göç. |
 | D20 | çeşitli | `cli/rules.py:20-25` `rules list` `[rules] disabled`'ı uygulamıyor. `--help` metinleri karışık dilli ("Show this message and exit."). `eval run --language` serbest metin. `buildinfo.py:15` maskesiz global logger. `build_exe.py:63-70` FastAPI/uvicorn'u gereksiz paketliyor. Kapanışta süren analiz/indirme için onay yok. `pyproject.toml`'da `authors`, `[project.urls]`, `classifiers`, `keywords` yok; GUI bağımlılıkları CLI kurulumuna zorunlu (`[desktop]` extra önerilir). | Tek tek. |
 
 **400 satır sınırı (AGENTS.md):** `desktop/app.py` 395 (F0'da bölündü), `pipeline/orchestrator.py`
@@ -616,7 +616,8 @@ Denetçilerin doğruladığı, düzeltme gerektirmeyen noktalar:
 5. Dosya varlığı kahini: var/yok ayrımı kullanıcıya sızmıyor (K1).
 6. `guard_delimiters`: U+02C2, U+276E, `&lt;/user_code` (D13).
 7. `text/plain` CSRF regresyonu (FastAPI sürümü değişirse sessizce açılmasın).
-8. Anahtar tanımlıyken `/health/ready`, `/openapi.json`, `/docs` erişim politikası (D14).
+8. Anahtar tanımlıyken `/health/ready`, `/openapi.json`, `/docs` erişim politikası (D14 ✅ Faz E,
+   sondaki `/` ve `%` kodlaması sertleştirmesi Faz G4).
 9. Web: `markers.ts` markdown kaçışı (O15).
 
 **LLM hattı**
@@ -857,7 +858,8 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] Web istemcisinden `X-API-Key` gönderme (Sonraya: Faz 26) — **Faz E**
 - [x] **O15:** Monaco hover metni kaçışlanır — **Faz E**
 - [x] **O16:** web CSP; API `nosniff`, `Referrer-Policy` — **Faz E**
-- [x] **D14:** anahtar varken `/health/ready` korunur — **Faz E**
+- [x] **D14:** anahtar varken `/health/ready` korunur — **Faz E** (sondaki `/` ve `%` kodlaması
+      sertleştirmesi + regresyon testi: **Faz G4+**)
 - [x] **D15:** Markdown dışa aktarımında `< > &` kaçışı — **Faz E**
 - [x] **D17:** indirme URL'si gecikmeli iptal — **Faz E**
 - [x] Soru filtresi boşsa "eşleşen soru yok" (Sonraya: Faz 30) — **Faz E**
@@ -918,6 +920,8 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] **D8-D11:** bozuk few-shot zarif bozulma, ölü kod ve test kancası,
       `LLMMarkupAnalysisOutput` şeması, olay döngüsündeki küçük G/Ç — **Faz G3**
 - [x] **D18:** Tier 0 durdurma tanısı yapısal bayrakla (`Tier0Result.stopped`) — **Faz G4**
+- [x] **D14 denetimi:** kod Faz E'de zaten kapalıydı (`f8a2be4`); sondaki `/` varyantlarının 307 yerine
+      401 dönmesi sertleştirildi, regresyon testi eklendi — **Faz G4+**
 - [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
       exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra
 - [ ] `ProviderResult`'a "şema zorlandı mı" yeteneği; `SchemaAdapter` kısıtlarını sağlayıcıya göre

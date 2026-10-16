@@ -27,8 +27,16 @@ PROTECTED_EXACT_PATHS = frozenset(
 
 
 def _is_protected(path: str) -> bool:
-    """Verilen yol API anahtarı korumasına tabi mi? (/health açık kalır)."""
-    return path.startswith(PROTECTED_PREFIX) or path in PROTECTED_EXACT_PATHS
+    """Verilen yol API anahtarı korumasına tabi mi? (`/health` açık kalır).
+
+    D14: sondaki `/` de korunur; aksi halde FastAPI'nin `redirect_slashes` yönlendirmesi
+    (`/docs/` → 307 → `/docs`) anahtar denetiminden önce yanıt üretiyordu. Yol burada
+    Starlette'in yönlendirme için kullandığı `scope["path"]` ile aynıdır (yüzde kodlaması çözülmüş),
+    bu yüzden `/%76%31/...` gibi yazımlar da `/v1/` korumasına girer.
+    """
+    if path.startswith(PROTECTED_PREFIX):
+        return True
+    return path.rstrip("/") in PROTECTED_EXACT_PATHS
 
 
 def configured_key(settings: Settings) -> str | None:
