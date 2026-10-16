@@ -548,10 +548,12 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | D19 ✅ F | `desktop/app.py:396`, `storage/db.py` | `delete_history` analiz sürerken engellenmiyor (`clear_history` engelliyor). Veritabanında WAL, `busy_timeout`, şema sürümü (`user_version`) yok. DB dosyası POSIX'te 0600 oluşturulmuyor (doğrulanmadı). | Engelle; WAL + `busy_timeout`; `user_version` ile göç. |
 | D20 ✅ C+F+G5 | çeşitli | ~~`cli/rules.py:20-25` `rules list` `[rules] disabled`'ı uygulamıyor~~ (**Faz C:** "Durum" sütunu kapalı/açık; `tests/unit/test_config_cli_faz_c.py::test_rules_list_marks_disabled`) ve ~~kapanışta süren analiz/indirme için onay yok~~ (**Faz F/F7:** `desktop/runtime.py::confirm_close`; `tests/desktop/test_app.py::test_close_while_busy_confirm`, `::test_close_while_downloading_confirm`). Bu bulgu satırı **2026-10-16 kapanış denetiminde** bayat çıktı; kalan maddeler zaten kapalı: `eval run --language` ✅, `buildinfo` maskeli logger ✅, exe'den `uvicorn` çıkarıldı ✅ (G5); `pyproject` `authors`/`urls`/`classifiers`/`keywords` ✅ (Faz D). Kabul edilen: `--help` İngilizce ipucu (Typer içinden geliyor), `fastapi`/`starlette` exe'den çıkarılamadı, `[desktop]` extra yapılmadı (kullanıcı kararı). | Tek tek. |
 
-**400 satır sınırı (AGENTS.md):** `desktop/app.py` 395 (F0'da bölündü), `pipeline/orchestrator.py`
-420 satır → bölünmeli (D9-D11'de eklenen örnek başına önbellek alanlarıyla 415 → 420). Sınıra
-yakın: `analysis/extractor.py` 398, `desktop/views/analyze_view.py` 391,
-`desktop/connections.py` 387, `analysis/complexity_hint.py` 386, `desktop/viewmodel.py` 378.
+**400 satır sınırı (AGENTS.md):** 400'ü aşan dosya kalmadı. `desktop/app.py` 395 (F0'da bölündü),
+`pipeline/orchestrator.py` **379** (Faz G kapanışı; G0'da 393'e inmiş, G6/G7 eklemeleriyle 421'e
+çıkmıştı → `pipeline/run_state.py`), `providers/cli_agent.py` **345** (Faz G kapanışı/G8; 420 idi →
+`providers/cli_result.py`), `pipeline/passes.py` 366. Sınıra yakın: `analysis/extractor.py` 398,
+`desktop/views/analyze_view.py` 393, `analysis/complexity_hint.py` 386, `desktop/viewmodel.py` 383,
+`desktop/connections.py` 366.
 
 ---
 
@@ -886,8 +888,12 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] Kurulu zig sürümü eskiyse "güncelle" önerisi (Sonraya: Faz 29) — **Faz F**
 - [x] Bağlantılar'da `ollama pull` düğmesi (Sonraya: Faz 15) — **Faz F**
 - [x] SQLite çağrılarını iş parçacığına alma (Sonraya: Faz 26) — **Faz F**
-- [x] **400 satır:** `desktop/app.py` (494→395, F0) ve `pipeline/orchestrator.py` (465→393) +
-      `passes.py` (426→330) bölündü — **Faz G0**
+- [x] **400 satır:** `desktop/app.py` (494→395, F0), `pipeline/orchestrator.py` (465→393) +
+      `passes.py` (426→330) bölündü — **Faz G0**; kapanışta `orchestrator.py` 421→**379**
+      (`pipeline/run_state.py`) ve `providers/cli_agent.py` 420→**345** (`providers/cli_result.py`)
+      bölündü — **Faz G (kapanış kolunda G8)**. 400'ü aşan dosya kalmadı.
+- [x] **Belge temizliği:** `docs/mimari.md` §20 ADR tablosundaki eksik satırlar (ADR-0024/0025/0028/0029;
+      tablo artık 30/30) ve `AGENTS.md`'ye "`make` yoksa dört komut tek tek" notu — **Faz G9**
 - [x] Linux/macOS'ta "Oturum aç": Windows yeni konsol; Linux `x-terminal-emulator -e` (yoksa
       `gnome-terminal --`); macOS `open -a Terminal`; terminal yoksa bildirimle elle komut — **Faz F**
 

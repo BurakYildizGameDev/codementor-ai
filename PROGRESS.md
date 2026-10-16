@@ -63,9 +63,9 @@
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
 | F | ✅ (elle deneme + denetim sonraya) | faz/f-masaustu | 2026-10-14 | Antigravity / — |
-| G | ✅ | faz/g-sagayici | 2026-10-16 | Cline / — |
+| G | ✅ | faz/g-saglayici | 2026-10-16 | Cline / — |
 
-## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15)
+## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15, kapanış 2026-10-16)
 
 **G0 — `orchestrator.py` ve `passes.py` bölündü (dosya başına 400 satır kuralı):**
 - `pipeline/orchestrator.py` 465 → 393 satır. Yeni modüller: `cache_flow.py` (önbellek anahtarı/imza,
@@ -382,14 +382,27 @@ Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`Bulgula
    `pipeline/run_state.py`'ye taşındı. Bağımlılık yönü artık tek yönlü (`cache_flow`/`deadline` →
    `run_state`); `api/`, `cli/`, `desktop/`, `eval/` içe aktarımları yeni modüle çevrildi. `passes.py`
    **366** satır (< 400). **Kapanış denetimi bulgusu:** `providers/cli_agent.py` **420 satır** (> 400;
-   Faz G'de dört kez değişti) — kapsam dışı, "Sonraya"ya yazıldı.
-6. **Faz G kapanışı:** ✅ **tamam** — `ruff check` / `ruff format --check` temiz (**471 dosya**),
-   `mypy src/` hatasız (**213 dosya**), `pytest -m "not live"` **3524 geçti / 15 atlandı / 6 seçilmedi**
-   (3:34). §3.1 Linux taklidi, G5-4 exe duman testi (`sc.json` `"ok": true`) ve dört denetim (dal içi
+   Faz G'de dört kez değişti) — kullanıcı talimatıyla **madde 7 (G8)**'de kapatıldı.
+6. **Faz G kapanışı:** ✅ **tamam** — `ruff check` / `ruff format --check` temiz (**472 dosya**),
+   `mypy src/` hatasız (**214 dosya**), `pytest -m "not live"` **3524 geçti / 15 atlandı / 6 seçilmedi**
+   (3:03). §3.1 Linux taklidi, G5-4 exe duman testi (`sc.json` `"ok": true`) ve dört denetim (dal içi
    G6, G4 sonrası, G5/D20, kapanış öncesi) `docs/DEVIR_FAZ_E_J.md`'de. Durum satırı ✅'e çekildi.
    - **Ortam notu:** bu makinede `make` yok; `make check` yerine dört komut tek tek koşuldu
      (`uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src/`,
-     `uv run pytest -m "not live"`).
+     `uv run pytest -m "not live"`). Not **G9**'da `AGENTS.md`'ye yazıldı.
+7. **G8 — `providers/cli_agent.py` bölünmesi (420 → 345 satır):** ✅ **tamam** — sonuç ayrıştırma
+   (`_json_document`, `_object_spans`, `_served_model`, `_mapping`) ve kimlik hatası sınıflandırması
+   (`auth_error` + `_AUTH_HINTS`) yeni `providers/cli_result.py`'ye (104 satır) taşındı; `cli_agent` bu
+   adları aynen yeniden dışa aktarır (G0 `passes.py` kalıbı; testler `cli_agent._json_document` içe
+   aktarıyor), bu yüzden `git diff -- tests/` **BOŞ**. Commit `0472603`; doğrulama: `tests/providers` +
+   `tests/unit/test_prompt_role_tags.py` **455 passed / 3 skipped**, `mypy src/` 214 dosyada hatasız.
+8. **G9 — belge temizliği:** ✅ **tamam** — `docs/mimari.md` §20 ADR tablosuna ADR-0024/0025/0028/0029
+   satırları eklendi (artık **30/30** ADR dosyası tabloda; kapanış denetiminde 26/30 idi) ve `AGENTS.md`
+   "Komutlar" bölümüne "`make` her makinede yok; dört komut tek tek" notu yazıldı. Commit `c2968e2`.
+9. **Kayıt:** ✅ **tamam** — Faz G madde madde teslim raporuna işlendi (`docs/YAPILANLAR_FAZ_E_J_ANTIGRAVITY.md`
+   "Faz G" bölümü: G0-G9 + kapanış denetimi, her maddede commit + dosya + test + doğrulama; Özet
+   tablosuna `G` satırı eklendi ve `F` satırı "sürüyor 3/0/10" → "tam 12/0/0" düzeltildi).
+
 
 Sonraki faz: **Faz H** (`faz/h-kurallar`) — 7 yeni statik kural (CSS×3, C++×3, C, C#) + bilinen
 kaçırma/yanlış pozitifler (CPP-OWN-001, C-MEM-001, UNITY-GC-001, UE-GC-001) + ölçüm işleri; her kural
@@ -722,14 +735,11 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 **Açık:** Y2 (kullanıcı, `private/`), K2 kalan regex taraması, A1+A2 kod-denetçi denetimi.
 
 ## Sonraya (kapsam dışı fikirler)
-- **`docs/mimari.md` §20 ADR tablosu boşlukları (denetim notu, 2026-10-16):** tabloda ADR-0024, 0025,
-  0028 ve 0029 satırları yok (0026/0027 var; ADR-0030 eklendi). Karar dosyaları `docs/adr/` altında
-  mevcut; tablo satırları kapsam dışı olduğu için bu fazda eklenmedi.
-- **`providers/cli_agent.py` 420 satır (kapanış denetimi, 2026-10-16):** Faz G'de dört kez değişti
-  (G1 çıktı sınırı, G2/O6 kalıcı CLI hataları, G6 `usage` katmanı + `primary_name`, D2-D4 ayrıştırma)
-  ve 400 satır sınırını aştı. Öneri: Claude/agy'ye özgü olay ayrıştırma (`_events`,
-  `structured_output`, `modelUsage`) `providers/cli_events.py`'ye alınabilir; ortak yardımcılar zaten
-  `_cli_common.py`'de. Faz G kabul kriteri yalnız `orchestrator.py`/`passes.py` olduğundan kapsam dışı.
+- ~~**`docs/mimari.md` §20 ADR tablosu boşlukları (denetim notu, 2026-10-16)**~~ → **KAPANDI (G9,
+  `c2968e2`)**: ADR-0024, 0025, 0028 ve 0029 satırları eklendi; tabloda 30/30 ADR dosyası var.
+- ~~**`providers/cli_agent.py` 420 satır (kapanış denetimi, 2026-10-16)**~~ → **KAPANDI (G8,
+  `0472603`, kullanıcı talimatı)**: `cli_agent.py` **345 satır**; sonuç ayrıştırma + kimlik hatası
+  `providers/cli_result.py`'de (104 satır), adlar yeniden dışa aktarılır (`tests/` değişmedi).
 - **Public öncesi zorunlu (kullanıcı, 2026-10-13):** Y2 — `tests/fixtures/llm_responses/unity03_reference.cs`
   bankadaki unity-03 referans çözümüyle (`private/`) karşılaştırılacak; aynı/benzerse yapay bir
   çözümle değiştirilip golden'lar yeniden üretilecek. GitHub'da secret scanning, push protection,

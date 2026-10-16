@@ -4,7 +4,13 @@
 | Faz | Dal | Son commit | Durum | Madde (✅/⚠️/❌) |
 |---|---|---|---|---|
 | E | faz/e-web | f8a2be4 | tam | 12/0/0 |
-| F | faz/f-masaustu | 769dca6 | sürüyor | 3/0/10 |
+| F | faz/f-masaustu | 138fbcf | tam | 13/0/0 |
+| G | faz/g-saglayici | 0472603 | tam | 11/0/0 |
+
+> **Kapanış denetimi (2026-10-16):** F satırı "sürüyor 3/0/10" iken yazılmıştı; Faz F'nin tamamı
+> (F0-F12) bitti (`PROGRESS.md` Faz F "Yapılanlar", son commit `138fbcf`) ve satır güncellendi.
+> G satırı bu denetimde eklendi: G0-G7 (sevk belgesi §7) + G8 (dosya bölme) + G9 (belge temizliği)
+> + G kapanış denetimi = 11 madde, hepsi ✅. Ayrıntı: aşağıdaki "Faz G" bölümü.
 
 ## Faz E
 ### E1 — GET /v1/analyses — ✅
@@ -130,6 +136,127 @@
   - `HistoryView` üstüne arama kutusu (`CTkEntry`) ve "Ara" butonu eklendi; altta "Daha fazla yükle" butonu dinamik bağlandı (`clear` sonrası taze referans).
   - 60 kayıt ile test edildi: ilk yüklemede 50 satır + "Daha fazla yükle", tıklanınca 60 satır + buton gizlenmesi; "c-medium" aramasıyla tekil eşleşme; `_` ve `%` aramasında joker kaçışının çalıştığı masaüstü ve birim testleriyle kanıtlandı.
 
+## Faz G
+> **Özet:** 11/0/0 (G0-G9 + kapanış denetimi) · Dal `faz/g-saglayici` · Kapanış commit'i `0472603` ·
+> Sevk belgesi: `docs/DEVIR_FAZ_E_J.md` §7. Kapanışta `Bulgular` §5'te ✅ işareti olmayan D satırı
+> kalmadı (D1-D20 tamamı ✅) ve 400 satırı aşan dosya kalmadı.
+
+### G0 — `orchestrator.py` (465) ve `passes.py` (426) bölündü — ✅ (`ef5bd7a`)
+- Değişen dosyalar: `pipeline/orchestrator.py`, yeni `pipeline/cache_flow.py`, `pipeline/deadline.py`,
+  `pipeline/llm_session.py`, `pipeline/verify_pass.py`, `pipeline/passes.py`, `pipeline/assemble.py`.
+- Yeni testler: **yok** — madde "davranış DEĞİŞMEDEN" koşuluyla geldi; `git diff -- tests/` BOŞ ve
+  mevcut 3454 test aynı sonucu verdi (maddenin kabul kriteri bu).
+- Doğrulama: `orchestrator.py` 465 → **393**, `passes.py` 426 → **330**; `ruff check`/`ruff format --check`
+  temiz, `mypy src/` 211 dosyada hatasız, `pytest -m "not live"` 3454 geçti / 15 atlandı.
+- Not: testler `Orchestrator._validation/_tier1/_remaining` ile `passes.build_repair_messages` /
+  `build_socratic_messages`'i yamadığı için bu adlar sarmalayıcı olarak yerinde bırakıldı; taşınan
+  adlar `__all__` ile yeniden dışa aktarılır (`pipeline/assemble.py`, `eval/runner.py` değişmedi).
+
+### G1 — O5: CLI ajan çıktısı 64 KB'de kesiliyor — ✅ (`d362e19`)
+- Değişen dosyalar: `validation/runner.py` (`ProcessLimits.output_limit`), `providers/_cli_common.py`,
+  `providers/cli_agent.py`, `providers/codex_cli.py`, `config.py` (`CliConfig.output_limit_bytes`),
+  `codementor.toml`, `docs/mimari.md`.
+- Testler: `tests/providers/test_cli_agent.py`, `test_cli_agent_e2e.py`, `test_codex_cli.py`,
+  `tests/providers/fake_cli_script.py` (`BOYUT:<n>` gürültü modu), `tests/unit/test_config.py`,
+  `tests/unit/test_runner.py`.
+- Doğrulama: 200 KB sahte çıktı varsayılan sınırla (1 MB, config'ten) tam okunuyor;
+  `output_limit_bytes=65536` ile yanıt korunuyor + `ProviderResult.warnings`'e
+  "Model yanıtı çok uzundu, kesildi." ekleniyor (raporda `meta.warnings`); Tier 1 derleyici 64 KB'de kalıyor.
+- Açık (kullanıcıda): gerçek `agy`/`codex` çıktısıyla elle deneme (O5'in "canlı doğrulanmadı" notu).
+
+### G2 — O6: kalıcı CLI hataları yeniden denenmez — ✅ (`3efcf80`)
+- Değişen dosyalar: `providers/base.py` (`retryable` sözleşmesi), `providers/_cli_common.py`
+  (`CliPermanentError`, `CliTimeoutError`), `providers/cli_agent.py`, `providers/codex_cli.py`.
+- Testler: `tests/providers/test_cli_agent.py` (`test_logged_out_result_is_not_retried`,
+  `test_claude_unknown_subtype_is_retried`, `test_server_error_is_still_retried`, ...).
+- Doğrulama: oturum/kimlik ve bilinen `subtype` hataları `retryable = False`; sunucu hatası (5xx) ve
+  bilinmeyen `subtype` yeniden denenmeye devam ediyor (fallback'e hemen geçilmiyor).
+
+### G3 — D1-D12 küçük düzeltmeler — ✅ (`1857829`, `062528c`, `313128c`, `5f51dec`)
+- **D1/D6/D7 (`1857829`):** prompt ve sağlayıcı/maliyet düzeltmeleri; `tests/integration/test_pipeline.py`,
+  `test_pipeline_partial.py`, `tests/unit/test_prompt_builder.py`, `test_prompt_render.py`,
+  `test_usage.py`, `tests/golden/report_example.json`.
+- **D8 (`062528c`):** bozuk few-shot şablonu raporu düşürmüyor; yeni `tests/unit/test_prompt_degrade.py`.
+- **D9-D11 (`313128c`):** ölü kod/test kancası temizliği, `LLMMarkupAnalysisOutput` şeması
+  (`schemas/llm_markup_analysis.schema.json`), olay döngüsündeki küçük G/Ç (mtime anahtarlı önbellek);
+  `tests/unit/test_schema_export.py`, `test_prompt_version.py`, `test_prompt_budget.py`.
+- **D2-D5 + D12 (`5f51dec`):** `extract_json` tırnak durumu (D2), `codex_cli._events` `RecursionError` (D3),
+  kelime sınırlı 429/401 regex'i (D4), `apply_verdicts` `finding_id` (D5) ve `_json_document` doğrusal
+  tarama (D12; 160 KB düşman çıktıda < 0,25 sn).
+- Doğrulama: `Bulgular` §5'te D1-D12 satırlarının tamamı ✅.
+
+### G4 — D18: Tier 0 durdurma tanısı yapısal bayrak — ✅ (`ed21509`, `a92e23c`)
+- Değişen dosyalar: `models/validation.py`, `validation/tier0_isolation.py` (metinle tanıma yerine
+  yapısal bayrak), `api/auth.py` (D14 denetimi + sondaki eğik çizgi sertleştirmesi).
+- Testler: `tests/unit/test_tier0_isolation.py`, `tests/api/test_api_auth.py`.
+- Doğrulama: durdurma tanısı metin değişse de tanınıyor; anahtar varken iç uçlar korunuyor ve
+  sondaki eğik çizgili biçim de aynı kurala giriyor.
+
+### G5 — D20 kalanları (CLI/exe temizliği) — ✅ (`c1a1b91`)
+- Değişen dosyalar: `buildinfo.py` (`get_logger("codementor.buildinfo")`), `cli/eval.py`
+  (`eval run --language` → `Language` enum; geçersiz değer çıkış kodu 2 + izinli değer listesi),
+  `build_exe.py` (`EXCLUDES`'a `uvicorn`), `docs/adr/0030-primary-name-protokolu.md`, `docs/mimari.md`.
+- Testler: `tests/unit/test_buildinfo.py`, `tests/unit/eval/test_languages.py`, `tests/desktop/test_build_exe.py`.
+- Doğrulama: exe duman testi `sc.json` `"ok": true` (çıkış 0). `fastapi`/`starlette` hariç tutulamadı
+  (`--self-check` çıkış 1 verince geri alındı), `--help` İngilizce ipucu Typer/click içinden geldiği için
+  değiştirilemedi, `pyproject.toml` `[desktop]` extra yapılmadı — üçü de **kabul edilen** sınır.
+
+### G6 — Denetimden ertelenen 6 madde — ✅ (`c3f64fa`, `a39ec09`, `644852b`; senkron `48f4e16`)
+- **Parça 1-2 (`c3f64fa`):** `desktop/config_writer.py` — dizi tablosu (`[[providers.x]]`) ezilmiyor,
+  CRLF/LF satır sonu korunuyor; `tests/desktop/test_config_writer.py`.
+- **Parça 3 (`a39ec09`):** `models/questions.py::UserQuestionDraft.from_question` — kullanıcı `genel`
+  etiketini/varsayılan kısıtı açıkça yazdıysa silinmiyor; `tests/unit/test_user_questions.py`.
+- **Parça 4-5 (`644852b`):** `cli/errors.py` ağ hatası metni, `UsageTotals` → `models/usage.py`
+  (katman temizliği: `report` artık `storage`'dan içe aktarmıyor), `LLMProvider.primary_name`
+  (ADR-0030); `tests/unit/test_cli_errors.py`, `test_usage_label.py`, `tests/providers/test_contract.py`,
+  `test_factory.py`.
+- **Senkron (`48f4e16`):** `docs/mimari.md` §5.5.1/§16 güncellendi, `.tmp_*.log` artıkları repodan
+  çıkarıldı (`.gitignore`'a `.tmp_*.log`).
+- Doğrulama: `ruff check`/`ruff format --check` temiz (469 dosya), `mypy src/` 212 dosyada hatasız,
+  `pytest -m "not live"` 3511 geçti / 15 atlandı.
+
+### G7 — `ProviderResult.schema_enforced` ve token kalibrasyon günlüğü — ✅ (`c403070`)
+- Değişen dosyalar: `models/provider.py` (`schema_enforced: bool = False`), `pipeline/llm_session.py`
+  (`log.debug("token_estimate_ratio", estimated, actual, ratio)`), `providers/anthropic.py`,
+  `openai_compat.py`, `ollama.py` (True), `cli_agent.py`/`codex_cli.py` (False), `docs/mimari.md`.
+- Testler: `tests/providers/test_adapters.py`, `test_gemini.py`, `test_fake.py`, `test_cli_agent.py`,
+  `test_codex_cli.py`, `tests/unit/test_usage.py` (+9 test).
+- Doğrulama: `ruff`/`format` temiz (469 dosya), `mypy src/` 212 dosya, `pytest -m "not live"`
+  3520 geçti / 15 atlandı. Raporda gösterilmez; rapor şeması ve `schemas/` çıktısı değişmedi.
+
+### G8 — `providers/cli_agent.py` 400 satır altına indi — ✅ (`0472603`)
+- **Gerekçe:** dosya Faz G'de dört kez değişti (G1, G2, G6, D2-D4); kapanış denetiminde **420 satır**
+  ölçüldü. G0 kabul kriteri yalnız `orchestrator.py`/`passes.py` idi, bu dosya "Sonraya"ya yazılmıştı;
+  kullanıcı talimatıyla (2026-10-16) Faz G kapsamında kapatıldı.
+- Değişen dosyalar: `providers/cli_agent.py` (**420 → 345**), yeni `providers/cli_result.py` (104).
+- Taşınanlar: `_json_document`, `_object_spans`, `_served_model`, `_mapping`, `auth_error` (+ `_AUTH_HINTS`).
+  Adlar `cli_agent`'tan aynen yeniden dışa aktarılır (testler `cli_agent._json_document` içe aktarıyor) —
+  G0'daki `passes.py` kalıbı.
+- Testler: **yok/değişmedi**; `git diff -- tests/` BOŞ. Kanıt: mevcut sağlayıcı testleri geçiyor
+  (`tests/providers` + `tests/unit/test_prompt_role_tags.py` → 455 passed / 3 skipped).
+
+### G9 — Belge temizliği: ADR tablosu ve `make` notu — ✅ (`c2968e2`)
+- `docs/mimari.md` §20 ADR tablosuna eksik satırlar eklendi: **ADR-0024, ADR-0025, ADR-0028, ADR-0029**
+  (denetimde 26/30 idi; artık 30 ADR dosyasının 30'u tabloda — komutla doğrulandı).
+- `AGENTS.md` "Komutlar" bölümüne not: `make` her makinede yok (bu ortamda kurulu değil); `make check`
+  yerine dört komut tek tek koşulur.
+
+### G kapanış denetimi (2026-10-16) — ✅ (`c8e2e89`, `8616232`, `953b9e1`)
+- **`c8e2e89` — `orchestrator.py` 421 → 379:** G0'da 393'e inmiş dosya G6/G7 eklemeleriyle yeniden
+  400'ü aşmıştı; `Run`, `AnalysisTrace`, `PipelineError`, `PipelineErrorKind`, `ProviderFactory` ve
+  `BANK_UNREADABLE` `pipeline/run_state.py`'ye alındı (bağımlılık yönü tek yönlü:
+  `cache_flow`/`deadline` → `run_state`).
+- **`8616232` — D16 belge notu:** `session_id` sahipliği `docs/mimari.md` §12 tehdit tablosuna yazıldı
+  (kod değişmedi); `Bulgular` D16 ✅.
+- **`953b9e1` — D20 satırındaki iki bayat madde:** `rules list` `[rules] disabled` uygulanıyor
+  (**Faz C**, `test_rules_list_marks_disabled`) ve kapanışta süren analiz/indirme onayı var
+  (**Faz F/F7**, `runtime.confirm_close`; `test_close_while_busy_confirm`,
+  `test_close_while_downloading_confirm`) — ikisi de kod olarak hazırdı, yalnız kayıt satırı bayattı.
+- **Doğrulama (kapanış):** `ruff check` → `All checks passed!`; `ruff format --check` → 471 dosya;
+  `mypy src/` → 213 dosya, hatasız; `pytest -m "not live"` → **3524 passed, 15 skipped, 6 deselected** (3:34).
+- **Kalan yok.** Ertelenen "elle deneme" işleri kullanıcıda (G1 gerçek `agy`/`codex` çıktısı; Faz F
+  etkileşimli masaüstü maddeleri).
+
 ## Denetim komutlarının GERÇEK çıktısı
 ### faz/f-masaustu (F0-F6 güncel)
 - `uv run ruff check .` → `All checks passed!`
@@ -140,6 +267,21 @@
 - `uv run pytest tests/unit/test_storage.py` → `42 passed in 0.77s`
 - `uv run pytest tests/desktop/test_app.py` → `59 passed in 56.12s`
 - Satır sayıları: `app.py` → `399` (< 400), `files.py` → `129`, `history_controller.py` → `155`, `config_controller.py` → `89`, `history_view.py` → `273`, `cache.py` → `272`.
+
+### faz/g-saglayici (G0-G9, kapanış dahil)
+> Ölçümler sırayla: G0 sonrası ve her maddenin kendi commit'i ile; **son satırlar kapanış kolunun
+> (G8/G9 sonrası, 2026-10-16) tam takım çıktısıdır.**
+- `uv run ruff check .` → `All checks passed!`
+- `uv run ruff format --check .` → `472 files already formatted`  (G0'da 460, kapanışta 471 → G8/G9 ile 472)
+- `uv run mypy src/` → `Success: no issues found in 214 source files`  (G0: 211 → kapanış: 213 → G8: 214)
+- `uv run pytest -m "not live" -q` → `3524 passed, 15 skipped, 6 deselected in 183.27s (0:03:03)`
+- Hedefli (G8): `uv run pytest tests/providers tests/unit/test_prompt_role_tags.py -m "not live" -q`
+  → `455 passed, 3 skipped in 5.67s`
+- Satır sayıları: `orchestrator.py` **379** (465 idi), `passes.py` **366** (426 idi),
+  `cli_agent.py` **345** (420 idi), yeni `cli_result.py` **104**, `run_state.py` 69,
+  `desktop/app.py` 395.
+- `git diff --stat` (G8): yalnız `src/codementor/providers/cli_agent.py` (+10/-85) ve yeni
+  `cli_result.py`; **`tests/` diff'i boş** (davranış değişmedi).
 
 ### faz/e-web
 - `uv run ruff check .` → `All checks passed!`
@@ -160,12 +302,23 @@
 
 ## Yapamadıklarım ve neden
 - Yok. Tüm E1-E12 maddeleri eksiksiz tamamlandı ve test edildi.
+- **Faz G:** kod tarafında yapılamayan yok (G0-G9 + kapanış denetimi tamam, kalan madde yok). Yalnız
+  **elle deneme** işleri kullanıcıda: (a) O5'in gerçek `agy`/`codex` çıktısıyla doğrulanması (canlı CLI
+  oturumu gerekir; testler sahte CLI ile ağsız koşuyor), (b) Faz F'nin etkileşimli masaüstü maddeleri.
+  G5'te üç sınır **kabul edildi**: İngilizce `--help` ipucu (Typer/click kaynağından), `fastapi`/
+  `starlette`'ın exe'den çıkarılamaması ve `pyproject.toml` `[desktop]` extra yapılmaması.
 
 ## Mimariden sapma gerektiren öneriler (uygulanmadı)
 - Yok. Tüm mimari kurallarına ve `docs/mimari.md` §17 ilkelerine tam uyuldu.
+- **Faz G:** sapma yok. G0 ve G8 (dosya bölme) mimari değişikliği değildir: yalnız modül sınırı taşındı,
+  davranış ve sözleşmeler aynı kaldı (`tests/` diff'i boş; taşınan adlar yeniden dışa aktarılır).
 
 ## Var olan bir testi değiştirdiysem: hangisi, neden
 - `tests/api/test_errors_and_app.py::test_serve_uses_config_and_warns_when_exposed`: `serve --host 0.0.0.0` çağrısına E11 kuralı gereğince anahtarsız dış bağlantı engeli geldiği için `--insecure` argümanı eklendi.
+- **Faz G:** hiçbir test gevşetilmedi/silinmedi. G0 ve G8'de `tests/` **hiç değişmedi** (bölmeler
+  davranışsız refactor); G1-G7'de yalnız yeni testler eklendi, `tests/providers/fake_cli_script.py`
+  sahte CLI'sine `BOYUT:<n>` gürültü modu eklendi (G1).
+
 
 ## Claude Code'un özellikle bakmasını istediğim yerler
 - `src/codementor/api/guard.py::RateLimiter` ve `ApiState` bağlantısı.

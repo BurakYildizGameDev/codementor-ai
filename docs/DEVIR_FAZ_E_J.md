@@ -780,6 +780,21 @@ hatasız, `pytest -m "not live"` **3511 geçti / 15 atlandı**.
 **G7 durumu:** bitti (`c403070`); doğrulama `ruff check`/`ruff format --check` temiz (469 dosya), `mypy src/` 212
 dosyada hatasız, `pytest -m "not live"` **3520 geçti / 15 atlandı**.
 
+### G8 — `providers/cli_agent.py` bölünmesi (420 → 345) ✅ (`0472603`)
+- **Ne yapıldı:** kapanış denetiminde dosya **420 satır** (> 400) ölçüldü; G0 kabul kriteri yalnız
+  `orchestrator.py`/`passes.py` olduğu için önce "Sonraya"ya yazılmıştı, kullanıcı talimatıyla
+  (2026-10-16) Faz G kapsamında kapatıldı. Sonuç ayrıştırma (`_json_document`, `_object_spans`,
+  `_served_model`, `_mapping`) ve kimlik hatası sınıflandırması (`auth_error` + `_AUTH_HINTS`) yeni
+  `providers/cli_result.py`'ye (104 satır) taşındı; `cli_agent` bu adları aynen yeniden dışa aktarır
+  (testler `cli_agent._json_document` içe aktarıyor).
+- **Test:** yeni test yok, mevcutlar değişmedi (`git diff -- tests/` BOŞ) — G0 ile aynı gerekçe
+  (davranışsız refactor). Kanıt: `tests/providers` + `tests/unit/test_prompt_role_tags.py` 455 passed.
+- **Doğrulama:** `ruff check`/`ruff format --check` temiz, `mypy src/` 214 dosyada hatasız.
+
+### G9 — Belge temizliği: §20 ADR tablosu ve `make` notu ✅ (`c2968e2`)
+- `docs/mimari.md` §20 tablosuna ADR-0024/0025/0028/0029 satırları eklendi (30/30 ADR dosyası tabloda;
+  denetimde 26/30 idi). `AGENTS.md` "Komutlar" bölümüne "`make` yoksa dört komut tek tek" notu eklendi.
+
 **G6 denetimi (dal içi):** `docs/mimari.md` §5.5.1/§16 doküman senkronu ve `.tmp_full.log`/`.tmp_g1.log`
 artıklarının repodan çıkarılması `48f4e16` commit'iyle kapandı (`.gitignore`'a `.tmp_*.log` eklendi).
 
@@ -793,8 +808,12 @@ denetiminde `Bulgular` §5 D20 satırındaki iki madde bayat çıktı ve ✅'e �
 `[rules] disabled` **Faz C**'de yapılıp test edilmiş (`test_rules_list_marks_disabled`), kapanışta süren
 iş onayı **Faz F/F7**'de (`runtime.confirm_close`; `test_close_while_busy_confirm`,
 `test_close_while_downloading_confirm`). Kapanış
-ölçümü: `ruff check` + `ruff format --check` temiz (471 dosya), `mypy src/` 213 dosyada hatasız,
-`pytest -m "not live"` **3524 geçti / 15 atlandı** (3:34).
+ölçümü: `ruff check` + `ruff format --check` temiz (**472 dosya**), `mypy src/` **214** dosyada hatasız,
+`pytest -m "not live"` **3524 geçti / 15 atlandı / 6 seçilmedi** (3:03). Kapanış kolunda ayrıca **G8**
+(`0472603`: `cli_agent.py` 420 → 345, sonuç ayrıştırma `cli_result.py`'de) ve **G9** (`c2968e2`:
+§20 ADR tablosu boşlukları + `AGENTS.md` `make` notu) kapandı; **Faz G'de açık madde kalmadı.**
+Kayıt: `docs/gelistirme-gunlugu/…` yerine bu dalın teslim raporu `docs/YAPILANLAR_FAZ_E_J_ANTIGRAVITY.md`
+"Faz G" bölümü (madde madde commit + test + doğrulama).
 
 ---
 
