@@ -63,7 +63,7 @@
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
 | F | ✅ (elle deneme + denetim sonraya) | faz/f-masaustu | 2026-10-14 | Antigravity / — |
-| G | 🟡 (G0-G3; G2, G4-G7 açık) | faz/g-saglayici | 2026-10-15 | Cline / — |
+| G | 🟡 (G0-G4 ✅; G5-G7 + D14-D17, D19-D20, `schema_enforced` açık) | faz/g-saglayici | 2026-10-15 | Cline / — |
 
 ## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15)
 
@@ -196,7 +196,8 @@
   `test_claude_unknown_subtype_is_retried` (kontrol: sıradan `subtype` yine denenir).
 - **Doğrulama (G2):** `ruff check`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada
   hatasız; `pytest -m "not live"` **3488 geçti**, 15 atlandı (D9-D11 sonrası 3482 → +6 test).
-- **Açık:** D14-D20 ve `schema_enforced` duruyor (D8-D11 ✅, G2 ✅, G4 ✅); G5-G7 sırada.
+- **Açık:** G5-G7 ve D14-D17/D19/D20 kalemleri (G0-G4 ✅) — sıra ve kapsam için aşağıdaki
+  "Sıradaki oturum — Faz G kalanı" bölümüne bak.
 
 **G4 — D18: Tier 0 durdurma tanısı artık yapısal:**
 - `models/validation.Tier0Result`'a `stopped: bool = False` alanı eklendi; durdurma tanısı üreten tek
@@ -211,6 +212,44 @@
   JSON gidiş-dönüşünde (işçi süreci sınırı) korunuyor.
 - **Doğrulama (G4):** `ruff`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada hatasız;
   `pytest -m "not live"` **3489 geçti**, 15 atlandı (G2 sonrası 3488 → +1 test).
+
+### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15, oturum sonu)
+
+Durum: **G0-G4 tamam ve commit'li** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4).
+Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3489 geçti / 15 atlandı**.
+
+Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`BulgularVeDuzeltilecekler.md` güncellemesi):
+
+1. **D14 (G5 öncesi güvenlik):** anahtar tanımlıyken `/health/ready`, `/docs`, `/openapi.json` korunur;
+   `/health` açık kalır (`api/auth.py`, `providers/health.py`). — *küçük*
+2. **D15:** `report/markdown.py` dışa aktarımında `< > &` kaçışı (LLM/derleyici metni ham yazılıyordu). — *küçük*
+3. **D17:** `web/src/lib/download.ts` `revokeObjectURL` → `setTimeout(..., 0)`. — *çok küçük*
+4. **G6 (denetimden ertelenen 6 madde):** `desktop/config_writer` dizi tablosu koruması + CRLF koruması,
+   `models/questions.from_question` kayıplı etiketler, `cli/errors.describe` ağ hatası metni,
+   `UsageTotals`'ın `models/` katmanına taşınması, `LLMProvider.primary_name`. — *küçük ama 6 parça*
+5. **G7:** `ProviderResult.schema_enforced` (anthropic/openai_compat `strict` → True, CLI'lar False) +
+   token tahmininin `usage` ile `log.debug("token_estimate_ratio")` kalibrasyonu (davranış değişmez). — *küçük*
+6. **D19:** `delete_history` analiz sürerken engellenir; SQLite WAL + `busy_timeout` + `user_version` göçü;
+   DB dosyası POSIX'te 0600. — *orta (en büyük kalem)*
+7. **G5 / D20:** `buildinfo.py` maskesiz logger → `get_logger`; `--help` İngilizce metni (Typer'la
+   Türkçeleştirilemiyorsa rapora "değiştirilemedi" yaz, kendi `--help`'ini yazma); `eval run --language`
+   → `Language` enum (geçersiz değer çıkış 2); `build_exe.py` `EXCLUDES`'a `fastapi`/`uvicorn`/`starlette`
+   + **exe duman testi** (`--onedir` derleme ~3-5 dk, `.exe --self-check sc.json` çıkış 0, `"ok": true`;
+   geçmezse geri al); `cli/rules.py` `rules list` `[rules] disabled`'ı uygular. — *orta*
+   - **Kullanıcı kararı (G5-5):** `pyproject.toml` `[desktop]` extra **yapılmayacak** (CI/release/exe
+     derlemesini etkiliyor); gerekçe rapora yazılacak.
+8. **D16:** `session_id` sahipliği **sadece belgeye** yazılır (kod değişmez; paylaşılan sunucu uyarısı).
+9. **Dosya bölme:** `pipeline/orchestrator.py` şu an **420 satır** (> 400 sınırı) — Faz G kabulü
+   "iki büyük dosya < 400" istiyor; `passes.py` **366** satır ve sınıra yakın (ölçüm: 2026-10-15). — *orta-küçük, saf refactor*
+10. **Faz G kapanışı:** G0-G7 testleri + dört denetim (ruff/format/mypy/pytest) + §3.1 Linux taklidi +
+    G5-4 exe duman testi çıktısı rapora; `PROGRESS.md` durum satırı ✅'e çekilir.
+
+Sonraki faz: **Faz H** (`faz/h-kurallar`) — 7 yeni statik kural (CSS×3, C++×3, C, C#) + bilinen
+kaçırma/yanlış pozitifler (CPP-OWN-001, C-MEM-001, UNITY-GC-001, UE-GC-001) + ölçüm işleri; her kural
+pozitif/negatif fixture ve katalog satırıyla gelir. Faz J isteğe bağlı.
+
+Bilinen kararsız test (değişiklikle ilgisiz): `tests/rules/test_engine.py::test_linear_time_large_input[html-*]`
+yük altında 38 sn'yi geçip düşebiliyor; tek başına geçiyor.
 
 ## Faz F — Notlar (masaüstü sağlamlık ve kullanılabilirlik; 2026-10-14)
 
