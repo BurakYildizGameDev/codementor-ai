@@ -328,14 +328,14 @@
   (`docs/adr/0030-primary-name-protokolu.md`: protokol üyesi, `NamedProvider` tabanı,
   `FallbackProvider` ilk halkayı döndürür; `orchestrator` sağlayıcıya özel `chain` alanını yoklamıyor).
 
-**G5 durumu:** bitti (D20-1/3/4 kod + build, D20-2 rapor, D20-5 kullanıcı kararı; +4 test).
+**G5 durumu:** bitti (`c1a1b91`; D20-1/3/4 kod + build, D20-2 rapor, D20-5 kullanıcı kararı; +4 test).
 Doğrulama: `ruff check`/`ruff format --check` temiz (470 dosya), `mypy src/` 212 dosyada hatasız,
 `pytest -m "not live"` **3524 geçti / 15 atlandı** (G7 sonrası 3520 → +4 test); exe duman testi ayrıca
 `--onedir` derleme + `--self-check` ile koşuldu (çıkış 0, `"ok": true`).
 
 ### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15; G4+ denetimiyle güncellendi)
 
-Durum: **G0-G4, G4+, G5/D20, G6 (altı maddenin tamamı) ve G7 bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5 → `48f4e16` G6 denetim düzeltmeleri → `c403070` G7 → G5 commit'i: aşağıdaki "Faz G kapanışı"). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3524 geçti / 15 atlandı** (G5 sonrası).
+Durum: **G0-G4, G4+, G5/D20, G6 (altı maddenin tamamı) ve G7 bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5 → `48f4e16` G6 denetim düzeltmeleri → `c403070` G7 → `c1a1b91` G5+D20 ve ADR-0030). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3524 geçti / 15 atlandı** (G5 sonrası).
 
 **Düzeltme (G4 sonrası denetim):** listenin ilk sürümü D14/D15/D17/D19'u açık sanıyordu; kaynağı §5
 tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D17 **Faz E**, D19 **Faz F**

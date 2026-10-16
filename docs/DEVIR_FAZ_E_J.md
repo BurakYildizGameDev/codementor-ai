@@ -716,7 +716,7 @@ DB kullan (kullanıcının geçmişini bozma).
 - **Test:** mesaj metni değiştirilmiş bir `_stopped` sonucu yine "durduruldu" sayılıyor; normal sözdizimi
   hatası sayılmıyor.
 
-### G5 — D20 kalanları ✅
+### G5 — D20 kalanları ✅ (`c1a1b91`)
 1. ✅ `src/codementor/buildinfo.py`: modül düzeyindeki maskesiz `structlog.get_logger()` yerine
    `codementor.log.get_logger("codementor.buildinfo")` (maskeleme zinciri her çağrıda kurulur; küresel
    `structlog.configure`/`reset_defaults` etkilemez).
