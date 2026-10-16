@@ -1532,8 +1532,12 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0021 | OpenAI ve DeepSeek sağlayıcıları kaldırıldı | Canlı doğrulanamıyordu, bakım yükü; Gemini ve agy deneysel olarak kalır ([docs/adr/0021](adr/0021-openai-deepseek-kaldirildi.md)) |
 | ADR-0022 | Bulgularda hata ve öneri ayrımı | `kind`: `issue` / `suggestion`; öneriler katlı gösterilir, Sokratik sorulara ve eval puanına girmez ([docs/adr/0022](adr/0022-hata-oneri-ayrimi.md)) |
 | ADR-0023 | API güven sınırı | İstek Tier 1'i yalnız kapatır; Host doğrulaması; sağlayıcı izin listesi; girdi, gövde ve eşzamanlılık sınırları ([docs/adr/0023](adr/0023-api-guven-siniri.md)) |
+| ADR-0024 | Tier 0 ayrıştırmasında süreç içi iptal yok | tree-sitter 0.25.2'de `timeout_micros` deprecation, okuma geri çağrısı + `progress_callback` segfault; boyut sınırı ve analiz süresi sınırı korunur, ölçülen en kötü erişilebilir durum kabul ([docs/adr/0024](adr/0024-tier0-sure-siniri.md)) |
+| ADR-0025 | Tier 0 isteğe bağlı alt süreçte yalıtılır | 40 KB C# girdisi süreç içinde ~4,2 GB tepe bellek; `tier0_isolation` süre/bellek sınırlı alt süreç, fail-closed, varsayılan kapalı ([docs/adr/0025](adr/0025-tier0-alt-surec.md)) |
 | ADR-0026 | İpucu merdiveni yalnız sayılan denemelerle ilerler | Başarısız sağlayıcı, erken çıkış ve aynı kodla Denetle seviye harcamaz ([docs/adr/0026](adr/0026-ipucu-merdiveni-sayilan-denemeler.md)) |
 | ADR-0027 | toml yolu için kaynak kökü yedeği | Exe yanına kopyalanan varsayılan toml'daki `data/...` yolları paket verisine çözülür ([docs/adr/0027](adr/0027-toml-yolu-kaynak-koku-yedegi.md)) |
+| ADR-0028 | Kullanıcı kendi sorularını ekleyebilir | `data.user_questions_dir` altında aynı YAML biçimi, `origin: user`; yazma yüzeyi masaüstü formu + CLI, web/API salt okunur ([docs/adr/0028](adr/0028-kullanici-sorulari.md)) |
+| ADR-0029 | Çalışma dizinindeki `codementor.toml` güvenilmez katmandır | Öğrenci projesindeki toml sağlayıcı komutunu, `base_url`'ü, araç iznini ve şablon dizinini değiştiremez; tehlikeli anahtarlar yok sayılır, güvenli ayarlar uygulanır ([docs/adr/0029](adr/0029-guvenilmeyen-calisma-dizini-toml.md)) |
 | ADR-0030 | `LLMProvider.primary_name` protokol üyesi | Önbellek kararı zincirin ilk halkasına bakmalı; sağlayıcıya özel `chain` alanını yoklamak yerine protokol üyesi (ortak `NamedProvider` tabanı) ([docs/adr/0030](adr/0030-primary-name-protokolu.md)) |
 
 ---

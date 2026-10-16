@@ -28,6 +28,9 @@ Web: Vite + React + TypeScript.
 - Test:           uv run pytest -m "not live"
 - Derleyici testi: uv run pytest -m compiler   (gcc/clang/dotnet yoksa atlanır; Docker gerekmez, ADR-0009)
 - Hepsi:          make check
+- Not: `make` her makinede yok (ör. Windows'ta kurulu değil). O durumda `make check` yerine
+  dört komut tek tek koşulur: `uv run ruff check .` → `uv run ruff format --check .` →
+  `uv run mypy src/` → `uv run pytest -m "not live"`.
 
 ## Kod stili
 - Tüm fonksiyonlarda tip ipucu; mypy strict geçmeli.
