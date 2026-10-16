@@ -232,10 +232,27 @@
   `pytest -m "not live"` **3490 geçti**, 15 atlandı (G4 sonrası 3489 → +1 test);
   `npx vitest run src/lib/download.test.ts` 1 geçti (web değişmedi, doğrulama amaçlı).
 
+**G6 (parça 1-2) — `config_writer` kullanıcı dosyasını bozmuyor (dizi tablosu + satır sonu):**
+- **Dizi tablosu:** `[providers]` beklenmeyen biçimdeyse (dizi tablosu `[[providers.x]]` ya da tablo olmayan
+  değer, ör. `providers = "ollama"`) `_table` üzerine yazmıyor; yazma
+  `ValueError("codementor.toml'da [providers] beklenmeyen biçimde; elle düzeltin.")` ile duruyor ve dosya
+  bayt bayt korunuyor (masaüstünde mevcut `ValueError` yakalayıcısı mesajı bildirim olarak gösterir).
+- **Satır sonu:** dosya artık `newline=""` ile okunuyor; eskiden evrensel satır sonu çevirisi CRLF'li dosyayı
+  sessizce LF'e döndürüyordu. Ölçüm (probe): `tomlkit.parse` CRLF girdisinde `dumps` yine CRLF verir ama
+  **yeni eklediği bölümleri LF** yazar (`[limits]\r\nmax_lines = 1\r\n` + yeni `[yeni]` → `…\r\n\n[yeni]\na = 1\n`).
+  Bu yüzden CRLF/LF dosyalarda çıktı önce LF'e indirilip dosyanın biçimine çevriliyor; LF dosyaya dokunulmuyor.
+- `Path.read_text` `newline` parametresini yalnız 3.13'te aldığı için okuma `path.open(newline="")` ile
+  yapılıyor (proje Python 3.12).
+- Testler (`tests/desktop/test_config_writer.py`): `test_unexpected_providers_shape_is_not_overwritten`
+  (dizi tablosu ve `providers = "x"` → `ValueError`, dosya bayt bayt değişmedi),
+  `test_line_endings_are_preserved` (LF→LF, CRLF→CRLF; tek satır sonu bile dönüşmüyor, içerik TOML olarak
+  tekrar yüklenebiliyor).
+- **Doğrulama (G6-1/2):** `ruff check`/`ruff format --check` temiz (467 dosya); `mypy src/` 211 dosyada
+  hatasız; `pytest -m "not live"` **3494 geçti / 15 atlandı** (G4+ sonrası 3490 → +4 test).
+
 ### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15; G4+ denetimiyle güncellendi)
 
-Durum: **G0-G4 tamam ve commit'li** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4).
-Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3489 geçti / 15 atlandı**.
+Durum: **G0-G4, G4+ ve G6 parça 1-2 tamam ve commit'li** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → G6-1/2). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3494 geçti / 15 atlandı**.
 
 **Düzeltme (G4 sonrası denetim):** listenin ilk sürümü D14/D15/D17/D19'u açık sanıyordu; kaynağı §5
 tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D17 **Faz E**, D19 **Faz F**
@@ -245,8 +262,9 @@ sertleştirmesi bu oturumda yapıldı (G4+).
 
 Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`BulgularVeDuzeltilecekler.md` güncellemesi):
 
-1. **G6 (denetimden ertelenen 6 madde):** `desktop/config_writer` dizi tablosu koruması + CRLF koruması,
-   `models/questions.from_question` kayıplı etiketler, `cli/errors.describe` ağ hatası metni,
+1. **G6 (denetimden ertelenen 6 madde):** ✅ parça 1-2 yapıldı (`desktop/config_writer`: dizi tablosu
+   koruması + satır sonu (CRLF/LF) koruması); kalan: `models/questions.from_question` kayıplı etiketler,
+   `cli/errors.describe` ağ hatası metni,
    `UsageTotals`'ın `models/` katmanına taşınması, `LLMProvider.primary_name`. — *küçük ama 6 parça*
 2. **G7:** `ProviderResult.schema_enforced` (anthropic/openai_compat `strict` → True, CLI'lar False) +
    token tahmininin `usage` ile `log.debug("token_estimate_ratio")` kalibrasyonu (davranış değişmez). — *küçük*
@@ -423,7 +441,7 @@ yük altında 38 sn'yi geçip düşebiliyor; tek başına geçiyor.
 - Testler: `integration/test_audit_fixes.py` (10; düzeltmeler geri alınınca hepsi düşüyor),
   `unit/test_audit_fixes_unit.py` (10), include (+3), guard (+13). mimari §11, §17 güncellendi.
 **Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3355 geçti, 15 atlandı.
-**Ertelenen (Sonraya):** `config_writer` dizi tablosunu (`[[providers.x]]`) ezer, CRLF'yi LF yazar;
+**Ertelenen (Sonraya):** ~~`config_writer` dizi tablosunu (`[[providers.x]]`) ezer, CRLF'yi LF yazar~~ (G6: çözüldü);
 `from_question` `genel` etiketini/varsayılan kısıtı düzenlemede siler; `system_errors` ağ
 hatalarını "dosya işlemi" diye anar; `report/usage` → `storage.cache.UsageTotals` katman bağımlılığı;
 `detect.py` `<meta …` deseni çok büyük girdide karesele yakın (40 KB'de ölçülmedi);

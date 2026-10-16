@@ -733,8 +733,8 @@ DB kullan (kullanıcının geçmişini bozma).
 ### G6 — Denetimden ertelenenler (`PROGRESS.md` "Denetim — Faz A1-D" notu, "Ertelenen")
 | Madde | Nerede | Ne yap | Test |
 |---|---|---|---|
-| Dizi tablosu | `desktop/config_writer.py::_table` | `providers` ya da `providers.<ad>` bir dizi tablosu (`[[providers.x]]`, `AoT`) ya da tablo olmayan bir değerse (`providers = "x"`) EZME; `ValueError("codementor.toml'da [providers] beklenmeyen biçimde; elle düzeltin.")` | dizi tablolu dosya → hata, dosya baytları değişmedi |
-| CRLF | `config_writer.write_provider_prefs` | okurken `newline=""` ile oku, orijinal satır sonunu (CRLF/LF) yazarken koru | CRLF giriş → CRLF çıkış; LF giriş → LF |
+| Dizi tablosu ✅ G6 | `desktop/config_writer.py::_table` | `providers` ya da `providers.<ad>` bir dizi tablosu (`[[providers.x]]`, `AoT`) ya da tablo olmayan bir değerse (`providers = "x"`) EZME; `ValueError("codementor.toml'da [providers] beklenmeyen biçimde; elle düzeltin.")` | dizi tablolu dosya → hata, dosya baytları değişmedi |
+| CRLF ✅ G6 | `config_writer.write_provider_prefs` | okurken `newline=""` ile oku, orijinal satır sonunu (CRLF/LF) yazarken koru | CRLF giriş → CRLF çıkış; LF giriş → LF |
 | `from_question` kayıplı | `models/questions.py::UserQuestionDraft.from_question` | kullanıcı `genel` etiketini/varsayılan kısıtı açıkça yazdıysa silinmesin. Yol: `to_question`'da varsayılan doldurulduysa `Question`'a işaret koyma (şema değişikliği) YERİNE: etiket listesi yalnız `["genel"]` ise boşalt, birden fazla etiket varsa dokunma; kısıt listesi yalnız `[DEFAULT_USER_CONSTRAINT]` ise boşalt | `concept_tags=['genel','dizi']` → gidiş-dönüşte iki etiket kalıyor |
 | Ağ hatası metni | `cli/errors.py::describe` | `ConnectionError`/`TimeoutError` (OSError alt sınıfları) için "ağ hatası: …" | mesaj testi |
 | Katman | `report/usage.py` → `storage.cache.UsageTotals` | `UsageTotals`'ı `dataclass` olarak `src/codementor/models/` altına (ör. `models/usage.py`) taşı; `storage.cache` ve `report.usage` oradan içe aktarsın | `rg -n "from codementor.storage" src/codementor/report` boş |

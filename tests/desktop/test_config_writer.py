@@ -107,3 +107,34 @@ def test_source_run_targets_active_config(monkeypatch: pytest.MonkeyPatch, tmp_p
     active = tmp_path / "etkin.toml"
     monkeypatch.setenv(CONFIG_FILE_ENV, str(active))
     assert runtime.writable_config_file() == active
+
+
+# --- Faz G6: kullanıcı dosyasının biçimi ve satır sonu korunur -----------------------------------
+
+
+@pytest.mark.parametrize(
+    "text",
+    ['[[providers.ollama]]\nmodel = "a"\n', 'providers = "ollama"\n'],
+    ids=["dizi-tablosu", "tablo-degil"],
+)
+def test_unexpected_providers_shape_is_not_overwritten(tmp_path: Path, text: str) -> None:
+    """`[[providers.x]]` ve tablo olmayan `providers` değeri ezilmez, hata verilir (Faz G6)."""
+    path = tmp_path / "codementor.toml"
+    original = text.encode("utf-8")
+    path.write_bytes(original)
+    with pytest.raises(ValueError, match="elle düzeltin"):
+        write_provider_prefs(path, PREFS)
+    assert path.read_bytes() == original  # dosya bayt bayt korundu
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n"], ids=["lf", "crlf"])
+def test_line_endings_are_preserved(tmp_path: Path, newline: str) -> None:
+    """Dosyanın satır sonu biçimi yazarken korunur (Faz G6)."""
+    path = tmp_path / "codementor.toml"
+    path.write_bytes(f'[providers]{newline}default = "ollama"{newline}'.encode())
+    write_provider_prefs(path, PREFS)
+    written = path.read_bytes().decode()
+    assert newline in written
+    assert "\n" not in written.replace(newline, "")  # tek satır sonu bile dönüşmedi
+    assert tomllib.loads(written)["providers"]["default"] == "claude_cli"
+    assert tomllib.loads(written)["providers"]["ollama"]["model"] == "qwen2.5-coder:14b"

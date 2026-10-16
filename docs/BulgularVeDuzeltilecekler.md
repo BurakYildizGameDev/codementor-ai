@@ -922,6 +922,11 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] **D18:** Tier 0 durdurma tanısı yapısal bayrakla (`Tier0Result.stopped`) — **Faz G4**
 - [x] **D14 denetimi:** kod Faz E'de zaten kapalıydı (`f8a2be4`); sondaki `/` varyantlarının 307 yerine
       401 dönmesi sertleştirildi, regresyon testi eklendi — **Faz G4+**
+- [x] **G6 (parça 1-2):** `config_writer` dizi tablosunu (`[[providers.x]]`) ve tablo olmayan `providers`
+      değerini artık ezmiyor (`ValueError`, dosya bayt bayt korunur); dosyanın satır sonu (CRLF/LF)
+      korunuyor — **Faz G6**
+- [ ] **G6 (kalan):** `from_question` kayıplı `genel` etiketi/varsayılan kısıt; `cli/errors.describe`
+      ağ hatası metni; `UsageTotals` → `models/`; `LLMProvider.primary_name`
 - [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
       exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra
 - [ ] `ProviderResult`'a "şema zorlandı mı" yeteneği; `SchemaAdapter` kısıtlarını sağlayıcıya göre
