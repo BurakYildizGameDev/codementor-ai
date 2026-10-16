@@ -347,6 +347,14 @@ tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D
 `tests/unit/test_storage.py` pragma testi yeşil). Tablo satırları ✅ işaretlendi; D14'ün sondaki `/`
 sertleştirmesi bu oturumda yapıldı (G4+).
 
+**Düzeltme (kapanış denetimi, 2026-10-16):** aynı türden bir bayatlık D20'de çıktı — §5 satırı
+"`rules list` `[rules] disabled`'ı uygulamıyor" ve "kapanışta süren analiz/indirme için onay yok"
+diyordu; ikisi de kapalı ve testli: sırasıyla **Faz C**
+(`tests/unit/test_config_cli_faz_c.py::test_rules_list_marks_disabled` — kapalı/açık satırları) ve
+**Faz F/F7** (`desktop/runtime.confirm_close`; `tests/desktop/test_app.py::test_close_while_busy_confirm`,
+`::test_close_while_downloading_confirm`). Kod değişmedi; `Bulgular` D20 satırı ✅'e çekildi ve parça 6
+notu eklendi. Böylece §5'te ✅ işareti olmayan D satırı kalmadı (D1-D20 tamamı ✅).
+
 Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`BulgularVeDuzeltilecekler.md` güncellemesi):
 
 1. **G6 (denetimden ertelenen 6 madde):** ✅ **tamam** — parça 1-3: `desktop/config_writer` dizi

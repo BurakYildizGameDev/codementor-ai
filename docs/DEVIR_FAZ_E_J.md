@@ -789,6 +789,10 @@ kalan veri sözleşmesi `pipeline/run_state.py`'ye alındı, `cache_flow` artık
 `Orchestrator` için içe aktarır; `passes.py` 366 satır);
 dört denetim; §3.1 Linux taklidi; G5-4 exe duman testi çıktısı rapora. **Kalan yok:** D16 belge notu
 `docs/mimari.md` §12'ye yazıldı (kod değişmedi), `PROGRESS.md` durum satırı ✅'e çekildi. Kapanış
+denetiminde `Bulgular` §5 D20 satırındaki iki madde bayat çıktı ve ✅'e çekildi: `rules list`
+`[rules] disabled` **Faz C**'de yapılıp test edilmiş (`test_rules_list_marks_disabled`), kapanışta süren
+iş onayı **Faz F/F7**'de (`runtime.confirm_close`; `test_close_while_busy_confirm`,
+`test_close_while_downloading_confirm`). Kapanış
 ölçümü: `ruff check` + `ruff format --check` temiz (471 dosya), `mypy src/` 213 dosyada hatasız,
 `pytest -m "not live"` **3524 geçti / 15 atlandı** (3:34).
 

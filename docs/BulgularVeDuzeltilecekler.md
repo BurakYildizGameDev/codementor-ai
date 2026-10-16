@@ -67,7 +67,7 @@ hiçbir dosya değiştirilmedi.
 | O16 | 🟡 | Web / API | CSP ve güvenlik başlıkları yok | 📖 | Sonra |
 | O17 | 🟡 | CI | Etiketle release yok, `permissions` yok, duman testi yok | 📖 | Evet (release) |
 | O18 | 🟡 | Sürüm | v0.1.0 main'in gerisinde; sürüm iki yerde | ✅ | Evet |
-| D1-D20 | 🟢 | Çeşitli | Bkz. §5 | — | Sonra |
+| D1-D20 | 🟢 | Çeşitli | Bkz. §5 (tamamı ✅; D20 satırı kapanış denetiminde güncellendi) | ✅ | Bitti (C/E/F/G) |
 
 ---
 
@@ -546,7 +546,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | D17 ✅ E | `web/src/lib/download.ts:10` | `revokeObjectURL` `click()`'ten hemen sonra; bazı tarayıcılarda indirme iptal olabilir (doğrulanmadı). | `setTimeout(..., 0)`. |
 | D18 ✅ G4 | `validation/tier0_isolation.py:102` | Durdurma tanısı metinle tanınıyor (`startswith("Kodun sözdizimi")`); metin değişirse sessizce bozulur. | Yapısal bayrak. |
 | D19 ✅ F | `desktop/app.py:396`, `storage/db.py` | `delete_history` analiz sürerken engellenmiyor (`clear_history` engelliyor). Veritabanında WAL, `busy_timeout`, şema sürümü (`user_version`) yok. DB dosyası POSIX'te 0600 oluşturulmuyor (doğrulanmadı). | Engelle; WAL + `busy_timeout`; `user_version` ile göç. |
-| D20 | çeşitli | `cli/rules.py:20-25` `rules list` `[rules] disabled`'ı uygulamıyor. `--help` metinleri karışık dilli ("Show this message and exit."). `eval run --language` serbest metin. `buildinfo.py:15` maskesiz global logger. `build_exe.py:63-70` FastAPI/uvicorn'u gereksiz paketliyor. Kapanışta süren analiz/indirme için onay yok. `pyproject.toml`'da `authors`, `[project.urls]`, `classifiers`, `keywords` yok; GUI bağımlılıkları CLI kurulumuna zorunlu (`[desktop]` extra önerilir). | Tek tek. |
+| D20 ✅ C+F+G5 | çeşitli | ~~`cli/rules.py:20-25` `rules list` `[rules] disabled`'ı uygulamıyor~~ (**Faz C:** "Durum" sütunu kapalı/açık; `tests/unit/test_config_cli_faz_c.py::test_rules_list_marks_disabled`) ve ~~kapanışta süren analiz/indirme için onay yok~~ (**Faz F/F7:** `desktop/runtime.py::confirm_close`; `tests/desktop/test_app.py::test_close_while_busy_confirm`, `::test_close_while_downloading_confirm`). Bu bulgu satırı **2026-10-16 kapanış denetiminde** bayat çıktı; kalan maddeler zaten kapalı: `eval run --language` ✅, `buildinfo` maskeli logger ✅, exe'den `uvicorn` çıkarıldı ✅ (G5); `pyproject` `authors`/`urls`/`classifiers`/`keywords` ✅ (Faz D). Kabul edilen: `--help` İngilizce ipucu (Typer içinden geliyor), `fastapi`/`starlette` exe'den çıkarılamadı, `[desktop]` extra yapılmadı (kullanıcı kararı). | Tek tek. |
 
 **400 satır sınırı (AGENTS.md):** `desktop/app.py` 395 (F0'da bölündü), `pipeline/orchestrator.py`
 420 satır → bölünmeli (D9-D11'de eklenen örnek başına önbellek alanlarıyla 415 → 420). Sınıra
@@ -952,6 +952,11 @@ tekrarlanabilir bir release'ten gelsin.
       **çıkış 0**, `sc.json` `"ok": true` — **Faz G5**
 - [x] **D20 (parça 5) — kullanıcı kararı:** `pyproject.toml` `[desktop]` extra yapılmadı (CI/release/exe
       derlemesini etkiler) — **Faz G5**
+- [x] **D20 (parça 6) — bayat maddeler (Faz G kapanış denetimi, 2026-10-16):** §5'teki iki madde zaten
+      kapalıydı ve testli: `rules list` `[rules] disabled` → Faz C "Durum" sütunu
+      (`test_rules_list_marks_disabled`); kapanışta süren analiz/indirme onayı → Faz F/F7
+      `desktop/runtime.confirm_close` (`test_close_while_busy_confirm`,
+      `test_close_while_downloading_confirm`). §5 satırı ✅'e çekildi, kod değişmedi.
 - [x] `ProviderResult`'a "şema zorlandı mı" yeteneği: `schema_enforced` alanı (anthropic/openai_compat/
       ollama True, CLI alt süreçleri False, rapora yazılmaz) — **Faz G7**. Kalan: `SchemaAdapter`
       kısıtlarını sağlayıcıya göre ayırma (Sonraya: Faz 7, 25)
