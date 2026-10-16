@@ -1,6 +1,6 @@
 # ADR-0030: `LLMProvider.primary_name` protokol üyesi
 
-**Tarih:** 2026-10-16 · **Durum:** Kabul edildi · **Etkilenen bölümler:** mimari §5.5.1, §5.5.2, §16
+**Tarih:** 2026-10-16 · **Durum:** Kabul edildi · **Etkilenen bölümler:** mimari §5.5.1, §5.5.2, §20
 
 ## Bağlam
 
@@ -14,10 +14,9 @@ primary = getattr(provider, "chain", [provider])[0].name
 ```
 
 Bu, protokolün bilmediği bir alanı (`chain` yalnız `FallbackProvider`'da var) yoklamak demekti:
-sağlayıcı arayüzünü uygulayan yeni bir adaptör eklendiğinde `orchestrator` sessizce yanlış ada
-düşebilir, tip denetimi (mypy strict) bunu yakalayamaz. Aynı bilgi ayrıca her adaptörde
-tekrar ediyordu (her sağlayıcıda `name` var, trace/rapor katmanlarında `chain[0].name` deseni
-kopyalanıyordu).
+sağlayıcı arayüzünü uygulayan yeni bir adaptör eklendiğinde (ya da `chain` alanının adı değiştiğinde)
+`orchestrator` sessizce yanlış ada düşebilir, tip denetimi (mypy strict) bunu yakalayamaz. Eksik olan,
+zincirin ilk halkası bilgisini sağlayıcı arayüzünün sözleşmesine yazmaktı.
 
 ## Karar
 
