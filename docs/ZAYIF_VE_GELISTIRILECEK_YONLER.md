@@ -259,20 +259,24 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
 
 ### 4.8 Statik kural kapsamı dar ve dengesiz 🟠
 
-- **Durum:** 34 kural. Dağılım: C 6, Python 6, HTML 7, CSS 3, C++ 3, C# 3 (+ Unity 4), Unreal 3. CSS ve
-  C++ en zayıf. Endüstri araçlarında (cppcheck, clang-tidy, SonarQube) yüzlerce kural var. Bilinen
-  kaçırmalar ve yanlış pozitifler `docs/BulgularVeDuzeltilecekler.md` §10 Faz H'de.
-- **Neden önemli:** Statik katman precision'ı yüksek (%94-100) ama recall düşük (%55). LLM recall'ı
+- **Durum:** 41 kural (Faz H1). Dile göre dağılım (bir kural birden çok dilde sayılır): C 8, C++ 9,
+  C# 7, HTML 6, CSS 6, Python 5; motor: Unity 4, Unreal 3. En zayıf alan Python (5 kural); CSS ve C++
+  Faz H1'de üçer yeni kural kazandı (CSS-ACC-001, CSS-LAYOUT-001/002, CPP-PERF-002..004) ve C'ye
+  C-BUF-002 eklendi. Endüstri araçlarında (cppcheck, clang-tidy, SonarQube) yüzlerce kural var.
+  Bilinen kaçırmalar ve yanlış pozitifler `docs/BulgularVeDuzeltilecekler.md` §10 Faz H'de.
+- **Neden önemli:** Statik katman precision'ı yüksek (%100) ama recall düşük (%57,5). LLM recall'ı
   taşıyor; LLM olmayan (statik) modda kullanıcı bulguların yarısını kaçırır. Ayrıca statik kurallar
   deterministik ve hızlı — ne kadar çok şey statik yakalanırsa LLM'e o kadar az iş (ve maliyet) kalır.
 - **İyileştirme:**
-  1. Faz H'deki 7 yeni kural ve bilinen kaçırma düzeltmeleri.
+  1. ~~Faz H'deki 7 yeni kural ve bilinen kaçırma düzeltmeleri.~~ → Faz H1 (7 kural), H2 (CPP-OWN-001,
+     CS-PERF-001) ve H3 (analiz verisi: `call_costs`, `parse_bigo`, maskeleme, stub, include koruması,
+     kolon birimi) tamamlandı; statik dev F1 %71 → %73, precision %100'de kaldı.
   2. **cppcheck / clang-tidy entegrasyonu** (README yol haritası v1.1): bunların çıktısını
      Sokratik dile çeviren bir eşleme katmanı; seçili ve öğretici kontrollerle sınırlı tutmak şart
      (profesyonel uyarı seli öğrenciyi boğar).
   3. Kural önceliklendirmesi: eval'de LLM'in en sık bulduğu ama statik katmanın kaçırdığı hata türlerini
      listele → bunlar için kural yaz (veriye dayalı kural seçimi).
-- **Nasıl ölçülür:** statik recall (bugün %55), dil başına kural sayısı ve recall, yanlış pozitif oranı.
+- **Nasıl ölçülür:** statik recall (Faz H4: %57,5), dil başına kural sayısı ve recall, yanlış pozitif oranı.
 - **Öncelik / efor:** 🟠 · L.
 
 ### 4.9 Sızıntı koruması sezgisel 🟠

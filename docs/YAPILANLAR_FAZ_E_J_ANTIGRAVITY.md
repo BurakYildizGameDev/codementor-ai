@@ -6,6 +6,7 @@
 | E | faz/e-web | f8a2be4 | tam | 12/0/0 |
 | F | faz/f-masaustu | 138fbcf | tam | 13/0/0 |
 | G | faz/g-saglayici | 0472603 | tam | 11/0/0 |
+| H | faz/h-kurallar | deb2eda (H3) | H1–H4 tam | 4/0/0 |
 
 > **Kapanış denetimi (2026-10-16):** F satırı "sürüyor 3/0/10" iken yazılmıştı; Faz F'nin tamamı
 > (F0-F12) bitti (`PROGRESS.md` Faz F "Yapılanlar", son commit `138fbcf`) ve satır güncellendi.
@@ -258,7 +259,98 @@
 - **Kalan yok.** Ertelenen "elle deneme" işleri kullanıcıda (G1 gerçek `agy`/`codex` çıktısı; Faz F
   etkileşimli masaüstü maddeleri).
 
+## Faz H
+### H1 — yedi yeni statik kural — ✅ (`145d8a9`)
+- Değişen dosyalar: `src/codementor/rules/css.py`, `src/codementor/rules/cpp_perf.py`,
+  `src/codementor/rules/c_buffer.py`, `tests/rules/fixtures/{CSS-ACC-001,CSS-LAYOUT-001,CSS-LAYOUT-002,
+  CPP-PERF-002,CPP-PERF-003,CPP-PERF-004,C-BUF-002}/…`, `tests/rules/test_engine.py`,
+  `tests/rules/test_registry.py`, `tests/unit/test_cli_rules.py`, `docs/rules-catalog.md`,
+  `README.md`, `README.en.md`.
+- Yeni testler: her kural için pozitif/negatif fixture (otomatik bulunur), 7 süre vakası (40 KB sınırı),
+  "her kuralın fixture'ı var" denetimi, katalog tür testleri → **+53 test**.
+- Mutasyon kontrolü: H1 turunda kurallar tek tek devre dışı bırakılıp fixture testleri düşürülerek
+  doğrulandı (fixture'sız kural yazmanın riski `selectors` alan adı sondası hatasıyla somutlaştı).
+- Karar: devir tablosundaki yedinci kural (C# döngüde `string +=`) zaten `CS-ALLOC-001` olduğundan
+  yerine **C-BUF-002** (`scanf("%s")` genişlik sınırı) yazıldı; kural sayısı **34 → 41**.
+
+### H2 — bilinen kaçırma ve yanlış pozitifler — ✅ (`492f955`, `3a15f40`)
+- Değişen dosyalar: `src/codementor/rules/cpp.py` (CPP-OWN-001 tür yükseltmesi),
+  `src/codementor/rules/csharp.py` (`Enumerable` alıcısı), `src/codementor/analysis/call_costs.py`
+  (`_INSTANCE_METHODS`), `tests/rules/fixtures/CPP-OWN-001/*`,
+  `tests/rules/fixtures/CS-PERF-001/*`, `tests/unit/test_call_costs.py`, `tests/rules/test_engine.py`,
+  `docs/rules-catalog.md`.
+- Yeni testler: 4 CPP-OWN-001 fixture'ı + 1 süre vakası (660 çift, 36 490 bayt) + 3 CS-PERF-001
+  fixture'ı + 2 çözücü testi → **+10 test**.
+- Mutasyon kontrolü: `_skips_delete` devre dışı bırakılınca CPP-OWN-001 fixture'ları `suggestion`
+  döndü (issue bekleyen testler düştü); `_INSTANCE_METHODS` kaldırılırsa
+  `test_icollection_with_linq_still_unknown` düştü.
+- Karar: `IReadOnlyList<T>.Contains` **zaten** `Enumerable.Contains` olarak çözülüyordu; eksik olan
+  kuralın `Enumerable` alıcısını tanımamasıydı. `ICollection<T>.Contains` örnek metottur ve alıcı bir
+  `HashSet` olabilir → bilinçli kaçırma (LINQ adayı üretilmez).
+
+### H3 — analiz verisi — ✅ (`deb2eda`)
+- Değişen dosyalar: `src/codementor/analysis/{call_costs.py,_symbols.py,lexical.py,parsers.py,
+  extractor.py}`, `src/codementor/models/{bigo.py,_bigo_parser.py,_bigo_algebra.py}`,
+  `src/codementor/validation/{include_guard.py,tier1.py}`, `data/stubs/ue_stubs.h`,
+  `data/call_costs.yaml`, `tests/unit/{test_call_costs,test_extractor,test_bigo,test_lexical,
+  test_parsers,test_include_guard,test_tier1,test_ue_stubs}.py`,
+  `tests/fixtures/tier0/cpp/valid/unreal_wave_spawner.cpp`, `tests/compiler/test_tier1_compiler.py`,
+  `docs/mimari.md`.
+- Yeni testler: **+130 test** (sayılar: `pytest -m "not live"` 3587 → 3717): `call_costs` argümana
+  duyarlı indeks (11 çözücü + 4 olgu + 3 `first_arg`), `parse_bigo` Θ/Ω + `max` + `log log n` +
+  40 KB süre (14), C# 11 ham metin (12), Unreal stub/delege (12), include koruması izin listesi (28),
+  kolon birimi (5), delege ayrıştırma (4).
+- Mutasyon kontrolü (9 mutasyon, her biri ilgili testleri düşürdü):
+  | Mutasyon | Düşen test |
+  |---|---|
+  | `_refined_cost` devre dışı | 6 (`test_argument_aware_index_costs`, `test_index_costs_reach_facts`, …) |
+  | Θ/Ω sarmalayıcı kaldırıldı | 7 (`test_theta_*`, `test_omega_*`) |
+  | `log log` kolu kaldırıldı | 16 (`test_log_log_n`, sıralama + hypothesis özellikleri) |
+  | `csharp = False` (leksik) | 6 (`test_csharp_*`) |
+  | `parse_source`'da `delegates=False` | 2 (`test_delegate_source_parses_*`, Tier 0 fixture) |
+  | `#pragma` izin listesi kapalı | 7 (`pragma_macro_dependency` dahil) |
+  | `#line` denetimi kapalı | 4 (`line_with_filename` dahil) |
+  | `-fdiagnostics-column-unit=byte` çıkarıldı | 2 (argv + yeniden deneme) |
+  | `_first_argument` → None | 3 (metin taşıma + olgu zinciri) |
+- Karar/not: madde 1'de ayrım yalnızca **aynı liste** üzerinde yapılır (`xs.RemoveAt(xs.Count - 1)`) —
+  başka koleksiyonun indeksi `n` kalır (yanlış `1` yanlış negatif olurdu). `Θ/Ω` yalnızca tam ifadeyi
+  sarabilir. `max(a,b)` toplam olarak normalleşir (`max(a,b) = Θ(a+b)`), belgeye yazıldı. `n^k`
+  eklenmedi (sembolik üs modellenmiyor) ve `docs/mimari.md` §5.6 bu gerçeğe göre düzeltildi.
+  **Denetimde ikinci bir boşluk bulundu:** `DECLARE_DYNAMIC_MULTICAST_DELEGATE_*(...)` bildirimleri
+  tree-sitter'da sözdizimi hatası verdiği için delege kullanan geçerli Unreal kodu Tier 0'da erken
+  çıkıyordu (Tier 1 hiç çalışmıyordu); makrolar artık yalnızca ayrıştırma yolunda boşaltılır
+  (`neutralize_unreal_macros(..., delegates=True)`), derleyici yolunda stub açar. Include korumasına
+  izin listesi eklendi (`#pragma once/region/endregion`, `#line <sayı>`): `#define X GCC dependency
+  "…"` + `#pragma X` ile host dosyası yoklanabiliyordu. `-fdiagnostics-column-unit=byte` ile gcc/clang
+  aynı kolon birimini kullanır; bayrağı tanımayan eski sürümde komut bayraksız yeniden denenir.
+
+### H4 — statik dev ölçümü — ✅
+- Değişen dosyalar: `README.md` (dev eval bloğu `eval compare` çıktısından yeniden üretildi + özet
+  satır), `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` §4.8, `PROGRESS.md`,
+  `eval/results/20261016T212522_static_none_static_dev.json` (yeni sonuç dosyası; eskiler silinmedi).
+- Yeni testler: yok (ölçüm maddesi); `tests/unit/eval/test_readme_table.py` **değiştirilmedi** ve yeşil.
+- Karar/not: yalnızca statik dev (96 örnek): precision **%100 → %100** (H1'in yeni kuralları yanlış
+  pozitif üretmiyor), recall %55,2 → **%57,5**, F1 %71,1 → **%73,0**, Big-O %97/%97, erken çıkış
+  %100/%100, p50 0,13 sn. Test bölümü `--final` olmadan koşulmadı (devir §5 kuralı).
+
 ## Denetim komutlarının GERÇEK çıktısı
+### faz/h-kurallar (H1–H4, 2026-10-16)
+- `uv run ruff check .` → `All checks passed!`
+- `uv run ruff format --check .` → `474 files already formatted`
+- `uv run mypy src/` → `Success: no issues found in 216 source files`
+- `uv run pytest -m "not live" -q` → `3717 passed, 16 skipped, 6 deselected in 229.31s (0:03:49)`
+- `uv run pytest -m compiler -q` → `81 passed, 10 skipped, 3645 deselected in 18.45s`
+  (bu makinede **gcc/clang/zig yok**; C/C++/Unreal derleyici testleri CI'da koşar → H3'ün stub ve
+  fixture derleme doğrulaması yerelde **yapılamadı**, CI'ya bırakıldı)
+- Linux taklidi (§3.1, `PYTHONPATH=$TEMP\notk; pytest -p block_tk -m "not live" -q`)
+  → `3624 passed, 17 skipped, 6 deselected in 124.19s` (toplama hatası yok)
+- Eval (yalnızca statik dev, 96 örnek):
+  `uv run codementor eval run --split dev --static-only` →
+  `eval/results/20261016T212522_static_none_static_dev.json`; denetim P/R/F1 **100% / 57% / 73%**,
+  Big-O 97% / 97%, erken çıkış 100% / 100%, sızan 0%, p50 0.1 / p95 0.8 sn
+- `uv run pytest tests/unit/eval/test_readme_table.py -q` → `5 passed in 0.39s`
+- `git diff` (H4): `README.md` **2 satır eklendi** (yeni statik satır + sürüm satırı), kod dosyası yok.
+
 ### faz/f-masaustu (F0-F6 güncel)
 - `uv run ruff check .` → `All checks passed!`
 - `uv run ruff format --check .` → `460 files already formatted`
@@ -302,6 +394,26 @@
   - (Var olan hiçbir test silinmedi veya gevşetilmedi; `test_errors_and_app.py` dışa açık IP testine E11 gereği `--insecure` eklendi)
 
 ## Yapamadıklarım ve neden
+- **Faz H:** H1–H4 tamamlandı; aşağıdakiler bilinçli sınırlardır (hepsi `PROGRESS.md`'de de yazılı):
+  1. **`-m compiler` yerelde koşulamadı** (bu Windows makinesinde gcc/clang/zig yok): H3'ün Unreal
+     stub'ı ve `unreal_wave_spawner.cpp` fixture'ı **derleme ile** doğrulanamadı; yalnızca tree-sitter
+     ayrıştırması ve stub yapısı (birim testleri) doğrulandı. Derleme doğrulaması CI'ya bırakıldı;
+     `-m compiler` yerelde `81 geçti / 10 atlandı`.
+  2. **`n^k` (sembolik üs) eklenmedi:** model sayısal taban + sembolik üs (`2^n`) taşıyor; `n^k`'yi `n`
+     ya da `n^2` saymak sessiz yanlış olurdu. Reddedilmeye devam ediyor; `docs/mimari.md` §5.6
+     dilbilgisi listesi bu gerçeğe göre düzeltildi (yanıltıcı `n^k` örneği kaldırıldı).
+  3. **Include korumasında bilinçli yan etki:** `#pragma pack`/`#pragma warning` gibi pragmalar artık
+     Tier 1'i atlatır (`SKIPPED` + Türkçe uyarı; fail-closed tercih). Depodaki fixture/eval/stub
+     verisinde başka pragma yok → ölçüme etkisi yok; gerekirse `_PRAGMA_ALLOWED` genişletilir.
+  4. **Kalan include-koruması sınırı:** izin listesindeki adı (`once`/`region`/`endregion`) kullanıcının
+     `#include` ettiği bir başlık tanımlarsa atlatma teorik olarak mümkün (yerel include'lar boş geçici
+     çalışma dizinine göre çözülür, pratikte erişilemez). Tam kapatma makro tablosu izlemeyi gerektirir;
+     yapılmadı, `PROGRESS.md` "Sonraya" bölümünde.
+  5. **Test bölümü (`--final`) koşulmadı:** devir gereği test koşusu sürüm öncesi kullanıcı kararıdır;
+     H4 kapsamı yalnızca dev.
+  6. **K1–K3 küçük notları** (H1 denetimi: CSS `:focus-visible {}` aşırı susturma, `scanf` satırında
+     ikili bulgu, `cpp_perf.py` AND'li döngü sınırı) kapsam dışı bırakıldı; davranışlar fixture'la
+     sabitlendi, düzeltme gerekirse ayrı iş.
 - Yok. Tüm E1-E12 maddeleri eksiksiz tamamlandı ve test edildi.
 - **Faz G:** kod tarafında yapılamayan yok (G0-G9 + kapanış denetimi tamam, kalan madde yok). Yalnız
   **elle deneme** işleri kullanıcıda: (a) O5'in gerçek `agy`/`codex` çıktısıyla doğrulanması (canlı CLI
@@ -310,17 +422,41 @@
   `starlette`'ın exe'den çıkarılamaması ve `pyproject.toml` `[desktop]` extra yapılmaması.
 
 ## Mimariden sapma gerektiren öneriler (uygulanmadı)
+- **Faz H:** sapma yok. H1–H4 `docs/mimari.md` sınırları içinde kaldı; yapılan belge düzenlemeleri
+  mimariyi **koda uydurma** amaçlıdır (sapma değil): §5.2.2 komut tablosuna kolon birimi bayrağı ve
+  stub içeriği, §5.2.3 include izin listesi, §5.3.2 argümana duyarlı maliyet, §5.6 Big-O dilbilgisi
+  (yanlış `n^k` örneği → `2^n` + `log log n`/`Θ/Ω`/`max`). ADR gerekmedi: yeni ADR'lik bir mimari
+  karar (katman, sözleşme, güvenlik modeli değişikliği) yok.
 - Yok. Tüm mimari kurallarına ve `docs/mimari.md` §17 ilkelerine tam uyuldu.
 - **Faz G:** sapma yok. G0 ve G8 (dosya bölme) mimari değişikliği değildir: yalnız modül sınırı taşındı,
   davranış ve sözleşmeler aynı kaldı (`tests/` diff'i boş; taşınan adlar yeniden dışa aktarılır).
 
 ## Var olan bir testi değiştirdiysem: hangisi, neden
 - `tests/api/test_errors_and_app.py::test_serve_uses_config_and_warns_when_exposed`: `serve --host 0.0.0.0` çağrısına E11 kuralı gereğince anahtarsız dış bağlantı engeli geldiği için `--insecure` argümanı eklendi.
+- **Faz H:** hiçbir test gevşetilmedi/silinmedi. H1'de yalnız **kural sayısını** bekleyen testler
+  (`tests/unit/test_cli_rules.py`, `tests/rules/test_registry.py::test_c_rules_only_for_c`) yeni sayıya
+  (41) ve yeni C kümesine çekildi; H2/H3'te yalnız ekleme yapıldı. H3'te **tek beklenti değişikliği**
+  `tests/unit/test_bigo.py`'de oldu: `"log log n"` **geçersiz** girdi listesinden **çıkarıldı**, çünkü
+  artık geçerli bir ifade (karşılığında 2 yeni test eklendi) — bu bir **sıkılaştırmadır**, gevşetme
+  değil. `tests/fixtures/tier0/cpp/valid/unreal_wave_spawner.cpp` **genişletildi** (yeni stub API'sini
+  kullanır); mevcut satırlar/iddialar korundu ve testler yalnızca ekleme yaptı.
 - **Faz G:** hiçbir test gevşetilmedi/silinmedi. G0 ve G8'de `tests/` **hiç değişmedi** (bölmeler
   davranışsız refactor); G1-G7'de yalnız yeni testler eklendi, `tests/providers/fake_cli_script.py`
   sahte CLI'sine `BOYUT:<n>` gürültü modu eklendi (G1).
 
 
 ## Claude Code'un özellikle bakmasını istediğim yerler
+- **Faz H / include koruması izin listesi** (`src/codementor/validation/include_guard.py`): izin
+  listesinin **fail-closed** tarafı ve `#pragma X` makro atlatmasının kapanışı; ayrıca
+  `#pragma pack`/`#pragma warning` gibi pragmaların artık Tier 1'i atlatması (bilinçli yan etki)
+  kararını onaylıyor musunuz?
+- **Faz H / delege makroları** (`src/codementor/analysis/parsers.py`): `DECLARE_DYNAMIC_MULTICAST_DELEGATE*`
+  makrolarının **yalnızca ayrıştırma yolunda** boşaltılması (derleyici yolunda stub açar). İki yolun
+  ayrılması doğru mu, yoksa tek listede tutmak mı gerekir?
+- **Faz H / kolon birimi** (`src/codementor/validation/tier1.py`): `-fdiagnostics-column-unit=byte` +
+  "stderr bayrağı anıyorsa bir kez bayraksız yeniden dene" sezgisi (yerelleştirilmiş hata mesajlarına
+  dayanıklı, ama kullanıcı kodu bayrak metnini içerirse fazladan bir çağrı).
+- **Faz H / `CallName.first_arg`** (`src/codementor/analysis/_symbols.py`): 120 bayt sınırı ve
+  `…` döndürme; indeks desenlerinin yalnızca **aynı liste** üzerinde daraltılması (muhafazakâr yön).
 - `src/codementor/api/guard.py::RateLimiter` ve `ApiState` bağlantısı.
 - `web/src/components/HistoryPanel.tsx` ve `web/src/App.tsx` entegrasyonu.

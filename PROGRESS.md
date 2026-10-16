@@ -579,21 +579,49 @@ boşluk** bulundu: delege bildirimleri analizi tamamen düşürüyordu.
    yakalanır; en fazla bir fazladan çağrı maliyeti, sessiz atlama yok. `tests/compiler` tarafına
    Unicode içeren geçerli C örneği eklendi.
 - **Doğrulama:** `ruff check` temiz, `ruff format --check` **474 dosya**, `mypy src/` hatasız (**216
-  dosya**), `pytest -m "not live"` **3714 geçti / 16 atlandı / 6 seçilmedi** (4:30) — H2 sonundaki
-  3587'ye göre **+127 test** (`-m compiler` yerel: **81 geçti / 10 atlandı**; bu makinede gcc/clang
+  dosya**), `pytest -m "not live"` **3717 geçti / 16 atlandı / 6 seçilmedi** (3:49) — H2 sonundaki
+  3587'ye göre **+130 test** (`-m compiler` yerel: **81 geçti / 10 atlandı**; bu makinede gcc/clang
   yok, C/C++/Unreal derleyici testleri CI'da koşar — stub/fixture derleme doğrulaması yerelde
   **yapılamadı**, raporda işaretli).
 - **Kayıt:** `docs/mimari.md` §5.2.2 (komut tablosu, stub içeriği, delege notu), §5.2.3 (include izin
   listesi + kolon birimi), §5.3.2 (argümana duyarlı maliyet), §5.6 (Big-O dilbilgisi);
   `data/call_costs.yaml` başlık notu; `docs/BulgularVeDuzeltilecekler.md` §10 H3 kutuları.
 
-Sonraki faz: **Faz H** (`faz/h-kurallar`) — **H1, H2 ve H3 bitti**; devir tablosundaki yedinci kural
-olan C# "döngüde `string +=`" zaten `CS-ALLOC-001` olduğundan yerine C-BUF-002 alındı (yukarıdaki
-tablo); H2'de altı satır denetlendi (CPP-OWN-001 erken çıkış + CS-PERF-001 `IReadOnlyList`
-düzeltmeleri), H3'te altı analiz-verisi maddesi kapandı (yukarıdaki tablo; tek istisna `n^k`).
-Sırada **H4**: statik dev eval (`codementor eval run --split dev --static-only` + `eval compare`) ve
-README'deki "yalnızca statik" ölçüm satırlarının sonuç dosyalarından güncellenmesi. Faz J isteğe
-bağlı.
+### Faz H — H4: statik dev ölçümü (kayıt: 2026-10-16)
+
+- **Koşu:** `uv run codementor eval run --split dev --static-only` (LLM yok, ağ yok) →
+  `eval/results/20261016T212522_static_none_static_dev.json` (96 örnek).
+  Eski sonuç dosyaları **silinmedi** (devir kuralı); karşılaştırma `eval compare` ile.
+- **Önce/sonra (yalnızca statik, dev 96):**
+
+| Koşu (kurallar) | Denetim P | R | F1 | Big-O birebir/sınıf | Erken çıkış P/R | p50 / p95 |
+|---|---|---|---|---|---|---|
+| `20261003T211404` (r1) | %100 | %57,8 | %73,2 | %97/%97 | %100/%100 | 0,09 / 0,53 sn |
+| `20261005T151516` (r2, H1 sonrası) | %100 | %55,2 | %71,1 | %97/%97 | %100/%100 | 0,11 / 0,68 sn |
+| `20261016T212522` (r2, H2+H3 sonrası) | %100 | %57,5 | %73,0 | %97/%97 | %100/%100 | 0,13 / 0,80 sn |
+
+- **Precision düşmedi** (%100 → %100): H1'in yedi yeni kuralı yanlış pozitif üretmiyor (H4'ün asıl
+  kontrolü buydu). Recall H1 sonrası %55,2'den %57,5'e çıktı (H2'nin CS-PERF-001 `IReadOnlyList`
+  düzeltmesi bir etiketi daha yakalıyor), F1 %71,1 → %73,0. Gecikme p50 125 ms (kural sayısı arttı).
+- **README:** "dev" eval bloğu `eval compare` çıktısından **yeniden üretildi** (bir yeni statik satır +
+  bir yeni sürüm satırı; elle düzenlenmedi); özet tablodaki "Yalnızca statik" dev satırı
+  `100 / 55 / 71` → **`100 / 57 / 73`** ve H4 notu eklendi. `tests/unit/eval/test_readme_table.py`
+  **değiştirilmedi** ve yeşil. Test bölümü `--final` olmadan koşulmadı (H4 kapsamı dev; test koşusu
+  sürüm öncesi kullanıcı kararı).
+- **`docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` §4.8:** bayat "34 kural / CSS ve C++ en zayıf / recall
+  %55" satırları güncel sayımla değiştirildi (41 kural; C 8, C++ 9, C# 7, HTML 6, CSS 6, Python 5;
+  Unity 4, Unreal 3; statik recall %57,5) — H1 kapanış notunda işaretlenen iş.
+- **Doğrulama:** `ruff check` temiz, `ruff format --check` **474 dosya**, `mypy src/` hatasız (**216
+  dosya**), `pytest -m "not live"` **3717 geçti / 16 atlandı / 6 seçilmedi** (3:49); Linux taklidi (§3.1,
+  `block_tk`) → **3624 geçti / 17 atlandı / 6 seçilmedi** (toplama hatası yok).
+
+Sonraki faz: **Faz H** (`faz/h-kurallar`) — **H1, H2, H3 ve H4 bitti**; devir tablosundaki yedinci
+kural olan C# "döngüde `string +=`" zaten `CS-ALLOC-001` olduğundan yerine C-BUF-002 alındı
+(yukarıdaki tablo); H2'de altı satır denetlendi (CPP-OWN-001 erken çıkış + CS-PERF-001
+`IReadOnlyList` düzeltmeleri), H3'te altı analiz-verisi maddesi kapandı (tek istisna `n^k`),
+H4'te statik dev ölçümü yenilendi (precision %100, F1 %73) ve README/§4.8 sayıları sonuç
+dosyalarından güncellendi. **Kalan iş:** faz kapanışı (teslim raporu `docs/YAPILANLAR_FAZ_E_J_ANTIGRAVITY.md`
+"Faz H" bölümü + commit). Faz I ve Faz J devirde kapsam dışı/isteğe bağlı (§9, §10).
 
 Bilinen kararsız test (değişiklikle ilgisiz): `tests/rules/test_engine.py::test_linear_time_large_input[html-*]`
 yük altında 38 sn'yi geçip düşebiliyor; tek başına geçiyor.

@@ -175,7 +175,7 @@ geliştirildi; test bölümü dokunulmadan tutuldu.
 
 | Ölçüm | Claude Opus (`claude_cli`) | Yalnızca statik (LLM yok) |
 |---|---|---|
-| Denetim P / R / F1, dev 96 | **78 / 96 / 86** (Faz 51, güncel prompt) | 100 / 55 / 71 |
+| Denetim P / R / F1, dev 96 | **78 / 96 / 86** (Faz 51, güncel prompt) | 100 / 57 / 73 |
 | Denetim P / R / F1, test 70 | 27 / 92 / 42 (Faz 12 prompt'u, 49 örnek) | 94 / 55 / 69 |
 | Erken çıkış P / R | %100 / %100 | %100 / %100 |
 | Big-O birebir / sınıf (test) | %91–94 / %94–97 | %97 / %97 |
@@ -205,6 +205,12 @@ denetler. "Yalnızca statik" satırındaki injection direnci anlamsızdır (LLM 
 > dev etiketleriyle yeniden koşuldu; LLM satırları Faz 12'deki kurallar ve etiketlerle hesaplandı
 > (yeniden koşulmadı). Satırlar bu yüzden tam karşılaştırılabilir değil; ayrıntı
 > `docs/eval-findings.md` §5.
+
+> Not (Faz H4, 2026-10-16): statik dev koşusu H1–H3 değişiklikleriyle yeniden koşuldu
+> (`eval/results/20261016T212522_static_none_static_dev.json`, 96 örnek): precision **%100'de
+> kaldı**, recall %55 → **%57,5**, F1 %71 → **%73**; Big-O %97/%97, erken çıkış %100/%100.
+> Özet tablodaki "Yalnızca statik" dev satırı bu koşudan; test bölümü `--final` olmadan
+> koşulmadı (H4 kapsamı dev).
 
 **Test (70 örnek):**
 
@@ -256,10 +262,12 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 78% / 95% / 86% | 100% | 0% | 100% | 16.2 / 27.6 | 14416 |
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 71% / 96% / 82% | 100% | 0% | 100% | 18.2 / 38.0 | 15080 |
 | Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 55% / 71% | 100% | 0% | — | 0.1 / 0.7 | — |
+| Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 57% / 73% | 100% | 0% | — | 0.1 / 0.8 | — |
 
 Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
 Sürümler: prompt v1+2579008b · kurallar r2+2256b8a8 · şema 1.1
 Sürümler: prompt v1+2579008b · kurallar r2+5f39f401 · şema 1.1
+Sürümler: prompt v1+632620d8 · kurallar r2+e29a16e4 · şema 1.1
 Sürümler: prompt v1+7205d091 · kurallar r1+d1852061 · şema 1.1
 Sürümler: prompt v1+a4c5ebfc · kurallar r1+d1852061 · şema 1.1
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
