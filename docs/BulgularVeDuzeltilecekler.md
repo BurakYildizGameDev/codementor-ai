@@ -933,11 +933,16 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] **G6 (parça 5):** `LLMProvider.primary_name` protokolü + ortak `NamedProvider` tabanı;
       `orchestrator` `getattr(provider, "chain", …)` yoklaması yerine bu özelliği kullanıyor —
       **Faz G6**
+- [x] **G6 (denetim):** `docs/mimari.md` §5.5.1 (`primary_name`) ve §16 (`models/usage.py`) koda
+      senkronlandı; yanlışlıkla commit edilmiş `.tmp_full.log`/`.tmp_g1.log` repodan çıkarıldı,
+      `.gitignore`'a `.tmp_*.log` eklendi — **Faz G6**
 - [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
       exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra
-- [ ] `ProviderResult`'a "şema zorlandı mı" yeteneği; `SchemaAdapter` kısıtlarını sağlayıcıya göre
-      ayırma (Sonraya: Faz 7, 25)
-- [ ] Token tahmininin gerçek `usage` ile kalibrasyonu (Sonraya: Faz 8)
+- [x] `ProviderResult`'a "şema zorlandı mı" yeteneği: `schema_enforced` alanı (anthropic/openai_compat/
+      ollama True, CLI alt süreçleri False, rapora yazılmaz) — **Faz G7**. Kalan: `SchemaAdapter`
+      kısıtlarını sağlayıcıya göre ayırma (Sonraya: Faz 7, 25)
+- [x] Token tahmininin gerçek `usage` ile kalibrasyonu: `log.debug("token_estimate_ratio", estimated,
+      actual, ratio)` (yalnız DEBUG; davranış değişmez) — **Faz G7**
 
 ---
 

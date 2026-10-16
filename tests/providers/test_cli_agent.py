@@ -131,6 +131,15 @@ async def test_claude_argv_disables_tools_and_uses_schema() -> None:
 
 
 @pytest.mark.parametrize("kind", ["claude_cli", "agy"])
+async def test_cli_schema_is_not_enforced(kind: CliKind) -> None:
+    """G7: CLI alt süreci şema garantisi vermez (metinden JSON da gelebilir) → False."""
+    output = claude_json(structured_output=ANSWER) if kind == "claude_cli" else agy_json()
+    runner = FakeRunner([ok(output)])
+    result = await _run(_provider(kind, runner))
+    assert result.schema_enforced is False
+
+
+@pytest.mark.parametrize("kind", ["claude_cli", "agy"])
 async def test_messages_only_on_stdin(kind: CliKind) -> None:
     # denetim O1/O2: sistem mesajı da argv'ye girmez; agy'de kaybolmaz
     output = claude_json(structured_output=ANSWER) if kind == "claude_cli" else agy_json()

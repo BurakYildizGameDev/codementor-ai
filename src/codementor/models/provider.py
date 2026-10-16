@@ -50,6 +50,13 @@ class ProviderResult(StrictModel):
     model: str
     finish_reason: str | None
     provider: str
+    schema_enforced: bool = Field(
+        default=False,
+        description=(
+            "JSON şemasını sağlayıcı mı zorladı (Faz G7): anthropic, openai_compat ve ollama True; "
+            "CLI alt süreçleri (claude_cli, agy, codex) False. Rapora yazılmaz, tanı içindir."
+        ),
+    )
     warnings: list[str] = Field(
         default_factory=list, description="Rapora `meta.warnings` olarak yazılır (ör. fallback)"
     )

@@ -98,6 +98,8 @@ class OllamaProvider(NamedProvider):
             model=as_text(data.get("model")) or payload["model"],
             finish_reason=as_text(data.get("done_reason")) or None,
             provider=self.name,
+            # G7: `format` alanı JSON şemasını çalışma zamanında zorlar
+            schema_enforced=True,
         )
 
     async def list_models(self) -> list[str]:

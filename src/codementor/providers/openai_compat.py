@@ -118,4 +118,6 @@ class OpenAICompatProvider(NamedProvider):
             model=as_text(data.get("model")) or payload["model"],
             finish_reason=finish,
             provider=self.name,
+            # G7: `response_format.json_schema.strict` şemayı API'de zorlar
+            schema_enforced=True,
         )

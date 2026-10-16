@@ -55,6 +55,13 @@ async def test_calls_are_recorded() -> None:
     assert fake.calls[0].options == options
 
 
+async def test_schema_enforced_defaults_false() -> None:
+    """G7: şemayı sağlayıcı zorlamıyorsa alan varsayılan False kalır (fake şema zorlamaz)."""
+    fake = FakeProvider(script=[FakeReply(data={})])
+    result = await fake.generate_structured(MESSAGES, LLMSocraticOutput, GenerationOptions())
+    assert result.schema_enforced is False
+
+
 async def test_timeout_error_kind() -> None:
     fake = FakeProvider(script=[FakeReply(error="timeout")], retry=RetryPolicy(max_retries=0))
     with pytest.raises(ProviderUnavailableError, match="zaman aşımı"):

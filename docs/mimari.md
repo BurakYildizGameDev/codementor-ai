@@ -473,6 +473,7 @@ class ProviderResult(BaseModel):
     latency_ms: int
     model: str
     finish_reason: str | None
+    schema_enforced: bool = False  # Faz G7: şemayı sağlayıcı mı zorladı (rapora yazılmaz)
 ```
 
 #### 5.5.2 Yapılandırılmış çıktı stratejileri

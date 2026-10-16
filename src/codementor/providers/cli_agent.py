@@ -354,6 +354,8 @@ class CliAgentProvider(NamedProvider):
             model=_served_model(data.get("modelUsage"), model),
             finish_reason=as_text(data.get("stop_reason")) or None,
             provider=self.name,
+            # G7: CLI alt süreci şema garantisi vermez (metinden JSON da gelebilir)
+            schema_enforced=False,
         )
 
     def _agy(
@@ -393,6 +395,8 @@ class CliAgentProvider(NamedProvider):
             model=model,
             finish_reason=status or None,
             provider=self.name,
+            # G7: agy şemayı `--json-schema` ile alsa da çıktı sözleşmesi garanti değil
+            schema_enforced=False,
         )
 
 

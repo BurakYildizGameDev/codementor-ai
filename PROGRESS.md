@@ -272,10 +272,32 @@
 - Tamamlanan altı maddenin kabul ölçütleri: dosya baytları değişmiyor, `['genel', 'dizi']` kayıpsız,
   ağ hatası metni test edilmiş, rapor katmanında `storage` içe aktarımı yok, önbellek/fallback testleri
   yeşil.
+- **G6 sonrası denetim (`48f4e16`):** `docs/mimari.md` §5.5.1 protokol örneğine `primary_name`, §16 dizin
+  listesine `models/usage.py` eklendi (doküman koda senkron); yanlışlıkla commit edilmiş `.tmp_full.log`
+  (10 KB) ve `.tmp_g1.log` (964 B) repodan çıkarıldı, `.gitignore`'a `.tmp_*.log` kuralı geldi. Denetim
+  ayrıca `make check` eşdeğerini koştu: ruff/format temiz, `mypy` 212 dosya hatasız, 3511 geçti.
+
+**G7 — `ProviderResult.schema_enforced` ve token kalibrasyon günlüğü:**
+- **Şema zorlaması:** `models/provider.py::ProviderResult`'a `schema_enforced: bool = False` eklendi;
+  rapora yazılmaz, tanı/loglama alanıdır (rapor şeması ve `schemas/` çıktısı değişmez).
+  Anthropic (`output_config.format`), OpenAI uyumlu uç (`response_format.json_schema.strict`) ve Ollama
+  (`format`) **True** bildirir; CLI alt süreçleri (claude_cli, agy, codex) **False** (alt süreç çıktısı
+  sözleşmesi garanti değil; metinden JSON da gelebilir), fake sağlayıcının varsayılanı False.
+- **Kalibrasyon:** `pipeline/llm_session._log_calibration`, sağlayıcı gerçek `usage.input_tokens`
+  bildirdiğinde `log.debug("token_estimate_ratio", estimated=…, actual=…, ratio=…)` yazar. Oran
+  `gerçek / tahmin`; 1'e yakınsa `prompts.budget.estimate_messages` (`⌈karakter/3⌉`) tutarlı demektir.
+  Token muhasebesi, rapor alanları ve önbellek kararı değişmez (yalnız DEBUG satırı eklenir).
+- Testler: `tests/providers/test_fake.py` (+1 varsayılan False), `tests/providers/test_adapters.py`
+  (+2: ollama ve anthropic True), `tests/providers/test_gemini.py` (+1: openai_compat True),
+  `tests/providers/test_cli_agent.py` (+2: claude_cli/agy False), `tests/providers/test_codex_cli.py`
+  (+1 False), `tests/unit/test_usage.py` (+2: gerçek usage varken oran loglanır, yoksa loglanmaz).
+  Sağlayıcı testlerinin tamamı respx/sahte çalıştırıcı ile ağsız koşar.
+- **Doğrulama (G7):** `ruff check`/`ruff format --check` temiz (469 dosya); `mypy src/` 212 dosyada
+  hatasız; `pytest -m "not live"` **3520 geçti / 15 atlandı** (G6-4/5 sonrası 3511 → +9 test).
 
 ### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15; G4+ denetimiyle güncellendi)
 
-Durum: **G0-G4, G4+ ve G6 (altı maddenin tamamı) bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3511 geçti / 15 atlandı**.
+Durum: **G0-G4, G4+, G6 (altı maddenin tamamı) ve G7 bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5 → `48f4e16` G6 denetim düzeltmeleri → G7). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3520 geçti / 15 atlandı**.
 
 **Düzeltme (G4 sonrası denetim):** listenin ilk sürümü D14/D15/D17/D19'u açık sanıyordu; kaynağı §5
 tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D17 **Faz E**, D19 **Faz F**
@@ -289,8 +311,9 @@ Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`Bulgula
    tablosu + satır sonu (CRLF/LF) koruması ve `models/questions.from_question` (yalnız tamamen varsayılan
    listeler boşalıyor, `['genel', 'dizi']` düzenle→kaydet kayıpsız); parça 4-5: `cli/errors.describe` ağ
    hatası metni, `UsageTotals` → `models/usage.py`, `LLMProvider.primary_name`. — *kalan yok*
-2. **G7:** `ProviderResult.schema_enforced` (anthropic/openai_compat `strict` → True, CLI'lar False) +
-   token tahmininin `usage` ile `log.debug("token_estimate_ratio")` kalibrasyonu (davranış değişmez). — *küçük*
+2. **G7:** ✅ **tamam** — `ProviderResult.schema_enforced` (anthropic/openai_compat/ollama True,
+   CLI'lar False, fake varsayılanı False) + token tahmininin `usage` ile
+   `log.debug("token_estimate_ratio")` kalibrasyonu (davranış değişmez, +9 test). — *kalan yok*
 3. **G5 / D20:** `buildinfo.py` maskesiz logger → `get_logger`; `--help` İngilizce metni (Typer'la
    Türkçeleştirilemiyorsa rapora "değiştirilemedi" yaz, kendi `--help`'ini yazma); `eval run --language`
    → `Language` enum (geçersiz değer çıkış 2); `build_exe.py` `EXCLUDES`'a `fastapi`/`uvicorn`/`starlette`

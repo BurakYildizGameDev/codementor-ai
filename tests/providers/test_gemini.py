@@ -77,6 +77,18 @@ def test_no_sampling_params_unless_configured() -> None:
         assert key not in payload
 
 
+async def test_openai_compat_schema_is_enforced(
+    router: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """G7: `response_format.json_schema.strict` şemayı API'de zorlar → `schema_enforced` True."""
+    monkeypatch.setenv("GEMINI_API_KEY", "gm-test-SECRET-0123456789")
+    router.post(GEMINI_URL).mock(
+        return_value=httpx.Response(200, json=openai_body(ANSWER, "gemini-test"))
+    )
+    result = await _gemini().generate_structured(MESSAGES, LLMSocraticOutput, GenerationOptions())
+    assert result.schema_enforced is True
+
+
 async def test_bearer_header_and_url(
     router: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
 ) -> None:

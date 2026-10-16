@@ -120,6 +120,13 @@ async def test_argv_is_read_only_ephemeral_and_ignores_user_config() -> None:
     assert "--dangerously-bypass-approvals-and-sandbox" not in argv
 
 
+async def test_codex_schema_is_not_enforced() -> None:
+    """G7: codex çıktısı JSONL olaylarından toplanır (şema garantisi yok) → False."""
+    runner = FakeRunner([ok(FIXTURE.read_text(encoding="utf-8"))])
+    result = await _run(_provider(runner))
+    assert result.schema_enforced is False
+
+
 async def test_messages_only_on_stdin() -> None:
     runner = FakeRunner([ok(FIXTURE.read_text(encoding="utf-8"))])
     await _run(_provider(runner))

@@ -119,4 +119,6 @@ class AnthropicProvider(NamedProvider):
             model=as_text(data.get("model")) or payload["model"],
             finish_reason=stop,
             provider=self.name,
+            # G7: `output_config.format` şemayı API'de zorlar
+            schema_enforced=True,
         )

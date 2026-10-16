@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -81,6 +82,34 @@ async def test_provider_estimate_flag_propagates() -> None:
     await session.call("llm_b", _built(), LLMSocraticOutput)
     assert session.usage_estimated
     assert session.tokens_out == 40
+
+
+# --- Faz G7: token tahmininin gerçek `usage` ile kalibrasyonu ---------------------------------
+
+
+async def test_estimate_ratio_logged_when_usage_reported(
+    captured_logs: Callable[[], list[dict[str, Any]]],
+) -> None:
+    """G7: sağlayıcı gerçek token bildirdiğinde tahmin/oran DEBUG'a yazılır; muhasebe değişmez."""
+    session = _session(
+        _Silent(script=[], reply_usage=TokenUsage(input_tokens=900, output_tokens=3)), Settings()
+    )
+    await session.call("llm_b", _built(), LLMSocraticOutput)
+    entries = [e for e in captured_logs() if e["event"] == "token_estimate_ratio"]
+    assert len(entries) == 1
+    assert entries[0]["actual"] == 900
+    assert entries[0]["estimated"] > 0
+    assert entries[0]["ratio"] == round(900 / entries[0]["estimated"], 3)
+    assert (session.tokens_in, session.tokens_out) == (900, 3)
+
+
+async def test_estimate_ratio_not_logged_without_usage(
+    captured_logs: Callable[[], list[dict[str, Any]]],
+) -> None:
+    """Karşılaştıracak gerçek sayı yoksa (sağlayıcı bildirmedi) log yazılmaz."""
+    session = _session(_Silent(script=[]), Settings())
+    await session.call("llm_b", _built(), LLMSocraticOutput)
+    assert [e for e in captured_logs() if e["event"] == "token_estimate_ratio"] == []
 
 
 def test_cost_from_pricing() -> None:

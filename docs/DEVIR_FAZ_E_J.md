@@ -744,12 +744,23 @@ DB kullan (kullanıcının geçmişini bozma).
 `644852b` G6-4/5). Doğrulama: `ruff check`/`ruff format --check` temiz (469 dosya), `mypy src/` 212 dosyada
 hatasız, `pytest -m "not live"` **3511 geçti / 15 atlandı**.
 
-### G7 — `ProviderResult.schema_enforced` ve token kalibrasyon günlüğü
-- `models/provider.py::ProviderResult`'a `schema_enforced: bool = False` (sağlayıcı katı JSON şeması
-  uyguladı mı: anthropic yapılandırılmış çıktı, openai_compat strict = True; CLI'lar False).
-  Raporda gösterilmez. Token tahmini (`prompts/budget.estimate_messages`) gerçek `usage.input_tokens`
-  geldiğinde oran `log.debug("token_estimate_ratio", ...)` ile yazılır; davranış değişmez.
-- **Test:** FakeProvider ile alanın varsayılanı; anthropic sağlayıcı testinde (respx ile, ağsız) True.
+### G7 — `ProviderResult.schema_enforced` ve token kalibrasyon günlüğü ✅
+- ✅ `models/provider.py::ProviderResult`'a `schema_enforced: bool = False` eklendi (sağlayıcı katı JSON
+  şeması uyguladı mı): anthropic (`output_config.format`), openai_compat (`response_format.json_schema.
+  strict`) ve ollama (`format`) **True**; CLI'lar (claude_cli, agy, codex) **False**; fake varsayılanı
+  False. Raporda gösterilmez; rapor şeması ve `schemas/` çıktısı değişmez.
+- ✅ Token tahmini (`prompts/budget.estimate_messages`) ile gerçek `usage.input_tokens` karşılaştırması
+  `pipeline/llm_session._log_calibration` içinde `log.debug("token_estimate_ratio", estimated, actual,
+  ratio)` olarak yazılıyor; davranış (muhasebe, rapor, önbellek kararı) değişmedi.
+- **Test:** FakeProvider varsayılanı (`test_fake.py`), anthropic + ollama True (`test_adapters.py`, respx,
+  ağsız), openai_compat True (`test_gemini.py`), claude_cli/agy + codex False, kalibrasyon satırı
+  loglanır/loglanmaz (`tests/unit/test_usage.py`; `captured_logs` fikstürü). Toplam +9 test.
+
+**G7 durumu:** bitti; doğrulama `ruff check`/`ruff format --check` temiz (469 dosya), `mypy src/` 212
+dosyada hatasız, `pytest -m "not live"` **3520 geçti / 15 atlandı**.
+
+**G6 denetimi (dal içi):** `docs/mimari.md` §5.5.1/§16 doküman senkronu ve `.tmp_full.log`/`.tmp_g1.log`
+artıklarının repodan çıkarılması `48f4e16` commit'iyle kapandı (`.gitignore`'a `.tmp_*.log` eklendi).
 
 **Faz G kabul:** G0-G7 testleri; iki büyük dosya < 400; dört denetim; §3.1 Linux taklidi; G5-4 exe
 duman testi çıktısı rapora.

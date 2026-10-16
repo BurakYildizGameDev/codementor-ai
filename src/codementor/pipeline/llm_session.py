@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel
 
 from codementor.config import Settings
+from codementor.log import get_logger
 from codementor.models.pipeline import Stage
 from codementor.models.prompts import BuiltPrompt
 from codementor.models.provider import GenerationOptions, ProviderResult, TokenUsage
@@ -20,6 +21,8 @@ from codementor.models.verification import AnalysisVerification
 from codementor.pipeline.events import StageTimer
 from codementor.prompts.budget import estimate_messages, estimate_tokens
 from codementor.providers.base import LLMProvider
+
+log = get_logger("codementor.pipeline")
 
 
 def _accumulate(current: TokenSplit | None, usage: TokenUsage) -> TokenSplit:
@@ -85,6 +88,7 @@ class LLMSession:
         usage = result.usage
         if usage.input_tokens or usage.output_tokens:
             self.usage_estimated |= usage.estimated
+            _log_calibration(estimate_messages(built.messages), usage.input_tokens)
             return usage
         self.usage_estimated = True
         return TokenUsage(
@@ -92,3 +96,20 @@ class LLMSession:
             output_tokens=estimate_tokens(result.raw_text),
             estimated=True,
         )
+
+
+def _log_calibration(estimated: int, actual: int) -> None:
+    """Faz G7: token tahmini (`prompts.budget`) ile sağlayıcının bildirdiği giriş token'ını
+    karşılaştırır; yalnız DEBUG'a yazılır, davranışı değiştirmez.
+
+    `ratio = gerçek / tahmin`; 1'e yakınsa `⌈karakter/3⌉` tahmini tutarlı demektir. Oran uzun
+    süre 1'den uzaksa bütçe hesabı (`prompts.budget.fit_to_budget`) yeniden ayarlanmalıdır.
+    """
+    if estimated <= 0 or actual <= 0:  # sayı yoksa oran anlamsız (sağlayıcı bildirmedi)
+        return
+    log.debug(
+        "token_estimate_ratio",
+        estimated=estimated,
+        actual=actual,
+        ratio=round(actual / estimated, 3),
+    )

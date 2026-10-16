@@ -248,6 +248,8 @@ class CodexCliProvider(NamedProvider):
                 model=model,
                 finish_reason=None,
                 provider=NAME,
+                # G7: codex çıktısı JSONL olaylarından toplanır; şema garantisi yok
+                schema_enforced=False,
             ),
             result.truncated,
         )

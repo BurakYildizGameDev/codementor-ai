@@ -57,6 +57,18 @@ async def test_ollama_format_is_json_schema(router: respx.MockRouter) -> None:
     assert sent["messages"] == [m.model_dump() for m in MESSAGES]
 
 
+async def test_ollama_schema_is_enforced_by_the_server(router: respx.MockRouter) -> None:
+    """G7: `format` alanı JSON şemasını çalışma zamanında zorlar → `schema_enforced` True."""
+    router.post("http://o.test/api/chat").mock(
+        return_value=httpx.Response(200, json=ollama_body(ANSWER, "m"))
+    )
+    provider = OllamaProvider(
+        OllamaConfig(base_url="http://o.test", model="m"), transport=_transport("ollama")
+    )
+    result = await provider.generate_structured(MESSAGES, LLMSocraticOutput, OPTIONS)
+    assert result.schema_enforced is True
+
+
 @pytest.mark.parametrize("configured", [None, 4096, 32768])
 async def test_ollama_num_ctx_always_sent(router: respx.MockRouter, configured: int | None) -> None:
     route = router.post("http://o.test/api/chat").mock(
@@ -171,6 +183,15 @@ async def test_anthropic_text_block_after_thinking(router: respx.MockRouter) -> 
     result = await _anthropic().generate_structured(MESSAGES, LLMSocraticOutput, OPTIONS)
     assert result.parsed is not None
     assert result.finish_reason == "end_turn"
+
+
+async def test_anthropic_schema_is_enforced_by_the_api(router: respx.MockRouter) -> None:
+    """G7: `output_config.format` şemayı API'de zorlar → `schema_enforced` True."""
+    router.post("https://an.test/v1/messages").mock(
+        return_value=httpx.Response(200, json=anthropic_body(ANSWER, "m"))
+    )
+    result = await _anthropic().generate_structured(MESSAGES, LLMSocraticOutput, OPTIONS)
+    assert result.schema_enforced is True
 
 
 @pytest.mark.parametrize(("stop", "parsed"), [("refusal", False), ("max_tokens", False)])
