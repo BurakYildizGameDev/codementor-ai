@@ -297,7 +297,7 @@
 
 ### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15; G4+ denetimiyle güncellendi)
 
-Durum: **G0-G4, G4+, G6 (altı maddenin tamamı) ve G7 bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5 → `48f4e16` G6 denetim düzeltmeleri → G7). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3520 geçti / 15 atlandı**.
+Durum: **G0-G4, G4+, G6 (altı maddenin tamamı) ve G7 bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5 → `48f4e16` G6 denetim düzeltmeleri → `c403070` G7). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3520 geçti / 15 atlandı**.
 
 **Düzeltme (G4 sonrası denetim):** listenin ilk sürümü D14/D15/D17/D19'u açık sanıyordu; kaynağı §5
 tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D17 **Faz E**, D19 **Faz F**

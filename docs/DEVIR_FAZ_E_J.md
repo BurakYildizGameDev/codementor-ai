@@ -756,7 +756,7 @@ hatasız, `pytest -m "not live"` **3511 geçti / 15 atlandı**.
   ağsız), openai_compat True (`test_gemini.py`), claude_cli/agy + codex False, kalibrasyon satırı
   loglanır/loglanmaz (`tests/unit/test_usage.py`; `captured_logs` fikstürü). Toplam +9 test.
 
-**G7 durumu:** bitti; doğrulama `ruff check`/`ruff format --check` temiz (469 dosya), `mypy src/` 212
+**G7 durumu:** bitti (`c403070`); doğrulama `ruff check`/`ruff format --check` temiz (469 dosya), `mypy src/` 212
 dosyada hatasız, `pytest -m "not live"` **3520 geçti / 15 atlandı**.
 
 **G6 denetimi (dal içi):** `docs/mimari.md` §5.5.1/§16 doküman senkronu ve `.tmp_full.log`/`.tmp_g1.log`
