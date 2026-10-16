@@ -741,7 +741,7 @@ DB kullan (kullanıcının geçmişini bozma).
 | `primary` adı ✅ G6 | `orchestrator.py` (`getattr(provider, "chain", [provider])[0].name`) | `LLMProvider` protokolüne `primary_name` eklendi; ortak `NamedProvider` tabanı (fake, ollama, gemini, anthropic, claude_cli/agy, codex, eval `StaticOnlyProvider`) `name` döndürür, `FallbackProvider` ilk halkayı; `orchestrator` bu özelliği kullanıyor | mevcut önbellek/fallback testleri (`tests/integration/test_pipeline_partial.py`) + `tests/providers/test_factory.py` (+3) + `tests/providers/test_contract.py` (+1, her adaptörde `primary_name == name`) |
 
 **G6 durumu:** altı maddenin tamamı bitti (parça 1-5; commit'ler `c3f64fa` G6-1/2, `a39ec09` G6-3,
-G6-4/5). Doğrulama: `ruff check`/`ruff format --check` temiz (469 dosya), `mypy src/` 212 dosyada
+`644852b` G6-4/5). Doğrulama: `ruff check`/`ruff format --check` temiz (469 dosya), `mypy src/` 212 dosyada
 hatasız, `pytest -m "not live"` **3511 geçti / 15 atlandı**.
 
 ### G7 — `ProviderResult.schema_enforced` ve token kalibrasyon günlüğü
