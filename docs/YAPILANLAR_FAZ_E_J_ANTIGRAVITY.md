@@ -6,7 +6,7 @@
 | E | faz/e-web | f8a2be4 | tam | 12/0/0 |
 | F | faz/f-masaustu | 138fbcf | tam | 13/0/0 |
 | G | faz/g-saglayici | 0472603 | tam | 11/0/0 |
-| H | faz/h-kurallar | deb2eda (H3) | H1–H4 tam | 4/0/0 |
+| H | faz/h-kurallar | 0fb7162 (H4) | H1–H4 tam | 4/0/0 |
 
 > **Kapanış denetimi (2026-10-16):** F satırı "sürüyor 3/0/10" iken yazılmıştı; Faz F'nin tamamı
 > (F0-F12) bitti (`PROGRESS.md` Faz F "Yapılanlar", son commit `138fbcf`) ve satır güncellendi.
@@ -324,7 +324,7 @@
   "…"` + `#pragma X` ile host dosyası yoklanabiliyordu. `-fdiagnostics-column-unit=byte` ile gcc/clang
   aynı kolon birimini kullanır; bayrağı tanımayan eski sürümde komut bayraksız yeniden denenir.
 
-### H4 — statik dev ölçümü — ✅
+### H4 — statik dev ölçümü — ✅ (`0fb7162`)
 - Değişen dosyalar: `README.md` (dev eval bloğu `eval compare` çıktısından yeniden üretildi + özet
   satır), `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` §4.8, `PROGRESS.md`,
   `eval/results/20261016T212522_static_none_static_dev.json` (yeni sonuç dosyası; eskiler silinmedi).
