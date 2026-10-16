@@ -30,14 +30,16 @@ MAX_EXPONENT = 100
 
 @dataclass(frozen=True, slots=True)
 class _Token:
-    kind: str  # num | var | log | sqrt | ^ * + / ( ) ! _
+    kind: str  # num | var | log | sqrt | max | ^ * + / , ( ) ! _ | wrap
     text: str
     num: Fraction = Fraction(0)
 
 
 _LETTERS = frozenset(string.ascii_lowercase)
 _DIGITS = frozenset(string.digits)
-_KEYWORDS = {"sqrt": "sqrt", "log": "log", "lg": "log", "ln": "log"}
+_KEYWORDS = {"sqrt": "sqrt", "log": "log", "lg": "log", "ln": "log", "max": "max"}
+# `Θ(...)`/`Ω(...)` sarmalayıcıları yalnızca ifadenin başında geçerli (gösterimde O'ya çevrilir)
+_WRAPPERS = frozenset({"θ", "ω"})
 _SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉"
 _FROM_SCRIPT = str.maketrans(_SUPERSCRIPT_DIGITS + _SUBSCRIPT_DIGITS, "0123456789" * 2)
 _SINGLE = {
@@ -49,6 +51,7 @@ _SINGLE = {
     "⋅": "*",
     "+": "+",
     "/": "/",
+    ",": ",",
     "(": "(",
     "[": "(",
     "{": "(",
@@ -114,6 +117,9 @@ def _tokenize(text: str) -> list[_Token]:
         elif c == "ⁿ":
             tokens += [_Token("^", "^"), _Token("var", "n")]
             i += 1
+        elif c in _WRAPPERS:  # Θ/Ω → sarmalayıcı belirteci (büyük harfler `lower()` ile indi)
+            tokens.append(_Token("wrap", c))
+            i += 1
         elif c in _SUBSCRIPT_DIGITS:
             value, i = _script_run(s, i, _SUBSCRIPT_DIGITS)
             tokens += [_Token("_", "_"), _Token("num", str(value), value)]
@@ -127,7 +133,7 @@ def _tokenize(text: str) -> list[_Token]:
 
 # --------------------------------------------------------------------------- ayrıştırıcı
 
-_TERM_STARTS = frozenset({"num", "var", "log", "sqrt", "("})
+_TERM_STARTS = frozenset({"num", "var", "log", "sqrt", "max", "("})
 
 
 class _Parser:
@@ -171,7 +177,9 @@ class _Parser:
 
     def _strip_wrapper(self) -> None:
         t = self.tokens
-        if len(t) >= 2 and t[0].kind == "var" and t[0].text == "o" and t[1].kind == "(":
+        if len(t) >= 2 and ((t[0].kind == "var" and t[0].text == "o") or t[0].kind == "wrap"):
+            if t[1].kind != "(":
+                return
             depth = 0
             for i in range(1, len(t)):
                 depth += {"(": 1, ")": -1}.get(t[i].kind, 0)
@@ -246,9 +254,31 @@ class _Parser:
             return expr
         if tok.kind == "log":
             return self._log_call()
+        if tok.kind == "max":
+            return self._max_call()
         if tok.kind == "sqrt":
             return _pow(self._func_arg(), Fraction(1, 2))
         self._fail(f"beklenmeyen {tok.text!r}")
+
+    def _max_call(self) -> _Expr:
+        """`max(a, b, ...)` → argümanların toplamı.
+
+        Big-O'da `max(a, b) = Θ(a + b)` (iki taraf birbirini sabit katsayıyla sınırlar);
+        `V+E` çok değişkenli toplamıyla aynı temsil kullanılır. Tek argüman reddedilir.
+        """
+        if not self._at("("):
+            self._fail("max yalnızca max(a, b) biçiminde desteklenir")
+        self._advance()
+        expr = self._expr()
+        count = 1
+        while self._at(","):
+            self._advance()
+            expr = _add(expr, self._expr())
+            count += 1
+        self._expect(")")
+        if count < 2:
+            self._fail("max en az iki argüman almalı")
+        return expr
 
     def _log_call(self) -> _Expr:
         # Taban yok sayılır: log_2 n, log2 n, log₂ n → log n

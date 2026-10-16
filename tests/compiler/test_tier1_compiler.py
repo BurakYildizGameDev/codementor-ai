@@ -149,3 +149,20 @@ def test_roslyn_available_when_required() -> None:
     if os.environ.get("CODEMENTOR_REQUIRE_ROSLYN") != "1":
         pytest.skip("yalnızca CI'da zorunlu")
     assert CHAIN.csharp is not None, "dotnet ya da tools/roslyn-check/out/RoslynCheck.dll yok"
+
+
+@needs_c
+def test_c_with_unicode_string_is_still_checked() -> None:
+    """Faz H3: `-fdiagnostics-column-unit=byte` bayrağı denetimi bozmaz.
+
+    Bayrak eski derleyicide reddedilse bile `run_tier1` bayraksız yeniden dener; yani
+    Unicode içeren geçerli kod her durumda temiz geçmeli (tanı kolonları sürüme göre
+    değiştiği için burada sabitlenmez).
+    """
+    code = _code(
+        '#include <stdio.h>\nint main(void) {\n    puts("çğüş — ✓");\n    return 0;\n}\n',
+        Language.C,
+    )
+    result = _run(code)
+    assert result.skip_reason is None, result
+    assert result.status is CompilationStatus.PASSED, result

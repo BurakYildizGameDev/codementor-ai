@@ -1,18 +1,23 @@
 """Big-O ifadesi ayrıştırıcı ve normalleştirici (mimari §5.6).
 
-Dilbilgisi (EBNF, büyük/küçük harf duyarsız; `O(...)` sarmalayıcısı isteğe bağlı):
+Dilbilgisi (EBNF, büyük/küçük harf duyarsız; `O(...)`, `Θ(...)` ve `Ω(...)`
+sarmalayıcıları isteğe bağlı ve yalnızca ifadenin tamamını sarabilir):
 
     expr     := term ("+" term)*
     term     := postfix (("*" | "/" NUMBER | <bitişik>) postfix)*
     postfix  := NUMBER ("^" exponent)?
               | primary ("!" | "^" exponent)*
     primary  := VAR | "(" expr ")" | LOG base? ("^" exponent)? arg | SQRT arg
+              | MAX "(" expr "," expr ("," expr)* ")"
     arg      := "(" expr ")" | postfix
     exponent := NUMBER | VAR | "(" (NUMBER | VAR) ")"
 
 Anlamsal model: ifade, terimlerin toplamıdır; her terim değişken başına
-`n^a · log^b n · c^n · (n!)^k` çarpanlarından oluşur. Sabit katsayılar atılır,
-başka bir terim tarafından asimptotik olarak baskılanan terimler silinir.
+`n^a · log^b n · (log log n)^j · c^n · (n!)^k` çarpanlarından oluşur. Sabit katsayılar
+atılır, başka bir terim tarafından asimptotik olarak baskılanan terimler silinir.
+`max(a, b)` çok değişkenli toplam olarak normalleşir (`max(n, m)` → `m + n`): Big-O'da
+`max(a, b) = Θ(a + b)`. Değişken üs yalnızca sayısal tabanla desteklenir (`2^n`);
+`n^k` reddedilir (sembolik üs modellenmez).
 """
 
 from __future__ import annotations

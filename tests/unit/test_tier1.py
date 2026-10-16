@@ -221,6 +221,24 @@ def test_unreal_api_macro_neutralized() -> None:
     assert stdin.index("AFoo") == text.index("AFoo")
 
 
+def test_unreal_delegate_macro_reaches_compiler() -> None:
+    """Faz H3: delege makroları Tier 1'de boşaltılmaz; açılımı stub başlığı yapar.
+
+    Boşaltılsaydı delege tipi (`FOnReady`) tanımsız kalır, geçerli kod uyarı üretirdi.
+    """
+    runner = FakeRunner()
+    text = (
+        "DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnReady, int32, Index, bool, bDone);\n"
+        "\nUCLASS()\nclass AGadget : public AActor\n{\n    GENERATED_BODY()\n"
+        "public:\n    UPROPERTY(BlueprintAssignable)\n    FOnReady OnReady;\n};\n"
+    )
+    run_tier1(_code(text, Language.CPP, Engine.UNREAL), SETTINGS, toolchain=FULL, runner=runner)
+    argv, stdin, _, _ = runner.calls[0]
+    assert "DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnReady" in stdin
+    assert "UCLASS" not in stdin  # yansıma makroları yine boşaltılır
+    assert str(STUB.resolve()) in argv  # tipi stub tanımlar
+
+
 def test_unreal_keeps_system_includes() -> None:
     runner = FakeRunner()
     code = _code("#include <vector>\n" + UNREAL_CODE, Language.CPP, Engine.UNREAL)
@@ -433,6 +451,62 @@ def test_runner_receives_cancel_event() -> None:
     cancel = threading.Event()
     run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner, cancel=cancel)
     assert runner.cancels == [cancel]
+
+
+# ---------------------------------------------------- kolon birimi: bayt (Faz H3)
+
+
+def test_c_argv_uses_byte_columns() -> None:
+    """gcc'nin `display` birimi yerine bayt seçilir: iki derleyici aynı birimi kullanır."""
+    runner = FakeRunner()
+    run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
+    ((argv, *_),) = [runner.calls[0]]
+    assert "-fdiagnostics-column-unit=byte" in argv
+    assert argv[-1] == "-"  # stdin göstergesi sonda kalır
+
+
+def test_unsupported_column_unit_is_retried_without_flag() -> None:
+    """Eski gcc bayrağı tanımazsa ikinci kez bayraksız çalıştırılır (denetim atlanmaz)."""
+    results = [
+        ProcessResult(
+            1, "", "gcc: error: unrecognized command-line option '-fdiagnostics-column-unit=byte'\n"
+        ),
+        ProcessResult(1, "", "<stdin>:3:5: error: 'x' undeclared\n"),
+    ]
+    calls: list[list[str]] = []
+
+    def runner(
+        argv: Sequence[str],
+        stdin: str,
+        limits: ProcessLimits,
+        *,
+        extra_env: Mapping[str, str] | None = None,
+        cancel: threading.Event | None = None,
+    ) -> ProcessResult:
+        calls.append(list(argv))
+        return results[len(calls) - 1]
+
+    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
+    assert len(calls) == 2
+    assert "-fdiagnostics-column-unit=byte" in calls[0]
+    assert "-fdiagnostics-column-unit=byte" not in calls[1]
+    assert result.status is CompilationStatus.FAILED
+    assert [d.line for d in result.diagnostics] == [3]
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    [
+        ProcessResult(0, "", ""),  # başarılı: yeniden deneme yok
+        ProcessResult(1, "", "<stdin>:2:1: error: beklenmeyen\n"),  # bayrak anılmıyor
+        ProcessResult(None, "", "", error="runner exception"),
+        ProcessResult(1, "", "", timed_out=True),
+    ],
+)
+def test_no_retry_without_flag_complaint(outcome: ProcessResult) -> None:
+    runner = FakeRunner(outcome)
+    run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
+    assert len(runner.calls) == 1
 
 
 def test_roslyn_env_keeps_fsize_limit_compatible() -> None:

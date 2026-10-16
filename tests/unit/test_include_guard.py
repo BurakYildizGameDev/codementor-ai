@@ -61,6 +61,23 @@ REJECTED = {
     "spaced_comment_between": '# /* a */ include "../x.h"\n',
     "two_comments_between": "#/**//**/include <stdio.h>\n",
     "comment_between_embed": '#/**/embed "data.bin"\n',
+    # --- Faz H3: `#pragma` izin listesi ve `#line`
+    "pragma_pack": "#pragma pack(push, 1)\n",
+    "pragma_warning": "#pragma warning(disable: 4996)\n",
+    "pragma_unknown": "#pragma bilesen_bilgisi\n",
+    "pragma_macro_dependency": '#define X GCC dependency "/etc/passwd"\n#pragma X\n',
+    "pragma_macro_dependency_digraph": '%:define X GCC dependency "/etc/x"\n%:pragma X\n',
+    "pragma_lowercase_dependency": '#pragma gcc dependency "/etc/passwd"\n',
+    "pragma_define_argument": "#pragma bilesen(1)\n",
+    "pragma_after_comment": "/* x */ #pragma pack(1)\n",
+    "define_once_macro": '#define once GCC dependency "/etc/passwd"\n',
+    "define_region_macro": "#define region /* gizli */\n",
+    "define_endregion_macro": "#define endregion 1\n",
+    "line_with_filename": '#line 1 "/etc/passwd"\n',
+    "line_with_relative_filename": '#line 7 "yol/../x.c"\n',
+    "line_with_macro": "#line __LINE__\n",
+    "line_comment_split": '#/**/line 1 "/etc/passwd"\n',
+    "line_after_comment": '/* x */ #line 1 "a.c"\n',
 }
 
 ALLOWED = {
@@ -73,6 +90,19 @@ ALLOWED = {
     "division_not_path": "int a = 4 / 2;\n",
     "comment_after_include": "#include <stdio.h> /* g/ç */\n",
     "hash_in_comment_then_word": "/* # */ int include_count = 0;\n",
+    # --- Faz H3: izin listesindeki biçimler ve yorum/metindeki geçişler
+    "pragma_once": "#pragma once\n",
+    "pragma_once_with_comment": "#pragma once // koruma\n",
+    "pragma_region": "#pragma region Gizli bölge\nint x = 1;\n#pragma endregion\n",
+    "pragma_region_digraph": "%:pragma region\n",
+    "pragma_in_comment": "// #pragma pack(1) kullanma\n",
+    "pragma_in_string": 'const char* s = "#pragma pack(1)";\n',
+    "define_not_reserved": "#define PAKET_BOYU 32\n",
+    "line_number": "#line 42\nint x = 1;\n",
+    "line_number_spaced": "#   line   42   \n",
+    "line_number_digraph": "%:line 42\n",
+    "line_in_comment": '// #line 1 "/etc/passwd" ekleme\n',
+    "line_in_string": 'const char* s = "#line 1 x.c";\n',
 }
 
 

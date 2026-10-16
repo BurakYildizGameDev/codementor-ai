@@ -1,7 +1,7 @@
 """Big-O terim cebiri ve kanonik biçimlendirme (`bigo.py` iç modülü).
 
 İfade, terimlerin toplamıdır; her terim değişken başına
-`n^a · log^b n · c^n · (n!)^k` çarpanlarından oluşur.
+`n^a · log^b n · (log log n)^j · c^n · (n!)^k` çarpanlarından oluşur.
 """
 
 from __future__ import annotations
@@ -26,16 +26,19 @@ class _InvalidError(Exception):
 
 @dataclass(frozen=True, slots=True, order=True)
 class _Factor:
-    """Tek bir değişkenin çarpan katkısı: `(n!)^factorial · exp_base^n · n^power · log^log_power n`.
+    """Tek değişkenin çarpan katkısı:
+    `(n!)^factorial · exp_base^n · n^power · log^log_power n · (log log n)^log_log_power`.
 
     Alan sırası asimptotik büyüme önceliğidir; bu yüzden `order=True` ile gelen
-    sözlüksel karşılaştırma tek değişkenli sıralamanın ta kendisidir.
+    sözlüksel karşılaştırma tek değişkenli sıralamanın ta kendisidir
+    (`1 < log log n < log n < n`; `log_power` bu yüzden `log_log_power`dan önce gelir).
     """
 
     factorial: int = 0
     exp_base: Fraction = Fraction(1)
     power: Fraction = Fraction(0)
     log_power: Fraction = Fraction(0)
+    log_log_power: Fraction = Fraction(0)
 
 
 _IDENTITY = _Factor()
@@ -67,6 +70,7 @@ def _mul_factor(a: _Factor, b: _Factor) -> _Factor:
         exp_base=_check_base(a.exp_base * b.exp_base),
         power=a.power + b.power,
         log_power=a.log_power + b.log_power,
+        log_log_power=a.log_log_power + b.log_log_power,
     )
 
 
@@ -78,6 +82,7 @@ def _pow_factor(f: _Factor, k: Fraction) -> _Factor:
         exp_base=_check_base(f.exp_base ** int(k)),
         power=f.power * k,
         log_power=f.log_power * k,
+        log_log_power=f.log_log_power * k,
     )
 
 
@@ -131,8 +136,10 @@ def _log(a: _Expr) -> _Expr:
             parts.add(_make_term({var: _Factor(power=Fraction(1))}))
         elif f.power > 0:  # log(n^k · log^j n) = Θ(log n)
             parts.add(_make_term({var: _Factor(log_power=Fraction(1))}))
-        else:
-            raise _InvalidError("iç içe logaritma (log log n) desteklenmiyor")
+        elif f.log_power > 0:  # log(log^j n) = j·log log n = Θ(log log n)
+            parts.add(_make_term({var: _Factor(log_log_power=Fraction(1))}))
+        else:  # yalnızca log log n: log log log n modellenmiyor
+            raise _InvalidError("iç içe logaritma (log log log n) desteklenmiyor")
     return _simplify(parts) if parts else _CONSTANT
 
 
@@ -161,6 +168,11 @@ def _format_factor(var: str, f: _Factor) -> str:
     if f.log_power:
         log = "log" if f.log_power == 1 else f"log^{_format_number(f.log_power)}"
         parts.append(f"{log} {var}")
+    if f.log_log_power:
+        log_log = f"log log {var}"
+        parts.append(
+            log_log if f.log_log_power == 1 else f"({log_log})^{_format_number(f.log_log_power)}"
+        )
     if f.exp_base != 1:
         parts.append(f"{_format_number(f.exp_base)}^{var}")
     if f.factorial:

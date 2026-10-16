@@ -64,9 +64,15 @@ def test_missing_file(tmp_path: Path) -> None:
         load_call_costs(tmp_path / "yok.yaml")
 
 
-def _call(method: str, receiver: str | None = None, qualified: str | None = None) -> CallName:
+def _call(
+    method: str,
+    receiver: str | None = None,
+    qualified: str | None = None,
+    first_arg: str | None = None,
+    arg_count: int = 0,
+) -> CallName:
     display = qualified or (f"{receiver}.{method}" if receiver else method)
-    return CallName(display, method, receiver, qualified)
+    return CallName(display, method, receiver, qualified, arg_count, False, first_arg)
 
 
 @pytest.mark.parametrize(
@@ -202,3 +208,73 @@ def test_ireadonlylist_contains_costs_linear() -> None:
         Language.CSHARP,
     )
     assert costs == {"Enumerable.Contains": "n"}
+
+
+# --- Faz H3: argümana duyarlı indeks maliyetleri --------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("call", "expected"),
+    [
+        # aynı listenin son elemanı: kaydırma yok → O(1)
+        (
+            _call("RemoveAt", "items", first_arg="items.Count - 1", arg_count=1),
+            ("List.RemoveAt", "1"),
+        ),
+        (
+            _call("RemoveAt", "items", first_arg="items.Length-1", arg_count=1),
+            ("List.RemoveAt", "1"),
+        ),
+        # baştan ya da bilinmeyen indeksten silme: kaydırma → n (tablo değeri)
+        (_call("RemoveAt", "items", first_arg="0", arg_count=1), ("List.RemoveAt", "n")),
+        (
+            _call("RemoveAt", "items", first_arg="items.Count - 2", arg_count=1),
+            ("List.RemoveAt", "n"),
+        ),
+        (_call("RemoveAt", "items", first_arg="i", arg_count=1), ("List.RemoveAt", "n")),
+        (_call("RemoveAt", "items", arg_count=1), ("List.RemoveAt", "n")),
+        # başka bir koleksiyonun son indeksi hedef olabilir: muhafazakâr n
+        (
+            _call("RemoveAt", "items", first_arg="other.Count - 1", arg_count=1),
+            ("List.RemoveAt", "n"),
+        ),
+        # sona ekleme = `Add` → amortize 1
+        (_call("Insert", "items", first_arg="items.Count", arg_count=2), ("List.Insert", "1*")),
+        (_call("Insert", "items", first_arg="0", arg_count=2), ("List.Insert", "n")),
+        (_call("Insert", "items", first_arg="items.Count - 1", arg_count=2), ("List.Insert", "n")),
+        (_call("Insert", "items", first_arg="i + 1", arg_count=2), ("List.Insert", "n")),
+    ],
+)
+def test_argument_aware_index_costs(
+    table: CallCostTable, call: CallName, expected: tuple[str, str]
+) -> None:
+    resolver = CostResolver(table=table, language=Language.CSHARP, types={"items": "List"})
+    assert resolver.resolve(call) == expected
+
+
+def test_receiver_prefix_is_ignored_for_index_pattern() -> None:
+    """`this.items.RemoveAt(this.items.Count - 1)`: `this.` öneki eşleşmeyi bozmaz."""
+    call = _call("RemoveAt", "this.items", first_arg="this.items.Count - 1", arg_count=1)
+    resolver = CostResolver(
+        table=load_call_costs(DATA), language=Language.CSHARP, types={"items": "List"}
+    )
+    assert resolver.resolve(call) == ("List.RemoveAt", "1")
+
+
+@pytest.mark.parametrize(
+    ("statement", "name", "expected"),
+    [
+        ("xs.RemoveAt(xs.Count - 1)", "List.RemoveAt", "1"),
+        ("xs.RemoveAt(0)", "List.RemoveAt", "n"),
+        ("xs.Insert(xs.Count, 9)", "List.Insert", "1*"),
+        ("xs.Insert(0, 9)", "List.Insert", "n"),
+    ],
+)
+def test_index_costs_reach_facts(statement: str, name: str, expected: str) -> None:
+    """Argüman metni olgulara kadar taşınır (`CallName.first_arg` → `known_cost`)."""
+    costs = _costs(
+        "using System.Collections.Generic;\nclass A { void F(List<int> xs) {\n"
+        f"    {statement};\n}} }}\n",
+        Language.CSHARP,
+    )
+    assert costs == {name: expected}

@@ -56,6 +56,10 @@ UNREAL_MACROS = (
     "GENERATED_IINTERFACE_BODY",
 )
 _MACRO_CALL = re.compile(r"\b(?:" + "|".join(UNREAL_MACROS) + r")\s*\(")
+# Dosya kapsamında `;` ile biten delege bildirimleri (Faz H3): tree-sitter bu çıplak
+# makro çağrılarını ayrıştıramaz, bu yüzden yalnızca ayrıştırma yolunda boşaltılır.
+# Ad türevleri serbest bırakılır (`_OneParam`, `_TwoParams`, `_RetVal_OneParam` ...).
+_DELEGATE_MACRO_CALL = re.compile(r"\bDECLARE_DYNAMIC_MULTICAST_DELEGATE\w*\s*\(")
 _API_MACRO = re.compile(r"\b[A-Z][A-Z0-9_]*_API\b")
 
 
@@ -88,12 +92,18 @@ def _blank(text: str) -> str:
     return "".join("\n" if c == "\n" else " " for c in text)
 
 
-def neutralize_unreal_macros(text: str) -> str:
+def neutralize_unreal_macros(text: str, *, delegates: bool = False) -> str:
     """Unreal yansıma makrolarını aynı uzunlukta boşlukla değiştirir.
 
     Makrolar yorum/metin dışında aranır ve parantezleri yorum/metin içeriği yok
     sayılarak tek geçişte eşlenir (doğrusal süre; mimari §12). Kapanmayan makro
     çağrısı olduğu gibi bırakılır; hatayı tree-sitter raporlar.
+
+    `delegates=True` (yalnızca ayrıştırma yolu): `DECLARE_DYNAMIC_MULTICAST_DELEGATE*`
+    bildirimleri de boşaltılır — tree-sitter bu bildirimleri (dosya kapsamında çıplak
+    makro çağrısı) ayrıştıramaz ve geçerli Unreal kodu "sözdizimi hatası" sayılırdı
+    (Faz H3). Derleyici yolu bunu **kullanmaz**: Tier 1'de stub bu makroları tanımlar,
+    boşaltılırsa delege tipi tanımsız kalırdı.
     """
     masked = mask_non_code(text)
     closing = matching_parens(masked)
@@ -105,7 +115,13 @@ def neutralize_unreal_macros(text: str) -> str:
             continue
         spans.append((match.start(), close + 1))
         cursor = close + 1
-    starts = [s for s, _ in spans]  # makro aralıkları sıralı ve çakışmasız
+    if delegates:
+        for match in _DELEGATE_MACRO_CALL.finditer(masked):
+            close = closing.get(match.end() - 1)
+            if close is not None:
+                spans.append((match.start(), close + 1))
+    spans.sort()  # `bisect` ve tek geçişli boşaltma sıralı aralık ister
+    starts = [s for s, _ in spans]
 
     def _inside_macro(pos: int) -> bool:
         k = bisect_right(starts, pos) - 1
@@ -114,9 +130,13 @@ def neutralize_unreal_macros(text: str) -> str:
     spans += [m.span() for m in _API_MACRO.finditer(masked) if not _inside_macro(m.start())]
     if not spans:
         return text
+    spans.sort()
     parts: list[str] = []
     cursor = 0
-    for start, end in sorted(spans):
+    for start, end in spans:
+        start = max(start, cursor)  # iç içe makro: çakışan kısmı atla
+        if end <= start:
+            continue
         parts += [text[cursor:start], _blank(text[start:end])]
         cursor = end
     parts.append(text[cursor:])
@@ -146,7 +166,7 @@ def iter_nodes(root: Node, descend: Callable[[Node], bool] = lambda _: True) -> 
 
 def parse_source(text: str, language: Language, engine: Engine) -> ParsedSource:
     """Metni ayrıştırır; Unreal kodunda makroları önce nötrleştirir."""
-    source = neutralize_unreal_macros(text) if engine is Engine.UNREAL else text
+    source = neutralize_unreal_macros(text, delegates=True) if engine is Engine.UNREAL else text
     return ParsedSource(tree=get_parser(language).parse(source.encode("utf-8")), text=source)
 
 

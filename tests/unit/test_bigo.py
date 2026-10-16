@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import time
 
 import pytest
 from hypothesis import given
@@ -253,6 +254,115 @@ def test_eq_with_other_types_is_false() -> None:
     assert parse_bigo("n") != "n"
 
 
+# ------------------------------------------------- Θ/Ω sarmalayıcı, max, log log (Faz H3)
+
+
+@pytest.mark.parametrize("text", ["Θ(n^2)", "Ω(n^2)", "θ(n^2)", "ω(n²)", "Θ(N²)"])
+def test_theta_and_omega_wrappers_inner_expression(text: str) -> None:
+    """`Θ/Ω` (ve küçük harfli biçimleri) içindeki ifadeye indirgenir; gösterim O'ya döner."""
+    value = parse_bigo(text)
+    assert value.canonical == "n^2"
+    assert value.display == "O(n²)"
+
+
+@pytest.mark.parametrize("text", ["Θ(n log n)", "Ω(n log n)"])
+def test_theta_omega_are_stripped_like_o(text: str) -> None:
+    assert parse_bigo(text) == parse_bigo("n log n")
+
+
+@pytest.mark.parametrize("text", ["n * Θ(m)", "Θ(n) + m", "n^Θ(2)"])
+def test_wrapper_only_at_expression_start(text: str) -> None:
+    """Sarmalayıcı yalnızca ifadenin tamamını sarabilir; ortada geçerse reddedilir."""
+    with pytest.raises(BigOParseError):
+        parse_bigo(text)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("max(n, m)", "m + n"),
+        ("max(V, E)", "e + v"),
+        ("max(n, n)", "n"),
+        ("max(n, m, k)", "k + m + n"),
+        ("max(n^2, n log n)", "n^2"),
+        ("2*max(n, m)", "m + n"),
+    ],
+)
+def test_max_is_normalized_to_sum(text: str, expected: str) -> None:
+    """Big-O'da `max(a, b) = Θ(a + b)`: çok değişkenli toplam gibi temsil edilir."""
+    assert parse_bigo(text).canonical == expected
+
+
+@pytest.mark.parametrize("text", ["max(n)", "max()", "max n", "max(n, m", "max(n m)"])
+def test_max_requires_two_arguments_and_parentheses(text: str) -> None:
+    with pytest.raises(BigOParseError):
+        parse_bigo(text)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("log log n", "log log n"),
+        ("log(log n)", "log log n"),
+        ("log(log^2 n)", "log log n"),  # log((log n)^2) = 2·log log n = Θ(log log n)
+        ("log log n log n", "log n log log n"),
+        ("n log log n", "n log log n"),
+        ("(log log n)^2", "(log log n)^2"),
+        ("log log n + n", "n"),
+        ("log^2 n", "log^2 n"),
+    ],
+)
+def test_log_log_n(text: str, expected: str) -> None:
+    assert parse_bigo(text).canonical == expected
+
+
+def test_log_log_ordering_and_roundtrip() -> None:
+    """`1 < log log n < log n < n`; kanonik biçim ve gösterim geri ayrıştırılabilir."""
+    constant = parse_bigo("1")
+    log_log = parse_bigo("log log n")
+    log = parse_bigo("log n")
+    linear = parse_bigo("n")
+    assert constant < log_log < log < linear
+    assert log_log.display == "O(log log n)"
+    assert parse_bigo(log_log.canonical) == log_log
+    assert parse_bigo(parse_bigo("(log log n)^2").display) == parse_bigo("(log log n)^2")
+
+
+def test_log_log_log_is_rejected() -> None:
+    with pytest.raises(BigOParseError, match="log log log"):
+        parse_bigo("log log log n")
+
+
+def test_variable_exponent_of_variable_base_is_rejected() -> None:
+    """`n^k` modellenmiyor (sembolik üs); hata mesajı sayısal tabanı önerir."""
+    with pytest.raises(BigOParseError, match="değişken üs"):
+        parse_bigo("n^k")
+
+
+def test_wrapper_and_max_survive_collapse_variables() -> None:
+    """`collapse_variables` tüm değişkenleri `n` yapar; `log` belirteçleri korunur."""
+    assert collapse_variables(parse_bigo("max(n, m)")).canonical == "n"
+    assert collapse_variables(parse_bigo("n log log n")).canonical == "n log log n"
+
+
+def test_hostile_overlong_input_fails_fast() -> None:
+    """40 KB kötü niyetli girdi (uzunluk sınırı) hızlı reddedilir (Faz H3 süre testi)."""
+    hostile = "(" * 20_000 + "n" + ")" * 20_000
+    start = time.perf_counter()
+    with pytest.raises(BigOParseError, match="uzun"):
+        parse_bigo(hostile)
+    assert time.perf_counter() - start < 0.1
+
+
+@pytest.mark.parametrize("text", ["Θ(" * 20 + "n" + ")" * 20, "max(" * 20 + "n" + ")" * 20])
+def test_hostile_nesting_within_limit_fails_fast(text: str) -> None:
+    """Sınır içindeki aşırı iç içe girdi özyineleme hatası yerine hızlı hata verir."""
+    start = time.perf_counter()
+    with pytest.raises(BigOParseError):
+        parse_bigo(text)
+    assert time.perf_counter() - start < 0.1
+
+
 # ---------------------------------------------------------------- hatalar
 
 
@@ -271,7 +381,6 @@ def test_eq_with_other_types_is_false() -> None:
         "n/m",
         "e^n",
         "0.5^n",
-        "log log n",
         "log(V+E)",
         "(n+m)^0.5",
         "n^-1",
@@ -314,6 +423,7 @@ _PIECES = [
     "log(n)",
     "lg n",
     "log^2 n",
+    "log log n",
     "2^n",
     "3^n",
     "n!",

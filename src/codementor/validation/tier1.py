@@ -31,7 +31,18 @@ from codementor.validation.python_check import check_python
 from codementor.validation.runner import ProcessLimits, ProcessResult, Runner, run_process
 from codementor.validation.toolchain import get_toolchain
 
-_COMMON_FLAGS = ("-fsyntax-only", "-Wall", "-Wextra", "-fno-diagnostics-color")
+# Kolon birimi: gcc'nin varsayılanı `display` (sekme/görüntü genişliği), clang'ın varsayılanı
+# `byte`; ikisi ayrı olduğu için aynı kod iki derleyicide farklı kolon veriyordu. Bayt seçildi
+# (deterministik ve derleyiciler arası aynı). Tier 0 karakter sayar: ASCII satırlarda özdeş,
+# Unicode içeren satırlarda farklı olabilir (mimari §5.2.2). eski gcc bayrağı tanımaz → `_invoke`.
+_COLUMN_UNIT = "-fdiagnostics-column-unit=byte"  # gcc ≥ 9, clang ≥ 14 (Faz H3)
+_COMMON_FLAGS = (
+    "-fsyntax-only",
+    "-Wall",
+    "-Wextra",
+    "-fno-diagnostics-color",
+    _COLUMN_UNIT,
+)
 _STD = {Language.C: ("c", "-std=c17"), Language.CPP: ("c++", "-std=c++20")}
 # `\` ile devam eden satırlar boşaltılmaz: birleştirme kopar, alt satır yönergeye dönüşürdü
 _LOCAL_INCLUDE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*"[^\n]*(?<![\\ \t\f\v])$', re.MULTILINE)
@@ -205,6 +216,35 @@ def _interpret(
     )
 
 
+def _invoke(
+    tool: CompilerTool,
+    runner: Runner,
+    argv: list[str],
+    stdin: str,
+    limits: ProcessLimits,
+    env: dict[str, str],
+    cancel: threading.Event | None,
+) -> ProcessResult:
+    """Alt süreci çalıştırır; runner sözleşmesi dışına çıksa bile sistemi düşürmez."""
+    try:
+        return runner(argv, stdin, limits, extra_env=env, cancel=cancel)
+    except Exception as exc:  # runner sözleşmesi istisna fırlatmamak; yine de koru
+        log.warning("tier1_runner_exception", tool=tool.kind, error=type(exc).__name__)
+        return ProcessResult(None, "", "", error="runner exception")
+
+
+def _column_unit_unsupported(outcome: ProcessResult) -> bool:
+    """Derleyici `-fdiagnostics-column-unit=byte` bayrağını reddetti mi (eski sürüm)?
+
+    Yalnızca stderr bayrağı anıyorsa True: böylece yerelleştirilmiş ("bilinmeyen seçenek")
+    mesajlar da yakalanır. Kullanıcı kodu bu metni içeriyorsa bir kez fazladan çağrı olur;
+    zararsızdır.
+    """
+    if outcome.error is not None or outcome.timed_out or outcome.returncode in (None, 0):
+        return False
+    return _COLUMN_UNIT in outcome.stderr
+
+
 def run_tier1(
     code: NormalizedCode,
     settings: ValidationSettings,
@@ -235,11 +275,12 @@ def run_tier1(
     if isinstance(prepared, Tier1Result):
         return prepared
     argv, stdin, limits, env = prepared
-    try:
-        outcome = runner(argv, stdin, limits, extra_env=env, cancel=cancel)
-    except Exception as exc:  # runner sözleşmesi istisna fırlatmamak; yine de sistemi düşürme
-        log.warning("tier1_runner_exception", tool=tool.kind, error=type(exc).__name__)
-        outcome = ProcessResult(None, "", "", error="runner exception")
+    outcome = _invoke(tool, runner, argv, stdin, limits, env, cancel)
+    if _column_unit_unsupported(outcome):
+        # Eski gcc/clang bayrağı tanımıyor: bayraksız yeniden dene (kolon birimi varsayılana döner)
+        log.info("tier1_column_unit_unsupported", tool=tool.kind)
+        without_flag = [a for a in argv if a != _COLUMN_UNIT]
+        outcome = _invoke(tool, runner, without_flag, stdin, limits, env, cancel)
     return _interpret(
         tool,
         outcome,

@@ -504,14 +504,95 @@ CPP-OWN-001'di ve **kural düzeltildi**.
   `pytest -m "not live"` **3587 geçti / 15 atlandı / 6 seçilmedi** (3:33) — H2 öncesi 3577'ye göre
   **+10 test** (4 CPP-OWN-001 fixture'ı, 1 süre vakası, 3 CS-PERF-001 fixture'ı, 2 çözücü testi).
 
+### Faz H — H3: analiz verisi (kayıt: 2026-10-16)
+
+Devir §8 H3'ün altı maddesi ele alındı: beşi kod değişikliğiyle kapandı, `n^k` bilinçli olarak
+reddedilmeye devam ediyor (mimari metni bu gerçeğe göre düzeltildi) ve **madde 4'te beklenmeyen bir
+boşluk** bulundu: delege bildirimleri analizi tamamen düşürüyordu.
+
+| H3 maddesi | Sonuç | Kanıt |
+|---|---|---|
+| `call_costs`: `RemoveAt(0)`/`Insert(0, …)` O(n) ayrımı | **yapıldı (argümana duyarlı)**: `RemoveAt(xs.Count - 1)` → `1`, `Insert(xs.Count, …)` → `1*`; `0`/bilinmeyen indeks → `n` | `analysis/call_costs.py::_refined_cost`, `tests/unit/test_call_costs.py` (11 çözücü + 4 olgu vakası) |
+| `parse_bigo`: `Θ(...)`/`Ω(...)` | **eklendi**: iç ifadeye indirger, gösterim `O(...)`; yalnızca tam ifadeyi sarabilir | `tests/unit/test_bigo.py::test_theta_and_omega_wrappers_inner_expression`, `::test_wrapper_only_at_expression_start` |
+| `parse_bigo`: `max(a, b)` | **eklendi**: çok değişkenli toplam olarak normalleşir (`max(a,b) = Θ(a+b)`) | `::test_max_is_normalized_to_sum`, `::test_max_requires_two_arguments_and_parentheses` |
+| `parse_bigo`: `log log n` | **eklendi**: modele `log_log_power` çarpanı; `log(log n)` = `log log n`; `log log log n` reddedilir | `models/_bigo_algebra.py`, `::test_log_log_n`, `::test_log_log_ordering_and_roundtrip` |
+| `parse_bigo`: `n^k` (değişken üs) | **reddediliyor** (sembolik üs modellenmiyor; `2^n` destekli); `docs/mimari.md` §5.6'daki yanıltıcı `n^k` örneği düzeltildi | `::test_variable_exponent_of_variable_base_is_rejected` |
+| 40 KB anlamsız girdide hızlı hata | **eklendi** (süre testi) | `::test_hostile_overlong_input_fails_fast`, `::test_hostile_nesting_within_limit_fails_fast` |
+| C# 11 ham metin maskeleme | **eklendi** (`mask_non_code(text, language=None)`) | `analysis/lexical.py`, `tests/unit/test_lexical.py` (+12 test) |
+| Unreal stub: `FMath`, `FHitResult`, delegeler, timer | **eklendi** (+ ayrıştırma yolunda delege makroları) | `data/stubs/ue_stubs.h`, `tests/unit/test_ue_stubs.py`, `unreal_wave_spawner.cpp` |
+| Include koruması `#pragma`/`#line` izin listesi | **eklendi (güvenlik)** | `validation/include_guard.py`, `tests/unit/test_include_guard.py` (+16 red / +12 izin vakası) |
+| Tier 1 kolon birimi bayt | **eklendi** + bayrağı tanımayan sürümde bayraksız yeniden deneme | `validation/tier1.py`, `tests/unit/test_tier1.py`, `tests/compiler/test_tier1_compiler.py` |
 
 
-Sonraki faz: **Faz H** (`faz/h-kurallar`) — **H1 ve H2 bitti**; devir tablosundaki yedinci kural olan
-C# "döngüde `string +=`" zaten `CS-ALLOC-001` olduğundan yerine C-BUF-002 alındı (yukarıdaki tablo);
-H2'de altı satır denetlendi, CPP-OWN-001 erken çıkış düzeltmesi ve CS-PERF-001 `IReadOnlyList`
-çözümü yapıldı, kalan satırlar fixture'la sabitlendi (`ICollection` bilinçli kaçırma). Sırada H3
-(analiz verisi: `call_costs`, `parse_bigo`, C# 11 ham metin maskeleme, Unreal stub,
-`-fdiagnostics-column-unit=byte`) ve H4 (statik dev eval + README ölçüm satırları). Faz J isteğe
+
+1. **`call_costs` argümana duyarlı indeks (madde 1).** Tablo değeri `List.RemoveAt`/`List.Insert` için
+   `n` (muhafazakâr: kaydırma olabilir). Ayrım için `CallName`'e **`first_arg`** alanı eklendi
+   (`analysis/_symbols.py`; 120 bayttan uzun argüman okunmaz → `…`, `_MAX_RECEIVER_BYTES` ile aynı
+   ilke). `_refined_cost` yalnızca **aynı liste** üzerinde daraltır: `xs.RemoveAt(xs.Count - 1)` →
+   `1`, `xs.Insert(xs.Count, …)` → `1*`. `RemoveAt(0)`/`Insert(0, …)` tablo değeriyle (`n`) kalır;
+   `other.Count - 1` gibi başka koleksiyonun indeksi `n` sayılır (yanlış `1` demek yanlış negatif
+   olurdu). `this.`/`this->`/`base.` önekleri iki tarafta da kırpılır.
+2. **`parse_bigo` (madde 2).** `Θ(...)`/`Ω(...)` (ve küçük harfleri) sarmalayıcı belirteci olarak
+   token'laştırılır; yalnızca tam ifadeyi sarabilir (`n * Θ(m)` reddedilir). `max(a, b, …)` en az iki
+   argüman ister ve toplam olarak temsil edilir (Big-O'da `max(a,b) = Θ(a+b)`; `V+E` ile aynı model).
+   `log log n` için modele **`log_log_power`** çarpanı eklendi; alan sırası büyüme önceliği olduğundan
+   `log_power`'dan sonra gelir (`1 < log log n < log n < n` sıralaması korunur, mevcut ifadelerin
+   davranışı değişmez). `log(log n)` = `log log n`; `log((log n)^k)` = `Θ(log log n)` (sabit katsayı
+   düşer); `log log log n` desteklenmez (açık hata). `n^k` **eklenmedi**: model sayısal taban + sembolik
+   üs (`2^n`) taşıyor, sembolik üs modellenmeden `n^k`'yi `n` saymak sessiz bir yanlış olurdu.
+3. **C# 11 ham metin (madde 3).** `mask_non_code(text, language=None)`: `language=Language.CSHARP`
+   iken en az üç tırnakla açılan ham metin (ve `$`/`$$` önekli biçimler) içeriği boşlukla maskelenir,
+   açılış/kapanış tırnakları yerinde kalır (satır/uzunluk korunur, tek geçiş = doğrusal). Çağıranlar:
+   `analysis/extractor.py` dili geçirir; `ingest/detect.py` (dil burada belirleniyor),
+   `validation/include_guard.py` ve `parsers.neutralize_unreal_macros` bilinçli olarak varsayılanla
+   kalır — davranışları değişmedi, korumanın fail-closed tarafı aynı.
+4. **Unreal stub (madde 4) + bulunan boşluk.** Stub'a `FMath` (`Clamp`/`Abs`/`Max`/`Min`/`Sqrt`,
+   `if constexpr` ile işaretsiz tip uyarısı doğmadan), `FHitResult`, `FTimerManager` + `AActor`/
+   `UActorComponent::GetWorldTimerManager()`, `FTimerHandle` (vardı) ve
+   `DECLARE_DYNAMIC_MULTICAST_DELEGATE*` (0–5 parametre) makroları eklendi; makrolar alan olarak
+   kullanılabilen boş bir struct üretir (`Broadcast`/`AddDynamic`/`RemoveDynamic`/`Clear`).
+   **Denetim sırasında bulundu:** `DECLARE_DYNAMIC_MULTICAST_DELEGATE_*(...)` dosya kapsamında çıplak
+   makro çağrısı olduğu için tree-sitter bunu ayrıştıramıyordu → Tier 0 "sözdizimi hatası" → erken
+   çıkış (Tier 1 hiç çalışmıyordu). Yani delege kullanan **geçerli Unreal kodu yanlışlıkla hatalı**
+   sayılıyordu ve stub desteği erişilemez kalacaktı. Çözüm: makrolar yalnızca **ayrıştırma yolunda**
+   boşaltılır (`neutralize_unreal_macros(..., delegates=True)` ← `parse_source`); **derleyici yolunda
+   boşaltılmaz**, çünkü tipi stub tanımlar (boşaltılsaydı delege adı tanımsız kalırdı).
+   `unreal_wave_spawner.cpp` fixture'ı yeni API'yi (delege alanı + `Broadcast`, `FMath`, `FHitResult`,
+   `GetWorldTimerManager().SetTimer/ClearTimer`) kullanacak biçimde genişletildi; böylece hem Tier 0
+   ayrıştırması hem `-m compiler` (CI) bu yolu sınar.
+5. **Include koruması izin listesi (madde 5, güvenlik).** `#pragma` operandı artık izin listesidir
+   (`once`, `region`, `endregion`); operand **maskelenmiş** metinden okunur ve yalnızca yönerge
+   konumunda denetlenir. Gerekçe somut bir atlatma: `#define X GCC dependency "/etc/passwd"` +
+   `#pragma X` — derleyici makroyu açar, isim dizesi satırda geçmediği için eski kural görmezdi
+   (`_Pragma(...)` yolu zaten kapalıydı). Aynı nedenle izin listesindeki adları tanımlayan `#define` de
+   reddedilir. `#line` yalnızca `#line <sayı>` biçiminde geçer (dosya adı yok); yönerge konumu aranır,
+   çünkü `#line` host dosyası okumaz — riski sahte tanı konumudur ve yorum/metindeki geçişin yanlış
+   pozitif üretmesi gerekmez. **Bilinçli yan etki:** `#pragma pack`/`#pragma warning` gibi diğer
+   pragmalar artık Tier 1'i atlatır (`SKIPPED` + Türkçe uyarı; fail-closed). Depodaki tüm fixture,
+   eval veri seti ve stub taramasında yalnızca `#pragma once` var (başka pragma/`#line` yok) — bu
+   yüzden ölçüme ve katalog testlerine etkisi yok.
+6. **Kolon birimi (madde 6).** Tier 1 komutuna `-fdiagnostics-column-unit=byte` eklendi: gcc'nin
+   varsayılanı `display`, clang'ınki `byte` olduğu için aynı kod iki derleyicide farklı kolon
+   verebiliyordu; artık ikisi de bayt (Tier 0 karakter sayar → ASCII satırlarda özdeş, Unicode'da
+   farklı olabilir; belgelerde yazılı). Bayrağı tanımayan eski sürümde (`stderr` bayrağı anıyorsa)
+   komut **bir kez bayraksız** yeniden denenir — yerelleştirilmiş "bilinmeyen seçenek" mesajları da
+   yakalanır; en fazla bir fazladan çağrı maliyeti, sessiz atlama yok. `tests/compiler` tarafına
+   Unicode içeren geçerli C örneği eklendi.
+- **Doğrulama:** `ruff check` temiz, `ruff format --check` **474 dosya**, `mypy src/` hatasız (**216
+  dosya**), `pytest -m "not live"` **3714 geçti / 16 atlandı / 6 seçilmedi** (4:30) — H2 sonundaki
+  3587'ye göre **+127 test** (`-m compiler` yerel: **81 geçti / 10 atlandı**; bu makinede gcc/clang
+  yok, C/C++/Unreal derleyici testleri CI'da koşar — stub/fixture derleme doğrulaması yerelde
+  **yapılamadı**, raporda işaretli).
+- **Kayıt:** `docs/mimari.md` §5.2.2 (komut tablosu, stub içeriği, delege notu), §5.2.3 (include izin
+  listesi + kolon birimi), §5.3.2 (argümana duyarlı maliyet), §5.6 (Big-O dilbilgisi);
+  `data/call_costs.yaml` başlık notu; `docs/BulgularVeDuzeltilecekler.md` §10 H3 kutuları.
+
+Sonraki faz: **Faz H** (`faz/h-kurallar`) — **H1, H2 ve H3 bitti**; devir tablosundaki yedinci kural
+olan C# "döngüde `string +=`" zaten `CS-ALLOC-001` olduğundan yerine C-BUF-002 alındı (yukarıdaki
+tablo); H2'de altı satır denetlendi (CPP-OWN-001 erken çıkış + CS-PERF-001 `IReadOnlyList`
+düzeltmeleri), H3'te altı analiz-verisi maddesi kapandı (yukarıdaki tablo; tek istisna `n^k`).
+Sırada **H4**: statik dev eval (`codementor eval run --split dev --static-only` + `eval compare`) ve
+README'deki "yalnızca statik" ölçüm satırlarının sonuç dosyalarından güncellenmesi. Faz J isteğe
 bağlı.
 
 Bilinen kararsız test (değişiklikle ilgisiz): `tests/rules/test_engine.py::test_linear_time_large_input[html-*]`
@@ -906,27 +987,27 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 - ~~Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı; 40 KB girdide yüzlerce ms ölçülmüştü.~~ → Faz 55'te kapatıldı (ADR-0024): süreç içi iptal 0.25.2'de kullanılamıyor; boyut/eşzamanlılık sınırları + gerileme testiyle idare, C# gramer yavaşlaması kabul edildi.
 - ~~Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özete dönüşüyor; bağımsız gerçek hata ayrıca raporlanmayabilir (D2; Faz 55).~~ → Faz 55'te çözüldü (`trailing_semicolon_gap`).
 - ~~`mask_non_code` C++ raw string (`R"(...)"`) içindeki tırnak/yorum/ayraçları doğru maskelemiyor (Faz 55).~~ → Faz 55'te çözüldü (delimiter sınırlı maskeleme).
-- C# 11 raw string (`"""…"""`) maskelemesi (Faz 55'te kapsam dışı bırakıldı).
-- `mask_non_code` dil bilgisi almıyor: Python'da `R"(…"` C++ ham metni sanılabilir (Faz 55 denetimi).
+- ~~C# 11 raw string (`"""…"""`) maskelemesi (Faz 55'te kapsam dışı bırakıldı).~~ → Faz H3'te yapıldı (`mask_non_code(text, language)`; `$`/`$$` önekleri ve kapanış tırnağı dizisi dahil).
+- `mask_non_code` bir `language` parametresi aldı (Faz H3, C# 11 ham metni için) ama C++ ham metni yolu bilinçli olarak dilden bağımsız kaldı: Python/C# dosyasındaki `R"(…)` görünümü ham metin sayılıp içeriği maskelenir. Etkisi yalnızca `using_std`/`using_linq` sinyalleriyle sınırlı (Python'da kullanılmıyor); C++ yolunu dille sınırlamak gerekirse `language is Language.CPP` koşulu eklenir.
 - ~~Tier 0 parse'ı sert zaman aşımıyla alt süreçte izole etmek (ADR-0024 sonucu)~~ → Faz 59'da yapıldı (ADR-0025; varsayılan kapalı).
 - Tier 0 yalıtımında sıcak işçi havuzu (her analizde ~280 ms süreç açma maliyeti; yüksek yükte) (Faz 59).
 - ~~`data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.~~ → Faz 23
 - ~~Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.~~ → Faz 23
 - ~~`.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.~~ → Faz 23
-- `parse_bigo` şu an `log log n`, `n^n`, `Θ(...)`/`Ω(...)`, `max(n,m)` ve `k` gibi değişken üsleri desteklemiyor; eval'de LLM çıktılarında görülürse eklenebilir.
+- ~~`parse_bigo` şu an `log log n`, `n^n`, `Θ(...)`/`Ω(...)`, `max(n,m)` ve `k` gibi değişken üsleri desteklemiyor; eval'de LLM çıktılarında görülürse eklenebilir.~~ → Faz H3: `log log n`, `Θ`/`Ω` ve `max(a, b)` eklendi; `n^n` ve `n^k` bilinçli olarak reddedilmeye devam ediyor (sembolik üs modellenmiyor; `2^n` destekli) ve `docs/mimari.md` §5.6 buna göre düzeltildi.
 - ~~`AnalysisReport.analysis_id` için ULID biçim doğrulaması~~ → Faz 27.
 - ~~CI'a `actions/setup-dotnet` + `make roslyn-check` adımı~~ → Faz 27.
-- `ue_stubs.h` genişletilebilir (`Super` için `GENERATED_BODY` yerine sınıf başına typedef mümkün değil; delegeler `OnDestroyed.AddDynamic`, `FTimerManager`); eval'de Unreal uyarı gürültüsüne göre karar verilmeli.
+- ~~`ue_stubs.h` genişletilebilir (`Super` için `GENERATED_BODY` yerine sınıf başına typedef mümkün değil; delegeler `OnDestroyed.AddDynamic`, `FTimerManager`); eval'de Unreal uyarı gürültüsüne göre karar verilmeli.~~ → Faz H3'te delegeler, `FMath`, `FHitResult`, `FTimerHandle`/`FTimerManager` + `GetWorldTimerManager()` eklendi. `Super` (sınıf başına typedef) ve `AActor::OnDestroyed` gibi motor alanları hâlâ eksik → o satırlar uyarıya düşer; gürültü H4 eval'inde izlenecek.
 - ~~`validation.stub_header` / `roslyn_check_dll` göreli yolları da çalışma dizinine göre çözülüyor (veri dizinleri maddesiyle birlikte ele alınmalı).~~ → Faz 23
-- `#pragma` makro genişletmeli biçimleri (`#pragma MACRO`) ve `#line` şu an serbest; derleyici kaynak okumadığı için risk düşük, ama include korumasına izin listesi eklenebilir.
-- gcc kolonları "display" birimli, clang bayt; Tier 0 karakter. Unicode içeren satırlarda kolonlar farklı olabilir (`-fdiagnostics-column-unit=byte` gcc ≥ 11).
+- ~~`#pragma` makro genişletmeli biçimleri (`#pragma MACRO`) ve `#line` şu an serbest; derleyici kaynak okumadığı için risk düşük, ama include korumasına izin listesi eklenebilir.~~ → Faz H3'te yapıldı: `#pragma` izin listesi (`once`/`region`/`endregion`) + izin listesindeki adları tanımlayan `#define` reddi (macro ile `GCC dependency` atlatması kapanır) + `#line` yalnızca `#line <sayı>`. Kalan sınır: kullanıcının dahil ettiği bir başlık izin listesindeki adı tanımlarsa (yerel include'lar geçici/boş çalışma dizinine göre çözülür) izin listesi yine aldatılabilir; korunma için makro tablosu izlemek gerekir (yapılmadı).
+- ~~gcc kolonları "display" birimli, clang bayt; Tier 0 karakter. Unicode içeren satırlarda kolonlar farklı olabilir (`-fdiagnostics-column-unit=byte` gcc ≥ 11).~~ → Faz H3'te `-fdiagnostics-column-unit=byte` eklendi (gcc ≥ 9, clang ≥ 14); Tier 0 karakter saymaya devam eder, ASCII'de özdeş. Bayrağı tanımayan sürümde komut bayraksız yeniden denenir.
 - ~~Faz 6'da ertelenen 10 statik kural~~ → Faz 17'de yapıldı (2026-10-01).
 - ~~Faz 17: C-MEM-003 denetimin kullanımdan sonra yapıldığını görmüyor~~ (Faz 57'de çözüldü; yanlış dal ve koşullu koruma ayırt edilmiyor). UNITY-GC-001 closure bastırması satır bazlı.
 - `test_toolchain_install.py` tam koşuda bir kez 4 testle aralıklı düştü (Faz 57); tek başına yeşil. Tekrarlarsa paylaşılan geçici dizin/yarış incelenmeli. → Faz 58'de çözüldü (Windows tarayıcı kilidi; `_rename` yeniden denemesi).
 - C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi (`print_arr(arr, n)`) sahiplik aktarımı sayılıyor (sık kaçırma); çağrılan fonksiyon aynı dosyadaysa ve `free`/saklama yoksa bulgu verilebilir. Aynı değişkene iki kez `malloc`, gölgeleme ve `realloc` de bilinçli sınırlar.
 - UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı için `new Hit(3)` yanlış bulgu (değer tipi); Faz 5 `CSHARP_VALUE_TYPES` dosyadaki struct adlarıyla genişletilebilir.
 - UE-GC-001: `TArray<AActor*>`/`TMap<..., UObject*>` kapsayıcı alanları kaçırılıyor; UCLASS olmayan sınıfta (`FPlain`) öneri `UPROPERTY` değil `TStrongObjectPtr`/`FGCObject` olmalı.
-- CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection` tipli değişkenler maliyet tablosunda çözülmüyor (kaçırma).
+- ~~CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection` tipli değişkenler maliyet tablosunda çözülmüyor (kaçırma).~~ → Faz H2: `IList` → `List.Contains` (Faz 21), `IReadOnlyList.Contains` → `Enumerable.Contains` (LINQ) düzeltildi; `ICollection` bilinçli kaçırma (örnek metot).
 - ~~Kural motoru: çöken kuralın istisna izi loglanmıyor; structlog (Faz 10) ile `log.exception` eklenmeli.~~ → Faz 21/31.
 - Sıcak yol tespiti sınıf tabanını (MonoBehaviour / UCLASS) da denetlemeli (Faz 5 olgusu).
 - Faz 7: OpenAI katı modu bugün `maxLength`, `maxItems`, `pattern`, `minimum`, `maximum` destekliyor; `SchemaAdapter` kısıt temizliğini sağlayıcıya göre ayırabilir (şu an hepsi çıkarılıyor, K5 doğruluyor).
@@ -935,7 +1016,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 - ~~Faz 7: token tahmini ve `pricing.yaml` maliyet tahmini (mimari §13)~~ → Faz 25.
 - ~~Faz 4 `run_process` çıplak `argv[0]`~~ → çözüldü (2026-09-29): yalnızca mutlak yol, `test_bare_or_relative_executable_rejected`.
 - ~~CLI ajanları: gerçek `run_process` ile uçtan uca test~~ → Faz 25; agy canlı doğrulaması hâlâ açık (oturum var).
-- Faz 8: `call_costs.yaml`'a C# `RemoveAll`/`RemoveAt(0)`/`Insert(0, …)` maliyetleri (golden'da `Remove: O(1)` ipucu).
+- ~~Faz 8: `call_costs.yaml`'a C# `RemoveAll`/`RemoveAt(0)`/`Insert(0, …)` maliyetleri (golden'da `Remove: O(1)` ipucu).~~ → `RemoveAll`/`RemoveAt`/`Insert` tabloda `n` idi (Faz 21); Faz H3'te argümana duyarlı ayrım eklendi: `RemoveAt(xs.Count - 1)` → `1`, `Insert(xs.Count, …)` → `1*`.
 - ~~Faz 8 denetim D3 (`&lt;` kanıtı)~~ → Faz 9'da çözüldü (`normalize_evidence`).
 - ~~Faz 8 denetim D2: `prompt_version` her build'de şablon dosyalarını okuyor~~ → Faz 26.
 - Faz 8 denetim D8: ~~`prompts.dir`~~ Faz 23'te çözüldü; demo'nun golden dizini (`tests/golden/prompts`, geliştirici aracı) hâlâ çalışma dizinine göre.

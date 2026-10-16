@@ -5,6 +5,10 @@
 #   csharp : `Tip.Metot` (`List.Contains`), statik (`Array.Sort`), LINQ `Enumerable.Metot`
 #   python : yerleşik (`sorted`), `tip.metot` (`list.insert`), modül (`heapq.heappush`)
 # Üye çağrılarında tip, dosyadaki bildirimden çözülür; çözülemezse maliyet bilinmez (tahmin yok).
+# Argümanı bilinen indeks desenleri tablo değerini daraltır (Faz H3):
+#   `List.RemoveAt(xs.Count - 1)` → 1 (aynı listenin sonu; kaydırma yok)
+#   `List.Insert(xs.Count, …)`    → 1* (sona ekleme = Add)
+#   `RemoveAt(0)`, `Insert(0, …)`, bilinmeyen indeks → tablo değeri `n` (kaydırma var)
 c:
   strlen: "n"
   strcmp: "n"

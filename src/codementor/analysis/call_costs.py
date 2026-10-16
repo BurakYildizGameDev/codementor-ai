@@ -20,6 +20,7 @@ maliyet bilinmez (tahmin yapılmaz):
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path
@@ -163,5 +164,38 @@ class CostResolver:
                 receiver = (call.receiver or "").removeprefix("this.")
                 if allowed is None or self.types.get(receiver) in allowed:
                     cost = "1"
-            return candidate, cost
+            return candidate, _refined_cost(candidate, call, cost)
         return None
+
+
+_LAST_INDEX = re.compile(r"(?P<base>[A-Za-z_][\w.]*)\.(?:Count|Length)\s*-\s*1$")
+_END_INDEX = re.compile(r"(?P<base>[A-Za-z_][\w.]*)\.(?:Count|Length)$")
+
+
+def _strip_receiver_prefixes(name: str) -> str:
+    """`this.` / `this->` / `base.` öneklerini atar (alıcı ve argüman aynı biçimde kırpılır)."""
+    for prefix in _RECEIVER_PREFIXES:
+        name = name.removeprefix(prefix)
+    return name
+
+
+def _refined_cost(candidate: str, call: CallName, cost: str) -> str:
+    """Argümanı bilinen indeks desenleriyse maliyeti daraltır (Faz H3).
+
+    `List.RemoveAt(xs.Count - 1)` sonuncu elemanı siler (kaydırma yok) → O(1);
+    `List.Insert(xs.Count, ...)` sona eklemektir = `Add` → amortize O(1). Desen yalnızca
+    **aynı liste** üzerinde kabul edilir: başka bir koleksiyonun `Count - 1` değeri
+    hedef indeks olabilir ve kaydırma yapılır (tablo değeri `n` muhafazakârdır).
+    `RemoveAt(0)` ve `Insert(0, ...)` baştan kaydırır → tablo değeri doğrudur.
+    """
+    arg = (call.first_arg or "").strip()
+    receiver = _strip_receiver_prefixes(call.receiver or "")
+    if candidate == "List.RemoveAt":
+        match = _LAST_INDEX.match(arg)
+        if match is not None and _strip_receiver_prefixes(match.group("base")) == receiver:
+            return "1"
+    elif candidate == "List.Insert":
+        match = _END_INDEX.match(arg)
+        if match is not None and _strip_receiver_prefixes(match.group("base")) == receiver:
+            return "1*"
+    return cost

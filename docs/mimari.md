@@ -246,9 +246,9 @@ Amaç: Sözdizimi hatalı kodu **LLM'e göndermeden** yakalamak ve kullanıcıya
 
 | Dil / Motor | Araç (`PATH`'te aranır) | Komut özeti | Hata sınıfı |
 |---|---|---|---|
-| C | gcc veya clang; yoksa zig | `gcc -x c -std=c17 -fsyntax-only -Wall -Wextra -` (stdin) | Kesin |
-| C++ | g++ veya clang++; yoksa zig | `g++ -x c++ -std=c++20 -fsyntax-only -Wall -Wextra -` | Kesin |
-| Unreal C++ | clang++ + stub başlık; yoksa zig | `clang++ -x c++ -std=c++20 -fsyntax-only -include data/stubs/ue_stubs.h -` | **Tavsiye niteliğinde** |
+| C | gcc veya clang; yoksa zig | `gcc -x c -std=c17 -fsyntax-only -Wall -Wextra -fdiagnostics-column-unit=byte -` (stdin) | Kesin |
+| C++ | g++ veya clang++; yoksa zig | `g++ -x c++ -std=c++20 -fsyntax-only -Wall -Wextra -fdiagnostics-column-unit=byte -` | Kesin |
+| Unreal C++ | clang++ + stub başlık; yoksa zig | `clang++ -x c++ -std=c++20 -fsyntax-only -Wall -Wextra -fdiagnostics-column-unit=byte -include data/stubs/ue_stubs.h -` | **Tavsiye niteliğinde** |
 | C# | Roslyn sözdizimi aracı (`dotnet` + dll; yoksa gömülü self-contained exe) | `tools/roslyn-check` (stdin → JSON tanı) | Kesin (yalnızca sözdizimi) |
 | Unity C# | Roslyn sözdizimi aracı | aynı; `UnityEngine` referansı gerekmez | Kesin (yalnızca sözdizimi) |
 
@@ -256,6 +256,11 @@ Amaç: Sözdizimi hatalı kodu **LLM'e göndermeden** yakalamak ve kullanıcıya
 
 - Makrolar: `UCLASS(...)`, `USTRUCT(...)`, `UENUM(...)`, `UPROPERTY(...)`, `UFUNCTION(...)`, `GENERATED_BODY()`, `GENERATED_UCLASS_BODY()` → boş makro.
 - Tipler: `int32`, `uint8`, `FString`, `FName`, `FVector`, `UObject`, `AActor`, `UActorComponent`, `TArray<T>`, `TMap<K,V>`, `TSet<T>`, `TObjectPtr<T>`, `TSharedPtr<T>`, `TWeakObjectPtr<T>` için minimal bildirimler.
+- Faz H3 ekleri: `FMath` (`Clamp`, `Abs`, `Max`, `Min`, `Sqrt`), `FHitResult`, `FTimerHandle`/`FTimerManager` + `GetWorldTimerManager()`, `DECLARE_DYNAMIC_MULTICAST_DELEGATE*` makroları (delege alanı olarak kullanılabilen struct üretir).
+
+Delege bildirimleri (`DECLARE_DYNAMIC_MULTICAST_DELEGATE_*(...)`; dosya kapsamında `;` ile biter)
+tree-sitter tarafından ayrıştırılamadığı için **yalnızca ayrıştırma yolunda** boşaltılır; Tier 1'de
+boşaltılmaz, çünkü tipi stub tanımlar (aksi hâlde delege adı tanımsız kalırdı).
 
 Stub eksikliğinden doğan hatalar (tanımsız tanımlayıcı vb.) **uyarıya düşürülür**; yalnızca tree-sitter'ın da gördüğü yapısal hatalar erken çıkışa neden olur.
 
@@ -266,7 +271,7 @@ Stub eksikliğinden doğan hatalar (tanımsız tanımlayıcı vb.) **uyarıya d�
 Derleyici "yalnızca sözdizimi" modunda bile saldırı yüzeyidir (ör. `#include "/etc/shadow"` ile dosya okuma denemesi, devasa şablon açılımıyla kaynak tüketimi). Konteyner yalıtımı olmadığı için (ADR-0009) önlemler süreç düzeyindedir:
 
 - Kod **yalnızca stdin** ile verilir (`-x c -`); kullanıcı kodu diske yazılmaz.
-- **Include koruması** (derleyici çağrılmadan önce, yorum/metin maskelenmiş kodda): mutlak yol, `..`, sürücü harfi veya `\` içeren; makroyla hesaplanan (`#include MACRO`) `#include`/`#import`; ayrıca `#embed` ve `__has_include` → Tier 1 çalıştırılmaz, `SKIPPED` + uyarı.
+- **Include koruması** (derleyici çağrılmadan önce, yorum/metin maskelenmiş kodda): mutlak yol, `..`, sürücü harfi veya `\` içeren; makroyla hesaplanan (`#include MACRO`) `#include`/`#import`; ayrıca `#embed` ve `__has_include` → Tier 1 çalıştırılmaz, `SKIPPED` + uyarı. Faz H3: `#pragma` operandı izin listesidir (yalnızca `once`, `region`, `endregion`) — operand makro olabildiği için (`#define X GCC dependency "…"` + `#pragma X`) serbest bırakılamaz; izin listesindeki adları tanımlayan `#define` da reddedilir. `#line` yalnızca `#line <sayı>` biçiminde (dosya adı yok) geçer.
 - Çalışma dizini boş bir geçici dizin; ek `-I` yolu yok; ortam değişkenleri temizlenir (yalnızca `PATH`, `TEMP`/`TMP` ve derleyicinin gerektirdikleri).
 - Duvar saati zaman aşımı (`validation.compile_timeout_s`) → süreç ağacı öldürülür, `SKIPPED` + uyarı (erken çıkış yapılmaz).
 - Çıktı boyutu sınırı (64 KB); fazlası kesilir.
@@ -279,7 +284,7 @@ Derleyici "yalnızca sözdizimi" modunda bile saldırı yüzeyidir (ör. `#inclu
   önbellekle çalışır. İndirilen zig `validation.toolchain_dir` altındadır; indirme kuralları
   (https, sha256, arşiv yol geçişi/sembolik bağlantı/boyut denetimi, atomik kurulum) ADR-0018'de.
 - Yerel bulunamayan başlık (`"WaveSpawner.h": file not found`) kesin hata sayılmaz → `WARNING`.
-- Derleyici çıktısı `file:line:col: severity: message` regex'iyle `Diagnostic` nesnelerine çevrilir (gcc ve clang biçimleri).
+- Derleyici çıktısı `file:line:col: severity: message` regex'iyle `Diagnostic` nesnelerine çevrilir (gcc ve clang biçimleri); kolon birimi `-fdiagnostics-column-unit=byte` ile bayttır (gcc varsayılanı `display` idi ve clang'la ayrışıyordu; bayrağı tanımayan eski sürümde bayraksız yeniden denenir, Faz H3).
 - Paylaşılan / dışa açık sunucuda `validation.tier1_enabled = false` önerilir (§12).
 - **İptal (Faz 24):** Tier 1 orkestratörde `asyncio.to_thread` ile ayrı iş parçacığında koşar (olay döngüsünü kilitlemez). Analiz görevi iptal edilirse bir `threading.Event` set edilir ve `run_process` derleyici süreç ağacını zaman aşımını beklemeden öldürür (Faz 19'daki CLI ajanı iptaliyle aynı mekanizma).
 
@@ -326,7 +331,7 @@ tree-sitter sorguları (`.scm` dosyaları) ile her fonksiyon için:
 #### 5.3.2 Karmaşıklık ipucu (complexity hint)
 
 - Her fonksiyon için iç içe döngü yolları boyunca sınıflar çarpılır: `LINEAR × LINEAR = n^2`, `LINEAR × LOG = n log n`, `CONSTANT` etkisizdir.
-- Döngü içindeki bilinen çağrı maliyetleri çarpana eklenir (`data/call_costs.yaml`):
+- Döngü içindeki bilinen çağrı maliyetleri çarpana eklenir (`data/call_costs.yaml`). Faz H3: argümanı bilinen indeks desenleri tablo değerini daraltır — `List.RemoveAt(xs.Count - 1)` (aynı listenin sonu) → `1`, `List.Insert(xs.Count, …)` → `1*`; `RemoveAt(0)`/`Insert(0, …)` tablo değeri `n` ile kalır (kaydırma var):
 
 ```yaml
 # data/call_costs.yaml (örnek)
@@ -518,7 +523,7 @@ Bu katman "halüsinasyonu nasıl engelliyorsun?" sorusunun asıl cevabıdır.
 
 **Bulgu güveni (Faz 35):** LLM bulgusu `certainty` (`high`/`medium`/`low`) beyan ederse güven 0,85 / 0,7 / 0,5 (satır düzeltildiyse −0,1); beyan yoksa 0,7 / 0,6. Teyitli (`confirmed`) bulgu ≥ 0,95. `eval analyze` LLM bulgularını bu güvene göre eşikleyerek precision/recall tablosu verir.
 
-**Big-O dilbilgisi (desteklenen):** `1`, `log n`, `n`, `n log n`, `n^k`, `2^n`, `n!`, çok değişkenli çarpım/toplam (`n*m`, `V+E`). Tek değişkenli ifadeler sıralanabilir (`1 < log n < n < n log n < n^2 < ... < 2^n < n!`); `is_optimal` kontrolü bu sıralamayla doğrulanır.
+**Big-O dilbilgisi (desteklenen):** `1`, `log log n`, `log n`, `n`, `n log n`, `n^2`, `2^n`, `n!`, çok değişkenli çarpım/toplam (`n*m`, `V+E`), `max(a, b, …)` (toplam olarak normalleşir: `max(a,b) = Θ(a+b)`), `O(...)`/`Θ(...)`/`Ω(...)` sarmalayıcıları. Tek değişkenli ifadeler sıralanabilir (`1 < log log n < log n < n < n log n < n^2 < ... < 2^n < n!`); `is_optimal` kontrolü bu sıralamayla doğrulanır. Değişken üs yalnızca sayısal tabanla (`2^n`) desteklenir; `n^k` reddedilir (sembolik üs modellenmez). Ayrıntı: `models/bigo.py` dilbilgisi bloğu (Faz H3 güncel).
 
 **Güven skoru (0–1):**
 

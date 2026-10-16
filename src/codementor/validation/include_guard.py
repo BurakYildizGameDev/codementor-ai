@@ -21,6 +21,12 @@ fark bir `#include` satırını "yorum içinde" gösterebilir. Bu yüzden:
 6. Derleyici yorumları boşluğa çevirdiği için `#/**/include "yol"` (satır aşan `#/*…*/include`
    dahil) geçerli bir yönergedir: maskelenmiş metinde `#` ile yönerge adı arasında ham metinde
    `/*` varsa, hedef ne olursa olsun reddedilir (Faz A1, K1).
+7. `#pragma` operandı **izin listesidir** (Faz H3): yalnızca `once`, `region`, `endregion`
+   geçer. Gerekçe: pragma operandı makro olabilir (`#define X GCC dependency "…"` +
+   `#pragma X`), derleyici makroyu açar ve host dosyası yoklanır; izin listesi bu yolu
+   kapatır. Aynı nedenle `once`/`region`/`endregion` adlarını tanımlayan `#define` de
+   reddedilir. `#line` yalnızca `#line <sayı>` biçiminde geçer (dosya adı yok): sahte tanı
+   konumu üretemez.
 
 Yanlış pozitif yalnızca Tier 1'in atlanmasına yol açar (`SKIPPED`); güvenli yönde hatadır.
 """
@@ -35,12 +41,18 @@ _WS = r"[ \t\f\v]"
 _TRIGRAPH = re.compile(r"\?\?[=/'()!<>\-]")
 _SPLICE_TAIL = re.compile(r"\\[ \t\f\v]*$")
 _PASTE = re.compile(r"##|%:%:")
-_KEYWORD = re.compile(rf"(?:#|%:){_WS}*(include_next|include|import|embed|pragma)\b")
+_KEYWORD = re.compile(rf"(?:#|%:){_WS}*(include_next|include|import|embed|pragma|line)\b")
 # Maskede yorumlar boşluk olduğundan `\s` satır aşan blok yorumunu da kapsar
-_SPLIT_KEYWORD = re.compile(r"(?:#|%:)\s*(include_next|include|import|embed|pragma)\b")
+_SPLIT_KEYWORD = re.compile(r"(?:#|%:)\s*(include_next|include|import|embed|pragma|line)\b")
 _AFTER_COMMENT_END = re.compile(rf"\*/(?:{_WS}|/\*.*?\*/)*$")
 _FORBIDDEN_TOKENS = re.compile(r"__has_\w*|\b_Pragma\b")
 _DEPENDENCY = re.compile(r"\bdependency\b")
+# İzin listesi (Faz H3): pragma operandı makro olabilir, bu yüzden yalnızca bilinen güvenli
+# biçimler geçer; operand MASKELENMİŞ metinden okunur (yorumlar boşluk, metin sabitleri boş).
+_PRAGMA_ALLOWED = re.compile(r"(?:once|region|endregion)\b")
+_PRAGMA_RESERVED = frozenset({"once", "region", "endregion"})
+_DEFINE_NAME = re.compile(rf"(?:#|%:){_WS}*define{_WS}+([A-Za-z_]\w*)")
+_LINE_ONLY = re.compile(rf"[0-9]+{_WS}*$")
 _DEVICE = re.compile(r"^(?:CON|PRN|AUX|NUL|CLOCK\$|CONIN\$|CONOUT\$|COM\d|LPT\d)$", re.IGNORECASE)
 _INCLUDE_LIKE = frozenset({"include", "include_next", "import"})
 
@@ -106,11 +118,22 @@ def _directive_position(raw: str, masked: str, index: int) -> bool:
     )
 
 
+def _operand(text: str, index: int) -> str:
+    """Yönerge adından sonraki operand metni (baştaki boşluklar atılır)."""
+    return text[index:].lstrip(" \t\f\v")
+
+
 def _check_line(line: int, raw: str, masked: str) -> list[str]:
     reasons: list[str] = []
     token = _FORBIDDEN_TOKENS.search(raw)
     if token:
         reasons.append(f"Satır {line}: `{token.group()}` kullanımı")
+    defined = _DEFINE_NAME.search(masked)
+    if defined is not None and defined.group(1) in _PRAGMA_RESERVED:
+        # `#define once …` + `#pragma once`: operand makroya dönüşür, izin listesi atlatılır
+        reasons.append(
+            f"Satır {line}: izin listesindeki `{defined.group(1)}` adını tanımlayan `#define`"
+        )
     for match in _KEYWORD.finditer(raw):
         name = match.group(1)
         if name == "embed":
@@ -118,6 +141,20 @@ def _check_line(line: int, raw: str, masked: str) -> list[str]:
         elif name == "pragma":
             if _DEPENDENCY.search(raw, match.end()):
                 reasons.append(f"Satır {line}: `#pragma ... dependency` yönergesi")
+            elif _directive_position(raw, masked, match.start()) and not _PRAGMA_ALLOWED.match(
+                _operand(masked, match.end())
+            ):
+                reasons.append(
+                    f"Satır {line}: izin verilmeyen `#pragma` (yalnızca `once`, `region`, "
+                    "`endregion`)"
+                )
+        elif name == "line":
+            # Yönerge konumu aranır: `#line` dosya okumaz, riski sahte tanı konumudur ve
+            # yorum/metin içindeki geçiş yanlış pozitif üretmemeli (Faz H3).
+            if _directive_position(raw, masked, match.start()) and not _LINE_ONLY.match(
+                _operand(raw, match.end())
+            ):
+                reasons.append(f"Satır {line}: izin verilmeyen `#line` (yalnızca `#line <sayı>`)")
         else:
             target = _target(raw[match.end() :])
             if target is None:

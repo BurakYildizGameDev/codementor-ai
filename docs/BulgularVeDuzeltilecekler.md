@@ -1008,15 +1008,43 @@ tekrarlanabilir bir release'ten gelsin.
       fixture'la sabitlendi (`update_in_plain_class.cs`, `same_name_plain_class.cs`,
       `same_name_plain_struct.cpp`)
 - [ ] Kural bazında öneri türü (Faz 36 açık maddesi)
-- [ ] `call_costs.yaml`: `memset`/`memcpy`, `GetAllActorsOfClass`, `TArray::Remove`, C#
-      `RemoveAll`/`RemoveAt(0)`/`Insert(0,…)`
-- [ ] `parse_bigo`: `log log n`, `Θ/Ω`, `max(n,m)`, değişken üsler
-- [ ] Maskeleme: C# 11 raw string; `mask_non_code`'a dil bilgisi
-- [ ] Unreal stub genişletme (`FMath`, `FHitResult`, dinamik delegeler, `GetWorldTimerManager`…)
-- [ ] Include koruması: `#pragma MACRO` / `#line` izin listesi
-- [ ] gcc/clang/Tier 0 kolon birimi uyumu (`-fdiagnostics-column-unit=byte`)
+- [x] `call_costs.yaml`: `memset`/`memcpy` (Faz 21), `GetAllActorsOfClass` (Faz 21), `TArray::Remove`
+      (Faz 21), C# `RemoveAll`/`RemoveAt`/`Insert` (Faz 21, `n`) — **Faz H3:** argümana duyarlı indeks
+      ayrımı eklendi (`analysis/call_costs.py::_refined_cost`): `RemoveAt(xs.Count - 1)` → `1`,
+      `Insert(xs.Count, …)` → `1*`; `Insert(0, …)`/`RemoveAt(0)` `n` kalır (kaydırma var). Argüman
+      metni `CallName.first_arg` ile taşınır (120 bayt sınırı). Testler:
+      `tests/unit/test_call_costs.py::test_argument_aware_index_costs`, `::test_index_costs_reach_facts`
+- [x] `parse_bigo`: `log log n`, `Θ/Ω`, `max(n,m)`, değişken üsler — **Faz H3:** üçü eklendi
+      (`models/_bigo_algebra.py` `log_log_power` çarpanı; `Θ`/`Ω` sarmalayıcı; `max(a, b)` → çok
+      değişkenli toplam). Değişken üs (`n^k`, `n^n`) **reddedilmeye devam** ediyor: model sayısal taban
+      + sembolik üs (`2^n`) taşır, `n^k`'yi `n` saymak sessiz yanlış olurdu; `docs/mimari.md` §5.6
+      dilbilgisi listesi bu gerçeğe göre düzeltildi. 40 KB girdi süre testi eklendi.
+- [x] Maskeleme: C# 11 raw string; `mask_non_code`'a dil bilgisi — **Faz H3:**
+      `mask_non_code(text, language=None)`; C# 11 ham metni (üç ve daha fazla tırnak, `$`/`$$` önekli
+      biçimler dahil) içeriği maskelenir, satır/uzunluk korunur; `analysis/extractor.py` dili geçirir,
+      dil tespiti ve include koruması varsayılanla kalır. Testler: `tests/unit/test_lexical.py`
+      (C# ham metin bölümü, 12 test + doğrusal süre)
+- [x] Unreal stub genişletme (`FMath`, `FHitResult`, dinamik delegeler, `GetWorldTimerManager`…) —
+      **Faz H3:** hepsi eklendi (`data/stubs/ue_stubs.h`); `FTimerHandle` vardı. Denetim sırasında
+      ek bir boşluk bulundu ve kapatıldı: `DECLARE_DYNAMIC_MULTICAST_DELEGATE_*(...)` bildirimleri
+      tree-sitter'da sözdizimi hatası verdiği için **geçerli Unreal kodu erken çıkışa düşüyordu**
+      (Tier 1 hiç çalışmıyordu). Artık yalnızca ayrıştırma yolunda boşaltılır
+      (`parsers.neutralize_unreal_macros(..., delegates=True)`); derleyici yolunda makroyu stub açar.
+      `unreal_wave_spawner.cpp` fixture'ı yeni API'yi kullanır. Kalan sınır: `Super` (sınıf başına
+      typedef) ve `AActor::OnDestroyed` uyarı üretir.
+- [x] Include koruması: `#pragma MACRO` / `#line` izin listesi — **Faz H3 (güvenlik):** `#pragma`
+      operandı izin listesi (`once`, `region`, `endregion`); izin listesindeki adı tanımlayan `#define`
+      de reddedilir (macro ile `#pragma GCC dependency` atlatması kapanır). `#line` yalnızca
+      `#line <sayı>` (dosya adı yasak), yönerge konumunda denetlenir. Yan etki: diğer pragmalar
+      (`pack`, `warning`) Tier 1'i atlatır (`SKIPPED` + uyarı; fail-closed). Testler:
+      `tests/unit/test_include_guard.py` (+16 red / +12 izin vakası)
+- [x] gcc/clang/Tier 0 kolon birimi uyumu (`-fdiagnostics-column-unit=byte`) — **Faz H3:** bayrak
+      Tier 1 komutuna eklendi (gcc varsayılanı `display`, clang `byte` idi → aynı kod farklı kolon
+      veriyordu); bayrağı tanımayan eski derleyicide komut bayraksız yeniden denenir
+      (`validation/tier1.py::_column_unit_unsupported`). Tier 0 karakter saymaya devam eder.
+      Testler: `tests/unit/test_tier1.py` (argv + yeniden deneme), `tests/compiler/test_tier1_compiler.py`
 - [ ] HTML-STD-003: adoption agency, foster parenting (bilinen sınır; değerlendirme)
-- [ ] Statik dev eval yeniden koşulur; README kural sayısı güncellenir
+- [ ] Statik dev eval yeniden koşulur; README kural sayısı güncellenir (**Faz H4**)
 
 ---
 

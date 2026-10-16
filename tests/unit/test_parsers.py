@@ -118,6 +118,60 @@ def test_neutralize_leaves_unterminated_macro() -> None:
     assert neutralize_unreal_macros(code) == code
 
 
+# ------------------------------------------------- delege bildirimleri (Faz H3)
+
+_DELEGATE_LINE = (
+    "DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnReady, int32, Index, bool, bDone);\n"
+)
+_DELEGATE_SOURCE = (
+    _DELEGATE_LINE
+    + "\nUCLASS()\nclass AGadget : public AActor\n{\n    GENERATED_BODY()\n"
+    + "public:\n    UPROPERTY(BlueprintAssignable)\n    FOnReady OnReady;\n};\n"
+)
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReady);",
+        "DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnReady, int32, Index);",
+        "DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams("
+        "FOnReady, int32, I, bool, B, float, F, FName, N);",
+        "DECLARE_DYNAMIC_MULTICAST_DELEGATE_RetVal_OneParam(bool, FOnReady, int32, Index);",
+    ],
+)
+def test_delegate_declaration_is_neutralized_for_parsing(line: str) -> None:
+    """Tree-sitter çıplak delege bildirimini ayrıştıramaz: ayrıştırma yolunda boşaltılır."""
+    code = line + "\n"
+    assert neutralize_unreal_macros(code) == code  # derleyici yolu: makro stub'a bırakılır
+    neutral = neutralize_unreal_macros(code, delegates=True)
+    _check_shape(code, neutral)
+    assert "DECLARE_DYNAMIC_MULTICAST_DELEGATE" not in neutral
+    assert neutral.count(";") == code.count(";")
+
+
+def test_delegate_source_parses_without_errors_when_unreal() -> None:
+    """Geçerli Unreal kodu: delege bildirimi yüzünden 'sözdizimi hatası' verilmez."""
+    assert parse_source(_DELEGATE_SOURCE, Language.CPP, Engine.NONE).tree.root_node.has_error
+    parsed = parse_source(_DELEGATE_SOURCE, Language.CPP, Engine.UNREAL)
+    assert not parsed.tree.root_node.has_error
+    assert "OnReady" in parsed.text  # alan yerinde kalır (yalnızca makro çağrısı boşalır)
+
+
+def test_delegate_neutralization_keeps_unterminated_call() -> None:
+    code = "DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnReady, int32, Index\n"
+    assert neutralize_unreal_macros(code, delegates=True) == code
+
+
+def test_delegate_neutralization_is_linear_on_hostile_input() -> None:
+    """40 KB kötü niyetli girdi (kapanmayan delege makroları) doğrusal kalmalı."""
+    hostile = ("DECLARE_DYNAMIC_MULTICAST_DELEGATE_" + "A" * 6_000 + "\n") * 2
+    start = time.perf_counter()
+    neutral = neutralize_unreal_macros(hostile, delegates=True)
+    assert time.perf_counter() - start < 0.5
+    assert len(neutral) == len(hostile)
+
+
 def test_neutralized_unreal_parses_without_errors() -> None:
     code = (
         '#include "CoreMinimal.h"\n'

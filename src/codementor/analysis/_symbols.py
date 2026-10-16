@@ -186,6 +186,8 @@ class CallName:
 
     `chained`: alıcı başka bir çağrının sonucu (`xs.Where(...).ToList()`).
     Uzun alıcı ifadeleri okunmaz (`…`): zincir boyunca metin kopyalamak karesel olurdu.
+    `first_arg`: ilk argümanın kısa metni (`items.Count - 1`); argüman yoksa None.
+    Maliyet çözümleyicisi indeks desenlerini bununla ayırt eder (Faz H3).
     """
 
     display: str
@@ -194,11 +196,28 @@ class CallName:
     qualified: str | None
     arg_count: int = 0
     chained: bool = False
+    first_arg: str | None = None
 
 
 def _arg_count(node: Node) -> int:
     args = node.child_by_field_name("arguments")
     return args.named_child_count if args is not None else 0
+
+
+def _first_argument(node: Node) -> str | None:
+    """İlk argümanın metni; argüman yoksa (ya da çok uzunsa `…`) None/`…`.
+
+    Uzun argümanda metin okunmaz: ölçek kullanıcı koduna bağlı (mimari §12) ve argüman
+    olgu adına değil yalnızca indeks desenlerine bakılır.
+    """
+    args = node.child_by_field_name("arguments")
+    if args is None or not args.named_child_count:
+        return None
+    if (first := args.named_child(0)) is None:
+        return None
+    if first.end_byte - first.start_byte > _MAX_RECEIVER_BYTES:
+        return "…"
+    return clip(text(first))
 
 
 def _receiver(node: Node | None) -> tuple[str, bool]:
@@ -215,8 +234,9 @@ def call_name(node: Node, language: Language) -> CallName:
     """Çağrı ifadesinin adı; genel tip argümanları atılır."""
     fn = node.child_by_field_name("function")
     count = _arg_count(node)
+    first = _first_argument(node)
     if fn is None:
-        return CallName("<?>", "<?>", None, None, count)
+        return CallName("<?>", "<?>", None, None, count, False, first)
     if fn.type in ("field_expression", "member_access_expression", "attribute"):
         receiver_node = (
             fn.child_by_field_name("argument")
@@ -230,12 +250,14 @@ def call_name(node: Node, language: Language) -> CallName:
         )
         method = _bare(method_node)
         receiver, chained = _receiver(receiver_node)
-        return CallName(clip(f"{receiver}.{method}"), method, receiver, None, count, chained)
+        return CallName(clip(f"{receiver}.{method}"), method, receiver, None, count, chained, first)
     if fn.type == "qualified_identifier":
         qualified = strip_templates(text(fn))
-        return CallName(clip(qualified), simple_name(qualified), None, qualified, count)
+        return CallName(
+            clip(qualified), simple_name(qualified), None, qualified, count, False, first
+        )
     method = _bare(fn)
-    return CallName(clip(method), method, None, None, count)
+    return CallName(clip(method), method, None, None, count, False, first)
 
 
 def _bare(node: Node | None) -> str:

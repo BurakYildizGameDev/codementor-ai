@@ -77,7 +77,7 @@ class _Extractor:
         self.code = code
         self.language = code.language
         self.root = parsed.tree.root_node
-        self.masked = mask_non_code(code.text)
+        self.masked = mask_non_code(code.text, code.language)
         self.types = type_table(self.root, self.language)
         self.found = {
             name: captures(self.language, name, self.root)

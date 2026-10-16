@@ -37,6 +37,40 @@
 #define verify(expr) ((void)(expr))
 #define FORCEINLINE inline
 
+// ---------------------------------------------------------------- Delegeler (Faz H3)
+// Dinamik çok noktaya yayın delegeleri: alan olarak kullanılabilen boş bir struct üretir.
+// Makro parametreleri (parametre tipleri/adları) gövdede kullanılmaz; yalnızca derleyiciye
+// tip denetimi yaptırmak için alınır.
+struct FStubMulticastDelegate {
+    template <typename... Args>
+    void Broadcast(Args&&...) const {}
+    template <typename ObjectType, typename MethodType>
+    void AddDynamic(ObjectType* Object, MethodType Method) {
+        (void)Object; (void)Method;
+    }
+    template <typename ObjectType, typename MethodType>
+    void RemoveDynamic(ObjectType* Object, MethodType Method) {
+        (void)Object; (void)Method;
+    }
+    template <typename ObjectType, typename MethodType>
+    void RemoveAll(ObjectType* Object) { (void)Object; }
+    void Clear() {}
+    bool IsBound() const { return false; }
+};
+
+#define DECLARE_DYNAMIC_MULTICAST_DELEGATE(Name, ...) \
+    struct Name : public FStubMulticastDelegate {}
+#define DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(Name, ...) \
+    struct Name : public FStubMulticastDelegate {}
+#define DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(Name, ...) \
+    struct Name : public FStubMulticastDelegate {}
+#define DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(Name, ...) \
+    struct Name : public FStubMulticastDelegate {}
+#define DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(Name, ...) \
+    struct Name : public FStubMulticastDelegate {}
+#define DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(Name, ...) \
+    struct Name : public FStubMulticastDelegate {}
+
 // ---------------------------------------------------------------- Temel tipler
 using int8 = std::int8_t;
 using int16 = std::int16_t;
@@ -111,9 +145,70 @@ struct FTransform {
     FRotator Rotator() const { return FRotator(); }
 };
 
+// ---------------------------------------------------------------- Matematik ve çarpışma
+struct FMath {
+    template <typename T>
+    static T Clamp(T Value, T MinValue, T MaxValue) {
+        if (Value < MinValue) return MinValue;
+        if (Value > MaxValue) return MaxValue;
+        return Value;
+    }
+    template <typename T>
+    static T Abs(T Value) {
+        if constexpr (T(-1) < T(0)) {  // işaretsiz tipte karşılaştırma uyarısı doğmasın
+            return Value < T(0) ? -Value : Value;
+        }
+        return Value;
+    }
+    template <typename T>
+    static T Max(T A, T B) { return A > B ? A : B; }
+    template <typename T>
+    static T Min(T A, T B) { return A < B ? A : B; }
+    template <typename T>
+    static T Sqrt(T Value) { (void)Value; return T(); }
+};
+
+struct FHitResult {
+    bool bBlockingHit = false;
+    bool bStartPenetrating = false;
+    float Time = 0.0f;
+    float Distance = 0.0f;
+    int32 Item = -1;
+    FVector Location;
+    FVector ImpactPoint;
+    FVector Normal;
+    FVector ImpactNormal;
+    FName BoneName;
+    FName MyBoneName;
+    class AActor* GetActor() const { return nullptr; }
+    class UPrimitiveComponent* GetComponent() const { return nullptr; }
+};
+
 struct FTimerHandle {
     bool IsValid() const { return false; }
     void Invalidate() {}
+};
+
+class FTimerManager {
+public:
+    // Unreal'da `SetTimer` çok biçimlidir (TFunction, üye fonksiyon işaretçisi, lambda):
+    // stub her çağrıyı kabul eder, tip denetimi kullanıcı kodunda kalır.
+    template <typename... Args>
+    void SetTimer(FTimerHandle& InOutHandle, Args&&... InArgs) {
+        (void)InOutHandle;
+        ((void)InArgs, ...);
+    }
+    template <typename... Args>
+    void SetTimerForNextTick(Args&&... InArgs) {
+        ((void)InArgs, ...);
+    }
+    void ClearTimer(FTimerHandle& InOutHandle) { (void)InOutHandle; }
+    void ClearAllTimersForObject(const class UObject* Object) { (void)Object; }
+    bool IsTimerActive(const FTimerHandle& InHandle) const { (void)InHandle; return false; }
+    float GetTimerRemaining(const FTimerHandle& InHandle) const {
+        (void)InHandle;
+        return 0.0f;
+    }
 };
 
 // ---------------------------------------------------------------- Kapsayıcılar
@@ -229,6 +324,10 @@ public:
     bool Destroy() { return true; }
     template <typename T>
     T* FindComponentByClass() const { return nullptr; }
+    FTimerManager& GetWorldTimerManager() const {
+        static FTimerManager Manager;  // stub: gerçek dünya zamanlayıcısı yerine sabit örnek
+        return Manager;
+    }
     struct FActorTickFunction { bool bCanEverTick = false; bool bStartWithTickEnabled = true; };
     FActorTickFunction PrimaryActorTick;
 };
@@ -241,6 +340,10 @@ public:
         (void)DeltaTime; (void)TickType; (void)ThisTickFunction;
     }
     AActor* GetOwner() const { return nullptr; }
+    FTimerManager& GetWorldTimerManager() const {
+        static FTimerManager Manager;
+        return Manager;
+    }
 };
 
 class UWorld : public UObject {

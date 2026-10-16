@@ -9,6 +9,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from codementor.analysis.lexical import mask_non_code, matching_parens
+from codementor.models.enums import Language
 
 
 @pytest.mark.parametrize(
@@ -158,3 +159,117 @@ def test_linear_time_on_hostile_raw_strings(hostile: str) -> None:
     masked = mask_non_code(hostile)
     matching_parens(masked)
     assert time.perf_counter() - start < 0.5
+
+
+# ---------------------------------------------------------- C# 11 ham metin (Faz H3)
+
+
+def test_csharp_raw_string_content_is_masked() -> None:
+    """Ham metin içindeki `//`, `/*` ve tırnak, yorum/metin sanılmaz (dil verilince)."""
+    code = (
+        "class A\n"
+        "{\n"
+        '    string s = """\n'
+        "    // yorum değil (\n"
+        "    /* blok değil */\n"
+        '    " tırnak\n'
+        '    """;\n'
+        "    int x = 1;\n"
+        "}\n"
+    )
+    masked = mask_non_code(code, Language.CSHARP)
+    assert len(masked) == len(code)
+    assert masked.startswith('class A\n{\n    string s = """\n')
+    assert masked.endswith('""";\n    int x = 1;\n}\n')
+    for dropped in ("yorum değil", "blok değil", '" tırnak'):
+        assert dropped not in masked, dropped
+    # açılış/kapanış dizileri yerinde: parantez eşleme şaşmaz
+    assert matching_parens(masked) == matching_parens(code)
+
+
+@pytest.mark.parametrize("dollars", ["", "$", "$$"])
+def test_csharp_interpolated_raw_string_is_masked(dollars: str) -> None:
+    code = f'string s = {dollars}"""\n{{ değer }} // yorum\nsondaki tırnak: "\n""";\n'
+    masked = mask_non_code(code, Language.CSHARP)
+    assert len(masked) == len(code)
+    assert f'{dollars}"""' in masked
+    for dropped in ("değer", "yorum", 'tırnak: "'):
+        assert dropped not in masked, dropped
+
+
+def test_csharp_raw_string_does_not_hide_following_code() -> None:
+    """Ham metinden sonraki gerçek yorumlar maskelenmeye devam eder."""
+    code = 'string a = """x // y""";\nstring b = "gerçek"; // maskelenmeli\n'
+    masked = mask_non_code(code, Language.CSHARP)
+    assert "x // y" not in masked
+    assert "gerçek" not in masked
+    assert "maskelenmeli" not in masked
+
+
+@pytest.mark.parametrize(
+    ("code", "kept", "dropped"),
+    [
+        # uzun kapanış dizisi: 4 tırnakla açılan ham metni 3 tırnak kapatmaz
+        ('string s = """"iç "" x"""";', '""""', ["iç ", '"" x']),
+        # kapanmış ve dosya sonunda biten ham metin: kapanış tırnakları yerinde kalır
+        ('string s = """x//y"""', '"""', ["x//y"]),
+        # kapanmamış ham metin: dosya sonuna kadar maskele (satırlar korunur)
+        ('string s = """\nkapanmadı // x\n" tırnak\n', '"""', ["kapanmadı", "tırnak"]),
+    ],
+)
+def test_csharp_raw_string_edge_cases(code: str, kept: str, dropped: list[str]) -> None:
+    masked = mask_non_code(code, Language.CSHARP)
+    assert len(masked) == len(code)
+    assert kept in masked
+    assert [i for i, c in enumerate(masked) if c == "\n"] == [
+        i for i, c in enumerate(code) if c == "\n"
+    ]
+    for part in dropped:
+        assert part not in masked, part
+
+
+def test_csharp_verbatim_string_still_wins_over_raw() -> None:
+    """`@\"...\"` C# verbatim metindir: ham metin sayılmaz, `\"\"` kaçışı korunur."""
+    code = 'string s = @"satır "" ve // yorum";\nint x = 1;\n'
+    masked = mask_non_code(code, Language.CSHARP)
+    assert "satır" not in masked
+    assert "yorum" not in masked
+    assert masked.endswith(";\nint x = 1;\n")
+
+
+def test_raw_string_masking_only_with_csharp_language() -> None:
+    """Dil verilmezse (ya da C/C++ ise) üç tırnak özel değildir: davranış değişmez."""
+    code = 'string s = """\n// bu satır gerçek yorum\n""";\nint x = 1;\n'
+    assert "bu satır gerçek yorum" not in mask_non_code(code)
+    assert "bu satır gerçek yorum" not in mask_non_code(code, Language.CPP)
+
+
+def test_csharp_raw_string_keeps_line_and_length_on_hostile_input() -> None:
+    hostile = ('string s = """' + "x" * 10 + '"""\n') * 1_000
+    start = time.perf_counter()
+    masked = mask_non_code(hostile, Language.CSHARP)
+    assert len(masked) == len(hostile)
+    assert masked.count("\n") == hostile.count("\n")
+    assert time.perf_counter() - start < 0.5
+
+
+@pytest.mark.parametrize(
+    "hostile",
+    ['"""' * 13_000, 'x = "' * 20_000, ('string s = """' + "a" * 40 + "\n") * 900],
+    ids=["many-quotes", "open-quotes", "many-open-raws"],
+)
+def test_csharp_hostile_input_is_linear(hostile: str) -> None:
+    start = time.perf_counter()
+    masked = mask_non_code(hostile, Language.CSHARP)
+    matching_parens(masked)
+    assert len(masked) == len(hostile)
+    assert time.perf_counter() - start < 0.5
+
+
+@given(st.text(alphabet=st.sampled_from(list("ab(){}/*\"'\\@\n ;1_$")), max_size=300))
+def test_csharp_mask_preserves_length_and_newlines(code: str) -> None:
+    masked = mask_non_code(code, Language.CSHARP)
+    assert len(masked) == len(code)
+    assert [i for i, c in enumerate(masked) if c == "\n"] == [
+        i for i, c in enumerate(code) if c == "\n"
+    ]

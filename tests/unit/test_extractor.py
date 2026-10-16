@@ -10,12 +10,14 @@ from pathlib import Path
 import pytest
 
 from codementor.analysis import extractor
+from codementor.analysis._symbols import CallName, call_name
 from codementor.analysis.extractor import (
     FAILURE_WARNING,
     NO_FUNCTION_WARNING,
     SYNTAX_WARNING,
     extract_facts,
 )
+from codementor.analysis.parsers import get_parser, iter_nodes
 from codementor.ingest.normalize import normalize
 from codementor.models.enums import AllocationKind, DeallocationKind, Engine, Language
 from codementor.models.facts import CodeFacts
@@ -26,6 +28,38 @@ C, CPP, CS = Language.C, Language.CPP, Language.CSHARP
 
 def _facts(text: str, language: Language, engine: Engine = Engine.NONE) -> CodeFacts:
     return extract_facts(normalize(text, LanguageHint(language=language, engine=engine)))
+
+
+# ---------------------------------------------------------------- çağrı adı (Faz H3)
+
+
+def _call_names(text: str, language: Language) -> list[CallName]:
+    """Metindeki çağrıların adları (argüman metni dahil), belge sırasıyla."""
+    root = get_parser(language).parse(text.encode("utf-8")).root_node
+    calls = {"call_expression", "invocation_expression", "call"}
+    return [call_name(node, language) for node in iter_nodes(root) if node.type in calls]
+
+
+def test_first_argument_text_is_captured() -> None:
+    """İndeks desenlerini ayırt etmek için ilk argümanın metni taşınır."""
+    names = _call_names("void F() { xs.RemoveAt(xs.Count - 1); xs.Insert(0, y); }", CS)
+    assert [(n.method, n.first_arg) for n in names] == [
+        ("RemoveAt", "xs.Count - 1"),
+        ("Insert", "0"),
+    ]
+
+
+def test_argumentless_call_has_no_first_argument() -> None:
+    (name,) = _call_names("void F() { xs.Clear(); }", CS)
+    assert name.first_arg is None
+    assert name.arg_count == 0
+
+
+def test_long_first_argument_is_not_read() -> None:
+    """Kullanıcı koduna bağlı ölçek: çok uzun argüman metni okunmaz (mimari §12)."""
+    names = _call_names("void F() { g(" + "a + " * 100 + "b); }", C)
+    assert names[0].method == "g"
+    assert names[0].first_arg == "…"
 
 
 # ------------------------------------------------------------------ fonksiyonlar ve sıcak yol

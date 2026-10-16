@@ -11,6 +11,11 @@ C++ ham metinleri (`R"(...)"`, `u8R"x(...)x"`, `LR"(...)"` ...) kaçış ve sat�
 tanımadığından ayrıca işlenir (Faz 55): `/*` ya da `#include` görünümü taşıyan
 içerik maske girer, açılış/kapanış dizileri yerinde kalır.
 
+C# 11 ham metinleri (üç ve daha fazla tırnakla açılan `raw string`, `$` önekli
+biçimleri dahil) de aynı gerekçeyle işlenir (Faz H3): `language=Language.CSHARP`
+verildiğinde içerikteki tırnak, `//`, `/*` ya da `{` görünümü kodu şaşırtmaz.
+Dil verilmezse eski davranış korunur (C/C++ ve dil tespiti).
+
 Tek geçişlidir: kullanıcı kodu güvenilmez veridir (mimari §12), kötü niyetli girdide
 bile süre girdi boyutuyla doğrusal kalmalıdır.
 """
@@ -18,6 +23,8 @@ bile süre girdi boyutuyla doğrusal kalmalıdır.
 from __future__ import annotations
 
 import re
+
+from codementor.models.enums import Language
 
 # Sabit genişlikli pencerede aranır: uzun satırlarda da doğrusal kalsın
 _INCLUDE_TAIL = re.compile(r"#[ \t]*include[ \t]*$")
@@ -86,12 +93,51 @@ def _raw_string_end(text: str, open_paren: int, delim: str) -> int:
     return pos + len(delim) + 1 if pos >= 0 else len(text)
 
 
-def mask_non_code(text: str) -> str:
-    """Yorum ve metin sabiti içeriklerini boşlukla maskeler; uzunluk ve satırlar korunur."""
+# C# 11 ham metni: en az üç `"` ile açılır, kapanışta da en az o kadar `"`
+_CSHARP_RAW_QUOTES = 3
+
+
+def _quote_run(text: str, quote: int) -> int:
+    """`quote` konumundan başlayan kesintisiz `"` dizisinin uzunluğu."""
+    j, n = quote, len(text)
+    while j < n and text[j] == '"':
+        j += 1
+    return j - quote
+
+
+def _csharp_raw_end(text: str, start: int, quotes: int) -> int:
+    """C# ham metninde kapanış tırnak dizisinden sonraki konum; yoksa -1.
+
+    Kapanış, `quotes` kadar tırnaktan **oluşan ilk dizi**dir (`quotes`ten uzun dizi de
+    kapatır: fazlası C# derleyicisi tarafından hata sayılır, bizim için erken kapanış
+    güvenli yöndür). Tek geçiş: her konum bir kez görülür.
+    """
+    i, n = start, len(text)
+    while i < n:
+        if text[i] != '"':
+            i += 1
+            continue
+        j = i + 1
+        while j < n and text[j] == '"':
+            j += 1
+        if j - i >= quotes:
+            return j
+        i = j
+    return -1
+
+
+def mask_non_code(text: str, language: Language | None = None) -> str:
+    """Yorum ve metin sabiti içeriklerini boşlukla maskeler; uzunluk ve satırlar korunur.
+
+    `language=Language.CSHARP` verilirse C# 11 ham metinleri (üç ve daha fazla tırnakla
+    açılan biçim) de maske girer; başka dillerde ve `None`'da davranış değişmez
+    (C++ ham metni her zaman işlenir).
+    """
     parts: list[str] = []
     cursor = 0
     i = 0
     n = len(text)
+    csharp = language is Language.CSHARP
     while i < n:
         c = text[i]
         if c == "/" and i + 1 < n and text[i + 1] in "/*":
@@ -125,6 +171,22 @@ def mask_non_code(text: str) -> str:
                     parts += [text[cursor : raw + 1], _blank(text[raw + 1 :])]
                     cursor = i = n
                 continue
+            if csharp and c == '"' and not verbatim:
+                quotes = _quote_run(text, i)
+                if quotes >= _CSHARP_RAW_QUOTES:  # C# 11 ham metni: içerik boşluk, tırnaklar kalır
+                    end = _csharp_raw_end(text, i + quotes, quotes)
+                    if end < 0:  # kapanmamış: dosya sonuna kadar maskele
+                        parts += [text[cursor : i + quotes], _blank(text[i + quotes :])]
+                        cursor = i = n
+                    else:
+                        closer = end - quotes
+                        parts += [
+                            text[cursor : i + quotes],
+                            _blank(text[i + quotes : closer]),
+                            text[closer:end],
+                        ]
+                        cursor = i = end
+                    continue
             close = _string_end(text, i, c, verbatim=verbatim)
             parts += [text[cursor : i + 1], _blank(text[i + 1 : close])]
             closed = close < n and text[close] == c
