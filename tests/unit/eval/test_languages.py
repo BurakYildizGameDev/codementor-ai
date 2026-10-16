@@ -190,3 +190,24 @@ def test_old_result_without_languages_loads() -> None:
     assert "languages" not in data["config"]
     (result,) = load_results([old])
     assert result.config.languages == []
+
+
+def test_eval_run_language_is_typer_enum() -> None:
+    """G5-3: `--language` serbest metin değil `Language` enum'u; geçersiz değer çıkış 2 + liste.
+
+    Kullanıcı seçeneklerden birini görür ('c', 'cpp', 'csharp', 'python', 'html', 'css'); eskiden
+    serbest metin kabul edilip filtre boş kalıyordu ('Seçilen dillerde örnek yok').
+    """
+    rejected = CliRunner().invoke(app, ["eval", "run", "--split", "dev", "--language", "cobol"])
+    assert rejected.exit_code == 2
+    assert "'cobol' is not one of" in rejected.output
+    for value in ("'c'", "'cpp'", "'csharp'", "'python'", "'html'", "'css'"):
+        assert value in rejected.output
+
+
+def test_eval_run_help_lists_language_choices() -> None:
+    """G5-3: `--help` seçenek tipini (izinli değerleri) gösterir."""
+    result = CliRunner().invoke(app, ["eval", "run", "--help"])
+    assert result.exit_code == 0
+    for value in ("c", "cpp", "csharp", "python", "html", "css"):
+        assert value in result.output

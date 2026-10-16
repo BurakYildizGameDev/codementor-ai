@@ -6,13 +6,12 @@ import functools
 import json
 from pathlib import Path
 
-import structlog
-
 from codementor import __version__
+from codementor.log import get_logger
 from codementor.models.build import BuildInfo
 from codementor.paths import resource_path
 
-log = structlog.get_logger()
+log = get_logger("codementor.buildinfo")  # maskeleme zinciri her zaman kurulu (Faz G5)
 
 
 @functools.lru_cache(maxsize=1)

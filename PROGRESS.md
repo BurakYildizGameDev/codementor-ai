@@ -63,7 +63,7 @@
 | C | ✅ (denetim sonraya) | faz/c-ipucu-yapilandirma | 2026-10-13 | Claude Code / — |
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
 | F | ✅ (elle deneme + denetim sonraya) | faz/f-masaustu | 2026-10-14 | Antigravity / — |
-| G | 🟡 (G0-G4 ✅; G5-G7 + D16/D20, `schema_enforced` açık — D14-D19 Faz E/F'te kapandı) | faz/g-saglayici | 2026-10-15 | Cline / — |
+| G | 🟡 (G0-G7 + D20 ✅; kalan: `orchestrator.py` 421→<400, D16 belge notu, kapanış) | faz/g-saglayici | 2026-10-16 | Cline / — |
 
 ## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15)
 
@@ -295,9 +295,47 @@
 - **Doğrulama (G7):** `ruff check`/`ruff format --check` temiz (469 dosya); `mypy src/` 212 dosyada
   hatasız; `pytest -m "not live"` **3520 geçti / 15 atlandı** (G6-4/5 sonrası 3511 → +9 test).
 
+**G5 / D20 — buildinfo logger, `--help` dil tutarlılığı, `eval run --language`, exe hariç tutmaları:**
+- **`buildinfo.py` (D20-1):** modül düzeyindeki maskesiz `structlog.get_logger()` yerine
+  `codementor.log.get_logger("codementor.buildinfo")`. Eskiden maskeleme küresel structlog
+  yapılandırmasına bağlıydı; artık her çağrıda `redact_secrets` işlemcisiyle kuruluyor. Test:
+  `tests/unit/test_buildinfo.py::test_build_info_logger_is_masked_project_logger` (JSON satırında
+  `logger == "codementor.buildinfo"`, `level == "warning"`).
+- **`--help` İngilizce metni (D20-2) — değiştirilemedi:** "Show this message and exit." Typer'ın kendi
+  kopyasından geliyor: `typer/_click/decorators.py:624`
+  (`kwargs.setdefault("help", _("Show this message and exit."))`), onu `TyperCommand.get_help_option`
+  doğrudan çağırır. `context_settings`/Typer parametresi yok (yalnız `help_option_names`), click/Typer
+  çeviri kataloğu (`.mo`) taşımıyor. Kendi `--help` seçeneğimizi yazmak plan dışı olduğu için metin
+  bırakıldı; aynı gerekçe kullanım hatasındaki "Try '… --help' for help." ipucu için de geçerli.
+- **`eval run --language` (D20-3):** `list[str]` → `list[Language]`. Geçersiz değer artık Typer kullanım
+  hatası: **çıkış 2**, `Invalid value for '--language': 'cobol' is not one of 'c', 'cpp', 'csharp',
+  'python', 'html', 'css'.`; `--help` tipi `<c|cpp|csharp|python|html|css>`. Filtre enum üzerinden
+  (`s.label.language in set(language)`; `StrEnum` karma karışımı yok), `run_eval`'a `lang.value`
+  geçilir (sözleşme `list[str]` kaldı). Testler: `test_eval_run_language_is_typer_enum`,
+  `test_eval_run_help_lists_language_choices`.
+- **Exe hariç tutmaları (D20-4):** `EXCLUDES`'a `uvicorn` eklendi (yalnız `cli/serve.py` kullanır;
+  masaüstü exe CLI'ı içermez, ADR-0013). `fastapi`/`starlette` **denendi, duman testi düşünce geri
+  alındı**: `--onedir` derleme (74 sn) + `.exe --self-check sc.json` → **çıkış 1**,
+  `ModuleNotFoundError: No module named 'starlette'` (`desktop/launch.py` → `api/state.py` →
+  `api/guard.py`; `guard` → `api/errors` → `fastapi` zinciri masaüstünde gerçekten yüklü). Yalnız
+  `uvicorn` hariçken duman testi **çıkış 0** ve `sc.json` `"ok": true` (kaynak kökü, varsayılan toml,
+  prompt şablonları, kontrol listeleri, 64 soru, 17 sorgu dosyası, C olgu çıkarımı, Roslyn
+  denetleyicisi). Regresyon testi:
+  `tests/desktop/test_build_exe.py::test_uvicorn_excluded_but_server_stack_kept`.
+- **`[desktop]` extra (D20-5):** **yapılmadı** — kullanıcı kararı (CI/release/exe derlemesini etkiler;
+  exe gerekli her şeyi `COLLECT_ALL`/`--add-data` ile paketliyor).
+- **ADR-0030:** G6'da yapılan `primary_name` protokol eklemesinin karar kaydı yazıldı
+  (`docs/adr/0030-primary-name-protokolu.md`: protokol üyesi, `NamedProvider` tabanı,
+  `FallbackProvider` ilk halkayı döndürür; `orchestrator` sağlayıcıya özel `chain` alanını yoklamıyor).
+
+**G5 durumu:** bitti (D20-1/3/4 kod + build, D20-2 rapor, D20-5 kullanıcı kararı; +4 test).
+Doğrulama: `ruff check`/`ruff format --check` temiz (470 dosya), `mypy src/` 212 dosyada hatasız,
+`pytest -m "not live"` **3524 geçti / 15 atlandı** (G7 sonrası 3520 → +4 test); exe duman testi ayrıca
+`--onedir` derleme + `--self-check` ile koşuldu (çıkış 0, `"ok": true`).
+
 ### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15; G4+ denetimiyle güncellendi)
 
-Durum: **G0-G4, G4+, G6 (altı maddenin tamamı) ve G7 bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5 → `48f4e16` G6 denetim düzeltmeleri → `c403070` G7). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3520 geçti / 15 atlandı**.
+Durum: **G0-G4, G4+, G5/D20, G6 (altı maddenin tamamı) ve G7 bitti** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → `a39ec09` G6-3 → `644852b` G6-4/5 → `48f4e16` G6 denetim düzeltmeleri → `c403070` G7 → G5 commit'i: aşağıdaki "Faz G kapanışı"). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3524 geçti / 15 atlandı** (G5 sonrası).
 
 **Düzeltme (G4 sonrası denetim):** listenin ilk sürümü D14/D15/D17/D19'u açık sanıyordu; kaynağı §5
 tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D17 **Faz E**, D19 **Faz F**
@@ -314,13 +352,15 @@ Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`Bulgula
 2. **G7:** ✅ **tamam** — `ProviderResult.schema_enforced` (anthropic/openai_compat/ollama True,
    CLI'lar False, fake varsayılanı False) + token tahmininin `usage` ile
    `log.debug("token_estimate_ratio")` kalibrasyonu (davranış değişmez, +9 test). — *kalan yok*
-3. **G5 / D20:** `buildinfo.py` maskesiz logger → `get_logger`; `--help` İngilizce metni (Typer'la
-   Türkçeleştirilemiyorsa rapora "değiştirilemedi" yaz, kendi `--help`'ini yazma); `eval run --language`
-   → `Language` enum (geçersiz değer çıkış 2); `build_exe.py` `EXCLUDES`'a `fastapi`/`uvicorn`/`starlette`
-   + **exe duman testi** (`--onedir` derleme ~3-5 dk, `.exe --self-check sc.json` çıkış 0, `"ok": true`;
-   geçmezse geri al); `cli/rules.py` `rules list` `[rules] disabled`'ı uygular. — *orta*
-   - **Kullanıcı kararı (G5-5):** `pyproject.toml` `[desktop]` extra **yapılmayacak** (CI/release/exe
-     derlemesini etkiliyor); gerekçe rapora yazılacak.
+3. **G5 / D20:** ✅ **tamam** — `buildinfo.py` → `get_logger("codementor.buildinfo")`;
+   `eval run --language` → `Language` enum (geçersiz değer çıkış 2 + izinli değer listesi);
+   `build_exe.py` `EXCLUDES`'a `uvicorn` eklendi (`fastapi`/`starlette` denendi, `--self-check` çıkış 1
+   verince geri alındı; yalnız `uvicorn` hariçken **çıkış 0**, `sc.json` `"ok": true`); `--help`
+   İngilizce metni Typer/click ile **değiştirilemedi** (kaynak `typer/_click/decorators.py`;
+   `context_settings` anahtarı ve `.mo` kataloğu yok). +4 test.
+   - **Kullanıcı kararı (G5-5):** `pyproject.toml` `[desktop]` extra **yapılmadı** (CI/release/exe
+     derlemesini etkiliyor).
+   - **ADR-0030:** `primary_name` protokol eklemesi karar kaydına geçti.
 4. **D16:** `session_id` sahipliği **sadece belgeye** yazılır (kod değişmez; paylaşılan sunucu uyarısı).
 5. **Dosya bölme:** `pipeline/orchestrator.py` şu an **420 satır** (> 400 sınırı) — Faz G kabulü
    "iki büyük dosya < 400" istiyor; `passes.py` **366** satır ve sınıra yakın (ölçüm: 2026-10-15). — *orta-küçük, saf refactor*
@@ -657,6 +697,9 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 **Açık:** Y2 (kullanıcı, `private/`), K2 kalan regex taraması, A1+A2 kod-denetçi denetimi.
 
 ## Sonraya (kapsam dışı fikirler)
+- **`docs/mimari.md` §20 ADR tablosu boşlukları (denetim notu, 2026-10-16):** tabloda ADR-0024, 0025,
+  0028 ve 0029 satırları yok (0026/0027 var; ADR-0030 eklendi). Karar dosyaları `docs/adr/` altında
+  mevcut; tablo satırları kapsam dışı olduğu için bu fazda eklenmedi.
 - **Public öncesi zorunlu (kullanıcı, 2026-10-13):** Y2 — `tests/fixtures/llm_responses/unity03_reference.cs`
   bankadaki unity-03 referans çözümüyle (`private/`) karşılaştırılacak; aynı/benzerse yapay bir
   çözümle değiştirilip golden'lar yeniden üretilecek. GitHub'da secret scanning, push protection,

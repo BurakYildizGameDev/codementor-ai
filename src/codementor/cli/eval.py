@@ -36,7 +36,7 @@ from codementor.eval.dataset import (
 from codementor.eval.parts import parse_part, select_part
 from codementor.eval.review import DraftCheck, check_draft
 from codementor.eval.runner import ABLATIONS, run_eval, save_result
-from codementor.models.enums import PipelineMode
+from codementor.models.enums import Language, PipelineMode
 from codementor.models.eval import Label, RunResult, SampleResult, Split
 
 EXIT_PROBLEMS = 1
@@ -72,7 +72,7 @@ def run(
     ] = None,
     limit: Annotated[int | None, typer.Option(help="İlk N örnek (deneme için).")] = None,
     language: Annotated[
-        list[str] | None,
+        list[Language] | None,
         typer.Option(
             help="Yalnızca bu dil(ler): c, cpp, csharp, python, html, css "
             "(csharp Unity'yi, cpp Unreal'ı da kapsar)."
@@ -117,12 +117,13 @@ def run(
     except DatasetError as exc:
         console.print(f"[red]Hata:[/red] {escape(str(exc))}")
         raise typer.Exit(EXIT_SYSTEM_ERROR) from exc
-    if language:
-        samples = [s for s in samples if s.label.language.value in set(language)]
+    selected = set(language or [])  # G5-3: Typer `Language` enum doğrular; burada yalnız filtre
+    if selected:
+        samples = [s for s in samples if s.label.language in selected]
     samples = samples[:limit] if limit else samples
     if part_spec is not None:
         samples = select_part(samples, *part_spec)
-    if language and not samples:
+    if selected and not samples:
         console.print("[red]Hata:[/red] Seçilen dillerde bu bölümde örnek yok.")
         raise typer.Exit(EXIT_USAGE)
     unreviewed = [s.label.id for s in samples if not s.label.reviewed]
@@ -144,7 +145,7 @@ def run(
                 static_only=static_only,
                 ablations=list(ablate or []),
                 progress=progress,
-                languages=list(language or []),
+                languages=[lang.value for lang in language or []],
                 part=part,
             )
         )

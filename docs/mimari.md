@@ -455,7 +455,7 @@ class LLMProvider(Protocol):
     capabilities: ProviderCapabilities
 
     @property
-    def primary_name(self) -> str:  # Faz G6: zincirin başında gerçekten çağrılan sağlayıcı
+    def primary_name(self) -> str:  # Faz G6 (ADR-0030): zincirin ilk halkası
         ...
 
     async def generate_structured(
@@ -1533,6 +1533,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0023 | API güven sınırı | İstek Tier 1'i yalnız kapatır; Host doğrulaması; sağlayıcı izin listesi; girdi, gövde ve eşzamanlılık sınırları ([docs/adr/0023](adr/0023-api-guven-siniri.md)) |
 | ADR-0026 | İpucu merdiveni yalnız sayılan denemelerle ilerler | Başarısız sağlayıcı, erken çıkış ve aynı kodla Denetle seviye harcamaz ([docs/adr/0026](adr/0026-ipucu-merdiveni-sayilan-denemeler.md)) |
 | ADR-0027 | toml yolu için kaynak kökü yedeği | Exe yanına kopyalanan varsayılan toml'daki `data/...` yolları paket verisine çözülür ([docs/adr/0027](adr/0027-toml-yolu-kaynak-koku-yedegi.md)) |
+| ADR-0030 | `LLMProvider.primary_name` protokol üyesi | Önbellek kararı zincirin ilk halkasına bakmalı; sağlayıcıya özel `chain` alanını yoklamak yerine protokol üyesi (ortak `NamedProvider` tabanı) ([docs/adr/0030](adr/0030-primary-name-protokolu.md)) |
 
 ---
 

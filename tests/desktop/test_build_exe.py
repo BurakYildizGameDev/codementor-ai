@@ -111,6 +111,21 @@ def test_build_info_written_and_bundled(tmp_path: Path) -> None:
     )
 
 
+def test_uvicorn_excluded_but_server_stack_kept(tmp_path: Path) -> None:
+    """G5-4: masaüstü exe'de yalnız `uvicorn` çıkarılır.
+
+    `fastapi`/`starlette` denenip GERİ ALINDI: duman testi (`.exe --self-check sc.json`) çıkış 1
+    ve `ModuleNotFoundError: No module named 'starlette'` veriyor. Masaüstü girişi
+    `codementor.api.state` → `guard`/`errors` zinciriyle ikisini de içe aktarır; `uvicorn` ise
+    yalnız `cli/serve.py`'de (masaüstü exe CLI'ı içermez, ADR-0013).
+    """
+    for onefile in (True, False):
+        args = build_exe.pyinstaller_args(onefile=onefile, console=False, work=tmp_path)
+        excluded = {args[i + 1] for i, arg in enumerate(args) if arg == "--exclude-module"}
+        assert "uvicorn" in excluded
+        assert not {"fastapi", "starlette"} & excluded
+
+
 def test_build_info_git_failure_sets_commit_none(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

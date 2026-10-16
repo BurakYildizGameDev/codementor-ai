@@ -932,12 +932,26 @@ tekrarlanabilir bir release'ten gelsin.
       katmanını bilmiyor (`rg -n "from codementor.storage" src/codementor/report` boş) — **Faz G6**
 - [x] **G6 (parça 5):** `LLMProvider.primary_name` protokolü + ortak `NamedProvider` tabanı;
       `orchestrator` `getattr(provider, "chain", …)` yoklaması yerine bu özelliği kullanıyor —
-      **Faz G6**
+      **Faz G6** (**ADR-0030**)
 - [x] **G6 (denetim):** `docs/mimari.md` §5.5.1 (`primary_name`) ve §16 (`models/usage.py`) koda
       senkronlandı; yanlışlıkla commit edilmiş `.tmp_full.log`/`.tmp_g1.log` repodan çıkarıldı,
       `.gitignore`'a `.tmp_*.log` eklendi — **Faz G6**
-- [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
-      exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra
+- [x] **D20 (parça 1):** `buildinfo.py` maskesiz modül logger'ı yerine
+      `codementor.log.get_logger("codementor.buildinfo")` (maskeleme zinciri her çağrıda kurulu) — **Faz G5**
+- [x] **D20 (parça 2) — değiştirilemedi:** `--help` İngilizce metni ("Show this message and exit.")
+      Typer'ın kopyasındaki `typer/_click/decorators.py:624`
+      `kwargs.setdefault("help", _("Show this message and exit."))` satırından geliyor;
+      `context_settings`/Typer parametresi yok, click/Typer `.mo` kataloğu taşımıyor, kendi `--help`
+      seçeneğimizi yazmak plan dışı. Kullanım hatasındaki "Try '… --help' for help." ipucu da aynı
+      durumda — **Faz G5**
+- [x] **D20 (parça 3):** `eval run --language` serbest metin → `Language` enum; geçersiz değer çıkış 2,
+      izinli değer listesi ve `--help` tipi (`<c|cpp|csharp|python|html|css>`) — **Faz G5**
+- [x] **D20 (parça 4):** exe'den `uvicorn` çıkarıldı; `fastapi`/`starlette` **çıkarılamadı** (duman
+      testi `ModuleNotFoundError: No module named 'starlette'`, çıkış 1: masaüstü girişi `api.state` →
+      `guard`/`errors` zinciriyle yüklüyor) → geri alındı; yalnız `uvicorn` hariçken `.exe --self-check`
+      **çıkış 0**, `sc.json` `"ok": true` — **Faz G5**
+- [x] **D20 (parça 5) — kullanıcı kararı:** `pyproject.toml` `[desktop]` extra yapılmadı (CI/release/exe
+      derlemesini etkiler) — **Faz G5**
 - [x] `ProviderResult`'a "şema zorlandı mı" yeteneği: `schema_enforced` alanı (anthropic/openai_compat/
       ollama True, CLI alt süreçleri False, rapora yazılmaz) — **Faz G7**. Kalan: `SchemaAdapter`
       kısıtlarını sağlayıcıya göre ayırma (Sonraya: Faz 7, 25)

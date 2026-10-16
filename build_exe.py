@@ -68,7 +68,20 @@ HIDDEN_IMPORTS = [
     "codementor.providers.cli_agent",
     "keyring.backends.Windows",  # API anahtarları Kimlik Bilgisi Yöneticisi'nde (ADR-0014)
 ]
-EXCLUDES = ["pytest", "hypothesis", "respx", "mypy", "ruff", "IPython", "matplotlib", "numpy"]
+EXCLUDES = [
+    "pytest",
+    "hypothesis",
+    "respx",
+    "mypy",
+    "ruff",
+    "IPython",
+    "matplotlib",
+    "numpy",
+    # G5-4: masaüstü exe REST sunucusu çalıştırmaz (`serve` CLI'a aittir, ADR-0013);
+    # fastapi/starlette `codementor.api.state` → `guard` → `errors` zinciriyle import edilir,
+    # bu yüzden burada güvenle çıkarılamaz (bkz. PROGRESS.md G5-4).
+    "uvicorn",
+]
 
 ZIP_EXCLUDE_DIRS = {"__pycache__", ".pytest_cache"}
 ZIP_EXCLUDE_SUFFIXES = (".pyc", ".pyo", ".log", ".zip")

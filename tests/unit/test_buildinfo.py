@@ -89,6 +89,29 @@ def test_build_info_corrupt_file_falls_back_without_crashing(
     assert events[0]["error"] in {"JSONDecodeError", "ValidationError"}
 
 
+def test_build_info_logger_is_masked_project_logger(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    captured_logs: Callable[[], list[dict[str, Any]]],
+) -> None:
+    """G5-1: uyarı `codementor.log.get_logger` ile yazılır (maskeleme zinciri + logger adı).
+
+    Modül düzeyindeki çıplak `structlog.get_logger()` küresel yapılandırmaya bağlıydı: başka bir
+    kod `structlog.configure`/`reset_defaults` çağırırsa maskeleme devre dışı kalabilirdi.
+    """
+    target = tmp_path / "data" / "build_info.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("bu json degil", encoding="utf-8")
+    monkeypatch.setattr("codementor.buildinfo.resource_path", lambda _rel: target)
+
+    build_info()
+
+    events = [e for e in captured_logs() if e.get("event") == "build_info_unreadable"]
+    assert len(events) == 1
+    assert events[0]["logger"] == "codementor.buildinfo"
+    assert events[0]["level"] == "warning"
+
+
 def test_describe_source_and_exe() -> None:
     """describe() iki biçimi üretir."""
     kaynak_info = BuildInfo(

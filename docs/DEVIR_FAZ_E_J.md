@@ -716,19 +716,40 @@ DB kullan (kullanıcının geçmişini bozma).
 - **Test:** mesaj metni değiştirilmiş bir `_stopped` sonucu yine "durduruldu" sayılıyor; normal sözdizimi
   hatası sayılmıyor.
 
-### G5 — D20 kalanları
-1. `src/codementor/buildinfo.py`: modül düzeyindeki maskesiz `logging` kullanımı → `codementor.log.get_logger`.
-2. `--help` metinlerindeki İngilizce ("Show this message and exit.") Typer'ın kendi metni. Typer/click
-   ayarıyla Türkçeleştirilebiliyorsa yap (`context_settings`), değilse rapora "değiştirilemedi" yaz;
-   kendi `--help` seçeneğini yazma.
-3. `cli/eval.py` `eval run --language`: serbest metin → `Language` enum (Typer seçenek tipi).
-   Geçersiz değer çıkış 2.
-4. `build_exe.py`: masaüstü exe FastAPI/uvicorn kullanmıyor → `EXCLUDES`'a `"fastapi", "uvicorn",
-   "starlette"` ekle. Sonra `uv run python build_exe.py --onedir` ve
-   `.\dist\CodeMentor\CodeMentor.exe --self-check sc.json` → çıkış 0 olmalı, `sc.json` içinde `"ok": true`.
-   Geçmezse GERİ AL, rapora yaz. (Exe derlemesi ~3-5 dk sürer.)
-5. `pyproject.toml` `[desktop]` extra: **YAPMA** — CI, release ve exe derlemesini etkiler; rapora
-   "kullanıcı kararı" olarak yaz.
+### G5 — D20 kalanları ✅
+1. ✅ `src/codementor/buildinfo.py`: modül düzeyindeki maskesiz `structlog.get_logger()` yerine
+   `codementor.log.get_logger("codementor.buildinfo")` (maskeleme zinciri her çağrıda kurulur; küresel
+   `structlog.configure`/`reset_defaults` etkilemez).
+2. ⚠️ **Değiştirilemedi (rapor):** `--help` metinlerindeki İngilizce "Show this message and exit."
+   Typer'ın *kendi* kopyası olan `typer/_click/decorators.py:624`'te
+   `kwargs.setdefault("help", _("Show this message and exit."))` ile geliyor; `TyperCommand.get_help_option`
+   bunu doğrudan çağırıyor. `context_settings`/Typer parametresi yok (yalnız `help_option_names`),
+   click/Typer `.mo` kataloğu taşımıyor (`Get-ChildItem .venv -Recurse -Include *.mo` boş) ve kendi
+   `--help` seçeneğimizi yazmak yasak. Aynı gerekçe kullanım hatasındaki "Try '… --help' for help."
+   ipucu için de geçerli. **Karar: metin bırakıldı, rapora yazıldı.**
+3. ✅ `cli/eval.py` `eval run --language`: `list[str]` → `list[Language]` (Typer seçenek tipi). Geçersiz
+   değer çıkış 2 + izinli değer listesi: `Invalid value for '--language': 'cobol' is not one of 'c',
+   'cpp', 'csharp', 'python', 'html', 'css'.` Yardım çıktısı tipi `<c|cpp|csharp|python|html|css>`.
+   Filtre `s.label.language in set(language)` (enum üyeleri; `StrEnum` karışık küme hash'i yok);
+   `run_eval`'a değerler (`lang.value`) geçirilir, sözleşme (`list[str]`) değişmedi.
+4. ✅/↩️ `build_exe.py`: `EXCLUDES`'a **`uvicorn`** eklendi. `fastapi`/`starlette` denendi ve **GERİ
+   ALINDI**: `uv run python build_exe.py --onedir` (74 sn) + `.exe --self-check sc.json` →
+   **çıkış 1**, `ModuleNotFoundError: No module named 'starlette'` (`codementor/desktop/launch.py:12` →
+   `api/state.py:7` → `api/guard.py:19`). Masaüstü girişi bu iki paketi gerçekten içe aktarıyor
+   (`guard` → `api/errors` → `fastapi`), `uvicorn` ise yalnız `cli/serve.py`'de (masaüstü exe CLI'ı
+   içermez, ADR-0013). Yalnız `uvicorn` hariçken duman testi: **çıkış 0**, `sc.json` → `"ok": true`
+   (8 kontrolün tamamı ok: kaynak kökü, varsayılan toml, prompt şablonları, kontrol listeleri,
+   64 soru, 17 tree-sitter sorgusu, C olgu çıkarımı, Roslyn denetleyicisi).
+5. ❌ `pyproject.toml` `[desktop]` extra: **YAPILMADI** — kullanıcı kararı (CI, release ve exe
+   derleme iş akışını etkiler; exe zaten `COLLECT_ALL`/`--add-data` ile gerekli her şeyi paketler).
+
+**G5 durumu:** bitti (parça 1-3 kod + parça 4 build; parça 2 "değiştirilemedi" olarak raporlandı, parça 5
+kullanıcı kararı). Testler: `test_buildinfo.py::test_build_info_logger_is_masked_project_logger`
+(`logger == "codementor.buildinfo"`, `level == "warning"`),
+`tests/unit/eval/test_languages.py::test_eval_run_language_is_typer_enum` + `…_help_lists_language_choices`,
+`tests/desktop/test_build_exe.py::test_uvicorn_excluded_but_server_stack_kept`. Toplam +4 test.
+**Doğrulama:** `ruff check`/`ruff format --check` temiz (470 dosya), `mypy src/` 212 dosyada hatasız,
+`pytest -m "not live"` **3524 geçti / 15 atlandı**.
 
 ### G6 — Denetimden ertelenenler (`PROGRESS.md` "Denetim — Faz A1-D" notu, "Ertelenen")
 | Madde | Nerede | Ne yap | Test |
@@ -738,7 +759,7 @@ DB kullan (kullanıcının geçmişini bozma).
 | `from_question` kayıplı ✅ G6 | `models/questions.py::UserQuestionDraft.from_question` | kullanıcı `genel` etiketini/varsayılan kısıtı açıkça yazdıysa silinmesin. Yol: `to_question`'da varsayılan doldurulduysa `Question`'a işaret koyma (şema değişikliği) YERİNE: etiket listesi yalnız `["genel"]` ise boşalt, birden fazla etiket varsa dokunma; kısıt listesi yalnız `[DEFAULT_USER_CONSTRAINT]` ise boşalt | `concept_tags=['genel','dizi']` → gidiş-dönüşte iki etiket kalıyor |
 | Ağ hatası metni ✅ G6 | `cli/errors.py::describe` | `NETWORK_ERRORS = (ConnectionError, TimeoutError)`; `OSError` dalından **önce** gelir: `ağ hatası (hedef): ayrıntı`, ayrıntı yoksa "bağlantı kurulamadı ya da zaman aşımı". Dosya hatası metni ("dosya işlemi başarısız") ve `system_errors` çıkış kodu 3 değişmedi | `tests/unit/test_cli_errors.py` (5 test: ağ/dosya ayrımı, ayrıntısız zaman aşımı, çıkış 3 + traceback'siz metin) |
 | Katman ✅ G6 | `report/usage.py` → `storage.cache.UsageTotals` | `UsageTotals` `models/usage.py`'ye taşındı (frozen dataclass); `storage.cache` ve `report.usage` oradan içe aktarıyor | `rg -n "from codementor.storage" src/codementor/report` boş; test `test_report_layer_does_not_import_storage` + `test_usage_totals_defined_in_models_layer` |
-| `primary` adı ✅ G6 | `orchestrator.py` (`getattr(provider, "chain", [provider])[0].name`) | `LLMProvider` protokolüne `primary_name` eklendi; ortak `NamedProvider` tabanı (fake, ollama, gemini, anthropic, claude_cli/agy, codex, eval `StaticOnlyProvider`) `name` döndürür, `FallbackProvider` ilk halkayı; `orchestrator` bu özelliği kullanıyor | mevcut önbellek/fallback testleri (`tests/integration/test_pipeline_partial.py`) + `tests/providers/test_factory.py` (+3) + `tests/providers/test_contract.py` (+1, her adaptörde `primary_name == name`) |
+| `primary` adı ✅ G6 | `orchestrator.py` (`getattr(provider, "chain", [provider])[0].name`) | `LLMProvider` protokolüne `primary_name` eklendi; ortak `NamedProvider` tabanı (fake, ollama, gemini, anthropic, claude_cli/agy, codex, eval `StaticOnlyProvider`) `name` döndürür, `FallbackProvider` ilk halkayı; `orchestrator` bu özelliği kullanıyor (**ADR-0030**) | mevcut önbellek/fallback testleri (`tests/integration/test_pipeline_partial.py`) + `tests/providers/test_factory.py` (+3) + `tests/providers/test_contract.py` (+1, her adaptörde `primary_name == name`) |
 
 **G6 durumu:** altı maddenin tamamı bitti (parça 1-5; commit'ler `c3f64fa` G6-1/2, `a39ec09` G6-3,
 `644852b` G6-4/5). Doğrulama: `ruff check`/`ruff format --check` temiz (469 dosya), `mypy src/` 212 dosyada
@@ -762,8 +783,10 @@ dosyada hatasız, `pytest -m "not live"` **3520 geçti / 15 atlandı**.
 **G6 denetimi (dal içi):** `docs/mimari.md` §5.5.1/§16 doküman senkronu ve `.tmp_full.log`/`.tmp_g1.log`
 artıklarının repodan çıkarılması `48f4e16` commit'iyle kapandı (`.gitignore`'a `.tmp_*.log` eklendi).
 
-**Faz G kabul:** G0-G7 testleri; iki büyük dosya < 400; dört denetim; §3.1 Linux taklidi; G5-4 exe
-duman testi çıktısı rapora.
+**Faz G kabul:** G0-G7 testleri; iki büyük dosya < 400 (**açık:** `pipeline/orchestrator.py` 421 satır —
+G0'da 393'e inmişti, G6/G7 eklemeleriyle sınırı yine aştı; bölünmesi ayrı iş olarak duruyor);
+dört denetim; §3.1 Linux taklidi; G5-4 exe duman testi çıktısı rapora. **Kalan:** `orchestrator.py`
+bölünmesi, D16 belge notu, `PROGRESS.md` durum satırının ✅'e çekilmesi.
 
 ---
 
