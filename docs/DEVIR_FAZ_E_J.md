@@ -813,7 +813,7 @@ iş onayı **Faz F/F7**'de (`runtime.confirm_close`; `test_close_while_busy_conf
 (`0472603`: `cli_agent.py` 420 → 345, sonuç ayrıştırma `cli_result.py`'de) ve **G9** (`c2968e2`:
 §20 ADR tablosu boşlukları + `AGENTS.md` `make` notu) kapandı; **Faz G'de açık madde kalmadı.**
 Kayıt: `docs/gelistirme-gunlugu/…` yerine bu dalın teslim raporu `docs/YAPILANLAR_FAZ_E_J_ANTIGRAVITY.md`
-"Faz G" bölümü (madde madde commit + test + doğrulama).
+"Faz G" bölümü (madde madde commit + test + doğrulama; kayıt commit'i `5d72072`).
 
 ---
 

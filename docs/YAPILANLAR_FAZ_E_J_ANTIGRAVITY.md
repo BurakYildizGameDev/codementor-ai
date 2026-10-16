@@ -10,7 +10,8 @@
 > **Kapanış denetimi (2026-10-16):** F satırı "sürüyor 3/0/10" iken yazılmıştı; Faz F'nin tamamı
 > (F0-F12) bitti (`PROGRESS.md` Faz F "Yapılanlar", son commit `138fbcf`) ve satır güncellendi.
 > G satırı bu denetimde eklendi: G0-G7 (sevk belgesi §7) + G8 (dosya bölme) + G9 (belge temizliği)
-> + G kapanış denetimi = 11 madde, hepsi ✅. Ayrıntı: aşağıdaki "Faz G" bölümü.
+> + G kapanış denetimi = 11 madde, hepsi ✅. Kod kapanış commit'i: `0472603`; kayıt commit'i:
+> `5d72072` (+ bu hash'i işleyen commit). Ayrıntı: aşağıdaki "Faz G" bölümü.
 
 ## Faz E
 ### E1 — GET /v1/analyses — ✅
@@ -137,9 +138,9 @@
   - 60 kayıt ile test edildi: ilk yüklemede 50 satır + "Daha fazla yükle", tıklanınca 60 satır + buton gizlenmesi; "c-medium" aramasıyla tekil eşleşme; `_` ve `%` aramasında joker kaçışının çalıştığı masaüstü ve birim testleriyle kanıtlandı.
 
 ## Faz G
-> **Özet:** 11/0/0 (G0-G9 + kapanış denetimi) · Dal `faz/g-saglayici` · Kapanış commit'i `0472603` ·
-> Sevk belgesi: `docs/DEVIR_FAZ_E_J.md` §7. Kapanışta `Bulgular` §5'te ✅ işareti olmayan D satırı
-> kalmadı (D1-D20 tamamı ✅) ve 400 satırı aşan dosya kalmadı.
+> **Özet:** 11/0/0 (G0-G9 + kapanış denetimi) · Dal `faz/g-saglayici` · Kod kapanış commit'i `0472603`,
+> kayıt commit'i `5d72072` · Sevk belgesi: `docs/DEVIR_FAZ_E_J.md` §7. Kapanışta `Bulgular` §5'te ✅
+> işareti olmayan D satırı kalmadı (D1-D20 tamamı ✅) ve 400 satırı aşan dosya kalmadı.
 
 ### G0 — `orchestrator.py` (465) ve `passes.py` (426) bölündü — ✅ (`ef5bd7a`)
 - Değişen dosyalar: `pipeline/orchestrator.py`, yeni `pipeline/cache_flow.py`, `pipeline/deadline.py`,
