@@ -925,8 +925,10 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] **G6 (parça 1-2):** `config_writer` dizi tablosunu (`[[providers.x]]`) ve tablo olmayan `providers`
       değerini artık ezmiyor (`ValueError`, dosya bayt bayt korunur); dosyanın satır sonu (CRLF/LF)
       korunuyor — **Faz G6**
-- [ ] **G6 (kalan):** `from_question` kayıplı `genel` etiketi/varsayılan kısıt; `cli/errors.describe`
-      ağ hatası metni; `UsageTotals` → `models/`; `LLMProvider.primary_name`
+- [x] **G6 (parça 3):** `UserQuestionDraft.from_question` artık yalnız *tamamen* varsayılan olan listeleri
+      boşaltıyor; `['genel', 'dizi']` düzenle→kaydet gidiş-dönüşünde korunuyor — **Faz G6**
+- [ ] **G6 (kalan):** `cli/errors.describe` ağ hatası metni; `UsageTotals` → `models/`;
+      `LLMProvider.primary_name`
 - [ ] **D20:** `buildinfo.py` logger; `--help` dil tutarlılığı; `eval run --language` enum;
       exe'den FastAPI/uvicorn çıkarılır; `[desktop]` extra
 - [ ] `ProviderResult`'a "şema zorlandı mı" yeteneği; `SchemaAdapter` kısıtlarını sağlayıcıya göre

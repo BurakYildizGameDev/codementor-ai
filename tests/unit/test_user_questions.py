@@ -79,6 +79,27 @@ def test_full_draft_kept() -> None:
     )
 
 
+def test_from_question_hides_only_pure_defaults() -> None:
+    """Genel varsayılanlar formda boş görünür; kullanıcının açıkça yazdığı liste korunur (G6)."""
+    question = _draft().to_question("kullanici-x")
+    back = UserQuestionDraft.from_question(question)
+    assert back.constraints == []
+    assert back.concept_tags == []
+
+
+def test_from_question_keeps_explicit_general_with_others() -> None:
+    """`['genel', 'dizi']` düzenlemede 'dizi'ye indirgenmiyor; varsayılan kısıt atılmıyor (G6)."""
+    draft = _draft(
+        concept_tags=[DEFAULT_USER_TAG, "dizi"],
+        constraints=[DEFAULT_USER_CONSTRAINT, "O(1) ek bellek"],
+    )
+    question = draft.to_question("kullanici-x")
+    back = UserQuestionDraft.from_question(question)
+    assert back.concept_tags == [DEFAULT_USER_TAG, "dizi"]
+    assert back.constraints == [DEFAULT_USER_CONSTRAINT, "O(1) ek bellek"]
+    assert back.to_question("kullanici-x") == question  # düzenle → kaydet kayıpsız
+
+
 @pytest.mark.parametrize(
     "update",
     [

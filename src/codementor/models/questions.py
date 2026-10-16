@@ -284,7 +284,13 @@ class UserQuestionDraft(StrictModel):
 
     @classmethod
     def from_question(cls, question: Question) -> UserQuestionDraft:
-        """Düzenleme formu için mevcut sorudan taslak (genel varsayılanlar boş gösterilir)."""
+        """Düzenleme formu için mevcut sorudan taslak.
+
+        Yalnızca genel varsayılanlardan oluşan alanlar formda boş görünür: kısıt listesi tam
+        olarak `[DEFAULT_USER_CONSTRAINT]`, etiket listesi tam olarak `[DEFAULT_USER_TAG]` ise
+        boşaltılır. Kullanıcı varsayılanı başka değerlerle birlikte açıkça yazdıysa liste
+        olduğu gibi korunur (Faz G6: `['genel', 'dizi']` düzenlemede 'dizi'ye indirgeniyordu).
+        """
         expected = question.expected
         hints = [question.hint_ladder[level] for level in HINT_LEVELS]
         while hints and hints[-1] == DEFAULT_USER_HINTS[len(hints) - 1]:
@@ -295,9 +301,13 @@ class UserQuestionDraft(StrictModel):
             language=question.language,
             engine=question.engine,
             difficulty=question.difficulty,
-            constraints=[c for c in question.constraints if c != DEFAULT_USER_CONSTRAINT],
+            constraints=(
+                [] if question.constraints == [DEFAULT_USER_CONSTRAINT] else question.constraints
+            ),
             expected_time=next(iter(expected.time.values())) if expected else None,
             expected_space=expected.space if expected else None,
-            concept_tags=[t for t in question.concept_tags if t != DEFAULT_USER_TAG],
+            concept_tags=(
+                [] if question.concept_tags == [DEFAULT_USER_TAG] else question.concept_tags
+            ),
             hints=hints,
         )

@@ -252,7 +252,7 @@
 
 ### Sıradaki oturum — Faz G kalanı (kayıt: 2026-10-15; G4+ denetimiyle güncellendi)
 
-Durum: **G0-G4, G4+ ve G6 parça 1-2 tamam ve commit'li** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → G6-1/2). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3494 geçti / 15 atlandı**.
+Durum: **G0-G4, G4+ ve G6 parça 1-3 tamam ve commit'li** (`062528c` G3 parçası → `313128c` D9-D11 → `3efcf80` G2 → `ed21509` G4 → `a92e23c` G4+ → `c3f64fa` G6-1/2 → G6-3). Ağaç temiz; `ruff`/`ruff format --check`/`mypy src/` yeşil; `pytest -m "not live"` **3496 geçti / 15 atlandı**.
 
 **Düzeltme (G4 sonrası denetim):** listenin ilk sürümü D14/D15/D17/D19'u açık sanıyordu; kaynağı §5
 tablosundaki ✅ işaretsiz satırlardı. Dördü de kapalı çıktı: D14/D15/D17 **Faz E**, D19 **Faz F**
@@ -262,10 +262,10 @@ sertleştirmesi bu oturumda yapıldı (G4+).
 
 Kalan işler, önerilen sıra (her madde kendi commit'i + `PROGRESS.md`/`BulgularVeDuzeltilecekler.md` güncellemesi):
 
-1. **G6 (denetimden ertelenen 6 madde):** ✅ parça 1-2 yapıldı (`desktop/config_writer`: dizi tablosu
-   koruması + satır sonu (CRLF/LF) koruması); kalan: `models/questions.from_question` kayıplı etiketler,
-   `cli/errors.describe` ağ hatası metni,
-   `UsageTotals`'ın `models/` katmanına taşınması, `LLMProvider.primary_name`. — *küçük ama 6 parça*
+1. **G6 (denetimden ertelenen 6 madde):** ✅ parça 1-3 yapıldı (`desktop/config_writer`: dizi tablosu
+   koruması + satır sonu (CRLF/LF) koruması; `models/questions.from_question` artık yalnız tamamen
+   varsayılan listeleri boşaltıyor, `['genel', 'dizi']` düzenle→kaydet kayıpsız); kalan: `cli/errors.describe`
+   ağ hatası metni, `UsageTotals`'ın `models/` katmanına taşınması, `LLMProvider.primary_name`. — *3 parça kaldı*
 2. **G7:** `ProviderResult.schema_enforced` (anthropic/openai_compat `strict` → True, CLI'lar False) +
    token tahmininin `usage` ile `log.debug("token_estimate_ratio")` kalibrasyonu (davranış değişmez). — *küçük*
 3. **G5 / D20:** `buildinfo.py` maskesiz logger → `get_logger`; `--help` İngilizce metni (Typer'la
@@ -442,7 +442,8 @@ yük altında 38 sn'yi geçip düşebiliyor; tek başına geçiyor.
   `unit/test_audit_fixes_unit.py` (10), include (+3), guard (+13). mimari §11, §17 güncellendi.
 **Doğrulama:** ruff, format, mypy temiz; `pytest -m "not live"` 3355 geçti, 15 atlandı.
 **Ertelenen (Sonraya):** ~~`config_writer` dizi tablosunu (`[[providers.x]]`) ezer, CRLF'yi LF yazar~~ (G6: çözüldü);
-`from_question` `genel` etiketini/varsayılan kısıtı düzenlemede siler; `system_errors` ağ
+~~`from_question` `genel` etiketini/varsayılan kısıtı düzenlemede siler~~ (G6 parça 3: çözüldü);
+`system_errors` ağ
 hatalarını "dosya işlemi" diye anar; `report/usage` → `storage.cache.UsageTotals` katman bağımlılığı;
 `detect.py` `<meta …` deseni çok büyük girdide karesele yakın (40 KB'de ölçülmedi);
 `guard_delimiters` `&lt;` için idempotent değil; `primary` sağlayıcı adı `getattr` ile; 400 satır:
