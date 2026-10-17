@@ -7,6 +7,7 @@
 | F | faz/f-masaustu | 138fbcf | tam | 13/0/0 |
 | G | faz/g-saglayici | 0472603 | tam | 11/0/0 |
 | H | faz/h-kurallar | 0fb7162 (H4) | H1–H4 tam | 4/0/0 |
+| J | faz/j-checklist-snapshot | e7f50d7 | kısmi (Zig budama bilinçli atlandı) | 1/0/0 |
 
 > **Kapanış denetimi (2026-10-16):** F satırı "sürüyor 3/0/10" iken yazılmıştı; Faz F'nin tamamı
 > (F0-F12) bitti (`PROGRESS.md` Faz F "Yapılanlar", son commit `138fbcf`) ve satır güncellendi.
@@ -368,6 +369,46 @@
   `#pragma packable`, `#pragma warning(GCC dependency "…")` reddedilir); `#define pack` /
   `#define warning` tanımlayan dosya fail-closed atlanır. Testler: `pragma_pack`/`pragma_warning`
   REJECTED → ALLOWED (bilinçli davranış değişikliği), vaka sayısı 103 → 116.
+- **Tier 1 entegrasyon testleri (`76aba22`, 2026-10-17):** aynı karar **gerçek Tier 1 yolunda** da
+  sabitlendi (`tests/unit/test_tier1.py`, **+6 vaka**): `#pragma pack`/`#pragma warning` içeren C++
+  dosyası derleyiciye ulaşır (`PASSED`, atlama yok); Unreal yolundaki **iki** guard çağrısından da
+  geçer; sahte derleyici = `sys.executable` ile **gerçek alt süreç** başlatılır (gcc tanı ayrıştırma
+  yolu denenir); `#define pack`/`#define warning` + `#pragma` makro atlatması `SKIPPED`/`include_guard`
+  (süreç hiç başlamaz); `#pragma PACK(1)` harf duyarlılığı korunur. Mutasyon: izin listesi eski hâle →
+  **12 fail** (3'ü yeni); `_PRAGMA_RESERVED` ayrı tutulup daraltılınca → **6 fail**. Kaynak kod
+  değişmedi; `pytest -m "not live"` **3732 → 3738**.
+
+
+## Faz J — İsteğe bağlı küçük işler (2026-10-17)
+
+### J1 — Kontrol listesi içerik anlık görüntüsü — ✅ (`e7f50d7`)
+- **Ne:** `data/checklists/*.yaml` içeriğinin sha256 özeti `tests/golden/checklists_sha256.json`'a
+  sabitlendi (8 dosya); test `tests/golden/test_checklists_golden.py` (**5 vaka**): içerik özeti,
+  "özet dosya kümesi = dizin" kontrolü, özetin içeriği gerçekten izlediği, satır sonu farkının özeti
+  değiştirmediği ve golden yazıcısının tur-gidişi. Güncelleme mevcut desenle: `--update-golden`.
+- **Neden:** bu dosyalar prompt'a girer (mimari §8.3) ve ölçümü etkiler; yanlışlıkla düzenleme, satır
+  kaybı, kodlama bozulması ya da dosya ekleme/silme sessiz kalmamalı. Hata mesajı **değişen dosyayı
+  adıyla** söyler ve `--update-golden`'ı işaret eder (golden deseni: `tests/conftest.py`).
+- **Karar:** özet, **LF normalleştirilmiş ham baytlardan** hesaplanır (`.gitattributes` LF'i zorluyor;
+  CRLF farkı yine de özeti değiştirmez). Dosya kümesi `questions._loader.YAML_SUFFIXES`'ten türetilir:
+  anlık görüntü, yükleyicinin okuduğu kümenin aynısını kapsar (biri eklenirse diğeri sessiz kalmaz).
+- **Mutasyon kanıtı:** (a) `css.yaml` sonuna yorum → **1 fail** (`Kontrol listesi içeriği değişti:
+  css.yaml`); (b) `gecici.yaml` ekle → **2 fail** (içerik özeti + dosya kümesi). İkisi de geri alındı,
+  ağaç temiz.
+- **Bağımsız çapraz kontrol:** `Get-FileHash -Algorithm SHA256` (Windows) çıktısı golden JSON ile
+  8/8 dosyada birebir aynı — normalleştirme bir şeyi gizlemiyor.
+- **Sayılar:** `pytest -m "not live"` **3738 → 3743 geçti** (16 atlandı, 6 seçilmedi, 4:22). **Kaynak
+  kod değişmedi**: yalnız test + golden veri.
+
+### J2 — Zig budama — ❌ (bilinçli yapılmadı)
+- Kurulumdan sonra kullanılmayan libc başlık dizinlerini silmek (382 MB → <150 MB) **yerelde
+  doğrulanamıyor**: bu makinede gcc/clang/zig yok, `uv run pytest -m compiler` koşulamıyor; devir
+  "emin değilsen YAPMA" diyor. Kod değişikliği yapılmadı; doğrulama CI'ya / zig kurulu bir makineye
+  bırakıldı.
+
+### J3 — "YAPMA" listesi — ❌ (kapsam dışı, dokunulmadı)
+- İmzalı exe / Inno Setup, cppcheck/clang-tidy, VS Code eklentisi, Rust/Go/JS desteği,
+  `session_id`'yi anahtara bağlama: devir §10'un açık yasağı; hiçbirine dokunulmadı.
 
 
 ## Denetim komutlarının GERÇEK çıktısı
@@ -406,6 +447,28 @@
 - `uv run pytest -m compiler -q` → **yerelde koşulamadı** (gcc/clang/zig yok, H notundaki gibi);
   H denetimi düzeltmeleri C/C++ derleyici yoluna dokunmadığı için CI koşusu yeterli
 
+
+### faz/h-pragma-izin + entegrasyon testleri (Önemli-3, 2026-10-17)
+- `uv run ruff check .` → `All checks passed!`
+- `uv run ruff format --check .` → `474 files already formatted`
+- `uv run mypy src/` → `Success: no issues found in 216 source files`
+- `uv run pytest -m "not live" -q` → `3732 passed, 16 skipped, 6 deselected in 259.98s (0:04:19)`
+  (izin listesi genişletildikten sonra); entegrasyon testleri eklendikten sonra →
+  `3738 passed, 16 skipped, 6 deselected in 256.34s (0:04:16)`
+- Hedefli: `uv run pytest tests/unit/test_tier1.py tests/unit/test_include_guard.py -q` → `174 passed`
+- Mutasyon: izin listesi eski hâle → **12 fail** (3'ü yeni Tier 1 testi); `_PRAGMA_RESERVED` ayrı
+  tutulup daraltılınca → **6 fail**; geri alınınca → `174 passed`
+- `uv run pytest -m compiler -q` → **yerelde koşulamadı** (gcc/clang/zig yok); değişiklik derleyici
+  çağrı biçimini değil, yalnız guard'ın atlama kararını değiştiriyor
+
+### faz/j-checklist-snapshot (2026-10-17)
+- `uv run ruff check .` → `All checks passed!`
+- `uv run ruff format --check .` → `474 files already formatted`
+- `uv run mypy src/` → `Success: no issues found in 216 source files`
+- `uv run pytest -m "not live" -q` → `3743 passed, 16 skipped, 6 deselected in 262.73s (0:04:22)`
+- Hedefli: `uv run pytest tests/golden/test_checklists_golden.py -q` → `5 passed`
+- `Get-FileHash -Algorithm SHA256 data/checklists/*.yaml` → golden JSON ile birebir (8/8 dosya)
+- Masaüstü/web/eval denetimleri bu değişiklikten etkilenmez (yalnız test + golden veri)
 
 ### faz/f-masaustu (F0-F6 güncel)
 - `uv run ruff check .` → `All checks passed!`
@@ -450,6 +513,13 @@
   - (Var olan hiçbir test silinmedi veya gevşetilmedi; `test_errors_and_app.py` dışa açık IP testine E11 gereği `--insecure` eklendi)
 
 ## Yapamadıklarım ve neden
+- **Faz J:** üç maddenin yalnız anlık görüntü maddesi yapıldı (`e7f50d7`).
+  1. **Zig budama yapılmadı:** kurulum sonrası kullanılmayan libc başlık dizinlerini silmek
+     (382 MB → <150 MB) bu makinede doğrulanamıyor (gcc/clang/zig yok → `-m compiler` koşulamıyor);
+     devir §10 "emin değilsen YAPMA" diyor. Doğrulama CI'ya / zig kurulu bir makineye bırakıldı.
+  2. **"YAPMA" maddeleri** (imzalı exe/Inno Setup, cppcheck/clang-tidy, VS Code eklentisi,
+     Rust/Go/JS desteği, `session_id`'yi anahtara bağlama) kapsam dışı; dokunulmadı.
+  3. Anlık görüntü testi **test bölümü/eval koşusu gerektirmez** (LLM yok, ağ yok): ek sınır yok.
 - **Faz H:** H1–H4 tamamlandı; aşağıdakiler bilinçli sınırlardır (hepsi `PROGRESS.md`'de de yazılı):
   1. **`-m compiler` yerelde koşulamadı** (bu Windows makinesinde gcc/clang/zig yok): H3'ün Unreal
      stub'ı ve `unreal_wave_spawner.cpp` fixture'ı **derleme ile** doğrulanamadı; yalnızca tree-sitter
@@ -491,6 +561,8 @@
 - Yok. Tüm mimari kurallarına ve `docs/mimari.md` §17 ilkelerine tam uyuldu.
 - **Faz G:** sapma yok. G0 ve G8 (dosya bölme) mimari değişikliği değildir: yalnız modül sınırı taşındı,
   davranış ve sözleşmeler aynı kaldı (`tests/` diff'i boş; taşınan adlar yeniden dışa aktarılır).
+- **Faz J:** sapma yok — üretim kodu ve veri dosyaları değişmedi; yalnız yeni bir golden testi ve onun
+  beklenen dosyası eklendi (mimari §14 test stratejisi içinde). ADR gerekmedi.
 
 ## Var olan bir testi değiştirdiysem: hangisi, neden
 - `tests/api/test_errors_and_app.py::test_serve_uses_config_and_warns_when_exposed`: `serve --host 0.0.0.0` çağrısına E11 kuralı gereğince anahtarsız dış bağlantı engeli geldiği için `--insecure` argümanı eklendi.
@@ -508,9 +580,18 @@
 - **Faz G:** hiçbir test gevşetilmedi/silinmedi. G0 ve G8'de `tests/` **hiç değişmedi** (bölmeler
   davranışsız refactor); G1-G7'de yalnız yeni testler eklendi, `tests/providers/fake_cli_script.py`
   sahte CLI'sine `BOYUT:<n>` gürültü modu eklendi (G1).
+- **Faz J:** hiçbir mevcut test değişmedi/gevşetilmedi; yalnız **yeni** bir golden testi ve onun
+  beklenen dosyası eklendi (`tests/golden/test_checklists_golden.py`,
+  `tests/golden/checklists_sha256.json`). `data/checklists/*.yaml` içeriği **değişmedi** (özetler
+  mevcut içerikten üretildi).
 
 
 ## Claude Code'un özellikle bakmasını istediğim yerler
+- **Faz J / kontrol listesi anlık görüntüsü** (`tests/golden/test_checklists_golden.py`): özetin
+  **LF normalleştirilmiş ham baytlardan** alınması (`.gitattributes` LF'i zorluyor; CRLF'li bir çalışma
+  kopyası testi kırmasın) ve dosya kümesinin `questions._loader.YAML_SUFFIXES`'ten türetilmesi.
+  Alternatif: YAML'i ayrıştırıp **anlamsal** özet almak (biçim değişikliğine toleranslı olurdu ama
+  yorum/sıra değişimini gizlerdi). Hangisi tercih edilir?
 - **Faz H / include koruması izin listesi** (`src/codementor/validation/include_guard.py`): izin
   listesinin **fail-closed** tarafı ve `#pragma X` makro atlatmasının kapanışı. `#pragma pack`/
   `#pragma warning`'in Tier 1'i atlatması (bilinçli yan etki) kullanıcı kararıyla **kapandı**

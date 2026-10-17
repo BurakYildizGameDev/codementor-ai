@@ -64,6 +64,38 @@
 | E | ✅ | faz/e-web | 2026-10-13 | Antigravity / — |
 | F | ✅ (elle deneme + denetim sonraya) | faz/f-masaustu | 2026-10-14 | Antigravity / — |
 | G | ✅ | faz/g-saglayici | 2026-10-16 | Cline / — |
+| H | ✅ (denetim + Önemli-3 düzeltmesi + entegrasyon testleri) | faz/h-kurallar (+ faz/h-denetim, faz/h-pragma-izin) | 2026-10-17 | Cline / Claude Code denetimi |
+| J | ✅ (yalnız anlık görüntü maddesi; Zig budama bilinçli atlandı) | faz/j-checklist-snapshot | 2026-10-17 | Cline / — |
+
+## Faz J — Notlar (isteğe bağlı küçük işler; 2026-10-17)
+
+> Devir §10'un üç maddesinden **biri** alındı: kontrol listesi anlık görüntü testi. Zig budama
+> bilinçli olarak yapılmadı (gerekçe aşağıda); "YAPMA" listesine dokunulmadı.
+
+**J1 — Kontrol listesi içerik anlık görüntüsü (`e7f50d7`):** `data/checklists/*.yaml` içeriğinin
+sha256 özeti `tests/golden/checklists_sha256.json` içinde sabitlendi (8 dosya); test
+`tests/golden/test_checklists_golden.py` (**5 vaka**). Bu dosyalar prompt'a girdiği (mimari §8.3) ve
+ölçümü etkilediği için sessiz değişim istenmiyor: içerik, dosya kümesi ya da kodlama bozulursa test
+düşer ve mesaj **değişen dosyayı adıyla** söyleyip `--update-golden`'ı işaret eder.
+- **Karar — özet ham baytlardan, LF normalleştirilmiş:** `.gitattributes` tüm metin dosyalarını LF'e
+  sabitliyor; yine de `\r\n` → `\n` normalleştirildi ki farklı çalışma kopyası ayarları testi bozmasın.
+  Windows'ta `Get-FileHash -Algorithm SHA256` çıktısı golden JSON ile **birebir aynı** çıktı: sekiz
+  dosya için normalleştirme hiçbir şeyi gizlemiyor.
+- **Dosya kümesi kaynağı:** `questions._loader.YAML_SUFFIXES` içe aktarılır; anlık görüntü yükleyicinin
+  okuduğu kümeyle aynı ölçütü kullanır (`.yaml`/`.yml`, büyük/küçük harf duyarsız) ve ayrıca
+  "özet dosya kümesi = dizin" testi vardır — eklenen/silinen dosya sessiz kalmaz.
+- **Mutasyon kanıtı:** `data/checklists/css.yaml` sonuna yorum eklenince **1 test** düştü (mesaj:
+  `Kontrol listesi içeriği değişti: css.yaml`); `data/checklists/gecici.yaml` eklenince **2 test**
+  düştü (içerik özeti + dosya kümesi). İkisi de geri alındı; ağaç temiz.
+- **Doğrulama:** `ruff check` temiz, `ruff format --check` **474 dosya**, `mypy src/` hatasız (**216
+  dosya**), `pytest -m "not live"` **3738 → 3743 geçti** (16 atlandı, 6 seçilmedi; +5 vaka). Kaynak kod
+  **değişmedi**: yalnız test + golden veri.
+
+**Yapılmayan (bilinçli):** **Zig budama** — kurulumdan sonra kullanılmayan libc başlık dizinlerini
+silmek (382 MB → <150 MB) yerelde doğrulanamıyor: bu makinede gcc/clang/zig yok, `uv run pytest -m
+compiler` koşulamıyor ve devir "emin değilsen YAPMA" diyor. Doğrulama CI'ya (ya da zig kurulu bir
+makineye) bırakıldı. "YAPMA" listesi (imzalı exe/Inno Setup, cppcheck/clang-tidy, VS Code eklentisi,
+Rust/Go/JS desteği, `session_id`'yi anahtara bağlama) zaten kapsam dışı; hiçbirine dokunulmadı.
 
 ## Faz G — Notlar (sağlayıcı sağlamlığı ve kod temizliği; 2026-10-15, kapanış 2026-10-16)
 
