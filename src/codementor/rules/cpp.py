@@ -1,4 +1,8 @@
-"""C++ kuralları (mimari §8.2)."""
+"""C++ sahiplik kuralları: çıplak `new`/`delete` ve paylaşılan işaretçi döngüsü (mimari §8.2).
+
+Performans kuralları (`CPP-PERF-001..004`) `cpp_perf.py`'de; bu dosya 400 satır sınırının
+altında kalsın diye (AGENTS.md) konuya göre ayrıldı.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +17,6 @@ from codementor.analysis._symbols import (
     line,
     operator_of,
     simple_name,
-    strip_templates,
     text,
 )
 from codementor.models.enums import (
@@ -331,122 +334,4 @@ class SharedPtrCycle(Rule):
                     found.append(self.finding(ctx, e.line))
             elif component[e.source] == component[e.target]:
                 found.append(self.finding(ctx, e.line))
-        return found
-
-
-_LARGE_TYPES = frozenset(
-    {
-        "vector",
-        "string",
-        "wstring",
-        "basic_string",
-        "map",
-        "multimap",
-        "unordered_map",
-        "set",
-        "multiset",
-        "unordered_set",
-        "list",
-        "deque",
-        # Unreal kapsayıcıları (motordan bağımsız C++ kuralı)
-        "TArray",
-        "TMap",
-        "TSet",
-        "FString",
-    }
-)
-_PARAMETERS = frozenset({"parameter_declaration", "optional_parameter_declaration"})
-_MOVES = frozenset({"std::move", "move"})
-
-
-def _function_declarator(node: Node) -> Node | None:
-    """`function_definition`'ın `function_declarator`'ı (`T* f(...)`, `T& f(...)` dahil)."""
-    current = node.child_by_field_name("declarator")
-    while current is not None and current.type != "function_declarator":
-        current = current.child_by_field_name("declarator")
-    return current
-
-
-class _Kept:
-    """Değerle alınmasının gerekçeli olduğu adlar: `std::move(ad)` ile taşınan ya da
-    `return ad;` ile döndürülen (kopyala-değiştir-döndür) parametreler.
-
-    Kök bir kez gezilir; fonksiyon başına bayt aralığında ikili arama yapılır (iç içe
-    yerel sınıf metotlarında gövde yeniden gezilmez, mimari §12).
-    """
-
-    def __init__(self, ctx: RuleContext) -> None:
-        self.positions: dict[str, list[int]] = {}
-        for node in ctx.nodes_in(ctx.root, "call_expression", "return_statement"):
-            arg = _kept_argument(node)
-            if arg is not None:
-                self.positions.setdefault(text(arg), []).append(node.start_byte)
-
-    def within(self, name: str, fn: Node) -> bool:
-        spots = self.positions.get(name, [])
-        i = bisect_left(spots, fn.start_byte)
-        return i < len(spots) and spots[i] < fn.end_byte
-
-
-def _kept_argument(node: Node) -> Node | None:
-    if node.type == "return_statement":
-        value = next(iter(node.named_children), None)
-        return value if value is not None and value.type == "identifier" else None
-    callee, args = node.child_by_field_name("function"), node.child_by_field_name("arguments")
-    if (
-        callee is not None
-        and callee.end_byte - callee.start_byte <= len("std::move")
-        and text(callee) in _MOVES
-        and args is not None
-        and args.named_child_count == 1
-        and (arg := args.named_child(0)) is not None
-        and arg.type == "identifier"
-    ):
-        return arg
-    return None
-
-
-def _is_large(kind: Node | None) -> bool:
-    if kind is None or kind.end_byte - kind.start_byte > _MAX_TYPE_BYTES:
-        return False
-    return strip_templates(text(kind)).removeprefix("std::").strip() in _LARGE_TYPES
-
-
-@register_rule
-class LargeByValueParameter(Rule):
-    """CPP-PERF-001: büyük kapsayıcı/metin parametresinin değerle geçirilmesi."""
-
-    id = "CPP-PERF-001"
-    title = "Büyük nesne değerle geçiriliyor"
-    description = (
-        "Bu parametre değerle geçiriliyor; her çağrıda kapsayıcının tamamı kopyalanır. "
-        "Fonksiyon bu kopyayı değiştirmeye ya da saklamaya ihtiyaç duyuyor mu?"
-    )
-    languages = frozenset({Language.CPP})
-    category = AuditCategory.PERFORMANCE
-    default_severity = Severity.LOW
-
-    def check(self, ctx: RuleContext) -> list[Finding]:
-        found: list[Finding] = []
-        kept: _Kept | None = None
-        for fn in ctx.nodes_in(ctx.root, "function_definition"):
-            declarator = _function_declarator(fn)
-            params = declarator.child_by_field_name("parameters") if declarator else None
-            if params is None:
-                continue
-            candidates = [
-                (p, text(name))
-                for p in params.named_children
-                if p.type in _PARAMETERS
-                and (name := p.child_by_field_name("declarator")) is not None
-                and name.type == "identifier"  # `&`, `&&`, `*` bildirimleri değil
-                and _is_large(p.child_by_field_name("type"))
-            ]
-            if candidates:
-                kept = kept or _Kept(ctx)
-                found += [
-                    self.finding(ctx, line(p))
-                    for p, name in candidates
-                    if not kept.within(name, fn)
-                ]
         return found
