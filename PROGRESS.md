@@ -1,6 +1,10 @@
 # İlerleme Günlüğü
 
 > Faz 0-63'ün ayrıntılı notları ve eski yol haritası arşivde: [docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md](docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md). Yeni fazların notları buraya eklenir (AGENTS.md faz bitirme protokolü).
+>
+> Kalan işlerin işaretli listesi (🤖 ajan / 👤 kullanıcı / ⏸ karar ayrımıyla):
+> [KALAN_ISLER.md](KALAN_ISLER.md) — 2026-10-17 Faz J5 sonrası tarama. Bir iş bitince orada `[x]`
+> yapılır ve buraya işlenir.
 
 ## Durum
 | Faz | Durum | Dal | Tarih | Araç (uygulayan / denetleyen) |
@@ -68,6 +72,26 @@
 | J | ✅ (yalnız anlık görüntü maddesi; Zig budama bilinçli atlandı) | faz/j-checklist-snapshot | 2026-10-17 | Cline / — |
 | J4 | ✅ (O3 kapanışı; kaynak kod değişti) | faz/j4-onbellek-surumu | 2026-10-17 | Cline / — |
 | J5 | ✅ (Faz J denetimi küçük maddeleri; test-only) | faz/j5-test-hijyeni | 2026-10-17 | Cline / — |
+
+## Belge — Kalan işler listesi ve sayı tazeleme (doküman-only; 2026-10-17)
+
+> Faz J5 kapanışından sonra yapılan "yapılması gerekenler" taramasının çıktısı kayda geçirildi.
+> Kaynak kod **değişmedi**: `KALAN_ISLER.md` (yeni) + `PROGRESS.md` işaretçileri.
+
+**Yapılanlar:** `KALAN_ISLER.md` eklendi — 13 ajan işi (🤖), 5 kullanıcı işi (👤) ve 3 karar bekleyen
+(⏸) madde; her maddede kapsam, dokunulacak dosyalar, doğrulama ve boyut var. Yeni fikirlerin akışı
+netleşti: fikir önce buradaki "Sonraya" bölümüne, iş sırası/kabul kriteri `KALAN_ISLER.md`'ye.
+Tarama sırasında ölçülen gerçekler de kayda geçirildi: **ADR 30** (`README.md` s.42/s.150 ve
+`README.en.md` s.43 hâlâ 29 diyor), `src/` **28 369** satır / `tests/` **37 595** satır
+(`README.md` s.480 "~28 bin satır test (~29 bin satır kaynak koda karşı)" diyor → sayılar ters),
+`pytest -m "not live"` **3758** geçti.
+
+**Doğrulama:** `ruff check` temiz · `ruff format --check` 477 dosya · `pytest -m "not live"`
+3758 geçti / 16 atlandı (doküman değişikliğinden önceki tam koşu) · yeni dosyada CR=0 ve blob
+boyutu çalışma kopyasıyla aynı (LF, `.gitattributes` `eol=lf`).
+
+**Açık:** tazelemenin kendisi (README sayıları, `BulgularVeDuzeltilecekler.md` §6/§10) henüz
+uygulanmadı → `KALAN_ISLER.md` iş 1-2; `git push` ve Y2 kullanıcıda.
 
 ## Faz J5 — Faz J denetiminden kalan küçük maddeler (test-only; 2026-10-17)
 
@@ -1147,6 +1171,8 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 **Açık:** Y2 (kullanıcı, `private/`), K2 kalan regex taraması, A1+A2 kod-denetçi denetimi.
 
 ## Sonraya (kapsam dışı fikirler)
+> 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
+> Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
 - ~~**`tests/golden/test_facts_golden.py:50` aynı satır sonu kusuru (Faz J denetimi Küçük-1, 2026-10-17)**~~
   → **KAPANDI (J5)**: `write_snapshot` `newline="\n"` ile yazıyor; `--update-golden` sonrası 15 golden
   **CR=0** ve `git status` temiz; iddia `read_bytes()` üzerinden (`test_write_snapshot_writes_lf_bytes`).
