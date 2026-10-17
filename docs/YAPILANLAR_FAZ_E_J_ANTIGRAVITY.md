@@ -7,7 +7,8 @@
 | F | faz/f-masaustu | 138fbcf | tam | 13/0/0 |
 | G | faz/g-saglayici | 0472603 | tam | 11/0/0 |
 | H | faz/h-kurallar | 0fb7162 (H4) | H1–H4 tam | 4/0/0 |
-| J | faz/j-checklist-snapshot | e7f50d7 | kısmi (Zig budama bilinçli atlandı) | 1/0/0 |
+| J | faz/j-checklist-snapshot | f8b5928 | kısmi (Zig budama bilinçli atlandı) | 1/0/0 |
+| J1b | faz/j-denetim | 5b1ba93 | tam (bağımsız denetim düzeltmeleri, test-only) | 3/0/2 |
 
 > **Kapanış denetimi (2026-10-16):** F satırı "sürüyor 3/0/10" iken yazılmıştı; Faz F'nin tamamı
 > (F0-F12) bitti (`PROGRESS.md` Faz F "Yapılanlar", son commit `138fbcf`) ve satır güncellendi.
@@ -400,6 +401,39 @@
 - **Sayılar:** `pytest -m "not live"` **3738 → 3743 geçti** (16 atlandı, 6 seçilmedi, 4:22). **Kaynak
   kod değişmedi**: yalnız test + golden veri.
 
+### J1b — Bağımsız denetim düzeltmeleri — ✅ (`5b1ba93`, dal `faz/j-denetim`)
+- **Denetim (salt-okur, `faz-denetim`):** Faz H Önemli-3 (`76aba22`) + Faz J (`e7f50d7`, `f8b5928`)
+  tarafsız incelendi. Karar: **Kritik yok, Önemli yok → birleştirilebilir**; 5 küçük bulgu, 3'ü
+  kapatıldı. Kapsam: yalnız `tests/golden/test_checklists_golden.py` (99 → **167 satır**), kaynak kod
+  değişmedi.
+- **Denetimde yeniden koşulan doğrulamalar:** `ruff check` temiz · `ruff format --check` **474 dosya** ·
+  `mypy src/` **216 dosya** · `pytest -m "not live"` **3743 passed / 16 skipped** (0:04:08) ·
+  `Get-FileHash` ile golden özetleri **8/8 birebir** · `data/checklists` CR=0 · `include_guard.py:55-60`
+  (izin listesi ve `_PRAGMA_RESERVED` doğrudan `_PRAGMA_NAMES`'ten türer) · `tier1.py:147` + `:166`
+  (guard iki kez koşar) · artık geçici dosya yok. Ayrıca "12 fail / 6 fail" mutasyon **sayıları**
+  yeniden koşulmadı (kaynak düzenlemesi gerektirir, denetim salt-okur): bunun yerine negatif **yol**
+  bağımsız propla doğrulandı.
+- **Küçük-1 — kapatıldı (satır sonu):** `write_golden`, `Path.write_text`'in varsayılanına (Windows'ta
+  `os.linesep`) düşüyordu; denetimde `--update-golden` çalıştırıldığında `checklists_sha256.json`
+  **CR=10** oldu, `git status` dosyayı kirli gösterdi ve git "CRLF will be replaced by LF" uyardı
+  (içerik farkı yok). `newline` açıkça verildi; kanıt: aynı komut sonrası **CR=0 + ağaç temiz**. Eski
+  tur-gidiş iddiası CRLF'i gizliyordu (okuma tarafı çevirdiği için) → iddia `read_bytes()`'a taşındı
+  (`test_write_golden_writes_lf_bytes`).
+- **Küçük-2 — kapatıldı (kopya ölçüt):** `checklist_files` artık listeyi yeniden yazmıyor,
+  `_loader.list_yaml_files` çağırıyor → yükleyicinin listeleme kuralı değişirse anlık görüntü sessizce
+  ayrışmaz ("aynı ölçüt" iddiası kopya değil, gerçek yeniden kullanım).
+- **Küçük-4 — kapatıldı (negatif yol):** süite içi üç negatif (gerçek `data/checklists` ellenmez, modül
+  sabitleri geçici dizine yönlendirilir): içerik değişimi (**mesaj değişen dosyayı adıyla söyler**),
+  dosya kümesi kayması, golden yok (`--update-golden` işaret edilir). Dosya kümesi iddiasına eksik/fazla
+  listesi içeren mesaj eklendi (eskiden çıplak `assert`'ti → CI'da eyleme dönük değildi).
+- **Kapatılmayanlar (kayda geçti):** Küçük-3 — `tests/` içinde özel modül (`questions._loader`) importu
+  (tek örnek; bilinçli kabul). Küçük-5 — `tests/unit/test_tier1.py` 633 satır (AGENTS 400 önerisi;
+  repoda 11 test dosyası 400+). Ayrıca `test_facts_golden.py:50`'nin aynı satır sonu kusuru ve facts
+  golden'ın negatif yol boşluğu da `PROGRESS.md` "Sonraya" bölümüne yazıldı.
+- **Sayılar:** `pytest -m "not live"` **3743 → 3746 passed** (16 skipped, 6 deselected, 4:39);
+  `tests/golden` **40 passed**; gerçek veri mutasyonu (`css.yaml` + yorum) → **1 failed**, geri alınınca
+  40 passed.
+
 ### J2 — Zig budama — ❌ (bilinçli yapılmadı)
 - Kurulumdan sonra kullanılmayan libc başlık dizinlerini silmek (382 MB → <150 MB) **yerelde
   doğrulanamıyor**: bu makinede gcc/clang/zig yok, `uv run pytest -m compiler` koşulamıyor; devir
@@ -469,6 +503,17 @@
 - Hedefli: `uv run pytest tests/golden/test_checklists_golden.py -q` → `5 passed`
 - `Get-FileHash -Algorithm SHA256 data/checklists/*.yaml` → golden JSON ile birebir (8/8 dosya)
 - Masaüstü/web/eval denetimleri bu değişiklikten etkilenmez (yalnız test + golden veri)
+
+### faz/j-denetim (Faz J denetim düzeltmeleri, 2026-10-17)
+- `uv run ruff check .` → `All checks passed!`
+- `uv run ruff format --check .` → `474 files already formatted`
+- `uv run mypy src/` → `Success: no issues found in 216 source files`
+- `uv run pytest -m "not live" -q` → `3746 passed, 16 skipped, 6 deselected in 279.08s (0:04:39)`
+- Hedefli: `uv run pytest tests/golden -q` → `40 passed`
+- `--update-golden` sonrası: `checklists_sha256.json` **CR=0**, `git status` yalnız test dosyasını
+  gösteriyor (düzeltme öncesi: **CR=10** + golden dosyası kirli)
+- Mutasyon: `css.yaml`'a yorum ekle → `1 failed, 7 passed`; `git checkout` + tekrar → `40 passed`
+- Kapsam: `git diff --stat` → yalnız `tests/golden/test_checklists_golden.py` (+78/−10); `src/` değişmedi
 
 ### faz/f-masaustu (F0-F6 güncel)
 - `uv run ruff check .` → `All checks passed!`
@@ -584,6 +629,12 @@
   beklenen dosyası eklendi (`tests/golden/test_checklists_golden.py`,
   `tests/golden/checklists_sha256.json`). `data/checklists/*.yaml` içeriği **değişmedi** (özetler
   mevcut içerikten üretildi).
+- **Faz J1b (denetim düzeltmeleri, `5b1ba93`):** yalnız **kendi eklediğimiz** dosyada
+  (`tests/golden/test_checklists_golden.py`) çalışıldı: `write_golden` satır sonu açıkça LF'e
+  sabitlendi, `checklist_files` yükleyicinin listeleme yardımcısına bağlandı ve
+  `test_golden_covers_exactly_the_loaded_files` iddiasına **mesaj eklendi** — koşul birebir aynı
+  (beklenen küme = dizin kümesi), yalnız hata çıktısı eyleme dönük (eksik/fazla dosya adları) hâle
+  geldi; hiçbir iddia gevşetilmedi veya silinmedi. Başka hiçbir test dosyasına dokunulmadı.
 
 
 ## Claude Code'un özellikle bakmasını istediğim yerler

@@ -91,6 +91,28 @@ düşer ve mesaj **değişen dosyayı adıyla** söyleyip `--update-golden`'ı i
   dosya**), `pytest -m "not live"` **3738 → 3743 geçti** (16 atlandı, 6 seçilmedi; +5 vaka). Kaynak kod
   **değişmedi**: yalnız test + golden veri.
 
+**J1b — Bağımsız denetim düzeltmeleri (dal `faz/j-denetim`):** Faz H + J teslimi salt-okur denetlendi
+(`faz-denetim`): **Kritik/Önemli bulgu yok**, 5 küçük bulgu; üçü kapatıldı — yalnız
+`tests/golden/test_checklists_golden.py` değişti (99 → **167 satır**), kaynak kod yine değişmedi.
+- **Küçük-1 (satır sonu) kapatıldı:** `write_golden` `Path.write_text`'in Windows varsayılanı
+  (`os.linesep`) yüzünden CRLF yazıyordu; `--update-golden` sonrası dosya **CR=10** olup git
+  "CRLF will be replaced by LF" uyarısıyla ağacı kirletiyordu (içerik farkı yok). Düzeltme öncesi
+  ` M tests/golden/checklists_sha256.json`, sonrası **CR=0 + ağaç temiz**. `newline` açıkça verildi ve
+  iddia artık `read_bytes()` üzerinden (`test_write_golden_writes_lf_bytes`) — eski tur-gidiş iddiası
+  CRLF'i gizliyordu.
+- **Küçük-2 (kopya ölçüt) kapatıldı:** `checklist_files` listeyi yeniden yazmıyor,
+  `_loader.list_yaml_files(directory, DataFileError)` çağırıyor → yükleyicinin listeleme kuralı
+  değişirse anlık görüntü sessizce ayrışamaz (PROGRESS'teki "aynı ölçüt" iddiası artık kopya değil).
+- **Küçük-4 (negatif yol) kapatıldı:** gerçek `data/checklists` ellenmeden, modül sabitleri geçici
+  dizine yönlendirilerek içerik değişimi (**mesaj değişen dosyayı adıyla söyler**), dosya kümesi kayması
+  ve golden-yok durumu süite içinde kanıtlanıyor. Ayrıca dosya kümesi iddiasına eksik/fazla listesi
+  içeren mesaj eklendi (eskiden çıplak `assert`'ti → CI'da eyleme dönük değildi).
+- **Kapatılmayan ikisi kayda geçti:** Küçük-3 (`tests/` içinde özel modül `questions._loader` importu —
+  bilinçli kabul), Küçük-5 (`tests/unit/test_tier1.py` 633 satır) → "Sonraya".
+- **Doğrulama:** `ruff check` temiz · `ruff format --check` 474 dosya · `mypy src/` 216 dosya hatasız ·
+  `pytest -m "not live"` **3743 → 3746 geçti** (16 atlandı, 6 seçilmedi) · `tests/golden` **40 geçti**.
+  Gerçek veri mutasyonu (`css.yaml` + yorum) → **1 fail**, geri alınınca 40 geçti.
+
 **Yapılmayan (bilinçli):** **Zig budama** — kurulumdan sonra kullanılmayan libc başlık dizinlerini
 silmek (382 MB → <150 MB) yerelde doğrulanamıyor: bu makinede gcc/clang/zig yok, `uv run pytest -m
 compiler` koşulamıyor ve devir "emin değilsen YAPMA" diyor. Doğrulama CI'ya (ya da zig kurulu bir
@@ -1044,6 +1066,15 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 **Açık:** Y2 (kullanıcı, `private/`), K2 kalan regex taraması, A1+A2 kod-denetçi denetimi.
 
 ## Sonraya (kapsam dışı fikirler)
+- **`tests/golden/test_facts_golden.py:50` aynı satır sonu kusuru (Faz J denetimi Küçük-1, 2026-10-17):**
+  `write_snapshot` de `Path.write_text` varsayılanıyla yazıyor → Windows'ta `--update-golden`
+  `expected_facts.json`'ları CRLF ile kirletir (mevcut 15 dosya CR=0 olduğu için henüz vurulmamış).
+  Faz J'de kapatılanla aynı tek satırlık düzeltme (`newline` + `read_bytes()` iddiası).
+- **facts golden negatif yolu (Faz J denetimi Küçük-4'ün eşi, 2026-10-17):** `test_facts_golden` için de
+  süite içi negatif (bozuk `expected_facts.json` düşürür) testi yok; `data/checklists` tarafında eklendi.
+- **`tests/unit/test_tier1.py` 633 satır (Faz J denetimi Küçük-5, 2026-10-17):** AGENTS'ın 400 satır
+  önerisi aşılıyor (repoda 11 test dosyası 400+; en büyüğü 1716) — pragma/Tier-1 kapısı vakaları ayrı
+  dosyaya taşınabilir.
 - ~~**`docs/mimari.md` §20 ADR tablosu boşlukları (denetim notu, 2026-10-16)**~~ → **KAPANDI (G9,
   `c2968e2`)**: ADR-0024, 0025, 0028 ve 0029 satırları eklendi; tabloda 30/30 ADR dosyası var.
 - ~~**`providers/cli_agent.py` 420 satır (kapanış denetimi, 2026-10-16)**~~ → **KAPANDI (G8,
