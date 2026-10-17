@@ -333,6 +333,35 @@
   pozitif üretmiyor), recall %55,2 → **%57,5**, F1 %71,1 → **%73,0**, Big-O %97/%97, erken çıkış
   %100/%100, p50 0,13 sn. Test bölümü `--final` olmadan koşulmadı (devir §5 kuralı).
 
+### H denetimi (2026-10-17) — ✅ (düzeltmeler `faz/h-denetim` dalında)
+- **Denetim kapsamı:** `git diff b67c94d..485e69a` = 79 dosya, +11 404/−103 (8 739 satırı H4'ün statik dev
+  sonuç JSON'u); kapsam dışı dosya yok. Kayıtlı kural sayısı **41 kayıt / 41 benzersiz kimlik**
+  (`PROGRESS.md`, `docs/rules-catalog.md`, `README.md`, `README.en.md` ile uyumlu). `docs/mimari.md`
+  §6.1/§12/§5.2.2/§5.6 sapmasızlığı, katman sınırları, yeni Pydantic modeli yokluğu ve kullanıcı
+  metnini okuma sınırları (`_MAX_TEXT`/`_MAX_RECEIVER_BYTES` 120 B, `_MAX_FORMAT_BYTES`/
+  `_MAX_TYPE_BYTES` 200 B) doğrulandı. **Birleştirme kararı: evet** (kritik bulgu yok); tek
+  doğrulanamayan boyut yerelde koşulamayan `-m compiler` (CI'ya bırakıldı).
+- **Düzeltilen iki bulgu** (davranış değişikliği yalnız CSS-ACC-001'deki kaçırmanın kapanması):
+  1. **CSS-ACC-001 aşırı susturma** (`rules/css.py`): `any(… or "" in covered …)` koşulu, dosyada
+     *herhangi* bir yalın `:focus-visible` kuralı varsa **tüm** `:focus { outline: none }` bloklarını
+     susturuyordu; `.x:focus` kuralı `:focus-visible`'dan daha özgül olduğu için bu gerçek bir a11y
+     kaçırmasıydı. Koşul kaldırıldı (susturma artık aynı kök seçici için geçerli). Fixture:
+     `CSS-ACC-001/positive/global_focus_visible_override.css` (bulgu) + `…/negative/bare_both.css`
+     (yalın `:focus` ↔ yalın `:focus-visible` hâlâ susar). `catalog_note` ve `docs/rules-catalog.md`
+     güncellendi.
+  2. **`rules/cpp.py` 452 satır** (AGENTS.md 400 satır sınırı; H2 sonrası): CPP-PERF-001 bloğu
+     (`_LARGE_TYPES`, `_PARAMETERS`, `_MOVES`, `_function_declarator`, `_Kept`, `_kept_argument`,
+     `_is_large`, kural sınıfı) `rules/cpp_perf.py`'ye taşındı → `cpp.py` **338**, `cpp_perf.py` **360**
+     satır. Taşınan blok birebir aynı; mevcut fixture/test **değişmedi**, yalnız kullanılmayan
+     `strip_templates` içe aktarımı temizlendi ve iki modülün docstring'i konu ayrımını yazıyor.
+- **Ölçüm:** statik dev yeniden koşuldu (`eval/results/20261017T161712_static_none_static_dev.json`):
+  precision **%100** ve recall **%57,5** (0,5747) **değişmedi**, F1 %73,0, Big-O %97/%97, erken çıkış
+  %100/%100, p50 0,14 sn (H4: 0,13 sn — makine gürültüsü). README'nin `dev` bloğu sonuç dosyalarından
+  yeniden üretildi; `tests/unit/eval/test_readme_table.py` **değiştirilmedi** ve yeşil.
+- **Açık kalan tek karar:** `include_guard._PRAGMA_ALLOWED`'a `pack`/`warning` eklenmesi (aşağıdaki
+  3. madde) — ürün kararı, kullanıcıya bırakıldı.
+
+
 ## Denetim komutlarının GERÇEK çıktısı
 ### faz/h-kurallar (H1–H4, 2026-10-16)
 - `uv run ruff check .` → `All checks passed!`
@@ -350,6 +379,25 @@
   Big-O 97% / 97%, erken çıkış 100% / 100%, sızan 0%, p50 0.1 / p95 0.8 sn
 - `uv run pytest tests/unit/eval/test_readme_table.py -q` → `5 passed in 0.39s`
 - `git diff` (H4): `README.md` **2 satır eklendi** (yeni statik satır + sürüm satırı), kod dosyası yok.
+
+### faz/h-denetim (H denetimi + iki düzeltme, 2026-10-17)
+- `uv run ruff check .` → `All checks passed!`
+- `uv run ruff format --check .` → `474 files already formatted`
+- `uv run mypy src/` → `Success: no issues found in 216 source files`
+- `uv run pytest -m "not live" -q` → `3719 passed, 16 skipped, 6 deselected in 252.79s (0:04:12)`
+  (H sonu 3717; +2 = iki yeni CSS-ACC-001 fixture'ı; test kodu değişmedi)
+- Hedefli: `uv run pytest tests/rules tests/unit -q` → `2740 passed, 3 skipped` (katalog güncelliği dahil;
+  düzeltme öncesi katalog testi düşüyordu)
+- Satır sayıları: `rules/cpp.py` → **338**, `rules/cpp_perf.py` → **360**, `rules/css.py` → 294 (< 400)
+- Eval (yalnızca statik dev, 96 örnek): `uv run codementor eval run --split dev --static-only` →
+  `eval/results/20261017T161712_static_none_static_dev.json`; denetim P/R/F1 **100% / 57% / 73%**
+  (precision ve recall H4 ile birebir aynı: 0,5747), Big-O 97% / 97%, erken çıkış 100% / 100%, p50 0.1 /
+  p95 0.9 sn
+- `uv run pytest tests/unit/eval/test_readme_table.py -q` → `5 passed` (README `dev` bloğu +2 satır:
+  yeni koşu satırı + sürüm satırı)
+- `uv run pytest -m compiler -q` → **yerelde koşulamadı** (gcc/clang/zig yok, H notundaki gibi);
+  H denetimi düzeltmeleri C/C++ derleyici yoluna dokunmadığı için CI koşusu yeterli
+
 
 ### faz/f-masaustu (F0-F6 güncel)
 - `uv run ruff check .` → `All checks passed!`
@@ -411,9 +459,10 @@
      yapılmadı, `PROGRESS.md` "Sonraya" bölümünde.
   5. **Test bölümü (`--final`) koşulmadı:** devir gereği test koşusu sürüm öncesi kullanıcı kararıdır;
      H4 kapsamı yalnızca dev.
-  6. **K1–K3 küçük notları** (H1 denetimi: CSS `:focus-visible {}` aşırı susturma, `scanf` satırında
-     ikili bulgu, `cpp_perf.py` AND'li döngü sınırı) kapsam dışı bırakıldı; davranışlar fixture'la
-     sabitlendi, düzeltme gerekirse ayrı iş.
+  6. **K1–K3 küçük notları** (H1 denetimi): **K1 (CSS `:focus-visible {}` aşırı susturma) ve K3'ün
+     `cpp.py` parçası (452 satır) H denetiminde düzeltildi** (yukarıdaki "H denetimi" bölümü);
+     K2 (`scanf` satırında ikili bulgu) ve `cpp_perf.py` yerel sınıf metodu notu **kabul edildi**
+     (sunum gürültüsü / muhafazakâr kaçırma), davranış fixture'la sabitlendi.
 - Yok. Tüm E1-E12 maddeleri eksiksiz tamamlandı ve test edildi.
 - **Faz G:** kod tarafında yapılamayan yok (G0-G9 + kapanış denetimi tamam, kalan madde yok). Yalnız
   **elle deneme** işleri kullanıcıda: (a) O5'in gerçek `agy`/`codex` çıktısıyla doğrulanması (canlı CLI
@@ -440,6 +489,10 @@
   artık geçerli bir ifade (karşılığında 2 yeni test eklendi) — bu bir **sıkılaştırmadır**, gevşetme
   değil. `tests/fixtures/tier0/cpp/valid/unreal_wave_spawner.cpp` **genişletildi** (yeni stub API'sini
   kullanır); mevcut satırlar/iddialar korundu ve testler yalnızca ekleme yaptı.
+  **H denetimi düzeltmelerinde (2026-10-17) hiçbir mevcut test değişmedi:** yalnız iki yeni CSS
+  fixture'ı eklendi (`CSS-ACC-001/positive/global_focus_visible_override.css`,
+  `…/negative/bare_both.css`), `docs/rules-catalog.md` yeniden üretildi ve README'nin `dev` bloğu
+  sonuç dosyalarından yenilendi (`test_readme_table.py` değişmedi).
 - **Faz G:** hiçbir test gevşetilmedi/silinmedi. G0 ve G8'de `tests/` **hiç değişmedi** (bölmeler
   davranışsız refactor); G1-G7'de yalnız yeni testler eklendi, `tests/providers/fake_cli_script.py`
   sahte CLI'sine `BOYUT:<n>` gürültü modu eklendi (G1).

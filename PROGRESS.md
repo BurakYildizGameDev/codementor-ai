@@ -421,8 +421,9 @@ Dal `faz/h-kurallar` (`faz/g-saglayici` uç noktası `b67c94d` üstüne açıld�
 | C-BUF-002 — Sınırı olmayan `scanf("%s")` | C | memory_safety / high / hata | **yeni** `rules/c_buffer.py` |
 
 - **Dosya bölme:** `cpp.py` ve `c.py` 359 satırdı; yedi kuralı oraya eklemek 400 satır sınırını aşacaktı
-  (AGENTS.md kod stili). Bu yüzden C++ performans kuralları `rules/cpp_perf.py`'ye (CPP-PERF-001
-  `cpp.py`'de kaldı), C tampon kuralı `rules/c_buffer.py`'ye taşındı — `c.py`/`c_memory.py` kalıbının
+  (AGENTS.md kod stili). Bu yüzden C++ performans kuralları `rules/cpp_perf.py`'ye (CPP-PERF-001 o turda
+  `cpp.py`'de kaldı; **H denetimi düzeltmesiyle `cpp_perf.py`'ye taşındı**, bkz. "Faz H — denetim
+  düzeltmeleri"), C tampon kuralı `rules/c_buffer.py`'ye taşındı — `c.py`/`c_memory.py` kalıbının
   aynısı. İki modül `rules/__init__.py`'de kayda girer; `docs/mimari.md` paket haritasındaki `rules/`
   modül listesi gerçek içerikle yazıldı.
 - **Muhafazakâr sınırlar (her biri `catalog_note` ile katalogda yazılı):** CSS-ACC-001 yalnız `:focus`
@@ -620,8 +621,46 @@ kural olan C# "döngüde `string +=`" zaten `CS-ALLOC-001` olduğundan yerine C-
 (yukarıdaki tablo); H2'de altı satır denetlendi (CPP-OWN-001 erken çıkış + CS-PERF-001
 `IReadOnlyList` düzeltmeleri), H3'te altı analiz-verisi maddesi kapandı (tek istisna `n^k`),
 H4'te statik dev ölçümü yenilendi (precision %100, F1 %73) ve README/§4.8 sayıları sonuç
-dosyalarından güncellendi. **Kalan iş:** faz kapanışı (teslim raporu `docs/YAPILANLAR_FAZ_E_J_ANTIGRAVITY.md`
-"Faz H" bölümü + commit). Faz I ve Faz J devirde kapsam dışı/isteğe bağlı (§9, §10).
+dosyalarından güncellendi. **Kalan iş: yok** — faz kapanışı `485e69a` (teslim raporu
+`docs/YAPILANLAR_FAZ_E_J_ANTIGRAVITY.md` "Faz H" bölümü) ve denetim düzeltmeleri aşağıdaki kayıtta
+kapandı; `main`, `faz/h-kurallar` ucuna **hızlı ileri** alındı (Faz F/G/H birlikte). Faz I ve Faz J
+devirde kapsam dışı/isteğe bağlı (§9, §10).
+
+### Faz H — denetim düzeltmeleri (kayıt: 2026-10-17)
+
+- **Bağlam:** Faz H tesliminden sonra uçtan uca denetim yapıldı: `git diff b67c94d..485e69a` = 79 dosya,
+  +11 404/−103; kapsam dışı dosya yok; **41 kayıt / 41 benzersiz kural kimliği**; dört denetim yeşil
+  (3717 geçti); katman/şema/güvenlik sapması yok. Karar: **birleştirilebilir** (kritik bulgu yok; tek
+  doğrulanamayan boyut yerelde koşulamayan `-m compiler`). Denetimin bıraktığı iki bulgu bu dalda
+  (`faz/h-denetim`) kapatıldı.
+- **1) CSS-ACC-001 aşırı susturma (`src/codementor/rules/css.py`):** dosyada yalın bir `:focus-visible`
+  kuralı varsa (`_focus_visible_bases` kümesinde `""`) kural **tüm** `:focus { outline: none }`
+  bloklarını susturuyordu. `:focus-visible` (0,1,0) ile `.x:focus` (0,2,0) karşılaştırıldığında
+  özgüllük `.x:focus` lehine olduğu için bu gerçek bir a11y kaçırmasıydı. `or "" in covered` koşulu
+  kaldırıldı; susturma artık yalnız **aynı kök seçici** için geçerli (yalın `:focus` ↔ yalın
+  `:focus-visible` eşleşmesi korunuyor). `catalog_note` yeni davranışı yazıyor,
+  `docs/rules-catalog.md` yeniden üretildi.
+- **2) `rules/cpp.py` 452 satır (AGENTS.md 400 satır sınırı):** H2'nin CPP-OWN-001 düzeltmesi dosyayı
+  93 satır büyütmüştü. CPP-PERF-001 bloğu (`_LARGE_TYPES`, `_PARAMETERS`, `_MOVES`,
+  `_function_declarator`, `_Kept`, `_kept_argument`, `_is_large`, kural sınıfı) `rules/cpp_perf.py`'ye
+  taşındı → `cpp.py` **338**, `cpp_perf.py` **360** satır. Taşıma davranışsız: içerik birebir, mevcut
+  fixture/test **değişmedi**, yalnız kullanılmayan `strip_templates` içe aktarımı temizlendi.
+- **3) Kabul edilen küçük notlar (düzeltme yok):** aynı `scanf` satırında `c_buffer.py` + C-IO-001'den
+  ikili bulgu (sunum gürültüsü), `cpp_perf.py` yerel sınıf metotlarını atlamıyor (muhafazakâr kaçırma),
+  `tier1.py:219` geniş `except` (günlükle sınırlı, H öncesinden). Üçü de
+  `docs/BulgularVeDuzeltilecekler.md` §10'a işlendi.
+- **4) Açık ürün kararı:** `validation/include_guard.py::_PRAGMA_ALLOWED` yalnız
+  `once`/`region`/`endregion` kabul ediyor; `#pragma pack`/`#pragma warning` içeren dosya Tier 1'i
+  atlıyor (fail-closed, ölçüme etkisi yok). İzin listesi genişletilsin mi? — kullanıcı onayı bekliyor.
+- **Testler:** 2 yeni fixture (`CSS-ACC-001/positive/global_focus_visible_override.css`,
+  `…/negative/bare_both.css`) → `pytest -m "not live"` **3717 → 3719 geçti** (16 atlandı, 6 seçilmedi,
+  4:12). Fixture'lar otomatik bulunur; test kodu değişmedi.
+- **Ölçüm:** statik dev yeniden koşuldu (`eval/results/20261017T161712_static_none_static_dev.json`):
+  precision **%100** (değişmedi), recall **%57,5** (0,5747 — değişmedi), F1 **%73,0**, Big-O %97/%97,
+  erken çıkış %100/%100, p50 0,14 sn. README `eval-table:dev` bloğu sonuç dosyalarından yeniden
+  üretildi; `tests/unit/eval/test_readme_table.py` değişmedi ve yeşil.
+- **Doğrulama:** `ruff check` temiz, `ruff format --check` **474 dosya**, `mypy src/` hatasız (**216
+  dosya**), `pytest -m "not live"` **3719 geçti / 16 atlandı / 6 seçilmedi** (4:12).
 
 Bilinen kararsız test (değişiklikle ilgisiz): `tests/rules/test_engine.py::test_linear_time_large_input[html-*]`
 yük altında 38 sn'yi geçip düşebiliyor; tek başına geçiyor.

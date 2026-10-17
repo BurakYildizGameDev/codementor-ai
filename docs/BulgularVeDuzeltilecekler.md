@@ -1047,6 +1047,25 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] Statik dev eval yeniden koşulur (`eval/results/20261016T212522_static_none_static_dev.json`);
       README kural sayısı (41, Faz H1) ve "Yalnızca statik" dev satırı (`100 / 57 / 73`) güncellendi —
       **Faz H4** (test bölümü `--final` olmadan koşulmadı)
+- [x] **Faz H denetimi — CSS-ACC-001 aşırı susturma KAPANDI (`faz/h-denetim`):** `rules/css.py`'deki
+      `or "" in covered` koşulu, dosyada *herhangi* bir yalın `:focus-visible` kuralı varsa **tüm**
+      `:focus { outline: none }` bloklarını susturuyordu (özgüllük gözetilmiyordu). Koşul kaldırıldı;
+      susturma artık aynı kök seçici (yalın `:focus` ↔ yalın `:focus-visible`) için geçerli.
+      Fixture'lar: `CSS-ACC-001/positive/global_focus_visible_override.css` (yeni bulgu),
+      `…/negative/bare_both.css` (yalın-yalın hâli hâlâ susar). `catalog_note` + `docs/rules-catalog.md`
+      güncellendi; statik dev ölçümü değişmedi (precision %100, recall %57,5)
+- [x] **Faz H denetimi — `rules/cpp.py` 400 satır sınırı KAPANDI (`faz/h-denetim`):** H2 sonrası 452
+      satıra çıkmıştı; CPP-PERF-001 bloğu (`_LARGE_TYPES`, `_Kept`, `_is_large`, `_function_declarator`,
+      kural sınıfı) `rules/cpp_perf.py`'ye taşındı → `cpp.py` **338**, `cpp_perf.py` **360** satır.
+      Davranış birebir aynı; mevcut test/fixture'lar değişmedi (yalnız kullanılmayan içe aktarım temizlendi)
+- [x] **Faz H denetimi — kabul edilen küçük notlar:** tek `scanf` satırında `c_buffer.py` + C-IO-001'den
+      ikili bulgu (sunum gürültüsü), `cpp_perf.py` yerel sınıf metotlarının atlanmaması (muhafazakâr
+      kaçırma), `tier1.py:219` geniş `except` (log sınırlı) — üçü de fixture/log ile sabit, düzeltme
+      gerekmedi
+- [ ] **Faz H denetimi — ürün kararı:** `validation/include_guard.py::_PRAGMA_ALLOWED` yalnız
+      `once`/`region`/`endregion` kabul ediyor; `#pragma pack` / `#pragma warning` içeren dosya Tier 1'i
+      atlıyor (fail-closed, ölçüme etkisi yok). `pack` (ve gerekiyorsa `warning`) izin listesine
+      eklenmeli mi? — kullanıcı onayı bekliyor (devir §11)
 
 ---
 
