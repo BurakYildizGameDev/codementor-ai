@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from codementor.questions._loader import DataFileError, list_yaml_files
+from codementor.questions import DataFileError, list_yaml_files
 
 DATA = Path(__file__).resolve().parents[2] / "data" / "checklists"
 GOLDEN = Path(__file__).parent / "checklists_sha256.json"
@@ -33,7 +33,8 @@ GOLDEN = Path(__file__).parent / "checklists_sha256.json"
 def checklist_files(directory: Path) -> list[Path]:
     """Yükleyicinin okuduğu dosyalar (aynı yardımcı: yükleyici değişirse küme de değişir).
 
-    Denetim Küçük-2: ölçüt burada kopyalanmaz, `_loader.list_yaml_files` çağrılır; böylece
+    Denetim Küçük-2: ölçüt burada kopyalanmaz, `questions.list_yaml_files` çağrılır (Faz J4:
+    ortak yardımcı artık genel API, özel modül importu yok); böylece
     yükleyicinin listeleme kuralı değişirse anlık görüntü sessizce ayrışmaz (aynı sıralama +
     dizin yoksa anlaşılır hata).
     """

@@ -179,7 +179,7 @@ def test_rules_version_changes_with_mentor_templates(tmp_path: Path) -> None:
     templates = tmp_path / "mentor_templates.yaml"
     templates.write_text("a: 1\n", encoding="utf-8")
     first = rules_version(None, templates)
-    assert first.startswith("r2+")
+    assert first.startswith("r3+")
     templates.write_text("a: 2\n", encoding="utf-8")
     assert rules_version(None, templates) != first
 
@@ -193,7 +193,7 @@ def test_empty_sources_logged(
     monkeypatch.setattr(versions, "hashed_sources", list)
     versions._code_digest.cache_clear()
     try:
-        assert versions.rules_version().startswith("r2+")
+        assert versions.rules_version().startswith("r3+")
     finally:
         versions._code_digest.cache_clear()
     assert [e["event"] for e in captured_logs()] == ["rules_version_without_sources"]
@@ -221,3 +221,86 @@ def test_embedded_digest_used_when_sources_missing(
     finally:
         versions._code_digest.cache_clear()
     assert captured_logs() == []
+
+
+def test_hashed_sources_cover_pipeline_and_prompts() -> None:
+    """Faz J4/O3: raporu belirleyen pipeline (assemble/stages) ve prompt kodu da sürümde."""
+    from codementor.pipeline.versions import SOURCE_ROOT, hashed_sources
+
+    sources = hashed_sources()
+    names = {p.relative_to(SOURCE_ROOT).as_posix() for p in sources}
+    assert "pipeline/stages.py" in names
+    assert "pipeline/signature.py" in names
+    assert "prompts/builder.py" in names
+    assert len(names) == len(sources)  # yinelenen yol yok (aynı dosya iki kez sayılmaz)
+
+
+_CHECKLIST_LF = (
+    b"applies_to: {language: c}\n"
+    b"items:\n"
+    b"  - id: C-MEM-001\n"
+    b"    tags: [core]\n"
+    b"    question: Bellek sizintisi var mi?\n"
+)
+
+
+def _checklist_file(directory: Path) -> Path:
+    """Tek maddeli kontrol listesi dosyası (LF ile yazılır; yalnız baytları özetlenir)."""
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "c-core.yaml"
+    path.write_bytes(_CHECKLIST_LF)
+    return path
+
+
+def test_rules_version_changes_with_checklists(tmp_path: Path) -> None:
+    """Faz J4/O3: kontrol listesi içeriği değişince önbellek anahtarı bayatlamaz."""
+    from codementor.pipeline.versions import rules_version
+
+    lists = tmp_path / "checklists"
+    path = _checklist_file(lists)
+    first = rules_version(checklists=lists)
+    assert first.startswith("r3+")
+    assert rules_version(checklists=lists) == first
+    path.write_bytes(path.read_bytes() + b"# ek not\n")
+    assert rules_version(checklists=lists) != first
+
+
+def test_rules_version_detects_checklist_file_set(tmp_path: Path) -> None:
+    """Dosya eklenince sürüm değişir, silinince eski değere döner (küme de sürümün parçası)."""
+    from codementor.pipeline.versions import rules_version
+
+    lists = tmp_path / "checklists"
+    _checklist_file(lists)
+    first = rules_version(checklists=lists)
+    added = lists / "unity-core.yml"  # `.yml` de aynı ölçütte (büyük/küçük harf duyarsız)
+    added.write_bytes(b"items: []\n")
+    assert rules_version(checklists=lists) != first
+    added.unlink()
+    assert rules_version(checklists=lists) == first
+
+
+def test_rules_version_ignores_yaml_outsiders_and_line_endings(tmp_path: Path) -> None:
+    """Yükleyicinin okumadığı dosyalar ve satır sonu farkı sürümü değiştirmez."""
+    from codementor.pipeline.versions import rules_version
+
+    lists = tmp_path / "checklists"
+    path = _checklist_file(lists)
+    first = rules_version(checklists=lists)
+    (lists / "notlar.txt").write_bytes(b"kontrol listesi degil\n")
+    (lists / "yedek.yaml.md").write_bytes(b"kontrol listesi degil\n")
+    assert rules_version(checklists=lists) == first
+    path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    assert rules_version(checklists=lists) == first
+
+
+def test_rules_version_missing_checklists_dir_is_a_version(tmp_path: Path) -> None:
+    """Dizin yoksa çökmez; eksiklik de sürümdür (iki eksik dizin aynı, dolu dizin farklı)."""
+    from codementor.pipeline.versions import DEFAULT_CHECKLISTS_DIR, rules_version
+
+    assert DEFAULT_CHECKLISTS_DIR.is_dir()
+    assert rules_version() == rules_version(checklists=DEFAULT_CHECKLISTS_DIR)
+    first = rules_version(checklists=tmp_path / "yok-1")
+    assert first == rules_version(checklists=tmp_path / "yok-2")
+    lists = tmp_path / "checklists"
+    _checklist_file(lists)
+    assert rules_version(checklists=lists) != first

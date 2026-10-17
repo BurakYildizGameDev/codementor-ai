@@ -178,24 +178,43 @@ def _touch(path: Path, text: str) -> Path:
 
 
 def test_signature_tracks_stamped_files(tmp_path: Path) -> None:
+    """İmza damga taşıyan iki girdiyi izler: Tier 1 stub başlığı ve ortak kimlik listesi.
+
+    Kontrol listeleri bilinçli olarak burada değil `rules_version`'da (Faz J4/O3): içerik özeti
+    damgadan güçlüdür, ayrıca yalnız mtime değişimi gereksiz önbellek ıskası üretmez.
+    """
     stub = _touch(tmp_path / "ue_stubs.h", "// v1")
     common = _touch(tmp_path / "common.yaml", "a: 1")
-    checklists = tmp_path / "checklists"
-    checklists.mkdir()
-    _touch(checklists / "c.yaml", "v1")
     settings = Settings().model_copy(
         update={
             "validation": Settings().validation.model_copy(update={"stub_header": stub}),
             "verify": Settings().verify.model_copy(update={"common_identifiers_file": common}),
-            "data": Settings().data.model_copy(update={"checklists_dir": checklists}),
         }
     )
     base = _sig(settings)
-    for path, text in ((stub, "// v2 uzun"), (common, "a: 22"), (checklists / "c.yaml", "v22")):
+    for path, text in ((stub, "// v2 uzun"), (common, "a: 22")):
         _touch(path, text)
         changed = _sig(settings)
         assert changed != base, path.name
         base = changed
+
+
+def test_signature_ignores_checklists_but_rules_version_tracks_them(tmp_path: Path) -> None:
+    """Faz J4/O3: kontrol listesi içeriği imzada değil `rules_version`'da tutulur."""
+    from codementor.pipeline.versions import rules_version
+
+    checklists = tmp_path / "checklists"
+    checklists.mkdir()
+    path = _touch(checklists / "c.yaml", "v1")
+    settings = Settings().model_copy(
+        update={"data": Settings().data.model_copy(update={"checklists_dir": checklists})}
+    )
+    signature = _sig(settings)
+    before = rules_version(checklists=checklists)
+
+    _touch(path, "v22")
+    assert _sig(settings) == signature, "damga yok: imza değişmemeli"
+    assert rules_version(checklists=checklists) != before, "içerik sürümü değişmeli"
 
 
 def test_signature_tracks_provider_settings() -> None:

@@ -99,3 +99,18 @@ def test_tier1_tool_follows_config(settings: Settings, tmp_path: Path) -> None:
     assert tier1_tool(C_CODE, enabled, chain) == chain.c
     assert tier1_tool(C_CODE, disabled, chain) is None
     assert C_CODE.engine is Engine.NONE
+
+
+def test_signature_ignores_checklist_stamps(settings: Settings, tmp_path: Path) -> None:
+    """Faz J4/O3: kontrol listesi *içeriği* `rules_version`'da; imzada dosya damgası yok.
+
+    Aksi hâlde içerik aynı kalıp yalnız dosya zamanı değiştiğinde (ör. `git checkout` ardından)
+    gereksiz önbellek ıskası oluşurdu.
+    """
+    lists = tmp_path / "checklists"
+    lists.mkdir()
+    (lists / "c-core.yaml").write_bytes(b"items: []\n")
+    other = settings.model_copy(
+        update={"data": settings.data.model_copy(update={"checklists_dir": lists})}
+    )
+    assert _sig(other) == _sig(settings)

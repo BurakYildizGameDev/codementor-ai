@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
+from pathlib import Path
 
 import pytest
 
@@ -108,3 +110,46 @@ async def test_rules_disabled_order_does_not_matter(
     second = _section("rules", disabled=["C-MEM-002", "C-MEM-001"])(settings)
     assert not await _analyze(first, db, fake, _request())
     assert await _analyze(second, db, fake, _request())
+
+
+_CHECKLIST = (
+    b"version: 1\n"
+    b"applies_to: { language: c }\n"
+    b"items:\n"
+    b"  - id: C-CL-900\n"
+    b'    text: "Denetim icin gecici kontrol maddesi"\n'
+    b"    tags: [core]\n"
+)
+
+
+def _checklist_dir(tmp_path: Path) -> Path:
+    """Tek geçerli kontrol listesi dosyası olan dizin (gerçek `data/checklists` ellenmez)."""
+    lists = tmp_path / "checklists"
+    lists.mkdir()
+    (lists / "c-core.yaml").write_bytes(_CHECKLIST)
+    return lists
+
+
+async def test_checklist_content_change_misses(
+    settings: Settings, db: Database, fake: FakeFactory, tmp_path: Path
+) -> None:
+    """Faz J4/O3: kontrol listesi içeriği değişince eski rapor dönmez (denetim O3 kapanışı)."""
+    lists = _checklist_dir(tmp_path)
+    custom = _section("data", checklists_dir=lists)(settings)
+    assert not await _analyze(custom, db, fake, _request())
+    assert await _analyze(custom, db, fake, _request())
+    (lists / "c-core.yaml").write_bytes(_CHECKLIST + b"# ek madde\n")
+    assert not await _analyze(custom, db, fake, _request())
+
+
+async def test_checklist_touch_alone_keeps_hit(
+    settings: Settings, db: Database, fake: FakeFactory, tmp_path: Path
+) -> None:
+    """Yalnız dosya zamanı değişirse (içerik aynı) rapor değişmez: isabet kalır (Faz J4)."""
+    lists = _checklist_dir(tmp_path)
+    path = lists / "c-core.yaml"
+    custom = _section("data", checklists_dir=lists)(settings)
+    assert not await _analyze(custom, db, fake, _request())
+    stat = path.stat()
+    os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 5_000_000_000))
+    assert await _analyze(custom, db, fake, _request())

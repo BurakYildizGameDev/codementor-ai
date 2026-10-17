@@ -204,10 +204,13 @@ class Orchestrator:
 
     def _rules_version(self) -> str:
         """Kural/veri sürümü (D11). Aynı analizde önbellek anahtarı ve rapor `meta`'sı aynı değeri
-        kullanır; maliyet tablosu ve mentor şablonları istek başına bir kez okunur."""
+        kullanır; maliyet tablosu, mentor şablonları ve kontrol listeleri istek başına bir kez
+        okunur (Faz J4/O3: kontrol listesi içeriği de sürüme girer)."""
         if self._rules is None:
             data = self.settings.data
-            self._rules = rules_version(data.call_costs_file, data.mentor_templates_file)
+            self._rules = rules_version(
+                data.call_costs_file, data.mentor_templates_file, data.checklists_dir
+            )
         return self._rules
 
     def _cache_key(
