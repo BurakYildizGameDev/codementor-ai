@@ -111,8 +111,37 @@ satır test`, `Faz A-D` hiçbirinde yok) · `ruff check` temiz · `ruff format -
 boyutu çalışma kopyasıyla aynı (LF).
 
 **Açık:** aynı sayıların tekrar bayatlamasını önleyen test iş 3'te; `BulgularVeDuzeltilecekler.md`
-§6/§10 tazelemesi iş 2'de.
+§6/§10 tazelemesi iş 2'de → **iş 2 tamamlandı** (aşağıdaki bölüm).
 
+## Belge — Bulgular durum tazeleme (KALAN_ISLER.md iş 2; doküman-only; 2026-10-17)
+
+> Kaynak kod **değişmedi**: `docs/BulgularVeDuzeltilecekler.md` (+20/−19), `KALAN_ISLER.md`, `PROGRESS.md`.
+
+**Not (düzeltme):** iş 2'yi kaydederken iş 1 sırasında yanlışlıkla değiştirilen `## Faz J5` başlığı
+geri kondu (aynı düzenlemede düzeltildi; J5 gövdesi başlıksız kalmıştı).
+
+**Yapılanlar (19 parça, atomik betikle — her parça tek eşleşme doğrulandı):** §1'de O10/O13/O14
+satırlarına kapanış etiketi `Evet (Faz F)`; §4'te bu üç başlığa `✅ Faz F`; §6 P-tablosu yenilendi —
+P5 ✅ (belgeler `docs/gelistirme-gunlugu/` altında), P6 ✅ (252 KB → 146 KB; arşiv 224 KB), P7 ✅ (Faz D
++ 2026-10-17 tazeleme), P8 ✅ `README.en.md`, P9 ✅ dört dosya + `.github` şablonları, P10 ⚠️ kısmi
+(yerel `v0.1.1` etiketi var; GitHub Release + zip yüklemesi kullanıcıda), P11 ✅ (13/16 Ekim derlemeleri,
+`codementor.toml` yok), P12 ✅ bilinçli karar, P13 ℹ️ açık (kullanıcı), P4 ❓ Y2 açık; §10 Faz D'de P11
+kutusu `[x]` + eski Faz 60 elle doğrulaması kullanıcıya devredildi (U5).
+
+**Doğrulama:** dosya varlıkları (`README.en.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`,
+`docs/gelistirme-gunlugu/` 10 dosya, `dist/CodeMentor-0.1.1-win64.zip`) · `git tag` → `v0.1.0`, `v0.1.1` ·
+`pytest tests/unit/test_release_readiness.py` **6 geçti** · `ruff check` temiz · `ruff format --check`
+477 dosya · dosyada CR=0 (LF) · eski kalıplar (`252 KB`, `59 fazda`, `P11 (yerel)`) kalmadı.
+
+**Kararlar/sapmalar:** (1) P6'da spec "140 KB" diyordu; ölçülen değer yazıldı (146 KB / 142,6 KiB).
+(2) §1 lejantı gereği 5. kolon "Doğrulama" = bulgunun **tespit yöntemi** (✅ elle doğrulandı · 🔬 ajan ·
+📖 kod okuması · ❓ doğrulanmadı); bu yüzden O10/O13/O14'te 📖 korundu, kapanış 6. kolona yazıldı.
+(3) §10 P11 tek kutu iken derleme ve elle doğrulama ayrıldı.
+
+**Açık:** iş 2b (iş 2 sırasında ölçülen §1 kayması: O3, O4, O5, O9, O12, O15-O17 ve Y1, Y3-Y9
+satırlarında kapanış etiketi yok) ve iş 3 (sayıları teste bağlama) sırada.
+
+## Faz J5 — Faz J denetiminden kalan küçük maddeler (test-only; 2026-10-17)
 
 > J1b'de "kayda geçen" üç maddenin üçü de kapandı. Kaynak kod **değişmedi**: yalnız `tests/`.
 

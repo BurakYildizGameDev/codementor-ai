@@ -58,11 +58,11 @@ hiçbir dosya değiştirilmedi.
 | O7 | 🟡 | Config | BOM'lu toml uygulamayı tamamen durduruyor | ✅ | Evet |
 | O8 | 🟡 | Config | `.env` hiç okunmuyor; `.env.example` eski | ✅ | Evet |
 | O9 | 🟡 | Paketleme | Wheel'e varsayılan toml girmiyor | 📖 | Önerilir |
-| O10 | 🟡 | Masaüstü | Bozuk veritabanında exe hiç açılmıyor | 📖 | Önerilir |
+| O10 | 🟡 | Masaüstü | Bozuk veritabanında exe hiç açılmıyor | 📖 | Evet (Faz F) |
 | O11 | 🟡 | CLI | Kök `--help` Türkçe karakterleri bozuk basıyor | 🔬 | Evet |
 | O12 | 🟡 | CLI | `toolchain` ve `eval compare` traceback veriyor | 🔬 | Önerilir |
-| O13 | 🟡 | Masaüstü | Dışa aktarma hatası sessiz | 📖 | Sonra |
-| O14 | 🟡 | Gizlilik | "Geçmişi temizle" sonrası kod veritabanı dosyasında kalıyor | 📖 | Önerilir |
+| O13 | 🟡 | Masaüstü | Dışa aktarma hatası sessiz | 📖 | Evet (Faz F) |
+| O14 | 🟡 | Gizlilik | "Geçmişi temizle" sonrası kod veritabanı dosyasında kalıyor | 📖 | Evet (Faz F) |
 | O15 | 🟡 | Web güvenlik | Monaco hover güvenilmeyen markdown işliyor | 📖 | Önerilir |
 | O16 | 🟡 | Web / API | CSP ve güvenlik başlıkları yok | 📖 | Sonra |
 | O17 | 🟡 | CI | Etiketle release yok, `permissions` yok, duman testi yok | 📖 | Evet (release) |
@@ -431,7 +431,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   için `~/.codementor/codementor.toml` kullan.
 - **Test:** wheel'i geçici venv'e kur, `codementor providers` varsayılanı `claude_cli`.
 
-### O10 — Bozuk veritabanında exe açılmıyor 🟡 📖
+### O10 — Bozuk veritabanında exe açılmıyor 🟡 📖 ✅ Faz F
 
 - **Dosya:** `src/codementor/desktop/launch.py:32-33`
 - **Ne yanlış:** `state.database()` korumasız. Bozuk ya da kilitli `codementor.db` ("file is not a
@@ -456,14 +456,14 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
   komutlar 3 dönüyor; tutarsız.
 - **Düzeltme:** ortak bir hata sarmalayıcı (Türkçe mesaj, çıkış 3).
 
-### O13 — Masaüstünde dışa aktarma hatası sessiz 🟡 📖
+### O13 — Masaüstünde dışa aktarma hatası sessiz 🟡 📖 ✅ Faz F
 
 - **Dosya:** `src/codementor/desktop/app.py:320-333`
 - **Ne yanlış:** `write_text` için `OSError` yakalanmıyor; kilitli/izinsiz konumda kullanıcı hiçbir
   şey görmüyor.
 - **Düzeltme:** yakala, toast/hata diyaloğu göster.
 
-### O14 — "Geçmişi temizle" gizlilik açısından eksik 🟡 📖
+### O14 — "Geçmişi temizle" gizlilik açısından eksik 🟡 📖 ✅ Faz F
 
 - **Dosyalar:** `storage/cache.py:161-166`, `storage/sessions.py:103`
 - **Ne yanlış:**
@@ -564,16 +564,16 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | P1 | Git geçmişinde gerçek anahtar | ✅ Yok (yalnız `sk-ant-test-SECRET-…` test sahtesi) | — |
 | P2 | `.env`, `private/` | ✅ `.gitignore`'da | — |
 | P3 | `linkedin metini.md` | ✅ `.gitignore`'da (Faz A2) | `.gitignore`'a ekle |
-| P4 | Referans çözüm sızıntısı | ❓ Y2 | Kontrol et |
-| P5 | İç çalışma belgeleri | ⚠️ `docs/DEVIR_FAZ52_54.md`, `DEVIR_FAZ55.md`, `DEVIR_FAZ60_62.md`, `CODEX_3_4_YAPILANLAR.md`, `YAPILANLAR_60_62_ANTIGRAVITY.md`, `FAZ36_OLCUM_DURUMU.md`, `EVAL_PARCA_REHBERI.md` | `docs/gelistirme-gunlugu/` altına taşı |
-| P6 | `PROGRESS.md` | ⚠️ 252 KB | Arşivle; kökte kısa özet bırak |
-| P7 | README doğruluğu | ⚠️ "59 fazda" yazıyor, gerçekte 63; O1 nedeniyle web silme iddiası varsa düzelt | Güncelle |
-| P8 | İngilizce README | ❌ Yok | `README.en.md` (kısa: ne, neden, hızlı başlangıç, sonuçlar) |
-| P9 | `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, issue/PR şablonları | ❌ Yok | Ekle (`SECURITY.md` önemli: güvenlik açığı bildirimi) |
-| P10 | Release | ⚠️ O17, O18 | 0.1.1 + otomatik release |
-| P11 | Yerel `dist/` | ⚠️ `dist/CodeMentor.exe` Faz 63 öncesi; `dist/codementor.toml` 6 Ekim tarihli ve exe yanında (ADR-0027'deki hataya yol açan tür) | Sil / yeniden derle (repo dışı) |
-| P12 | `.agents/`, `.claude/` | ℹ️ Repoda | Kalabilir (geliştirme sürecini gösteriyor); bilinçli karar ver |
-| P13 | GitHub repo ayarları | ℹ️ Açıklama ve konular dolu; `homepageUrl` boş | Secret scanning + push protection + Dependabot alerts aç |
+| P4 | Referans çözüm sızıntısı | ❓ Y2 — `tests/fixtures/llm_responses/unity03_reference.cs` bankada çözüm gövdesi taşıyor; karar `private/` ile karşılaştırmayı gerektiriyor | Kontrol et (kullanıcı) |
+| P5 | İç çalışma belgeleri | ✅ Faz D: hepsi `docs/gelistirme-gunlugu/` altına taşındı (`DEVIR_*` ×3, `CODEX_3_4_YAPILANLAR`, `YAPILANLAR_60_62_ANTIGRAVITY`, `FAZ36_OLCUM_DURUMU`, `EVAL_PARCA_REHBERI`); kökte kalmadı (2026-10-17 doğrulandı) | — |
+| P6 | `PROGRESS.md` | ✅ Faz D: arşivlendi (`docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md`, 224 KB); kökteki özet 2026-10-17'de 146 KB (142,6 KiB) | — |
+| P7 | README doğruluğu | ✅ Faz D + 2026-10-17 tazeleme: faz anlatımı "Faz 0-63, ardından public öncesi A-H ve J"; test 3.700+, ADR 30, satır sayıları ölçümle eşitlendi | — |
+| P8 | İngilizce README | ✅ Faz D: `README.en.md` var (ne, neden, hızlı başlangıç, sonuçlar) | — |
+| P9 | `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, issue/PR şablonları | ✅ Faz D: dördü de var; şablonlar `.github/ISSUE_TEMPLATE/{hata,oneri}.yml` + `PULL_REQUEST_TEMPLATE.md`; `dependabot.yml` eklendi | — |
+| P10 | Release | ⚠️ Kısmi: `release.yml` hazır ve `v0.1.1` etiketi yerelde var; GitHub Release + zip yüklemesi kullanıcıda | Etiket/release (kullanıcı) |
+| P11 | Yerel `dist/` | ✅ Faz D: güncel sürüm derlendi — `dist/CodeMentor.exe` (13 Eki, 41,5 MB), onedir `dist/CodeMentor/`, `dist/CodeMentor-0.1.1-win64.zip` (16 Eki, 41,2 MB); eski `dist/codementor.toml` yok | — |
+| P12 | `.agents/`, `.claude/` | ✅ Bilinçli karar: repoda kalıyor (geliştirme sürecini gösteriyor) | — |
+| P13 | GitHub repo ayarları | ℹ️ Açık: açıklama ve konular dolu; secret scanning + push protection + Dependabot alerts açılmadı | GitHub ayarlarından aç (kullanıcı) |
 
 ---
 
@@ -838,9 +838,10 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] **O18 — Sürüm:** tek kaynak (`importlib.metadata`); eşitlik testi; **0.1.1**
 - [x] **O17 — CI:** `release.yml` (etiket → exe → duman testi → Releases + `SHA256SUMS`),
       `permissions: contents: read`, `concurrency`, action SHA'ları, `dependabot.yml`
-- [ ] **P11 (yerel):** eski `dist/CodeMentor.exe` ve `dist/codementor.toml` temizlenir, yeniden
-      derlenir; **eski Faz 60'ın açık maddesi** (güncel exe ile 64 görev, agy, geçmiş açma
-      doğrulaması) burada kapanır
+- [x] **P11 — Yeniden derleme (Faz D):** eski `dist/codementor.toml` kaldırıldı; onefile + onedir güncel
+      sürümle derlendi ve `--self-check` geçti — `dist/CodeMentor.exe` (13 Eki), `dist/CodeMentor/` ve
+      `dist/CodeMentor-0.1.1-win64.zip` (16 Eki). Eski Faz 60 açık maddesi (64 görev, agy, geçmiş
+      açma doğrulaması) kullanıcıya devredildi → `KALAN_ISLER.md` U5
 - [ ] **P13 (kullanıcı):** GitHub'da secret scanning, push protection, Dependabot alerts
 - [x] **D20 (kısmi):** `pyproject.toml` `authors`, `[project.urls]`, `classifiers`, `keywords`
 

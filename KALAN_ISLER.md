@@ -31,7 +31,7 @@
   CR=0, `ruff check` temiz, `pytest -m "not live"` 3758 geçti.
 - **Boyut:** küçük (2 dosya, ~8 satır).
 
-### [ ] 🤖 2. `docs/BulgularVeDuzeltilecekler.md` durum tazeleme
+### [x] 🤖 2. `docs/BulgularVeDuzeltilecekler.md` durum tazeleme — ✅ **BİTTİ 2026-10-17**
 - **Kapsam:** §1 özet tabloda **O10/O13/O14** satırlarına `✅ Faz F`; §4'te bu üç başlığa `✅ Faz F`;
   §6 P-tablosu gerçek durumla yenilenir (P5-P9 ✅ Faz D, P10 kısmi → `v0.1.1` etiketi kullanıcıda,
   P11 ✅ Faz D'de onefile+onedir derlendi ve `--self-check` geçti, P12 karar, P13 açık, P4/Y2 açık);
@@ -42,6 +42,24 @@
   `CHANGELOG.md`, `docs/gelistirme-gunlugu/`, `dist/CodeMentor-0.1.1-win64.zip`),
   `uv run pytest tests/unit/test_release_readiness.py -q`.
 - **Boyut:** küçük-orta (1 dosya).
+- **Sonuç (2026-10-17):** uygulandı — 19 parça, tek dosyada +20/−19 satır. Kanıt: taşınan belgeler
+  kökte yok / `docs/gelistirme-gunlugu/` altında (10 dosya) · `PROGRESS.md` 146 KB + arşiv 224 KB ·
+  `dist`: `CodeMentor.exe` (13 Eki), onedir, `CodeMentor-0.1.1-win64.zip` (16 Eki), `codementor.toml`
+  yok · `git tag` → `v0.1.0`/`v0.1.1` · `README.en.md`/`SECURITY.md`/`CONTRIBUTING.md`/`CHANGELOG.md`
+  ve `.github` şablonları var · `pytest tests/unit/test_release_readiness.py` 6 geçti.
+- **Sapmalar (kayıt için):** (a) P6 için spec'teki "140 KB" yerine ölçülen değer yazıldı
+  (146 KB / 142,6 KiB). (b) §1'de 5. kolon lejantı "Doğrulama" = **bulgunun tespit yöntemi** olduğu
+  için O10/O13/O14 satırlarında 📖 korundu; kapanış 6. kolona `Evet (Faz F)` yazıldı (O1 `Evet (belge)`,
+  O6 `G2` konvansiyonu). (c) §10 P11 kutusu ikiye ayrıldı: derleme `[x]`, eski Faz 60 elle doğrulaması
+  kullanıcıya devredildi (U5).
+
+### [ ] 🤖 2b. §1 özet tablosunu §4/§10 kapanışlarıyla hizala
+- **Kapsam (iş 2 sırasında ölçüldü):** §4 başlığında `✅ Faz X` olan ama §1 satırında kapanış etiketi
+  bulunmayan bulgular — O3, O4, O5, O9, O12, O15, O16, O17 ve Y1, Y3, Y4, Y5, Y7, Y8, Y9 (O10/O13/O14
+  iş 2'de yapıldı). Yalnız 6. kolona `Evet (Faz X)` eklenir; 5. kolon (Doğrulama) **değişmez**.
+- **Dosyalar:** `docs/BulgularVeDuzeltilecekler.md` (yalnız).
+- **Doğrulama:** her satır §4 başlığı ve §10 kutusuyla karşılaştırılır; satır sayısı sabit kalır.
+- **Boyut:** küçük (~15 satır).
 
 ### [ ] 🤖 3. Sayı iddialarını teste bağlama (tekrar bayatlamasın)
 - **Kapsam:** `tests/unit/test_release_readiness.py` yanına yeni testler: `README.md` ve
