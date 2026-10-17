@@ -67,6 +67,42 @@
 | H | ✅ (denetim + Önemli-3 düzeltmesi + entegrasyon testleri) | faz/h-kurallar (+ faz/h-denetim, faz/h-pragma-izin) | 2026-10-17 | Cline / Claude Code denetimi |
 | J | ✅ (yalnız anlık görüntü maddesi; Zig budama bilinçli atlandı) | faz/j-checklist-snapshot | 2026-10-17 | Cline / — |
 | J4 | ✅ (O3 kapanışı; kaynak kod değişti) | faz/j4-onbellek-surumu | 2026-10-17 | Cline / — |
+| J5 | ✅ (Faz J denetimi küçük maddeleri; test-only) | faz/j5-test-hijyeni | 2026-10-17 | Cline / — |
+
+## Faz J5 — Faz J denetiminden kalan küçük maddeler (test-only; 2026-10-17)
+
+> J1b'de "kayda geçen" üç maddenin üçü de kapandı. Kaynak kod **değişmedi**: yalnız `tests/`.
+
+**Yapılanlar:**
+- **Küçük-1'in eşi (satır sonu):** `tests/golden/test_facts_golden.py::write_snapshot`,
+  `Path.write_text` varsayılanına düşüyordu → Windows'ta `--update-golden` **15 `expected_facts.json`'ı
+  CRLF ile kirletirdi** (ölçüldü: 15/15 dosyada CR>0, `git status` 15 dosya kirli; düzeltmeden sonra
+  CR=0 + ağaç temiz). `newline="\n"` açıkça verildi; iddia `read_bytes()` üzerinden
+  (`test_write_snapshot_writes_lf_bytes`) çünkü `read_text` CRLF'i gizliyordu (Küçük-1'deki ders).
+- **Küçük-4'ün eşi (negatif yol):** `test_facts_golden_negative_paths` — gerçek `tests/golden/facts`
+  ellenmeden, geçici dizinde kurulan vakayla: eksik anlık görüntü `--update-golden`'ı işaret eder,
+  `--update-golden` sonrası geçer (ve LF yazar), içerik kayması düşürür ve mesaj dosyayı adıyla söyler.
+  Ayrıca `test_every_case_has_snapshot` (eksik dosyalar tek mesajda listelenir) eklendi ve içerik
+  uyuşmazlığı mesajı eyleme dönük hâle geldi (eskiden çıplak `assert`'ti).
+- **Küçük-5 (dosya bölme):** `tests/unit/test_tier1.py` **633 → 349 satır**. Ortak düzenek
+  `tests/unit/tier1_helpers.py` (80 satır: `FakeRunner`, örnek kodlar, araç zinciri, `normalize_code`,
+  `read_stderr`); kalan vakalar `tests/unit/test_tier1.py` (atlama yolları + çağrı biçimi) ve
+  `tests/unit/test_tier1_verdict.py` (292 satır: sonuç sınıflandırma + güvenlik/kolon regresyonları).
+  **Vaka adları ve iddialar birebir aynı:** `pytest --collect-only` kimlikleri **58 → 58, birebir**
+  (karşılaştırma orijinal dosya geçici olarak geri konularak yapıldı); AST karşılaştırmasında
+  38 vaka / 127 assert iki tarafta eşit. Yardımcı adı `_code` → **`normalize_code`** (genel ad;
+  `tests/` içinde özel modül importu yok — Küçük-3 kapanışındaki ilkenin devamı). `code` adı
+  bilinçli seçilmedi: testlerde yerel `code = normalize_code(...)` değişkeni yaygın ve gölgeleme
+  sessiz `UnboundLocalError` üretiyordu.
+
+**Doğrulama:** `ruff check` temiz · `ruff format --check` **476 dosya** · `mypy src/` 216 dosya ·
+`pytest -m "not live"` **3755 → 3758 geçti** (16 atlandı, 6 seçilmedi, 4:58) ·
+`tests/golden/test_facts_golden.py` 18 → **21** vaka.
+**Mutasyon kanıtı:** (a) `newline="\n"` kaldırılınca 2 test düşer ve `--update-golden` 15 golden'ı
+CR>0 yapar; (b) içerik uyuşmazlığı mesajı eski çıplak `assert`'e döndürülünce
+`test_facts_golden_negative_paths` düşer (1 failed). İkisi de geri alındı, ağaç temiz.
+**Açık:** Zig budama (J2) hâlâ yerelde doğrulanamıyor (bu makinede gcc/clang/zig yok) → CI · repodaki
+diğer 400+ satırlık test dosyaları bu kapsamda bölünmedi (denetimde adı geçen tek dosya buydu).
 
 ## Faz J4 — Önbellek sürümünde kontrol listesi içeriği ve kod kapsamı (O3 kapanışı; 2026-10-17)
 
@@ -1111,15 +1147,17 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 **Açık:** Y2 (kullanıcı, `private/`), K2 kalan regex taraması, A1+A2 kod-denetçi denetimi.
 
 ## Sonraya (kapsam dışı fikirler)
-- **`tests/golden/test_facts_golden.py:50` aynı satır sonu kusuru (Faz J denetimi Küçük-1, 2026-10-17):**
-  `write_snapshot` de `Path.write_text` varsayılanıyla yazıyor → Windows'ta `--update-golden`
-  `expected_facts.json`'ları CRLF ile kirletir (mevcut 15 dosya CR=0 olduğu için henüz vurulmamış).
-  Faz J'de kapatılanla aynı tek satırlık düzeltme (`newline` + `read_bytes()` iddiası).
-- **facts golden negatif yolu (Faz J denetimi Küçük-4'ün eşi, 2026-10-17):** `test_facts_golden` için de
-  süite içi negatif (bozuk `expected_facts.json` düşürür) testi yok; `data/checklists` tarafında eklendi.
-- **`tests/unit/test_tier1.py` 633 satır (Faz J denetimi Küçük-5, 2026-10-17):** AGENTS'ın 400 satır
-  önerisi aşılıyor (repoda 11 test dosyası 400+; en büyüğü 1716) — pragma/Tier-1 kapısı vakaları ayrı
-  dosyaya taşınabilir.
+- ~~**`tests/golden/test_facts_golden.py:50` aynı satır sonu kusuru (Faz J denetimi Küçük-1, 2026-10-17)**~~
+  → **KAPANDI (J5)**: `write_snapshot` `newline="\n"` ile yazıyor; `--update-golden` sonrası 15 golden
+  **CR=0** ve `git status` temiz; iddia `read_bytes()` üzerinden (`test_write_snapshot_writes_lf_bytes`).
+  Eski kodla kanıt: 15/15 dosyada CR>0 ve ağaç kirli.
+- ~~**facts golden negatif yolu (Faz J denetimi Küçük-4'ün eşi, 2026-10-17)**~~ → **KAPANDI (J5)**:
+  `test_facts_golden_negative_paths` (eksik → `--update-golden` işaret edilir; yazılan dosya LF; içerik
+  kayması düşürür ve mesaj dosyayı adıyla söyler) + `test_every_case_has_snapshot` + eyleme dönük mesaj.
+- ~~**`tests/unit/test_tier1.py` 633 satır (Faz J denetimi Küçük-5, 2026-10-17)**~~ → **KAPANDI (J5)**:
+  633 → 349 satır; düzenek `tests/unit/tier1_helpers.py` (80), sonuç/güvenlik vakaları
+  `tests/unit/test_tier1_verdict.py` (292). Toplama kimlikleri 58 → 58 birebir; 38 vaka / 127 assert
+  AST ile doğrulandı.
 - ~~**`docs/mimari.md` §20 ADR tablosu boşlukları (denetim notu, 2026-10-16)**~~ → **KAPANDI (G9,
   `c2968e2`)**: ADR-0024, 0025, 0028 ve 0029 satırları eklendi; tabloda 30/30 ADR dosyası var.
 - ~~**`providers/cli_agent.py` 420 satır (kapanış denetimi, 2026-10-16)**~~ → **KAPANDI (G8,

@@ -10,6 +10,7 @@
 | J | faz/j-checklist-snapshot | f8b5928 | kısmi (Zig budama bilinçli atlandı) | 1/0/0 |
 | J1b | faz/j-denetim | 5b1ba93 | tam (bağımsız denetim düzeltmeleri, test-only) | 3/0/2 |
 | J4 | faz/j4-onbellek-surumu | e5ca84f | tam (O3 kapanışı; kaynak kod değişti) | 3/0/0 |
+| J5 | faz/j5-test-hijyeni | 7348aec | tam (Faz J denetimi küçük maddeleri; test-only) | 3/0/0 |
 
 > **Kapanış denetimi (2026-10-16):** F satırı "sürüyor 3/0/10" iken yazılmıştı; Faz F'nin tamamı
 > (F0-F12) bitti (`PROGRESS.md` Faz F "Yapılanlar", son commit `138fbcf`) ve satır güncellendi.
@@ -471,6 +472,35 @@
   ve etiket/veri seti sürümü yok (Faz 51 denetimi) → "Sonraya".
 
 
+### J5 — Faz J denetiminden kalan küçük maddeler (test-only) — ✅ (`7348aec`)
+- **Ne:** J1b'de "kayda geçen" üç madde kapatıldı: olgu goldeninin satır sonu kusuru (Küçük-1'in eşi),
+  olgu goldeninin negatif yol boşluğu (Küçük-4'ün eşi) ve `tests/unit/test_tier1.py`'nin 633 satırı
+  (Küçük-5). **Kaynak kod değişmedi**; yalnız `tests/` (mimari/ADR gerektiren bir değişiklik yok).
+- **Nasıl:** `write_snapshot` artık `newline="\n"` ile yazıyor; iddia `read_bytes()` üzerinden yapılır
+  (eski tur-gidiş iddiası `read_text` kullandığı için CRLF'i gizliyordu — Küçük-1'deki dersin aynısı).
+  Olgu goldenine üç vaka eklendi: LF baytları, "her vaka dizininde anlık görüntü var" (eksikler tek
+  mesajda, `--update-golden` işaret edilir) ve **süite içi negatif yol**: geçici dizinde kurulan vaka
+  (dizin adı önekten dili/motoru türetir) ile eksik anlık görüntü, `--update-golden` sonrası yeşil +
+  LF'e sabitlenmiş yazım ve içerik kayması; uyuşmazlık mesajı eskiden çıplak `assert`'ti → artık
+  eskimiş dosyayı adıyla söylüyor. `tests/unit/test_tier1.py` üç parçaya ayrıldı: `tier1_helpers.py`
+  (**80 satır**; ortak düzenek: `FakeRunner`, örnek kodlar, araç zinciri, `normalize_code`,
+  `read_stderr`), `test_tier1.py` (**349**; atlama yolları + çağrı biçimi) ve `test_tier1_verdict.py`
+  (**292**; sonuç sınıflandırma + güvenlik/kolon regresyonları) → üçü de 400 satır sınırının altında.
+  Yardımcı adı `_code` → **`normalize_code`**: genel ad (özel modül importu yok — Küçük-3 kapanışındaki
+  ilkenin devamı) ve `code` adı bilinçli seçilmedi (testlerde yerel `code = normalize_code(...)`
+  değişkeni yaygın; gölgeleme sessiz `UnboundLocalError` üretiyordu).
+- **Kanıt (gerçek veri + toplama kimlikleri):** `--update-golden` sonrası 15 golden **CR=0** ve `git
+  status` temiz; düzeltme kaldırılınca aynı komut **15 dosyayı CR>0 ile kirletiyor** (mutasyon).
+  Bölmede `pytest --collect-only` kimlikleri **58 → 58 birebir** (orijinal dosya geçici olarak geri
+  konularak karşılaştırıldı) ve AST karşılaştırmasında **38 vaka / 127 assert** iki tarafta eşit.
+- **Sayılar:** `pytest -m "not live"` **3755 → 3758 passed** (16 skipped, 6 deselected, 4:58);
+  `tests/golden/test_facts_golden.py` 18 → **21**; `ruff format --check` **474 → 476 dosya** (iki yeni
+  test modülü), `mypy src/` 216 dosya (değişmedi). Kapsam: `test_facts_golden.py` **+63/−3**,
+  `test_tier1.py` **−332/+48**, iki yeni dosya.
+- **Açık:** Zig budama (J2) hâlâ yerelde doğrulanamıyor (bu makinede gcc/clang/zig yok) → CI; repodaki
+  diğer 400+ satırlık test dosyaları bu kapsamda bölünmedi (denetimde adı geçen tek dosya buydu).
+
+
 ## Denetim komutlarının GERÇEK çıktısı
 ### faz/h-kurallar (H1–H4, 2026-10-16)
 - `uv run ruff check .` → `All checks passed!`
@@ -559,6 +589,24 @@
   `tests/providers/test_cli_agent.py::test_json_document_is_linear_on_hostile_output` (duvar saati
   eşiği `< 0,25 sn`) yük altında düştü; tek başına ve bir sonraki tam koşuda geçti → bu
   değişiklikle ilgisiz.
+
+### faz/j5-test-hijyeni (Faz J denetimi küçük maddeleri, 2026-10-17)
+- `uv run ruff check .` → `All checks passed!`
+- `uv run ruff format --check .` → `476 files already formatted`
+- `uv run mypy src/` → `Success: no issues found in 216 source files`
+- `uv run pytest -m "not live" -q` → `3758 passed, 16 skipped, 6 deselected in 298.32s (0:04:58)`
+- Hedefli: `uv run pytest tests/golden/test_facts_golden.py -q` → `21 passed in 1.25s`;
+  `uv run pytest tests/unit/test_tier1.py tests/unit/test_tier1_verdict.py -q` → `58 passed in 0.59s`
+- Mutasyon (olgu goldeni): `newline="\n"` kaldırıldı → `2 failed, 19 passed` ve `--update-golden`
+  → 15/15 dosyada CR>0 + `git status` **15 dosya kirli**; uyuşmazlık mesajı eski çıplak `assert`'e
+  döndürüldü → `1 failed, 20 passed` (`test_facts_golden_negative_paths`); ikisi de geri alındı →
+  `21 passed`, `git status` yalnız kendi dosyamız
+- Bölme kanıtı: `--collect-only` (orijinal dosya geçici olarak geri konularak) → `eski vaka: 58
+  yeni vaka: 58` + `Compare-Object` → `TOPLAMA KIMLIKLERI BIREBIR AYNI`; AST karşılaştırması →
+  `eski vaka sayısı: 38  yeni: 38`, `eski toplam assert: 127  yeni: 127`, `SONUC: AYNI`
+- Kapsam: `git show --numstat 7348aec` → `tests/golden/test_facts_golden.py` **+63/−3**,
+  `tests/unit/test_tier1.py` **+48/−332** (bölme), `tests/unit/test_tier1_verdict.py` **292 satır**,
+  `tests/unit/tier1_helpers.py` **80 satır**; `src/` ve `data/` değişmedi
 
 ### faz/f-masaustu (F0-F6 güncel)
 - `uv run ruff check .` → `All checks passed!`
@@ -694,6 +742,12 @@
   `test_pipeline_signature.py` +1, `test_pipeline_cache_key.py` +2) ve
   `tests/golden/test_checklists_golden.py`'de yalnız import/ölçüt kaynağı güncellendi (özel modül
   `questions._loader` → genel API `questions`); hiçbir iddia gevşetilmedi.
+- **Faz J5 (denetim küçük maddeleri, `7348aec`):** hiçbir mevcut iddia gevşetilmedi/silinmedi — olgu
+  goldenine **yalnız ekleme** yapıldı (+3 vaka; içerik uyuşmazlığı mesajı eyleme dönük hâle geldi, koşul
+  birebir aynı) ve `tests/unit/test_tier1.py` **davranışsız bölündü**: `pytest --collect-only` kimlikleri
+  58 → 58 **birebir**, AST karşılaştırmasında 38 vaka / 127 assert iki tarafta eşit. Bölmede tek isim
+  değişikliği test yerelindeki yardımcıdır (`_code` → `normalize_code`, `tier1_helpers.py` içine taşındı);
+  uzayan adın gerektirdiği satır sarmaları `ruff format` ile yapıldı, iddiaların içeriği değişmedi.
 
 
 ## Claude Code'un özellikle bakmasını istediğim yerler
