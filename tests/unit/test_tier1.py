@@ -1,77 +1,35 @@
-"""Tier 1 orkestrasyon testleri: sahte runner ve sahte araç zinciriyle (derleyicisiz)."""
+"""Tier 1 orkestrasyon testleri: atlama yolları ve çağrı biçimi (sahte runner/araç zinciri).
+
+Bölme (Faz J5, denetim Küçük-5): dosya 633 satırdı (AGENTS.md 400 satır önerisi); vaka adları ve
+iddialar değişmedi, yalnız taşındı.
+- Sonuç sınıflandırma + güvenlik/kolon regresyonları: `tests/unit/test_tier1_verdict.py`
+- Ortak düzenek (sahte runner, örnek kod, araç zinciri): `tests/unit/tier1_helpers.py`
+"""
 
 from __future__ import annotations
 
 import threading
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
 
 import pytest
 
 from codementor.config import ValidationSettings
-from codementor.ingest.normalize import normalize
 from codementor.models.enums import CompilationStatus, Engine, Language
-from codementor.models.request import LanguageHint, NormalizedCode
 from codementor.models.validation import CompilerTool, SkipReason, Toolchain
 from codementor.validation.runner import ProcessLimits, ProcessResult
 from codementor.validation.tier1 import run_tier1
-
-SAMPLES = Path(__file__).resolve().parents[1] / "fixtures" / "tier1"
-STUB = Path(__file__).resolve().parents[2] / "data" / "stubs" / "ue_stubs.h"
-
-GCC = CompilerTool(name="gcc", kind="gcc", command=["/usr/bin/gcc"])
-GXX = CompilerTool(name="g++", kind="gcc", command=["/usr/bin/g++"])
-CLANGXX = CompilerTool(name="clang++", kind="clang", command=["/usr/bin/clang++"])
-ROSLYN = CompilerTool(name="roslyn-check", kind="roslyn", command=["/usr/bin/dotnet", "/x.dll"])
-FULL = Toolchain(c=GCC, cpp=GXX, unreal=CLANGXX, csharp=ROSLYN)
-
-
-@dataclass
-class FakeRunner:
-    """`run_process` yerine geçer; çağrıları kaydeder, hazır sonuç döndürür."""
-
-    result: ProcessResult = field(default_factory=lambda: ProcessResult(0, "", ""))
-    calls: list[tuple[list[str], str, ProcessLimits, dict[str, str]]] = field(default_factory=list)
-    cancels: list[threading.Event | None] = field(default_factory=list)
-
-    def __call__(
-        self,
-        argv: Sequence[str],
-        stdin: str,
-        limits: ProcessLimits,
-        *,
-        extra_env: Mapping[str, str] | None = None,
-        cancel: threading.Event | None = None,
-    ) -> ProcessResult:
-        self.cancels.append(cancel)
-        self.calls.append((list(argv), stdin, limits, dict(extra_env or {})))
-        return self.result
-
-
-def _code(text: str, language: Language, engine: Engine = Engine.NONE) -> NormalizedCode:
-    return normalize(text, LanguageHint(language=language, engine=engine))
-
-
-C_CODE = "#include <stdio.h>\nint main(void) {\n    int x = 1;\n    return x;\n}\n"
-CPP_CODE = "#include <vector>\nint main() {\n    std::vector<int> v;\n    return 0;\n}\n"
-CS_CODE = "class A {\n    void F() { int x = 1; }\n}\n"
-UNREAL_CODE = (
-    '#include "Enemy.h"\n'
-    '#include "Enemy.generated.h"\n'
-    "UCLASS()\n"
-    "class AEnemy : public AActor {\n"
-    "    GENERATED_BODY()\n"
-    "    UPROPERTY() int32 Health = 100;\n"
-    "};\n"
+from tests.unit.tier1_helpers import (
+    C_CODE,
+    CPP_CODE,
+    CS_CODE,
+    FULL,
+    SETTINGS,
+    STUB,
+    UNREAL_CODE,
+    FakeRunner,
+    normalize_code,
 )
-SETTINGS = ValidationSettings(stub_header=STUB)
-
-
-def _stderr(name: str) -> str:
-    return (SAMPLES / name).read_text(encoding="utf-8")
-
 
 # ------------------------------------------------------------------ atlama yolları
 
@@ -79,7 +37,7 @@ def _stderr(name: str) -> str:
 def test_disabled_skips_with_zero_calls() -> None:
     runner = FakeRunner()
     result = run_tier1(
-        _code(C_CODE, Language.C),
+        normalize_code(C_CODE, Language.C),
         ValidationSettings(tier1_enabled=False),
         toolchain=FULL,
         runner=runner,
@@ -102,7 +60,7 @@ def test_disabled_skips_with_zero_calls() -> None:
 def test_missing_tool_skipped_with_warning(text: str, language: Language, engine: Engine) -> None:
     runner = FakeRunner()
     result = run_tier1(
-        _code(text, language, engine), SETTINGS, toolchain=Toolchain(), runner=runner
+        normalize_code(text, language, engine), SETTINGS, toolchain=Toolchain(), runner=runner
     )
     assert result.status is CompilationStatus.SKIPPED
     assert result.skip_reason is SkipReason.TOOL_MISSING
@@ -135,7 +93,9 @@ def test_missing_tool_skipped_with_warning(text: str, language: Language, engine
 )
 def test_include_guard_skips_with_zero_calls(text: str, language: Language, engine: Engine) -> None:
     runner = FakeRunner()
-    result = run_tier1(_code(text, language, engine), SETTINGS, toolchain=FULL, runner=runner)
+    result = run_tier1(
+        normalize_code(text, language, engine), SETTINGS, toolchain=FULL, runner=runner
+    )
     assert result.status is CompilationStatus.SKIPPED
     assert result.skip_reason is SkipReason.INCLUDE_GUARD
     assert result.warnings
@@ -156,7 +116,7 @@ def test_pragma_pack_and_warning_reach_compiler() -> None:
         "#pragma warning(disable: 4996)\n"
         "int main() { return 0; }\n"
     )
-    code = _code(text, Language.CPP)
+    code = normalize_code(text, Language.CPP)
     result = run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
     assert result.status is CompilationStatus.PASSED
     assert result.skip_reason is None
@@ -171,7 +131,7 @@ def test_unreal_pragma_pack_passes_both_guard_calls() -> None:
     `#pragma pack` ikisinden de geçmeli; aksi hâlde geçerli Unreal kodu gereksiz atlanırdı.
     """
     runner = FakeRunner()
-    code = _code("#pragma pack(push, 1)\n" + UNREAL_CODE, Language.CPP, Engine.UNREAL)
+    code = normalize_code("#pragma pack(push, 1)\n" + UNREAL_CODE, Language.CPP, Engine.UNREAL)
     result = run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
     assert result.skip_reason is None
     assert len(runner.calls) == 1
@@ -202,14 +162,16 @@ def test_pragma_pack_file_reaches_real_process() -> None:
 
     text = "#pragma pack(push, 1)\n#pragma warning(disable: 4996)\nint main() { return 0; }\n"
     result = run_tier1(
-        _code(text, Language.CPP), SETTINGS, toolchain=Toolchain(cpp=tool), runner=spy
+        normalize_code(text, Language.CPP), SETTINGS, toolchain=Toolchain(cpp=tool), runner=spy
     )
     assert len(launched) == 1
     assert result.status is CompilationStatus.FAILED
     assert "sentetik" in result.diagnostics[0].message
 
     launched.clear()
-    bypass = _code('#define pack GCC dependency "/etc/passwd"\n#pragma pack\n', Language.CPP)
+    bypass = normalize_code(
+        '#define pack GCC dependency "/etc/passwd"\n#pragma pack\n', Language.CPP
+    )
     blocked = run_tier1(bypass, SETTINGS, toolchain=Toolchain(cpp=tool), runner=spy)
     assert launched == []
     assert blocked.skip_reason is SkipReason.INCLUDE_GUARD
@@ -219,7 +181,10 @@ def test_missing_stub_skipped(tmp_path: Path) -> None:
     runner = FakeRunner()
     settings = ValidationSettings(stub_header=tmp_path / "yok.h")
     result = run_tier1(
-        _code(UNREAL_CODE, Language.CPP, Engine.UNREAL), settings, toolchain=FULL, runner=runner
+        normalize_code(UNREAL_CODE, Language.CPP, Engine.UNREAL),
+        settings,
+        toolchain=FULL,
+        runner=runner,
     )
     assert result.skip_reason is SkipReason.STUB_MISSING
     assert runner.calls == []
@@ -227,7 +192,7 @@ def test_missing_stub_skipped(tmp_path: Path) -> None:
 
 def test_timeout_skipped() -> None:
     runner = FakeRunner(ProcessResult(None, "", "", timed_out=True))
-    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
+    result = run_tier1(normalize_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
     assert result.status is CompilationStatus.SKIPPED
     assert result.skip_reason is SkipReason.TIMEOUT
     assert result.warnings
@@ -235,13 +200,13 @@ def test_timeout_skipped() -> None:
 
 def test_launch_error_skipped() -> None:
     runner = FakeRunner(ProcessResult(None, "", "", error="FileNotFoundError"))
-    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
+    result = run_tier1(normalize_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
     assert result.skip_reason is SkipReason.TOOL_ERROR
 
 
 def test_crash_without_diagnostics_skipped() -> None:
     runner = FakeRunner(ProcessResult(-11, "", "Segmentation fault\n"))
-    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
+    result = run_tier1(normalize_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
     assert result.status is CompilationStatus.SKIPPED
     assert result.skip_reason is SkipReason.TOOL_ERROR
 
@@ -251,7 +216,7 @@ def test_crash_without_diagnostics_skipped() -> None:
 
 def test_argv_stdin_only_no_include_paths() -> None:
     runner = FakeRunner()
-    code = _code(C_CODE, Language.C)
+    code = normalize_code(C_CODE, Language.C)
     run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
     ((argv, stdin, limits, _),) = runner.calls
     assert argv[0] == "/usr/bin/gcc"
@@ -268,7 +233,7 @@ def test_argv_stdin_only_no_include_paths() -> None:
 
 def test_cpp_argv() -> None:
     runner = FakeRunner()
-    run_tier1(_code(CPP_CODE, Language.CPP), SETTINGS, toolchain=FULL, runner=runner)
+    run_tier1(normalize_code(CPP_CODE, Language.CPP), SETTINGS, toolchain=FULL, runner=runner)
     argv = runner.calls[0][0]
     assert argv[0] == "/usr/bin/g++"
     assert argv[argv.index("-x") + 1] == "c++"
@@ -277,7 +242,7 @@ def test_cpp_argv() -> None:
 
 def test_unreal_argv_has_stub_and_local_includes_blanked() -> None:
     runner = FakeRunner()
-    code = _code(UNREAL_CODE, Language.CPP, Engine.UNREAL)
+    code = normalize_code(UNREAL_CODE, Language.CPP, Engine.UNREAL)
     run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
     ((argv, stdin, _, _),) = runner.calls
     assert argv[0] == "/usr/bin/clang++"
@@ -300,7 +265,9 @@ def test_unreal_argv_has_stub_and_local_includes_blanked() -> None:
 def test_unreal_api_macro_neutralized() -> None:
     runner = FakeRunner()
     text = "class MYGAME_API AFoo : public AActor {\n};\n"
-    run_tier1(_code(text, Language.CPP, Engine.UNREAL), SETTINGS, toolchain=FULL, runner=runner)
+    run_tier1(
+        normalize_code(text, Language.CPP, Engine.UNREAL), SETTINGS, toolchain=FULL, runner=runner
+    )
     stdin = runner.calls[0][1]
     assert "MYGAME_API" not in stdin
     assert stdin.index("AFoo") == text.index("AFoo")
@@ -317,7 +284,9 @@ def test_unreal_delegate_macro_reaches_compiler() -> None:
         "\nUCLASS()\nclass AGadget : public AActor\n{\n    GENERATED_BODY()\n"
         "public:\n    UPROPERTY(BlueprintAssignable)\n    FOnReady OnReady;\n};\n"
     )
-    run_tier1(_code(text, Language.CPP, Engine.UNREAL), SETTINGS, toolchain=FULL, runner=runner)
+    run_tier1(
+        normalize_code(text, Language.CPP, Engine.UNREAL), SETTINGS, toolchain=FULL, runner=runner
+    )
     argv, stdin, _, _ = runner.calls[0]
     assert "DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnReady" in stdin
     assert "UCLASS" not in stdin  # yansıma makroları yine boşaltılır
@@ -326,14 +295,14 @@ def test_unreal_delegate_macro_reaches_compiler() -> None:
 
 def test_unreal_keeps_system_includes() -> None:
     runner = FakeRunner()
-    code = _code("#include <vector>\n" + UNREAL_CODE, Language.CPP, Engine.UNREAL)
+    code = normalize_code("#include <vector>\n" + UNREAL_CODE, Language.CPP, Engine.UNREAL)
     run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
     assert runner.calls[0][1].startswith("#include <vector>\n")
 
 
 def test_roslyn_argv_and_env() -> None:
     runner = FakeRunner(ProcessResult(0, "[]", ""))
-    code = _code(CS_CODE, Language.CSHARP, Engine.UNITY)
+    code = normalize_code(CS_CODE, Language.CSHARP, Engine.UNITY)
     result = run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
     ((argv, stdin, limits, env),) = runner.calls
     assert argv == ["/usr/bin/dotnet", "/x.dll"]
@@ -372,262 +341,9 @@ def test_user_code_never_written_to_disk() -> None:
         captured.append(result)
         return result
 
-    code = _code(f"int main(void) {{ /* {marker} */ return 0; }}\n", Language.C)
+    code = normalize_code(f"int main(void) {{ /* {marker} */ return 0; }}\n", Language.C)
     run_tier1(code, SETTINGS, toolchain=Toolchain(c=fake), runner=spy)
     import json
 
     listing, _ = json.loads(captured[0].stdout)
     assert listing == []
-
-
-# ------------------------------------------------------------------ sonuç sınıflandırma
-
-
-def test_c_type_error_failed() -> None:
-    runner = FakeRunner(ProcessResult(1, "", _stderr("gcc_c_type_error.txt")))
-    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
-    assert result.status is CompilationStatus.FAILED
-    assert result.tool == "gcc"
-    assert [(d.line, d.severity) for d in result.diagnostics][:2] == [(3, "error"), (4, "warning")]
-    assert all(d.tool == "gcc" for d in result.diagnostics)
-
-
-def test_clang_cpp_error_failed() -> None:
-    chain = Toolchain(cpp=CompilerTool(name="clang++", kind="clang", command=["/c++"]))
-    runner = FakeRunner(ProcessResult(1, "", _stderr("clang_cpp_type_error.txt")))
-    result = run_tier1(_code(CPP_CODE, Language.CPP), SETTINGS, toolchain=chain, runner=runner)
-    assert result.status is CompilationStatus.FAILED
-    assert all(d.tool == "clang" for d in result.diagnostics)
-
-
-def test_warnings_only_warning() -> None:
-    stderr = "<stdin>:3:9: warning: unused variable 'x' [-Wunused-variable]\n"
-    runner = FakeRunner(ProcessResult(0, "", stderr))
-    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
-    assert result.status is CompilationStatus.WARNING
-    assert result.diagnostics[0].severity == "warning"
-
-
-def test_clean_passed() -> None:
-    runner = FakeRunner(ProcessResult(0, "", ""))
-    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
-    assert result.status is CompilationStatus.PASSED
-    assert result.diagnostics == []
-    assert result.skip_reason is None
-
-
-@pytest.mark.parametrize("sample", ["gcc_missing_header.txt", "clang_missing_header.txt"])
-def test_missing_local_header_is_warning(sample: str) -> None:
-    runner = FakeRunner(ProcessResult(1, "", _stderr(sample)))
-    code = _code('#include "WaveSpawner.h"\nint main() { return 0; }\n', Language.CPP)
-    result = run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
-    assert result.status is CompilationStatus.WARNING
-    assert [d.severity for d in result.diagnostics] == ["warning"]
-    assert result.warnings
-
-
-def test_unreal_errors_demoted_to_warning() -> None:
-    runner = FakeRunner(ProcessResult(1, "", _stderr("clang_unreal_stub.txt")))
-    code = _code(UNREAL_CODE, Language.CPP, Engine.UNREAL)
-    result = run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
-    assert result.status is CompilationStatus.WARNING
-    assert result.diagnostics
-    assert all(d.severity != "error" for d in result.diagnostics)
-    assert result.warnings
-
-
-def test_unreal_clean_passed() -> None:
-    runner = FakeRunner(ProcessResult(0, "", ""))
-    code = _code(UNREAL_CODE, Language.CPP, Engine.UNREAL)
-    assert run_tier1(code, SETTINGS, toolchain=FULL, runner=runner).status in (
-        CompilationStatus.PASSED,
-        CompilationStatus.WARNING,
-    )
-
-
-def test_roslyn_error_failed() -> None:
-    runner = FakeRunner(ProcessResult(0, _stderr("roslyn_errors.json"), ""))
-    result = run_tier1(_code(CS_CODE, Language.CSHARP), SETTINGS, toolchain=FULL, runner=runner)
-    assert result.status is CompilationStatus.FAILED
-    assert result.diagnostics[0].tool == "roslyn"
-
-
-@pytest.mark.parametrize(
-    "result", [ProcessResult(0, "not json", ""), ProcessResult(2, "[]", "boom")]
-)
-def test_roslyn_bad_output_skipped(result: ProcessResult) -> None:
-    out = run_tier1(
-        _code(CS_CODE, Language.CSHARP), SETTINGS, toolchain=FULL, runner=FakeRunner(result)
-    )
-    assert out.status is CompilationStatus.SKIPPED
-    assert out.skip_reason is SkipReason.TOOL_ERROR
-
-
-def test_roslyn_tool_error_logged_for_operator(
-    captured_logs: Callable[[], list[dict[str, Any]]],
-) -> None:
-    """Faz 27: Roslyn aracı düşerse çıkış kodu ve stderr başı log'a (teşhis); gcc'de değil."""
-    host_error = "You must install or update .NET to run this application."
-    runner = FakeRunner(ProcessResult(150, "", host_error))
-    run_tier1(_code(CS_CODE, Language.CSHARP), SETTINGS, toolchain=FULL, runner=runner)
-    event = next(e for e in captured_logs() if e["event"] == "tier1_tool_error")
-    assert event["returncode"] == 150
-    assert host_error in event["stderr"]
-
-    gcc = FakeRunner(ProcessResult(1, "", "int gizli_kod_satiri;"))
-    run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=gcc)
-    assert sum(e["event"] == "tier1_tool_error" for e in captured_logs()) == 1
-
-
-def test_truncated_output_flagged() -> None:
-    stderr = "<stdin>:3:13: error: bad\n"
-    runner = FakeRunner(ProcessResult(1, "", stderr, truncated=True))
-    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
-    assert result.truncated
-    assert result.status is CompilationStatus.FAILED
-
-
-def test_never_raises_on_runner_exception(
-    captured_logs: Callable[[], list[dict[str, Any]]],
-) -> None:
-    def broken(*_args: object, **_kwargs: object) -> ProcessResult:
-        raise OSError("disk dolu")
-
-    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=broken)
-    assert result.status is CompilationStatus.SKIPPED
-    assert result.skip_reason is SkipReason.TOOL_ERROR
-    # Faz 48: sessiz geçilmez, istisna türü loglanır
-    logs = [e for e in captured_logs() if e["event"] == "tier1_runner_exception"]
-    assert [e["error"] for e in logs] == ["OSError"]
-
-
-# ------------------------------------------------------------------ güvenlik denetimi regresyonları
-
-
-@pytest.mark.parametrize(
-    "prefix",
-    [
-        "UCLASS()#include </etc/passwd>\n",
-        "X_API #import </etc/passwd>\n",
-        '#include "a.h" \\\n#include </etc/passwd>\n',
-        '#include "a.h" \\\n#pragma GCC dependency "/etc/passwd"\n',
-    ],
-)
-def test_unreal_transform_cannot_create_directive(prefix: str) -> None:
-    runner = FakeRunner()
-    code = _code(prefix + UNREAL_CODE, Language.CPP, Engine.UNREAL)
-    result = run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
-    assert result.skip_reason is SkipReason.INCLUDE_GUARD
-    assert runner.calls == []
-
-
-def test_unreal_continued_include_line_not_blanked() -> None:
-    from codementor.validation.tier1 import _blank_local_includes
-
-    text = '#include "a.h" \\\nint x;\n#include "b.h"\n'
-    out = _blank_local_includes(text)
-    assert out.startswith('#include "a.h" \\\n')
-    assert '"b.h"' not in out
-    assert len(out) == len(text)
-
-
-def test_runner_receives_cancel_event() -> None:
-    runner = FakeRunner()
-    cancel = threading.Event()
-    run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner, cancel=cancel)
-    assert runner.cancels == [cancel]
-
-
-# ---------------------------------------------------- kolon birimi: bayt (Faz H3)
-
-
-def test_c_argv_uses_byte_columns() -> None:
-    """gcc'nin `display` birimi yerine bayt seçilir: iki derleyici aynı birimi kullanır."""
-    runner = FakeRunner()
-    run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
-    ((argv, *_),) = [runner.calls[0]]
-    assert "-fdiagnostics-column-unit=byte" in argv
-    assert argv[-1] == "-"  # stdin göstergesi sonda kalır
-
-
-def test_unsupported_column_unit_is_retried_without_flag() -> None:
-    """Eski gcc bayrağı tanımazsa ikinci kez bayraksız çalıştırılır (denetim atlanmaz)."""
-    results = [
-        ProcessResult(
-            1, "", "gcc: error: unrecognized command-line option '-fdiagnostics-column-unit=byte'\n"
-        ),
-        ProcessResult(1, "", "<stdin>:3:5: error: 'x' undeclared\n"),
-    ]
-    calls: list[list[str]] = []
-
-    def runner(
-        argv: Sequence[str],
-        stdin: str,
-        limits: ProcessLimits,
-        *,
-        extra_env: Mapping[str, str] | None = None,
-        cancel: threading.Event | None = None,
-    ) -> ProcessResult:
-        calls.append(list(argv))
-        return results[len(calls) - 1]
-
-    result = run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
-    assert len(calls) == 2
-    assert "-fdiagnostics-column-unit=byte" in calls[0]
-    assert "-fdiagnostics-column-unit=byte" not in calls[1]
-    assert result.status is CompilationStatus.FAILED
-    assert [d.line for d in result.diagnostics] == [3]
-
-
-@pytest.mark.parametrize(
-    "outcome",
-    [
-        ProcessResult(0, "", ""),  # başarılı: yeniden deneme yok
-        ProcessResult(1, "", "<stdin>:2:1: error: beklenmeyen\n"),  # bayrak anılmıyor
-        ProcessResult(None, "", "", error="runner exception"),
-        ProcessResult(1, "", "", timed_out=True),
-    ],
-)
-def test_no_retry_without_flag_complaint(outcome: ProcessResult) -> None:
-    runner = FakeRunner(outcome)
-    run_tier1(_code(C_CODE, Language.C), SETTINGS, toolchain=FULL, runner=runner)
-    assert len(runner.calls) == 1
-
-
-def test_roslyn_env_keeps_fsize_limit_compatible() -> None:
-    """Faz 27: Linux'ta RLIMIT_FSIZE altında CoreCLR açılabilsin (W^X kapalı, GC sınırlı)."""
-    runner = FakeRunner()
-    run_tier1(_code(CS_CODE, Language.CSHARP), SETTINGS, toolchain=FULL, runner=runner)
-    _argv, _stdin, limits, env = runner.calls[0]
-    assert env["DOTNET_EnableWriteXorExecute"] == "0"
-    assert "DOTNET_GCHeapHardLimit" in env
-    assert not limits.limit_address_space
-
-
-def test_zig_argv_reads_stdin_only() -> None:
-    """Zig (Faz 29): `zig clang` + sonda bayrakları; kod yalnız stdin'den, diske yazılmaz."""
-    zig = CompilerTool(
-        name="zig",
-        kind="clang",
-        command=[
-            "/tc/zig/zig",
-            "clang",
-            "--target=x86_64-linux-gnu",
-            "-nostdinc",
-            "-isystem",
-            "/tc/zig/lib/include",
-        ],
-        origin="downloaded",
-    )
-    runner = FakeRunner(ProcessResult(1, "", _stderr("zig_clang_cpp_crlf.txt")))
-    code = _code(CPP_CODE, Language.CPP)
-    result = run_tier1(code, SETTINGS, toolchain=Toolchain(cpp=zig), runner=runner)
-    ((argv, stdin, _, env),) = runner.calls
-    assert argv[:2] == ["/tc/zig/zig", "clang"]
-    assert argv[-1] == "-"
-    assert "cc" not in argv
-    assert "c++" not in argv[:2]
-    assert stdin == code.text
-    assert "ZIG_GLOBAL_CACHE_DIR" not in env  # zig clang önbellek dizini istemez
-    assert result.status is CompilationStatus.FAILED
-    assert result.tool == "zig"
