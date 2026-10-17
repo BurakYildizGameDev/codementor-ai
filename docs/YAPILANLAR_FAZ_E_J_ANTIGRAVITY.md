@@ -9,6 +9,7 @@
 | H | faz/h-kurallar | 0fb7162 (H4) | H1–H4 tam | 4/0/0 |
 | J | faz/j-checklist-snapshot | f8b5928 | kısmi (Zig budama bilinçli atlandı) | 1/0/0 |
 | J1b | faz/j-denetim | 5b1ba93 | tam (bağımsız denetim düzeltmeleri, test-only) | 3/0/2 |
+| J4 | faz/j4-onbellek-surumu | e5ca84f | tam (O3 kapanışı; kaynak kod değişti) | 3/0/0 |
 
 > **Kapanış denetimi (2026-10-16):** F satırı "sürüyor 3/0/10" iken yazılmıştı; Faz F'nin tamamı
 > (F0-F12) bitti (`PROGRESS.md` Faz F "Yapılanlar", son commit `138fbcf`) ve satır güncellendi.
@@ -445,6 +446,31 @@
   `session_id`'yi anahtara bağlama: devir §10'un açık yasağı; hiçbirine dokunulmadı.
 
 
+### J4 — Önbellek sürümünde kontrol listesi içeriği ve kod kapsamı (O3 kapanışı) — ✅ (`e5ca84f`)
+- **Ne:** `PROGRESS.md` "Sonraya"daki **Faz 49 denetimi O3** maddesinin kalanı kapatıldı: kontrol
+  listesi *içeriği* ve raporu belirleyen `pipeline/`+`prompts/` kodu önbellek sürümünde değildi, bu
+  yüzden başka bir çalışma kopyasında eski rapor dönebilirdi.
+- **Nasıl:** `rules_version` (`pipeline/versions.py`) artık `data/checklists` dosyalarının **ad +
+  LF-normalize içeriğini** özetler (liste ölçütü yükleyicininkiyle **aynı**: `questions.list_yaml_files`;
+  dizin yoksa yer tutucu = eksiklik de bir sürümdür) ve `pipeline/*.py` + `prompts/*.py` kaynaklarını
+  da kapsar (`assemble.py`/`stages.py`/`signature.py` değişince eski önbellek dönmez); önek
+  `r2+` → **`r3+`**. `pipeline/signature.py`'den kontrol listesi **dosya damgası** kaldırıldı
+  (`_dir_stamps`): içerik zaten sürümde olduğu için damga yalnız `git checkout` benzeri mtime
+  değişimlerinde gereksiz ıska üretirdi. `questions/__init__.py` `list_yaml_files` ve
+  `DataFileError`'ı genel API'ye aldı → J1b'de "kayda geçen" **Küçük-3** de kapandı (özel modül
+  importu kalmadı).
+- **Kanıt (gerçek veri, geçici prob; `TEMP`):** `data/checklists/css.yaml` + yorum → `rules_version`
+  ve `cache_key` değişti; baytlar geri → ikisi de aynı; yalnız `mtime` +7 sn → `rules_version`,
+  `pipeline` imzası ve `cache_key` **aynı**. `data/` altında iz bırakılmadı.
+- **Sayılar:** `pytest -m "not live"` **3746 → 3755 passed** (16 skipped, 6 deselected, 4:58). Yeni
+  vakalar: `test_prompt_version.py` (+5), `test_pipeline_signature.py` (+1),
+  `test_pipeline_cache_key.py` (+2), `test_audit_fixes_unit.py` (+1).
+- **Açık:** `meta.rules_version` biçimi değişti (eski eval kayıtları `r2+` kalır; karşılaştırmada
+  sürüm farkı normaldir). README'deki eval tablosu **tarihsel kayıt** olduğu için yeniden
+  üretilmedi. Önbellek anahtarında referans çözüm **içeriği** hâlâ dosya damgasıyla temsil ediliyor
+  ve etiket/veri seti sürümü yok (Faz 51 denetimi) → "Sonraya".
+
+
 ## Denetim komutlarının GERÇEK çıktısı
 ### faz/h-kurallar (H1–H4, 2026-10-16)
 - `uv run ruff check .` → `All checks passed!`
@@ -514,6 +540,25 @@
   gösteriyor (düzeltme öncesi: **CR=10** + golden dosyası kirli)
 - Mutasyon: `css.yaml`'a yorum ekle → `1 failed, 7 passed`; `git checkout` + tekrar → `40 passed`
 - Kapsam: `git diff --stat` → yalnız `tests/golden/test_checklists_golden.py` (+78/−10); `src/` değişmedi
+
+### faz/j4-onbellek-surumu (O3 kapanışı, 2026-10-17)
+- `uv run ruff check .` → `All checks passed!`
+- `uv run ruff format --check .` → `474 files already formatted`
+- `uv run mypy src/` → `Success: no issues found in 216 source files`
+- `uv run pytest -m "not live" -q` → `3755 passed, 16 skipped, 6 deselected in 298.17s (0:04:58)`
+- Hedefli: `uv run pytest tests/unit/test_prompt_version.py tests/unit/test_pipeline_signature.py
+  tests/unit/test_audit_fixes_unit.py tests/integration/test_pipeline_cache_key.py tests/golden -q`
+  → `92 passed in 7.23s`
+- Geçici prob (gerçek `data/checklists/css.yaml`; sonra geri alındı):
+  taban `r3+b8c43ec8` · içerik değişimi → `rules_version farkli: True | cache_key farkli: True` ·
+  baytlar geri → ikisi de aynı · yalnız mtime +7 sn → `rules_version ayni: True | pipeline imzasi
+  ayni: True | cache_key ayni: True`
+- Kapsam: `git diff --stat` → `src/` 4 dosya (`pipeline/orchestrator.py`, `pipeline/signature.py`,
+  `pipeline/versions.py`, `questions/__init__.py`), `tests/` 5 dosya; `data/` altında değişiklik yok
+- **Kırılgan test notu:** bir ara tam-suite koşusunda
+  `tests/providers/test_cli_agent.py::test_json_document_is_linear_on_hostile_output` (duvar saati
+  eşiği `< 0,25 sn`) yük altında düştü; tek başına ve bir sonraki tam koşuda geçti → bu
+  değişiklikle ilgisiz.
 
 ### faz/f-masaustu (F0-F6 güncel)
 - `uv run ruff check .` → `All checks passed!`
@@ -608,6 +653,10 @@
   davranış ve sözleşmeler aynı kaldı (`tests/` diff'i boş; taşınan adlar yeniden dışa aktarılır).
 - **Faz J:** sapma yok — üretim kodu ve veri dosyaları değişmedi; yalnız yeni bir golden testi ve onun
   beklenen dosyası eklendi (mimari §14 test stratejisi içinde). ADR gerekmedi.
+- **Faz J4:** sapma yok — §11'deki önbellek anahtarı alanları aynı kaldı; yalnız `rules_version`'ın
+  **kapsamı** (kontrol listesi içeriği + `pipeline/`/`prompts/` kaynakları) ve öneki (`r2+` → `r3+`)
+  ile imzadaki kontrol listesi damgası değişti. Yeni bir bağımlılık, tablo ya da dış arayüz yok;
+  ADR gerekmedi.
 
 ## Var olan bir testi değiştirdiysem: hangisi, neden
 - `tests/api/test_errors_and_app.py::test_serve_uses_config_and_warns_when_exposed`: `serve --host 0.0.0.0` çağrısına E11 kuralı gereğince anahtarsız dış bağlantı engeli geldiği için `--insecure` argümanı eklendi.
@@ -635,6 +684,16 @@
   `test_golden_covers_exactly_the_loaded_files` iddiasına **mesaj eklendi** — koşul birebir aynı
   (beklenen küme = dizin kümesi), yalnız hata çıktısı eyleme dönük (eksik/fazla dosya adları) hâle
   geldi; hiçbir iddia gevşetilmedi veya silinmedi. Başka hiçbir test dosyasına dokunulmadı.
+- **Faz J4 (O3 kapanışı, `e5ca84f`):** **bir** mevcut test davranışı bilinçli değişti:
+  `tests/unit/test_audit_fixes_unit.py::test_signature_tracks_stamped_files` içinden **kontrol listesi
+  vakası çıkarıldı** (imza artık kontrol listesi damgası taşımıyor; damga yalnız Tier 1 stub başlığı
+  ve ortak kimlik listesi için kalıyor) ve yerine aynı dosyada
+  `test_signature_ignores_checklists_but_rules_version_tracks_them` eklendi: kontrol listesi içeriği
+  imzayı **değiştirmiyor**, `rules_version`'ı **değiştiriyor** — yani kapsam daraltılmadı, doğru
+  katmana taşındı. Diğer test dosyalarında yalnız **ekleme** yapıldı (`test_prompt_version.py` +5,
+  `test_pipeline_signature.py` +1, `test_pipeline_cache_key.py` +2) ve
+  `tests/golden/test_checklists_golden.py`'de yalnız import/ölçüt kaynağı güncellendi (özel modül
+  `questions._loader` → genel API `questions`); hiçbir iddia gevşetilmedi.
 
 
 ## Claude Code'un özellikle bakmasını istediğim yerler

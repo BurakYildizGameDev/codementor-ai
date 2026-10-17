@@ -66,6 +66,51 @@
 | G | ✅ | faz/g-saglayici | 2026-10-16 | Cline / — |
 | H | ✅ (denetim + Önemli-3 düzeltmesi + entegrasyon testleri) | faz/h-kurallar (+ faz/h-denetim, faz/h-pragma-izin) | 2026-10-17 | Cline / Claude Code denetimi |
 | J | ✅ (yalnız anlık görüntü maddesi; Zig budama bilinçli atlandı) | faz/j-checklist-snapshot | 2026-10-17 | Cline / — |
+| J4 | ✅ (O3 kapanışı; kaynak kod değişti) | faz/j4-onbellek-surumu | 2026-10-17 | Cline / — |
+
+## Faz J4 — Önbellek sürümünde kontrol listesi içeriği ve kod kapsamı (O3 kapanışı; 2026-10-17)
+
+> "Sonraya"daki **Faz 49 denetimi O3** maddesinin kalanı kapatıldı. Faz B soru modeli özetini ve
+> referans çözüm damgasını imzaya eklemişti; kontrol listesi *içeriği* ile raporu belirleyen
+> `pipeline/`+`prompts/` kodu hâlâ sürümde değildi (başka bir çalışma kopyasında eski rapor
+> dönebilirdi). Bu fazda **`src/` ilk kez değişti**; mimariden sapma yok: §11'deki anahtar alanları
+> aynı, yalnız `rules_version`'ın kapsamı ve öneki güncellendi.
+
+**Yapılanlar:**
+- `pipeline/versions.py` — `rules_version` artık kontrol listesi dizinini de özetler: dosya **adı +
+  içerik** (LF normalleştirilmiş), liste ölçütü yükleyicininkiyle **aynı**
+  (`questions.list_yaml_files`), dizin yoksa yer tutucu (eksiklik de bir sürümdür; sessiz ıska yok).
+  Sürüm öneki `r2+` → **`r3+`** (Faz 49'daki `r1+`→`r2+` ile aynı gerekçe).
+- `pipeline/versions.py` — `hashed_sources()` artık `pipeline/*.py` ve `prompts/*.py` dosyalarını da
+  kapsar (yollar tekilleştirilir): `assemble.py`/`stages.py`/`signature.py` ya da prompt kurucusu
+  değişince eski önbellek dönmez (O3'ün "kod değişiklikleri yok" maddesi).
+- `pipeline/orchestrator.py` — `_rules_version` dizini yapılandırmadan verir (`data.checklists_dir`);
+  yol/model koda gömülmez (AGENTS kural 5).
+- `pipeline/signature.py` — kontrol listelerinin **dosya damgası** (boyut+mtime) girdisi kaldırıldı:
+  içerik artık `rules_version`'da; damga yalnız `git checkout`/kopyalama gibi mtime değişimlerinde
+  gereksiz önbellek ıskası üretiyordu (`_dir_stamps` yardımcısı da kalktı).
+- `questions/__init__.py` — `list_yaml_files` + `DataFileError` genel API'ye alındı: `versions.py` ve
+  `tests/golden/test_checklists_golden.py` artık özel modülü (`questions._loader`) import etmiyor
+  (Faz J denetimi **Küçük-3** de böylece kapandı).
+- **Testler (+9 vaka, ağ yok / FakeProvider):** `test_prompt_version.py` (+5: içerik değişimi, dosya
+  kümesi, `.yaml` dışı dosyalar + satır sonu, eksik dizin/varsayılan dizin, `pipeline/`+`prompts/`
+  kapsamı), `test_pipeline_signature.py` (+1: imza kontrol listesi damgası taşımaz),
+  `test_pipeline_cache_key.py` (+2 uçtan uca: içerik değişimi ıskalar, yalnız mtime isabet eder),
+  `test_audit_fixes_unit.py` (+1). Eski denetim testi `test_signature_tracks_stamped_files` içinden
+  kontrol listesi vakası çıkarıldı (davranış bilinçli değişti, yeni yerine iddia eklendi).
+- **Kanıt (gerçek veri üzerinde geçici prob, `TEMP`):** `data/checklists/css.yaml` sonuna yorum →
+  `r3+b8c43ec8` değişti, `cache_key` değişti; baytlar geri → ikisi de aynı; **yalnız** mtime +7 sn →
+  `rules_version`, `pipeline` imzası ve `cache_key` **aynı** (düzeltme öncesi imza değişirdi).
+  `data/` altında iz bırakılmadı, ağaç temiz.
+- **Doğrulama:** `ruff check` temiz · `ruff format --check` **474 dosya** · `mypy src/` **216 dosya
+  hatasız** · `pytest -m "not live"` **3746 → 3755 geçti** (16 atlandı, 6 seçilmedi).
+- **Not:** README'deki eval tablosundaki `r2+…` satırları **tarihsel kayıt** (o koşuların sürümleri);
+  yeniden üretilmedi, yeni koşular `r3+…` yazar. `tests/providers/test_cli_agent.py`
+  `test_json_document_is_linear_on_hostile_output` (duvar saati eşiği < 0,25 sn) ara koşuda yük
+  altında düştü, tek başına ve diğer koşuda geçti → değişiklikle ilgisiz, bilinen kırılgan test.
+- **Açık:** `meta.rules_version` biçimi değişti (eski eval kayıtları `r2+` kalır; karşılaştırmada
+  sürüm farkı normaldir). Önbellek anahtarında referans çözüm **içeriği** hâlâ dosya damgasıyla
+  temsil ediliyor ve etiket/veri seti sürümü yok (Faz 51 denetimi) → "Sonraya".
 
 ## Faz J — Notlar (isteğe bağlı küçük işler; 2026-10-17)
 
@@ -108,7 +153,7 @@ düşer ve mesaj **değişen dosyayı adıyla** söyleyip `--update-golden`'ı i
   ve golden-yok durumu süite içinde kanıtlanıyor. Ayrıca dosya kümesi iddiasına eksik/fazla listesi
   içeren mesaj eklendi (eskiden çıplak `assert`'ti → CI'da eyleme dönük değildi).
 - **Kapatılmayan ikisi kayda geçti:** Küçük-3 (`tests/` içinde özel modül `questions._loader` importu —
-  bilinçli kabul), Küçük-5 (`tests/unit/test_tier1.py` 633 satır) → "Sonraya".
+  bilinçli kabul; **Faz J4'te kapandı** — yardımcı `questions.list_yaml_files` olarak genel API'ye alındı), Küçük-5 (`tests/unit/test_tier1.py` 633 satır) → "Sonraya".
 - **Doğrulama:** `ruff check` temiz · `ruff format --check` 474 dosya · `mypy src/` 216 dosya hatasız ·
   `pytest -m "not live"` **3743 → 3746 geçti** (16 atlandı, 6 seçilmedi) · `tests/golden` **40 geçti**.
   Gerçek veri mutasyonu (`css.yaml` + yorum) → **1 fail**, geri alınınca 40 geçti.
@@ -1087,7 +1132,11 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 - CPP-OWN-001 akış duyarlı eşleşme: erken `return`/istisna yolunda atlanan `delete` öneri yerine hata sayılsın (Faz 52 denetimi).
 - Faz 51 denetimi: `RunConfig` etiket/veri seti sürümü taşımıyor; eski koşular yeni etiketlerle sessizce yeniden puanlanabiliyor (etiket özeti `RunConfig`'e + `compare` dipnotu). Ters yön: bellek erişimi olmayan `memory_safety` etiketleri (CPP-OWN-001 çıplak `new[]`: dev `cpp-009`, `cpp-105`, test `cpp-006`) yeni tanıma uymuyor → Faz 52 (kural bazında öneri türü) ile birlikte ele alınmalı. Etiketlerde serbest metin sezgisi yerine yapısal `boundary:` alanı.
 - Faz 49: `sessions` tablosu da sınırsız büyüyor (oturum başına bir satır); eski oturumları `updated_at`'e göre budamak. ~~Tier 1 derleyici sürümü önbellek imzasında yok.~~ (Faz B: araç kimliği + dosya boyutu/zamanı)
-- Faz 49 denetimi O3 (**Faz B'de kısmen kapandı:** soru modeli özeti imzada; referans çözüm dosyası, `data/checklists` ve kod değişiklikleri hâlâ yok): önbellek anahtarında soru içeriği yok (`question_id` var; referans çözüm, `concept_tags`, `data/checklists` ve `pipeline/assemble.py`/`stages.py` değişince eski rapor dönebilir). Soru içeriği özeti anahtara eklenebilir.
+- ~~Faz 49 denetimi O3~~ → **KAPANDI (Faz B + Faz J4, 2026-10-17)**: soru içeriği özeti ve
+  referans çözüm damgası Faz B'de imzaya girdi; `data/checklists` **içeriği** ile raporu
+  belirleyen `pipeline/`+`prompts/` kodu da Faz J4'te `rules_version`'a alındı (`r2+` → `r3+`).
+  `concept_tags` soru modeli özetinin içinde olduğu için ayrıca gerekmiyor. Etiket/veri seti
+  sürümü ayrı madde (Faz 51 denetimi) olarak duruyor.
 - Faz 49 denetimi Ü9: eksik sütunlu eski şema (`OperationalError`) ve bozuk `created_at` için şema göçü yok; `list_analyses` korunmuyor.
 - ~~Faz 48 denetimi~~ (**Faz B'de kapandı**): süre Geçiş B (Sokratik) sırasında dolarsa doğrulanmış Geçiş A sonucu da atılıyor; bulguları koruyup yalnız Sokratik kısmı şablona düşürmek `run_pass_b is None` yoluyla tutarlı olur (`run_llm_passes` kısmi sonuç döndürmeli).
 - Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001). ~~Claude Opus canlı dev ölçümü~~ → yapıldı (2026-10-05).
