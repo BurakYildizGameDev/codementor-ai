@@ -626,7 +626,7 @@ dosyalarından güncellendi. **Kalan iş: yok** — faz kapanışı `485e69a` (t
 kapandı; `main`, `faz/h-kurallar` ucuna **hızlı ileri** alındı (Faz F/G/H birlikte). Faz I ve Faz J
 devirde kapsam dışı/isteğe bağlı (§9, §10).
 
-### Faz H — denetim düzeltmeleri (kayıt: 2026-10-17)
+### Faz H — denetim düzeltmeleri (kayıt: 2026-10-17 — `ae86816`, `fd4bad7`, `39e94de`)
 
 - **Bağlam:** Faz H tesliminden sonra uçtan uca denetim yapıldı: `git diff b67c94d..485e69a` = 79 dosya,
   +11 404/−103; kapsam dışı dosya yok; **41 kayıt / 41 benzersiz kural kimliği**; dört denetim yeşil

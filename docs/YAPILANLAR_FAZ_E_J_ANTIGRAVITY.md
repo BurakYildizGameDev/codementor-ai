@@ -333,7 +333,7 @@
   pozitif üretmiyor), recall %55,2 → **%57,5**, F1 %71,1 → **%73,0**, Big-O %97/%97, erken çıkış
   %100/%100, p50 0,13 sn. Test bölümü `--final` olmadan koşulmadı (devir §5 kuralı).
 
-### H denetimi (2026-10-17) — ✅ (düzeltmeler `faz/h-denetim` dalında)
+### H denetimi (2026-10-17) — ✅ (`ae86816`, `fd4bad7`, `39e94de`)
 - **Denetim kapsamı:** `git diff b67c94d..485e69a` = 79 dosya, +11 404/−103 (8 739 satırı H4'ün statik dev
   sonuç JSON'u); kapsam dışı dosya yok. Kayıtlı kural sayısı **41 kayıt / 41 benzersiz kimlik**
   (`PROGRESS.md`, `docs/rules-catalog.md`, `README.md`, `README.en.md` ile uyumlu). `docs/mimari.md`
