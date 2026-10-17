@@ -93,7 +93,26 @@ boyutu çalışma kopyasıyla aynı (LF, `.gitattributes` `eol=lf`).
 **Açık:** tazelemenin kendisi (README sayıları, `BulgularVeDuzeltilecekler.md` §6/§10) henüz
 uygulanmadı → `KALAN_ISLER.md` iş 1-2; `git push` ve Y2 kullanıcıda.
 
-## Faz J5 — Faz J denetiminden kalan küçük maddeler (test-only; 2026-10-17)
+## Belge — README sayı tazeleme (KALAN_ISLER.md iş 1; doküman-only; 2026-10-17)
+
+> P7 kapandı. Kaynak kod **değişmedi**: `README.md`, `README.en.md`, `KALAN_ISLER.md`.
+
+**Yapılanlar:** `README.md` s.13 badge `testler-3300%2B` → `testler-3700%2B` · s.42 "3.300+ test …
+29 ADR" → "3.700+ test … 30 ADR" · s.150 "29 kayıt" → "30 kayıt" · s.480 "~28 bin satır test
+(~29 bin satır kaynak koda karşı)" → "~38 bin satır test (~28 bin satır kaynak koda karşı)"
+(ölçüm: `src/` 28 369, `tests/` 37 595 satır) · s.485-486 faz listesi "Faz A-D ve K" → "Faz A-H ve
+J"; `README.en.md` s.43 "3,300+ tests … 29 ADRs" → "3,700+ tests … 30 ADRs". Diğer sayı iddiaları
+ölçülüp **doğru** çıktı: 41 statik kural (katalog ve registry 41), 166 eval örneği (dev 96 / test
+70), 60'tan fazla faz.
+
+**Doğrulama:** eski kalıplar taraması temiz (`3300`, `3.300`, `3,300`, `29 ADR`, `29 kay`, `28 bin
+satır test`, `Faz A-D` hiçbirinde yok) · `ruff check` temiz · `ruff format --check` 477 dosya ·
+`pytest -m "not live"` **3758 geçti**, 16 atlandı, 6 seçilmedi (4:52) · iki README'de CR=0 ve blob
+boyutu çalışma kopyasıyla aynı (LF).
+
+**Açık:** aynı sayıların tekrar bayatlamasını önleyen test iş 3'te; `BulgularVeDuzeltilecekler.md`
+§6/§10 tazelemesi iş 2'de.
+
 
 > J1b'de "kayda geçen" üç maddenin üçü de kapandı. Kaynak kod **değişmedi**: yalnız `tests/`.
 

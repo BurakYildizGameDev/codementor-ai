@@ -14,7 +14,7 @@
 
 ## A. Ajan ile yapılabilecek işler
 
-### [ ] 🤖 1. README ve belge sayılarını gerçekle eşitleme (P7)
+### [x] 🤖 1. README ve belge sayılarını gerçekle eşitleme (P7) — ✅ **BİTTİ 2026-10-17**
 - **Kapsam:** `README.md` s.13 badge `testler-3300%2B` → **3700+** · s.42 "3.300+ test … 29 ADR" →
   **3.700+ test … 30 ADR** · s.150 "(docs/adr/, 29 kayıt)" → **30 kayıt** · s.480 "~28 bin satır test
   (~29 bin satır kaynak koda karşı)" → **"~38 bin satır test (~28 bin satır kaynak koda karşı)"** ·
@@ -26,6 +26,9 @@
 - **Dosyalar:** `README.md`, `README.en.md`.
 - **Doğrulama:** `uv run pytest tests/unit/eval/test_readme_table.py -q` (eval tablosu testle
   denetleniyor, elle düzenlenmez) + `uv run pytest tests/unit/test_release_readiness.py -q`.
+- **Sonuç (2026-10-17):** uygulandı; ayrıca diğer sayı iddiaları ölçülüp **doğru** bulundu (41 statik
+  kural, 166 eval örneği dev 96 / test 70, 60'tan fazla faz). Eski kalıp taraması temiz, iki dosyada
+  CR=0, `ruff check` temiz, `pytest -m "not live"` 3758 geçti.
 - **Boyut:** küçük (2 dosya, ~8 satır).
 
 ### [ ] 🤖 2. `docs/BulgularVeDuzeltilecekler.md` durum tazeleme
