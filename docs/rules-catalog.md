@@ -139,7 +139,7 @@ LINQ her çağrıda yineleyici ve çoğu zaman temsilci nesneleri ayırır; bu s
 
 `outline: none` klavyeyle gezen kullanıcının kaldığı yeri gösteren tek işareti siliyor. Bu kutu odaklandığında ekranda ne değişiyor?
 
-*Kapsam ve sınırlar:* Yalnızca `:focus` (ama `:focus-visible` değil) içeren bloklar taranır: `outline: none` yanında aynı blokta `border`/`box-shadow`/`background`/`text-decoration` varsa ya da aynı seçici için ayrı bir `:focus-visible` kuralı yazılmışsa susar.
+*Kapsam ve sınırlar:* Yalnızca `:focus` (ama `:focus-visible` değil) içeren bloklar taranır: `outline: none` yanında aynı blokta `border`/`box-shadow`/`background`/`text-decoration` varsa ya da aynı seçici (yalın `:focus` ise yalın `:focus-visible`) için ayrı bir `:focus-visible` kuralı yazılmışsa susar. Başka bir seçiciye yazılmış genel bir `:focus-visible` kuralı bulguyu kapatmaz: özgüllüğü daha yüksek `:focus { outline: none }` kuralı göstergeyi yine siler.
 
 ### CSS-LAYOUT-001 — Sabit yükseklikte metin kutusu
 

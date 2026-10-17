@@ -187,7 +187,9 @@ class OutlineRemoved(Rule):
     catalog_note = (
         "Yalnızca `:focus` (ama `:focus-visible` değil) içeren bloklar taranır: `outline: none` "
         "yanında aynı blokta `border`/`box-shadow`/`background`/`text-decoration` varsa ya da aynı "
-        "seçici için ayrı bir `:focus-visible` kuralı yazılmışsa susar."
+        "seçici (yalın `:focus` ise yalın `:focus-visible`) için ayrı bir `:focus-visible` kuralı "
+        "yazılmışsa susar. Başka bir seçiciye yazılmış genel bir `:focus-visible` kuralı bulguyu "
+        "kapatmaz: özgüllüğü daha yüksek `:focus { outline: none }` kuralı göstergeyi yine siler."
     )
 
     def check(self, ctx: RuleContext) -> list[Finding]:
@@ -200,7 +202,7 @@ class OutlineRemoved(Rule):
             parts = _focus_parts(_selectors(rule_set))
             if not parts:
                 continue
-            if any(part.split(":focus")[0].strip() in covered or "" in covered for part in parts):
+            if any(part.split(":focus")[0].strip() in covered for part in parts):
                 continue
             declarations = _declarations(block)
             outlines = [

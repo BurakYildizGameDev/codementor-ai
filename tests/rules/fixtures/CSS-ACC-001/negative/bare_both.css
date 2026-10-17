@@ -1,0 +1,8 @@
+/* Yalın `:focus-visible` kuralı tüm öğeleri kapsar; yalın `:focus` bloğu için susulur. */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid #0af;
+}
