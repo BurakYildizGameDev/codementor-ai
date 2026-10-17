@@ -119,6 +119,18 @@ def test_missing_tool_skipped_with_warning(text: str, language: Language, engine
         ("#if __has_include(<x>)\n#endif\nint main() {}\n", Language.CPP, Engine.NONE),
         ("#define H </etc/passwd>\n#include H\nint main() {}\n", Language.CPP, Engine.NONE),
         ('#include "C:\\\\x.h"\n' + UNREAL_CODE, Language.CPP, Engine.UNREAL),
+        # Faz H (Önemli-3): izin listesindeki adı tanımlayan `#define` + `#pragma` makro atlatması
+        (
+            '#define pack GCC dependency "/etc/passwd"\n#pragma pack\nint main() { return 0; }\n',
+            Language.CPP,
+            Engine.NONE,
+        ),
+        (
+            "#define warning 1\n#pragma warning(disable: 4996)\nint main() { return 0; }\n",
+            Language.CPP,
+            Engine.NONE,
+        ),
+        ("#pragma PACK(1)\nint main() { return 0; }\n", Language.CPP, Engine.NONE),
     ],
 )
 def test_include_guard_skips_with_zero_calls(text: str, language: Language, engine: Engine) -> None:
@@ -128,6 +140,79 @@ def test_include_guard_skips_with_zero_calls(text: str, language: Language, engi
     assert result.skip_reason is SkipReason.INCLUDE_GUARD
     assert result.warnings
     assert runner.calls == []
+
+
+def test_pragma_pack_and_warning_reach_compiler() -> None:
+    """Faz H (Önemli-3): `#pragma pack`/`#pragma warning` Tier 1'i artık atlatmaz.
+
+    Öncesinde bu pragmaları içeren dosya `include_guard` ile `SKIPPED` oluyordu.
+    """
+    runner = FakeRunner()
+    text = (
+        "#pragma once\n"
+        "#pragma pack(push, 1)\n"
+        "struct Packed { char c; int i; };\n"
+        "#pragma pack(pop)\n"
+        "#pragma warning(disable: 4996)\n"
+        "int main() { return 0; }\n"
+    )
+    code = _code(text, Language.CPP)
+    result = run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
+    assert result.status is CompilationStatus.PASSED
+    assert result.skip_reason is None
+    ((argv, stdin, _, _),) = runner.calls
+    assert argv[0] == "/usr/bin/g++"
+    assert stdin == code.text
+
+
+def test_unreal_pragma_pack_passes_both_guard_calls() -> None:
+    """Faz H (Önemli-3): Unreal yolunda guard iki kez koşar (ham ve nötrleştirilmiş metin).
+
+    `#pragma pack` ikisinden de geçmeli; aksi hâlde geçerli Unreal kodu gereksiz atlanırdı.
+    """
+    runner = FakeRunner()
+    code = _code("#pragma pack(push, 1)\n" + UNREAL_CODE, Language.CPP, Engine.UNREAL)
+    result = run_tier1(code, SETTINGS, toolchain=FULL, runner=runner)
+    assert result.skip_reason is None
+    assert len(runner.calls) == 1
+    assert "#pragma pack" in runner.calls[0][1]
+
+
+def test_pragma_pack_file_reaches_real_process() -> None:
+    """Uçtan uca (Önemli-3): gerçek alt süreç başlar; makro atlatması fail-closed kalır."""
+    import sys
+
+    from codementor.validation.runner import run_process
+
+    probe = "import sys; sys.stdin.read(); sys.stderr.write('<stdin>:2:1: error: sentetik\\n')"
+    tool = CompilerTool(name="gcc", kind="gcc", command=[sys.executable, "-c", probe])
+    launched: list[ProcessResult] = []
+
+    def spy(
+        argv: Sequence[str],
+        stdin: str,
+        limits: ProcessLimits,
+        *,
+        extra_env: Mapping[str, str] | None = None,
+        cancel: threading.Event | None = None,
+    ) -> ProcessResult:
+        result = run_process(argv, stdin, limits, extra_env=extra_env, cancel=cancel)
+        launched.append(result)
+        return result
+
+    text = "#pragma pack(push, 1)\n#pragma warning(disable: 4996)\nint main() { return 0; }\n"
+    result = run_tier1(
+        _code(text, Language.CPP), SETTINGS, toolchain=Toolchain(cpp=tool), runner=spy
+    )
+    assert len(launched) == 1
+    assert result.status is CompilationStatus.FAILED
+    assert "sentetik" in result.diagnostics[0].message
+
+    launched.clear()
+    bypass = _code('#define pack GCC dependency "/etc/passwd"\n#pragma pack\n', Language.CPP)
+    blocked = run_tier1(bypass, SETTINGS, toolchain=Toolchain(cpp=tool), runner=spy)
+    assert launched == []
+    assert blocked.skip_reason is SkipReason.INCLUDE_GUARD
 
 
 def test_missing_stub_skipped(tmp_path: Path) -> None:

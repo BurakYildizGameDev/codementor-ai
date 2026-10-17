@@ -666,6 +666,15 @@ devirde kapsam dışı/isteğe bağlı (§9, §10).
   taşındı — bilinçli davranış değişikliği; aynı dosyada 6 yeni red vakası makro atlatmasını koruyor).
   `pytest -m "not live"` **3719 → 3732 geçti** (16 atlandı, 6 seçilmedi); mevcut testlerden hiçbiri
   gevşetilmedi/silinmedi.
+- **Tier 1 entegrasyon testleri (aynı gün, Önemli-3 doğrulama turu):** izin listesi kararı yalnız birim
+  düzeyinde değil **gerçek Tier 1 yolu** üzerinde de sabitlendi — `tests/unit/test_tier1.py` **+6 vaka**:
+  (a) `#pragma pack`/`#pragma warning` içeren C++ dosyası derleyiciye ulaşır (`PASSED`, atlama yok),
+  (b) Unreal yolundaki **iki** guard çağrısından da geçer, (c) sahte derleyici = `sys.executable` ile
+  **gerçek alt süreç** başlatılır ve gcc tanı ayrıştırma yolu denenir, (d) `#define pack`/`#define warning`
+  + `#pragma` makro atlatması `SKIPPED`/`include_guard` (süreç hiç başlamaz), (e) `#pragma PACK(1)` harf
+  duyarlılığı korunur. Mutasyon: izin listesi eski hâline alınınca bu 3 yeni test + 9 birim testi düşer;
+  `_PRAGMA_RESERVED` ayrı tutulup daraltılınca **6 test** düşer. `pytest -m "not live"` **3732 → 3738
+  geçti** (16 atlandı, 6 seçilmedi); kaynak kod değişmedi, yalnız test eklendi.
 - **Testler:** 2 yeni fixture (`CSS-ACC-001/positive/global_focus_visible_override.css`,
   `…/negative/bare_both.css`) → `pytest -m "not live"` **3717 → 3719 geçti** (16 atlandı, 6 seçilmedi,
   4:12). Fixture'lar otomatik bulunur; test kodu değişmedi.
