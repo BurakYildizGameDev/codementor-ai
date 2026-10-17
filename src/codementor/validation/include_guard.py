@@ -21,12 +21,13 @@ fark bir `#include` satırını "yorum içinde" gösterebilir. Bu yüzden:
 6. Derleyici yorumları boşluğa çevirdiği için `#/**/include "yol"` (satır aşan `#/*…*/include`
    dahil) geçerli bir yönergedir: maskelenmiş metinde `#` ile yönerge adı arasında ham metinde
    `/*` varsa, hedef ne olursa olsun reddedilir (Faz A1, K1).
-7. `#pragma` operandı **izin listesidir** (Faz H3): yalnızca `once`, `region`, `endregion`
-   geçer. Gerekçe: pragma operandı makro olabilir (`#define X GCC dependency "…"` +
+7. `#pragma` operandı **izin listesidir** (Faz H3; denetim kararı 2026-10-17 ile `pack` ve
+   `warning` eklendi). Geçerli adlar: `once`, `region`, `endregion`, `pack`, `warning`.
+   Gerekçe: pragma operandı makro olabilir (`#define X GCC dependency "…"` +
    `#pragma X`), derleyici makroyu açar ve host dosyası yoklanır; izin listesi bu yolu
-   kapatır. Aynı nedenle `once`/`region`/`endregion` adlarını tanımlayan `#define` de
-   reddedilir. `#line` yalnızca `#line <sayı>` biçiminde geçer (dosya adı yok): sahte tanı
-   konumu üretemez.
+   kapatır. Aynı nedenle `once`/`region`/`endregion`/`pack`/`warning` adlarını tanımlayan
+   `#define` de reddedilir (izin listesiyle birlikte büyür). `#line` yalnızca `#line <sayı>`
+   biçiminde geçer (dosya adı yok): sahte tanı konumu üretemez.
 
 Yanlış pozitif yalnızca Tier 1'in atlanmasına yol açar (`SKIPPED`); güvenli yönde hatadır.
 """
@@ -47,10 +48,18 @@ _SPLIT_KEYWORD = re.compile(r"(?:#|%:)\s*(include_next|include|import|embed|prag
 _AFTER_COMMENT_END = re.compile(rf"\*/(?:{_WS}|/\*.*?\*/)*$")
 _FORBIDDEN_TOKENS = re.compile(r"__has_\w*|\b_Pragma\b")
 _DEPENDENCY = re.compile(r"\bdependency\b")
-# İzin listesi (Faz H3): pragma operandı makro olabilir, bu yüzden yalnızca bilinen güvenli
-# biçimler geçer; operand MASKELENMİŞ metinden okunur (yorumlar boşluk, metin sabitleri boş).
-_PRAGMA_ALLOWED = re.compile(r"(?:once|region|endregion)\b")
-_PRAGMA_RESERVED = frozenset({"once", "region", "endregion"})
+# İzin listesi (Faz H3; denetim kararı 2026-10-17 ile `pack`/`warning` genişletildi): pragma
+# operandı makro olabilir, bu yüzden yalnızca host dosyası okumayan bilinen biçimler geçer;
+# operand MASKELENMİŞ metinden okunur (yorumlar boşluk, metin sabitleri boş). `pack`/`warning`
+# hiçbir dosyayı okumaz (MSVC/GCC kodunda yaygın) → Tier 1 gereksiz atlanmaz.
+_PRAGMA_NAMES = ("once", "region", "endregion", "pack", "warning")
+_PRAGMA_ALLOWED = re.compile(rf"(?:{'|'.join(_PRAGMA_NAMES)})\b")
+# İzin listesindeki adı tanımlayan `#define` + `#pragma <ad>` ikilisi operandı makroya çevirir ve
+# listeyi atlatır (`#define pack GCC dependency "…"`); bu yüzden küme listeden TÜRETİLİR, ayrı
+# tutulursa yeni ad eklenirken atlatma yolu sessizce açık kalır.
+_PRAGMA_RESERVED = frozenset(_PRAGMA_NAMES)
+# Kullanıcıya dönük hata metni (Türkçe) izin listesinden üretilir; liste büyüyünce mesaj da büyür.
+_PRAGMA_LIST_TEXT = ", ".join(f"`{name}`" for name in _PRAGMA_NAMES)
 _DEFINE_NAME = re.compile(rf"(?:#|%:){_WS}*define{_WS}+([A-Za-z_]\w*)")
 _LINE_ONLY = re.compile(rf"[0-9]+{_WS}*$")
 _DEVICE = re.compile(r"^(?:CON|PRN|AUX|NUL|CLOCK\$|CONIN\$|CONOUT\$|COM\d|LPT\d)$", re.IGNORECASE)
@@ -145,8 +154,7 @@ def _check_line(line: int, raw: str, masked: str) -> list[str]:
                 _operand(masked, match.end())
             ):
                 reasons.append(
-                    f"Satır {line}: izin verilmeyen `#pragma` (yalnızca `once`, `region`, "
-                    "`endregion`)"
+                    f"Satır {line}: izin verilmeyen `#pragma` (yalnızca {_PRAGMA_LIST_TEXT})"
                 )
         elif name == "line":
             # Yönerge konumu aranır: `#line` dosya okumaz, riski sahte tanı konumudur ve

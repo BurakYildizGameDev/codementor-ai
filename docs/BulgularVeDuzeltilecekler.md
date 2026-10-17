@@ -1062,10 +1062,17 @@ tekrarlanabilir bir release'ten gelsin.
       ikili bulgu (sunum gürültüsü), `cpp_perf.py` yerel sınıf metotlarının atlanmaması (muhafazakâr
       kaçırma), `tier1.py:219` geniş `except` (log sınırlı) — üçü de fixture/log ile sabit, düzeltme
       gerekmedi
-- [ ] **Faz H denetimi — ürün kararı:** `validation/include_guard.py::_PRAGMA_ALLOWED` yalnız
-      `once`/`region`/`endregion` kabul ediyor; `#pragma pack` / `#pragma warning` içeren dosya Tier 1'i
-      atlıyor (fail-closed, ölçüme etkisi yok). `pack` (ve gerekiyorsa `warning`) izin listesine
-      eklenmeli mi? — kullanıcı onayı bekliyor (devir §11)
+- [x] **Faz H denetimi — ürün kararı (KAPANDI, 2026-10-17, `faz/h-pragma-izin`):** kullanıcı kararıyla
+      `pack` ve `warning` izin listesine alındı; ikisi de hiçbir dosyayı okumaz (GCC `dependency`
+      gibi bir yan biçimi yok), öncesinde `#pragma pack`/`#pragma warning` içeren dosya Tier 1'i
+      gereksiz atlıyordu. Fail-closed taraf korundu: `_PRAGMA_RESERVED` **izin listesinden türetilir**
+      (`frozenset(_PRAGMA_NAMES)`) — aksi hâlde `#define pack GCC dependency "…"` + `#pragma pack`
+      makro atlatması geri açılırdı (Faz H3'te kapatılan yol). Ad eşleşmesi harf duyarlı ve tam
+      sözcük: `#pragma PACK(1)` / `#pragma packable` / `#pragma warning(GCC dependency "…")` hâlâ
+      reddedilir. Bilinçli yan etki: `#define pack …` / `#define warning …` tanımlayan dosya da
+      atlanır (fail-closed, Türkçe gerekçe gösterilir). Testler: `tests/unit/test_include_guard.py`
+      `pragma_pack`/`pragma_warning` **REJECTED → ALLOWED** taşındı (davranış bilinçli değişti; aynı
+      dosyada `pack`/`warning` reddi 6 yeni vakayla korunuyor), +13 vaka (103 → 116).
 
 ---
 

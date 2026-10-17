@@ -62,17 +62,26 @@ REJECTED = {
     "two_comments_between": "#/**//**/include <stdio.h>\n",
     "comment_between_embed": '#/**/embed "data.bin"\n',
     # --- Faz H3: `#pragma` izin listesi ve `#line`
-    "pragma_pack": "#pragma pack(push, 1)\n",
-    "pragma_warning": "#pragma warning(disable: 4996)\n",
     "pragma_unknown": "#pragma bilesen_bilgisi\n",
     "pragma_macro_dependency": '#define X GCC dependency "/etc/passwd"\n#pragma X\n',
     "pragma_macro_dependency_digraph": '%:define X GCC dependency "/etc/x"\n%:pragma X\n',
     "pragma_lowercase_dependency": '#pragma gcc dependency "/etc/passwd"\n',
     "pragma_define_argument": "#pragma bilesen(1)\n",
-    "pragma_after_comment": "/* x */ #pragma pack(1)\n",
+    "pragma_after_comment": "/* x */ #pragma bilesen(1)\n",
+    # `pack`/`warning` izinlidir ama ad eşleşmesi katı kalır: büyük harf, ekli ad ve
+    # `dependency` sözcüğü fail-closed tarafında (pragma adları derleyicide de harf duyarlı).
+    "pragma_pack_uppercase": "#pragma PACK(1)\n",
+    "pragma_packable": "#pragma packable\n",
+    "pragma_allowed_name_with_dependency": '#pragma warning(GCC dependency "/etc/passwd")\n',
     "define_once_macro": '#define once GCC dependency "/etc/passwd"\n',
     "define_region_macro": "#define region /* gizli */\n",
     "define_endregion_macro": "#define endregion 1\n",
+    # İzin listesine eklenen adlar da makro atlatmasına kapalı olmalı (izin listesi ile
+    # `_PRAGMA_RESERVED` birlikte büyür; aksi hâlde `#define pack GCC dependency "…"` +
+    # `#pragma pack` host dosyası yoklar — ikinci vaka yalnız `#define` ile de düşer).
+    "define_pack_macro_with_pragma": '#define pack GCC dependency "/etc/passwd"\n#pragma pack\n',
+    "define_pack_macro": "#define pack 4\n",
+    "define_warning_macro": "#define warning 1\n#pragma warning(disable: 1)\n",
     "line_with_filename": '#line 1 "/etc/passwd"\n',
     "line_with_relative_filename": '#line 7 "yol/../x.c"\n',
     "line_with_macro": "#line __LINE__\n",
@@ -95,6 +104,19 @@ ALLOWED = {
     "pragma_once_with_comment": "#pragma once // koruma\n",
     "pragma_region": "#pragma region Gizli bölge\nint x = 1;\n#pragma endregion\n",
     "pragma_region_digraph": "%:pragma region\n",
+    # --- Faz H denetimi kararı (2026-10-17): `pack`/`warning` izin listesine alındı;
+    # bunlar hiçbir dosyayı okumaz, öncesinde bu dosyalar Tier 1'i gereksiz atlıyordu.
+    "pragma_pack": "#pragma pack(push, 1)\n",
+    "pragma_pack_argument": "#pragma pack(2)\n",
+    "pragma_pack_reset": "#pragma pack()\n",
+    "pragma_pack_pop": "#pragma pack(pop, bilesen)\n",
+    "pragma_pack_digraph": "%:pragma pack(1)\n",
+    "pragma_pack_after_comment": "/* x */ #pragma pack(1)\n",
+    "pragma_warning": "#pragma warning(disable: 4996)\n",
+    "pragma_warning_push": "#pragma warning(push, 0)\n",
+    "pragma_warning_in_string": 'const char* s = "#pragma warning(disable: 1)";\n',
+    # (yorum/metin içindeki `pack` geçişleri `pragma_in_comment` / `pragma_in_string`
+    # vakalarıyla kapsanıyor)
     "pragma_in_comment": "// #pragma pack(1) kullanma\n",
     "pragma_in_string": 'const char* s = "#pragma pack(1)";\n',
     "define_not_reserved": "#define PAKET_BOYU 32\n",

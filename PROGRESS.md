@@ -649,9 +649,23 @@ devirde kapsam dışı/isteğe bağlı (§9, §10).
   ikili bulgu (sunum gürültüsü), `cpp_perf.py` yerel sınıf metotlarını atlamıyor (muhafazakâr kaçırma),
   `tier1.py:219` geniş `except` (günlükle sınırlı, H öncesinden). Üçü de
   `docs/BulgularVeDuzeltilecekler.md` §10'a işlendi.
-- **4) Açık ürün kararı:** `validation/include_guard.py::_PRAGMA_ALLOWED` yalnız
-  `once`/`region`/`endregion` kabul ediyor; `#pragma pack`/`#pragma warning` içeren dosya Tier 1'i
-  atlıyor (fail-closed, ölçüme etkisi yok). İzin listesi genişletilsin mi? — kullanıcı onayı bekliyor.
+- **5) Denetim Önemli-3 kapandı (izin listesi genişletildi, 2026-10-17, `faz/h-pragma-izin`):** kullanıcı
+  kararıyla `validation/include_guard.py` izin listesine `pack` ve `warning` alındı: hiçbir dosyayı
+  okumazlar (GCC `dependency` gibi bir yan biçimi yok); öncesinde bu pragmaları içeren dosya Tier 1'i
+  gereksiz atlıyordu. `_PRAGMA_NAMES` demeti tek kaynak: `_PRAGMA_ALLOWED` regex'i ve
+  `_PRAGMA_RESERVED` kümesi ondan **türetilir** — ayrı tutulursa `#define pack GCC dependency "…"` +
+  `#pragma pack` makro atlatması (H3'te kapatılan yol) geri açılır. Ad eşleşmesi harf duyarlı ve tam
+  sözcük: `#pragma PACK(1)`, `#pragma packable`, `#pragma warning(GCC dependency "…")` hâlâ reddedilir;
+  `#define pack`/`#define warning` tanımlayan dosya fail-closed atlanır (Türkçe gerekçe gösterilir).
+  Kullanıcıya dönük hata metni de listeden üretiliyor (`_PRAGMA_LIST_TEXT`); `docs/mimari.md` §5.2.3,
+  `docs/BulgularVeDuzeltilecekler.md` §10 ve `docs/YAPILANLAR_FAZ_E_J_ANTIGRAVITY.md` güncellendi.
+- **Mutasyon denetimi (devir §2/§7 — düzeltme geri alınınca test düşüyor):** izin listesi eski hâline
+  alınınca `tests/unit/test_include_guard.py` **9 test** düşüyor; yalnız `_PRAGMA_RESERVED`
+  daraltılınca **3 test** düşüyor (`define_pack_macro`, `define_pack_macro_with_pragma`,
+  `define_warning_macro`). Vakalar: 103 → 116 (`pragma_pack`/`pragma_warning` REJECTED → ALLOWED
+  taşındı — bilinçli davranış değişikliği; aynı dosyada 6 yeni red vakası makro atlatmasını koruyor).
+  `pytest -m "not live"` **3719 → 3732 geçti** (16 atlandı, 6 seçilmedi); mevcut testlerden hiçbiri
+  gevşetilmedi/silinmedi.
 - **Testler:** 2 yeni fixture (`CSS-ACC-001/positive/global_focus_visible_override.css`,
   `…/negative/bare_both.css`) → `pytest -m "not live"` **3717 → 3719 geçti** (16 atlandı, 6 seçilmedi,
   4:12). Fixture'lar otomatik bulunur; test kodu değişmedi.

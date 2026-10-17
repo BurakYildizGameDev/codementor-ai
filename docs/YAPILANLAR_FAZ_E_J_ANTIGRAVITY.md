@@ -358,8 +358,16 @@
   precision **%100** ve recall **%57,5** (0,5747) **değişmedi**, F1 %73,0, Big-O %97/%97, erken çıkış
   %100/%100, p50 0,14 sn (H4: 0,13 sn — makine gürültüsü). README'nin `dev` bloğu sonuç dosyalarından
   yeniden üretildi; `tests/unit/eval/test_readme_table.py` **değiştirilmedi** ve yeşil.
-- **Açık kalan tek karar:** `include_guard._PRAGMA_ALLOWED`'a `pack`/`warning` eklenmesi (aşağıdaki
-  3. madde) — ürün kararı, kullanıcıya bırakıldı.
+- **Açık karar kalmadı:** denetimin bıraktığı tek ürün kararı (`include_guard` izin listesine
+  `pack`/`warning` eklenmesi, aşağıdaki 3. madde) 2026-10-17'de kullanıcı kararıyla kapandı.
+- **Kapanan bulgu — include koruması izin listesi** (`src/codementor/validation/include_guard.py`):
+  `_PRAGMA_NAMES = ("once", "region", "endregion", "pack", "warning")`; `_PRAGMA_ALLOWED` regex'i ve
+  `_PRAGMA_RESERVED` kümesi bu demetten **türetilir** (izin listesi ile makro atlatması koruması ayrı
+  tutulamaz). `#pragma pack`/`#pragma warning` hiçbir dosyayı okumaz; öncesinde bu dosyalar Tier 1'i
+  gereksiz atlıyordu. Ad eşleşmesi harf duyarlı/tam sözcük kalır (`#pragma PACK(1)`,
+  `#pragma packable`, `#pragma warning(GCC dependency "…")` reddedilir); `#define pack` /
+  `#define warning` tanımlayan dosya fail-closed atlanır. Testler: `pragma_pack`/`pragma_warning`
+  REJECTED → ALLOWED (bilinçli davranış değişikliği), vaka sayısı 103 → 116.
 
 
 ## Denetim komutlarının GERÇEK çıktısı
@@ -450,10 +458,14 @@
   2. **`n^k` (sembolik üs) eklenmedi:** model sayısal taban + sembolik üs (`2^n`) taşıyor; `n^k`'yi `n`
      ya da `n^2` saymak sessiz yanlış olurdu. Reddedilmeye devam ediyor; `docs/mimari.md` §5.6
      dilbilgisi listesi bu gerçeğe göre düzeltildi (yanıltıcı `n^k` örneği kaldırıldı).
-  3. **Include korumasında bilinçli yan etki:** `#pragma pack`/`#pragma warning` gibi pragmalar artık
-     Tier 1'i atlatır (`SKIPPED` + Türkçe uyarı; fail-closed tercih). Depodaki fixture/eval/stub
-     verisinde başka pragma yok → ölçüme etkisi yok; gerekirse `_PRAGMA_ALLOWED` genişletilir.
-  4. **Kalan include-koruması sınırı:** izin listesindeki adı (`once`/`region`/`endregion`) kullanıcının
+  3. **Include korumasında bilinçli yan etki (2026-10-17'de kapatıldı):** H3'te `#pragma
+      pack`/`#pragma warning` içeren dosyalar Tier 1'i atlıyordu (`SKIPPED` + Türkçe uyarı; fail-closed
+      tercih). Kullanıcı kararıyla ikisi izin listesine alındı: bunlar hiçbir dosyayı okumaz (GCC
+      `dependency` gibi bir yan biçimi yok), bu yüzden derleyici denetimini engellememeleri doğru.
+      Fail-closed taraf korundu: `_PRAGMA_RESERVED = frozenset(_PRAGMA_NAMES)` (izin listesindeki adı
+      tanımlayan `#define` + `#pragma <ad>` makro atlatması kapalı kalır) ve ad eşleşmesi harf
+      duyarlı/tam sözcük. Depodaki fixture/eval/stub verisinde pragma yok → ölçüme etkisi yok.
+  4. **Kalan include-koruması sınırı:** izin listesindeki adı (`once`/`region`/`endregion`/`pack`/`warning`) kullanıcının
      `#include` ettiği bir başlık tanımlarsa atlatma teorik olarak mümkün (yerel include'lar boş geçici
      çalışma dizinine göre çözülür, pratikte erişilemez). Tam kapatma makro tablosu izlemeyi gerektirir;
      yapılmadı, `PROGRESS.md` "Sonraya" bölümünde.
@@ -500,9 +512,10 @@
 
 ## Claude Code'un özellikle bakmasını istediğim yerler
 - **Faz H / include koruması izin listesi** (`src/codementor/validation/include_guard.py`): izin
-  listesinin **fail-closed** tarafı ve `#pragma X` makro atlatmasının kapanışı; ayrıca
-  `#pragma pack`/`#pragma warning` gibi pragmaların artık Tier 1'i atlatması (bilinçli yan etki)
-  kararını onaylıyor musunuz?
+  listesinin **fail-closed** tarafı ve `#pragma X` makro atlatmasının kapanışı. `#pragma pack`/
+  `#pragma warning`'in Tier 1'i atlatması (bilinçli yan etki) kullanıcı kararıyla **kapandı**
+  (2026-10-17): ikisi izin listesine alındı ve `_PRAGMA_RESERVED` artık `_PRAGMA_NAMES`'ten
+  türetiliyor — denetimde özellikle bu türetmenin korunmasına bakılmalı.
 - **Faz H / delege makroları** (`src/codementor/analysis/parsers.py`): `DECLARE_DYNAMIC_MULTICAST_DELEGATE*`
   makrolarının **yalnızca ayrıştırma yolunda** boşaltılması (derleyici yolunda stub açar). İki yolun
   ayrılması doğru mu, yoksa tek listede tutmak mı gerekir?
