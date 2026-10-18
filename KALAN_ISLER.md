@@ -20,9 +20,10 @@
   (~29 bin satır kaynak koda karşı)" → **"~38 bin satır test (~28 bin satır kaynak koda karşı)"** ·
   s.485 faz anlatımı "Faz 0-63, ardından public öncesi Faz A-D ve K" → **"… Faz A-H, J ve K"**;
   ayrıca `README.en.md` s.43 "3,300+ tests … 29 ADRs" → **"3,700+ tests … 30 ADRs"**.
-- **Ölçüm (2026-10-18'de doğrulandı):** yöntem = izlenen dosyalarda **boş olmayan** satır sayısı
-  (`git ls-files`, boş satırlar hariç) · `docs/adr/*.md` = **30 dosya** ·
-  `src/` **27 740** satır, `tests/` **37 595** satır, `web/` **6 139** satır ·
+- **Ölçüm (2026-10-18'de doğrulandı):** yöntem = izlenen **metin** dosyalarında **boş olmayan** satır
+  sayısı (`git ls-files`, boş satırlar hariç; ilk 8 KB'da NUL baytı olan binary dosyalar atlanır —
+  aksi halde `desktop/assets/*.png|ico` 546 sahte satır ekliyor) · `docs/adr/*.md` = **30 dosya** ·
+  `src/` **27 194** satır, `tests/` **37 595** satır, `web/` **6 139** satır ·
   `pytest -m "not live"` **3758 geçti / 16 atlandı**.
 - **Dosyalar:** `README.md`, `README.en.md`.
 - **Doğrulama:** `uv run pytest tests/unit/eval/test_readme_table.py -q` (eval tablosu testle
@@ -30,8 +31,9 @@
 - **Sonuç (2026-10-17):** uygulandı; ayrıca diğer sayı iddiaları ölçülüp **doğru** bulundu (41 statik
   kural, 166 eval örneği dev 96 / test 70, 60'tan fazla faz). Eski kalıp taraması temiz, iki dosyada
   CR=0, `ruff check` temiz, `pytest -m "not live"` 3758 geçti.
-- **Düzeltme (2026-10-18):** (a) `src/` için kaydedilen **28 369 yanlıştı** → **27 740** (yeniden
-  ölçüm; `tests/`/`web/` değerleri birebir tutuyor) — README'nin "~28 bin" iddiası etkilenmedi.
+- **Düzeltme (2026-10-18):** (a) `src/` için kaydedilen **28 369 yanlıştı** → **27 740**, iş 3'ün
+  derin doğrulamasında yöntem netleşince (binary varlıklar hariç) → **27 194**; bu yüzden README'nin
+  kaynak iddiası da düzeltildi: "~28 bin" → **"~27 bin"** (`tests/` tarafı "~38 bin" doğru).
   (b) faz listesi iş 3'te teste bağlanınca **K**'nın atlandığı çıktı: README
   "… Faz A-H ve J" → **"… Faz A-H, J ve K"** (PROGRESS.md'de bölümü olan fazlar; I henüz
   yapılmadığı için listede yok).
@@ -76,19 +78,28 @@
 - **Doğrulama:** yeni testler yeşil; kasıtlı bozma (mutation) ile kırmızı olduğu kanıtlanır; ağa
   çıkmaz.
 - **Boyut:** küçük-orta (yeni vakalar ~120 satır).
-- **Sonuç (2026-10-18):** uygulandı — `tests/unit/test_release_readiness.py` içine **4 test + 5
-  yardımcı** (+136 satır): (1) ADR sayısı iddiaları (TR "30 ADR"/"30 kayıt", EN "30 ADRs") ↔
+- **Sonuç (2026-10-18):** uygulandı — `tests/unit/test_release_readiness.py` içine **5 test + 8
+  yardımcı** (+167 satır; ilk tur +136, doğrulama turu +31): (1) ADR sayısı iddiaları (TR "30 ADR"/"30 kayıt", EN "30 ADRs") ↔
   `docs/adr/*.md`; (2) badge ve "N+ test" iddiaları ↔ gerçek toplama sayısı (alt sınır; alt
   süreçte `--collect-only -q -m "not live"`, ~7 sn, tek koşu); (3) "~N bin satır" iddiaları ↔
-  `git ls-files` + boş olmayan satır ölçümü (binde yuvarlama; git yoksa atlanır); (4) README faz
+  `git ls-files` + **metin** dosyalarda boş olmayan satır ölçümü (binary varlıklar atlanır; binde
+  yuvarlama; git yoksa atlanır) + `test_line_count_measurement_skips_binary_assets` bu atlamayı
+  ayrıca kanıtlar; (4) README faz
   listesi ↔ `PROGRESS.md`'de bölümü olan faz harfleri + `PROGRESS-faz-0-63.md` arşivi.
-- **Mutasyon kanıtı:** ADR 30→31 · badge 3700→9999 · "~38 bin"→"~44 bin" · faz listesi
-  "A-H, J ve K"→"A-H ve J" bozulduğunda ilgili test **kırmızı (4/4)**, geri alınınca yeşil.
-- **Ölçüm (iş 3 sonrası, aynı yöntem):** `src/` **27 740**, `tests/` **37 710** (bu işten +115
-  satır), `web/` **6 139** → README'nin "~38 bin / ~28 bin" iddiası geçerli.
+- **Mutasyon kanıtı (16/16 kırmızı):** ilk tur 4/4 (ADR 30→31 · badge 3700→9999 · "~38 bin"→
+  "~44 bin" · faz listesi "A-H, J ve K"→"A-H ve J"), derin doğrulama turu 12/12 (EN "30 ADRs"→"29" ·
+  "30 kayıt"→"9 kayıt" · TR/EN "N+ test" · "~38 bin"→"~44 bin" · "~27 bin"→"~33 bin" · faz listesi K
+  düşürme · PROGRESS'e sahte `## Faz I` · arşiv aralığı 0-63→0-62 · binary guard kaldırma
+  (`_is_binary` → `False`; 2 test kırmızı)). Hepsi ilgili testi kırmızı yaptı, geri alınınca yeşil;
+  dosyalar bayt-bayt eski hâline döndü (SHA-256 kontrolü).
+- **Ölçüm (iş 3 + doğrulama turu sonrası, metin dosyaları):** `src/` **27 194**, `tests/` **37 732**
+  (iş 3 öncesi 37 595'ten +137), `web/` **6 139** → README "~38 bin / ~27 bin" iddiası geçerli. Bağımsız yöntem
+  (PowerShell/.NET `-split "`r?`n"`) aynı üç değeri verdi.
 - **Sapmalar (kayıt için):** (a) kapsam "PROGRESS.md durum tablosu" diyordu; tabloda D satırı
   yok, bu yüzden ölçüt **bölümü olan fazlar** alındı (A-H, J, K). (b) Test yazılırken README'nin
-  faz listesinin K'yı atladığı bulundu → iş 1 düzeltmesi (yukarıda).
+  faz listesinin K'yı atladığı bulundu → iş 1 düzeltmesi (yukarıda). (c) Derin doğrulamada
+  sayımın binary varlıkları metin gibi saydığı çıktı (`src/` 546 sahte satır) → yöntem metin-only
+  yapıldı, README kaynak iddiası "~28 bin" → "~27 bin".
 
 ### [ ] 🤖 4. K2 kalan regex taraması (kod + test)
 - **Kapsam:** `analysis/_recursion.py`, `verify/lines.py`, `verify/proof.py` ve `analysis/`+`rules/`

@@ -112,8 +112,18 @@ def _number(text: str, pattern: str) -> int:
     return int(re.sub(r"\D", "", match.group(1)))
 
 
-def _tracked_nonblank_lines(prefix: str) -> int:
-    """İzlenen dosyalarda boş olmayan satır sayısı (README `~N bin satır` iddiasının ölçümü)."""
+def _count_lines(data: bytes) -> int:
+    """Ham içerikte boş olmayan (`\\n` ile ayrılan) satır sayısı."""
+    return sum(1 for row in data.decode("utf-8", "replace").split("\n") if row.strip())
+
+
+def _is_binary(data: bytes) -> bool:
+    """Git'in sezgisi: ilk 8 KB'da NUL baytı varsa binary sayılır."""
+    return b"\x00" in data[:8192]
+
+
+def _tracked_files(prefix: str) -> list[str]:
+    """`git ls-files <prefix>` çıktısı (git yoksa test atlanır)."""
     if shutil.which("git") is None:
         pytest.skip("git bulunamadı")
     listing = subprocess.run(
@@ -124,10 +134,20 @@ def _tracked_nonblank_lines(prefix: str) -> int:
         text=True,
         encoding="utf-8",
     )
+    return [name for name in listing.stdout.splitlines() if name.strip()]
+
+
+def _tracked_nonblank_lines(prefix: str) -> int:
+    """İzlenen **metin** dosyalarında boş olmayan satır sayısı (README `~N bin satır` ölçümü).
+
+    Binary dosyalar sayılmaz: ham baytlar utf-8'e çözülünce `\\x0b`/`\\x1c` gibi ayraçlar yüzünden
+    yüzlerce sahte satır üretiyorlar (ör. `src/codementor/desktop/assets/icon.ico`).
+    """
     total = 0
-    for name in listing.stdout.splitlines():
-        raw = (REPO / name).read_bytes().decode("utf-8", "replace")
-        total += sum(1 for row in raw.split("\n") if row.strip())
+    for name in _tracked_files(prefix):
+        data = (REPO / name).read_bytes()
+        if not _is_binary(data):
+            total += _count_lines(data)
     return total
 
 
@@ -199,12 +219,23 @@ def test_readme_test_count_claims_are_lower_bounds() -> None:
 
 
 def test_readme_line_count_claims_match_measurement() -> None:
-    """`~38 bin satır test (~28 bin satır kaynak)` iddiası ölçümün yuvarlamasıyla aynı olmalı."""
+    """`~38 bin satır test (~27 bin satır kaynak)` iddiası ölçümün yuvarlamasıyla aynı olmalı."""
     readme = _flat("README.md")
     tests_thousand = _number(readme, r"~(\d+) bin satır test")
     src_thousand = _number(readme, r"\(~(\d+) bin satır kaynak")
     assert round(_tracked_nonblank_lines("tests/") / 1000) == tests_thousand
     assert round(_tracked_nonblank_lines("src/") / 1000) == src_thousand
+
+
+def test_line_count_measurement_skips_binary_assets() -> None:
+    """Binary varlıklar (`desktop/assets/*.png|ico`) ölçüme girmemeli: sahte satır üretiyorlar."""
+    assets = sorted((REPO / "src/codementor/desktop/assets").glob("*"))
+    binaries = [path for path in assets if path.is_file() and _is_binary(path.read_bytes())]
+    assert binaries, "beklenen binary varlık bulunamadı"
+    polluted = sum(_count_lines((REPO / name).read_bytes()) for name in _tracked_files("src/"))
+    clean = _tracked_nonblank_lines("src/")
+    assert clean < polluted, "binary varlıklar hâlâ metin gibi sayılıyor"
+    assert polluted - clean > 100, "binary dosyalar ölçüme girmiyor gibi"
 
 
 def test_readme_phase_claims_match_progress() -> None:

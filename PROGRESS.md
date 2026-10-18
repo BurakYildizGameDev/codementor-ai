@@ -82,7 +82,8 @@
 (⏸) madde; her maddede kapsam, dokunulacak dosyalar, doğrulama ve boyut var. Yeni fikirlerin akışı
 netleşti: fikir önce buradaki "Sonraya" bölümüne, iş sırası/kabul kriteri `KALAN_ISLER.md`'ye.
 Tarama sırasında ölçülen gerçekler de kayda geçirildi: **ADR 30** (`README.md` s.42/s.150 ve
-`README.en.md` s.43 hâlâ 29 diyor), `src/` **27 740** satır / `tests/` **37 595** satır
+`README.en.md` s.43 hâlâ 29 diyor), `src/` **27 740** satır (iş 3'ün derin doğrulamasında
+binary varlıklar hariç tutuldu → **27 194**) / `tests/` **37 595** satır
 (`README.md` s.480 "~28 bin satır test (~29 bin satır kaynak koda karşı)" diyor → sayılar ters),
 `pytest -m "not live"` **3758** geçti.
 
@@ -100,8 +101,8 @@ uygulanmadı → `KALAN_ISLER.md` iş 1-2; `git push` ve Y2 kullanıcıda.
 **Yapılanlar:** `README.md` s.13 badge `testler-3300%2B` → `testler-3700%2B` · s.42 "3.300+ test …
 29 ADR" → "3.700+ test … 30 ADR" · s.150 "29 kayıt" → "30 kayıt" · s.480 "~28 bin satır test
 (~29 bin satır kaynak koda karşı)" → "~38 bin satır test (~28 bin satır kaynak koda karşı)"
-(ölçüm: izlenen dosyalarda boş olmayan satır — `src/` 27 740, `tests/` 37 595,
-`web/` 6 139) · s.485-486 faz listesi "Faz A-D ve K" → "Faz A-H ve
+(ölçüm (iş 1 anı): izlenen tüm dosyalarda boş olmayan satır — `src/` 27 740, `tests/` 37 595,
+`web/` 6 139; iş 3'te yöntem **metin dosyaları** olarak netleşti → `src/` 27 194) · s.485-486 faz listesi "Faz A-D ve K" → "Faz A-H ve
 J"; `README.en.md` s.43 "3,300+ tests … 29 ADRs" → "3,700+ tests … 30 ADRs". Diğer sayı iddiaları
 ölçülüp **doğru** çıktı: 41 statik kural (katalog ve registry 41), 166 eval örneği (dev 96 / test
 70), 60'tan fazla faz.
@@ -112,10 +113,12 @@ satır test`, `Faz A-D` hiçbirinde yok) · `ruff check` temiz · `ruff format -
 boyutu çalışma kopyasıyla aynı (LF).
 
 **Düzeltme (2026-10-18):** (a) bu bölümde önce kaydedilen `src/` değeri **28 369 yanlıştı**; aynı
-yöntemle yeniden ölçüldü → **27 740** (`tests/` 37 595 ve `web/` 6 139 birebir tutuyor) — README
-iddiaları ("~38 bin" / "~28 bin") etkilenmedi, sayım yöntemi artık yazılı ve teste bağlı.
+yöntemle yeniden ölçüldü → **27 740** (`tests/` 37 595 ve `web/` 6 139 birebir tutuyor).
 (b) Faz listesi iş 3'ün testiyle ölçülünce **K**'nın atlandığı çıktı → `README.md` s.485-486 artık
-**"… Faz A-H, J ve K"** (aşağıdaki iş 3 bölümü).
+**"… Faz A-H, J ve K"** (aşağıdaki iş 3 bölümü). (c) İş 3'ün derin doğrulamasında `src/`
+sayımının `desktop/assets/` altındaki 3 binary dosyayı (ico/png) metin gibi saydığı çıktı (546
+sahte satır): yöntem **metin dosyaları** olarak netleşti → `src/` **27 194**, bu yüzden README'nin
+kaynak iddiası "~28 bin" → **"~27 bin"** (aşağıdaki iş 3 bölümü).
 
 **Açık:** aynı sayıların tekrar bayatlamasını önleyen test iş 3'te → **iş 3 tamamlandı**;
 `BulgularVeDuzeltilecekler.md` §6/§10 tazelemesi iş 2'de → **iş 2 tamamlandı**.
@@ -157,34 +160,47 @@ satırlarında kapanış etiketi yok) sırada; iş 3 (sayıları teste bağlama)
 "30 ADRs" iddiaları `docs/adr/*.md` sayısına eşit. (2) `test_readme_test_count_claims_are_lower_bounds`
 — badge `3700+`, "3.700+ test" ve EN "3,700+ tests" iddiaları gerçek toplama sayısının **alt sınırı**
 (toplam alt süreçte: `pytest tests --collect-only -q -m "not live"`, ~7 sn, `lru_cache` ile tek koşu;
-şu an 3774). (3) `test_readme_line_count_claims_match_measurement` — "~38 bin satır test (~28 bin
-satır kaynak koda karşı)" iddiası ölçümün binde yuvarlamasıyla aynı (`git ls-files` + boş olmayan
-satır; `git` yoksa atlanır). (4) `test_readme_phase_claims_match_progress` — README'nin
+şu an 3774). (3) `test_readme_line_count_claims_match_measurement` — "~38 bin satır test (~27 bin
+satır kaynak koda karşı)" iddiası ölçümün binde yuvarlamasıyla aynı (`git ls-files` + **metin**
+dosyalarında boş olmayan satır; binary varlıklar NUL baytıyla atlanır, `git` yoksa test atlanır);
+`test_line_count_measurement_skips_binary_assets` bu atlamayı ayrıca kanıtlar (sayılsalardı +546
+sahte satır). (4) `test_readme_phase_claims_match_progress` — README'nin
 "(Faz 0-63, ardından public öncesi Faz A-H, J ve K)" ifadesi, `PROGRESS.md`'de bölümü olan faz
 harfleriyle birebir; ayrıca `docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md` arşivi var ve aralığı doğru.
 
 **Düzeltmeler (testin bulduğu bayatlık):** (a) README'nin faz listesi **K**'yı atlıyordu (iş 1'de
 "A-H ve J" yazılmıştı); kaynak kodda bölümü olan fazlar A-H, J, K olduğundan `README.md` s.485-486
 "… Faz A-H, J ve K" olarak düzeltildi (**I** henüz yapılmadı, listede yok — `KALAN_ISLER.md` iş 10-11).
-(b) İş 1'de kaydedilen `src/` satır sayısı düzeltildi: 28 369 → **27 740**; sayım yöntemi artık yazılı
-(izlenen dosyalar, boş olmayan satır) ve teste bağlı (`tests/` 37 595 ve `web/` 6 139 aynı yöntemle
-birebir tutuyor).
+(b) İş 1'de kaydedilen `src/` satır sayısı düzeltildi: 28 369 → **27 740**, sonra yöntem
+netleşince (binary varlıklar hariç) → **27 194**; sayım yöntemi artık yazılı (izlenen **metin**
+dosyalarda boş olmayan satır) ve iki testle bağlı (`tests/` 37 595 ve `web/` 6 139 aynı yöntemle
+birebir tutuyor). (c) Bu yüzden README'nin kaynak iddiası da düzeltildi: "~28 bin" → **"~27 bin"**;
+`tests/` tarafı ("~38 bin") doğru.
 
-**Doğrulama:** `pytest tests/unit/test_release_readiness.py -q` **10 geçti** (8,1 sn) ·
-`test_readme_table.py` ile birlikte **15 geçti** · **mutasyon kanıtı 4/4 kırmızı**: ADR 30→31, badge
-3700→9999, "~38 bin"→"~44 bin", faz listesi "A-H, J ve K"→"A-H ve J" bozulunca ilgili test düştü,
-geri alınınca yeşil · `ruff check` temiz · `ruff format --check` 477 dosya · `mypy src/` 216 dosya
-temiz · testler ağa çıkmaz (yalnız yerel `git` + alt süreç pytest).
+**Doğrulama:** `pytest tests/unit/test_release_readiness.py -q` **11 geçti** (~6 sn) ·
+`test_readme_table.py` ile birlikte **16 geçti** · **mutasyon kanıtı 16/16 kırmızı** (12'si betikle
+tek turda; her mutasyon sonrası dosyalar bayt-bayt geri yüklendi, SHA-256 doğrulandı): ilk tur ADR
+30→31, badge 3700→9999, "~38 bin"→"~44 bin", faz listesi "A-H, J ve K"→"A-H ve J"; derin doğrulama
+turu EN "30 ADRs"→"29", "30 kayıt"→"9 kayıt", TR/EN "N+ test", "~27 bin"→"~33 bin", faz listesi K
+düşürme, PROGRESS'e sahte `## Faz I`, arşiv aralığı 0-63→0-62, binary guard'ın kaldırılması
+(`_is_binary` → `False`; 2 test kırmızı) — hepsi ilgili testi kırmızı yaptı,
+geri alınınca yeşil · sayım iki bağımsız yöntemle aynı sonucu verdi (Python `split("\n")` ve
+PowerShell/.NET `-split "`r?`n"`; ikisinde de binary varlıklar atlanır) · `ruff check` temiz ·
+`ruff format --check` 477 dosya · `mypy src/` 216 dosya temiz · testler ağa çıkmaz (yalnız yerel `git`
++ alt süreç pytest) · tam suite `pytest -m "not live"` **3763 geçti / 16 atlandı** (5:15; ilk koşuda
+O1 zamanlama testi bir kez kırmızı oldu — makine yükü, bkz. aşağıdaki "Sonraya" maddesi).
 
-**Ölçüm (iş 3 sonrası, aynı yöntem):** `src/` 27 740 · `tests/` **37 710** (bu işten +115 satır) ·
-`web/` 6 139 → README'nin "~38 bin / ~28 bin" iddiası hâlâ doğru ve artık teste bağlı.
+**Ölçüm (iş 3 + doğrulama turu sonrası, metin dosyaları):** `src/` **27 194** · `tests/` **37 732**
+(iş 3 öncesi 37 595'ten +137) · `web/` **6 139** → README "~38 bin / ~27 bin" iddiası geçerli ve artık teste bağlı.
 
 **Kararlar:** faz ölçütü "durum tablosu" değil **bölümü olan fazlar** (durum tablosunda D satırı yok) ·
-sayım yöntemi tek ve yazılı: `git ls-files` + boş olmayan satır · badge için toplama sayısı alt sınır
+sayım yöntemi tek ve yazılı: **metin** dosyalarında boş olmayan satır (`git ls-files`; ilk 8 KB'da
+NUL baytı olan binary dosyalar atlanır — ham baytlar sahte satır üretiyor) · badge için toplama sayısı
+alt sınır
 olarak alındı (tam eşitlik testleri sayı büyüdükçe anlamsız kırar).
 
-**Açık:** istenen bayatlama sınırı — `tests/` 38 500 satırı geçerse ya da toplama 3 700'ün altına
-düşerse test kırmızı olur ve README güncellenmelidir. Sırada iş 2b, sonra iş 4 (K2 regex taraması).
+**Açık:** bayatlama sınırı — `tests/` 38 500 satırı geçerse (iddia "~39"), `src/` 27 500'ü geçerse
+(iddia "~28") ya da toplama 3 700'ün altına düşerse test kırmızı olur ve README güncellenmelidir. Sırada iş 2b, sonra iş 4 (K2 regex taraması).
 
 ## Faz J5 — Faz J denetiminden kalan küçük maddeler (test-only; 2026-10-17)
 
@@ -1266,6 +1282,15 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
+- **Zamanlama testleri kırılgan (iş 3 derin doğrulamasından çıktı, 2026-10-18):** O1-O4 doğrusal
+  süre testleri 1,5 sn bütçesiyle koşuyor; tek başına ölçülen süreler 0,14-0,76 sn, tam suite
+  yükü altında 1,10 sn (ölçüldü). Tam suite koşusunda `test_o1_many_inner_loops_linear` bir kez
+  bütçeyi aşıp kırmızı oldu, yeniden koşuda yeşil. `src/` değişmediği için iş 3'le ilgisi yok:
+  ya bütçe gerçekçi hâle getirilmeli ya bu testler `slow` işaretlenip ayrı koşulmalı.
+- **`docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` (s.399) satır sayıları bayat:** "~29 bin satır
+  kaynak, ~28 bin satır test" → gerçek (metin dosyaları, 2026-10-18): **27 194** kaynak /
+  **37 732** test. README'deki kardeş iddia iş 1 + iş 3'te tazelendi ve teste bağlandı; bu belge
+  kapsam dışıydı (KALAN_ISLER.md'ye iş olarak girmesi kullanıcı kararı).
 - ~~**`tests/golden/test_facts_golden.py:50` aynı satır sonu kusuru (Faz J denetimi Küçük-1, 2026-10-17)**~~
   → **KAPANDI (J5)**: `write_snapshot` `newline="\n"` ile yazıyor; `--update-golden` sonrası 15 golden
   **CR=0** ve `git status` temiz; iddia `read_bytes()` üzerinden (`test_write_snapshot_writes_lf_bytes`).
