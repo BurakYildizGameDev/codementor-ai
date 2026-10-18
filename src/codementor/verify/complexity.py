@@ -13,8 +13,10 @@ from codementor.models.verification import AgreementState, ComplexityCheck
 # `O(`, `Θ(`, `Ω(` (büyük/küçük): içerik dengeli parantezle alınır, sonraki ekler atılır
 _WRAPPER = re.compile(r"[OoΘθΩω]\s*\(")
 # Sarmalayıcı yoksa ifadeden sonra gelen açıklama: "n^2 per frame", "n (kare başına)"
+# Baştaki `\s*` kaldırıldı: sınırsız sınıf her konumda yeniden denenip boşluk dizisinde
+# karesel süre üretiyordu (§12); ayırıcı boşluk `_before_trailer` içinde `rstrip` ile atılır.
 _TRAILER = re.compile(
-    r"\s*(?:\(|,|;|\bper\b|\bkare\b|\bher\b|\bamorti|\bworst\b|\baverage\b|\bbest\b"
+    r"(?:\(|,|;|\bper\b|\bkare\b|\bher\b|\bamorti|\bworst\b|\baverage\b|\bbest\b"
     r"|\ben kötü\b|\bortalama\b|\bin the\b)",
     re.IGNORECASE,
 )
@@ -45,6 +47,16 @@ def _wrapped(text: str) -> str | None:
     return None
 
 
+def _before_trailer(text: str) -> str:
+    """İlk açıklama işaretinden önceki karmaşıklık ifadesi (yoksa metnin kendisi).
+
+    `_TRAILER.split(text, maxsplit=1)[0]` ile aynı sonucu verir: işaretten önceki
+    ayırıcı boşluk `rstrip` ile atılır, desende sınırsız `\\s*` taşınmaz (§12).
+    """
+    match = _TRAILER.search(text)
+    return text if match is None else text[: match.start()].rstrip()
+
+
 def normalize_complexity(text: str) -> BigO | None:
     """`O(n^2) per frame`, `Θ(n log n)`, `O(n) amortized`, `O(N²)` → BigO; olmazsa None."""
     text = text.strip()
@@ -53,7 +65,7 @@ def normalize_complexity(text: str) -> BigO | None:
         inner = _wrapped(text)
         candidates = [inner] if inner else []
     else:
-        candidates = [c for c in (text, _TRAILER.split(text, maxsplit=1)[0]) if c]
+        candidates = [c for c in (text, _before_trailer(text)) if c]
     word = _WORDS.get(text.lower())
     if word is not None:
         candidates.append(word)

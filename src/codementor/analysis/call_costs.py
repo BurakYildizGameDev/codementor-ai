@@ -168,8 +168,22 @@ class CostResolver:
         return None
 
 
-_LAST_INDEX = re.compile(r"(?P<base>[A-Za-z_][\w.]*)\.(?:Count|Length)\s*-\s*1$")
-_END_INDEX = re.compile(r"(?P<base>[A-Za-z_][\w.]*)\.(?:Count|Length)$")
+# Sondan çapalı küçük desenler: taban (`[A-Za-z_][\w.]*`) desende tutulmaz, çünkü sınırsız
+# sınıf + geri izleme 40 KB kötü niyetli argümanda karesel süre üretiyordu (§12).
+# Aynı sonucu `_index_base` verir: taban argümanın başından başlamalı ve son `.Count`/
+# `.Length` eşleşmesine kadar kesintisiz `[\w.]` olmalıdır (eski `(?P<base>…)` ile eşdeğer).
+_LAST_INDEX = re.compile(r"\.(?:Count|Length)\s*-\s*1$")
+_END_INDEX = re.compile(r"\.(?:Count|Length)$")
+_INDEX_BASE = re.compile(r"[A-Za-z_][\w.]*")
+
+
+def _index_base(arg: str, pattern: re.Pattern[str]) -> str | None:
+    """`base.Count`/`base.Length` (isteğe `- 1` son eki) desenindeki `base`; yoksa None."""
+    match = pattern.search(arg)
+    if match is None or match.start() == 0:
+        return None
+    base = _INDEX_BASE.fullmatch(arg[: match.start()])
+    return base.group(0) if base is not None else None
 
 
 def _strip_receiver_prefixes(name: str) -> str:
@@ -191,11 +205,11 @@ def _refined_cost(candidate: str, call: CallName, cost: str) -> str:
     arg = (call.first_arg or "").strip()
     receiver = _strip_receiver_prefixes(call.receiver or "")
     if candidate == "List.RemoveAt":
-        match = _LAST_INDEX.match(arg)
-        if match is not None and _strip_receiver_prefixes(match.group("base")) == receiver:
+        base = _index_base(arg, _LAST_INDEX)
+        if base is not None and _strip_receiver_prefixes(base) == receiver:
             return "1"
     elif candidate == "List.Insert":
-        match = _END_INDEX.match(arg)
-        if match is not None and _strip_receiver_prefixes(match.group("base")) == receiver:
+        base = _index_base(arg, _END_INDEX)
+        if base is not None and _strip_receiver_prefixes(base) == receiver:
             return "1*"
     return cost

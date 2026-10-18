@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from array import array
 from functools import lru_cache
 from pathlib import Path
 
@@ -58,16 +59,27 @@ _CODE_PATTERNS = [
     # süslü ayraçlı blok içinde deyim
     re.compile(r"\{[^{}\n]*;[^{}\n]*\}"),
 ]
-# atama deyimi: `x = f(y);`, `total += a[i];` — sağ taraf ayrıca `_code_like_rhs` ile süzülür
-_ASSIGNMENT = re.compile(r"[A-Za-z_][\w.\[\]<>]*\s*[+\-*/%|&^]?=\s*([^=\s][^;\n]*);")
+# atama deyimi: `x = f(y);`, `total += a[i];` — sağ taraf ayrıca `_code_like_rhs` ile süzülür.
+# Sol/sağ taraf sınırsız bırakılırsa kötü niyetli metinde karesel geri izleme olur (§12):
+# `"_" * 40_000` girdisinde desen 29 ms'yi yalnızca 1,6 KB'da harcıyordu. Baştaki `\b`
+# denemeleri sözcük başlarıyla sınırlar (kod parçasında tanımlayıcı zaten orada başlar),
+# sınırlar ise tek deyim ölçeğinde cömerttir; daha uzun parçalar kod bloğu/yapısı
+# desenleriyle ya da uzunluk sınırıyla (`MAX_TEXT_CHARS`) yakalanır. Sağ taraf sahiplenici
+# (`{0,…}+`): `;` sınıfın dışında olduğu için geri izleme gerekmez, tarama tek geçiş kalır.
+_MAX_ASSIGN_LHS = 64
+_MAX_ASSIGN_RHS = 128
+_ASSIGNMENT = re.compile(
+    rf"\b[A-Za-z_][\w.\[\]<>]{{0,{_MAX_ASSIGN_LHS}}}+"
+    rf"\s*[+\-*/%|&^]?=\s*([^=\s][^;\n]{{0,{_MAX_ASSIGN_RHS}}}+);"
+)
 _CODE_PUNCTUATION = re.compile(r"[()\[\].+\-*/%<>\"'&|!?:]")
 _NON_ASCII = re.compile(r"[^\x00-\x7f]")
 _TOKEN = re.compile(r"[A-Za-z_]\w*|\d+|==|!=|<=|>=|&&|\|\||->|::|\+\+|--|[^\s\w]")
 _WORD = re.compile(r"\w+")
 _ASCII_IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-_COMMENTS_STRINGS = re.compile(
-    r"//[^\n]*|/\*.*?\*/|@?\"(?:\\.|[^\"\\\n])*\"|'(?:\\.|[^'\\\n])*'", re.DOTALL
-)
+# Yorum/metin taraması desen değil tek geçişli tarayıcıdır (§12): eski
+# `//[^\n]*|/\*.*?\*/|@?"…"|'…'` deseni karesel geri izleme yapıyordu.
+_COMMENT_OPEN = frozenset("/*")
 
 
 @lru_cache(maxsize=4)
@@ -88,9 +100,74 @@ def _squash(text: str) -> str:
     return _WHITESPACE.sub("", text)
 
 
+def _body_closers(code: str) -> tuple[array[int], array[int]]:
+    """Her gövde konumu için o konumdan başlayan metnin kapanış tırnağı (yoksa -1).
+
+    Kural eski desenin gövdesiyle (`\\.` ya da tırnak/dışı) aynıdır: kaçış iki karakteri
+    atlar (satır sonu dahil), ham satır sonu gövdeyi bitirir. Ters yönlü tek geçişte
+    hesaplanır: ileri tarama kapanışı O(1)'de bulur, karesel geri izleme kalmaz (§12).
+    """
+    n = len(code)
+    doubles = array("i", [-1]) * (n + 2)
+    singles = array("i", [-1]) * (n + 2)
+    for j in range(n - 1, -1, -1):
+        c = code[j]
+        if c == '"':
+            doubles[j] = j
+            singles[j] = singles[j + 1]
+        elif c == "'":
+            singles[j] = j
+            doubles[j] = doubles[j + 1]
+        elif c == "\\":
+            complete = j + 1 < n
+            doubles[j] = doubles[j + 2] if complete else -1
+            singles[j] = singles[j + 2] if complete else -1
+        elif c == "\n":
+            doubles[j] = -1
+            singles[j] = -1
+        else:
+            doubles[j] = doubles[j + 1]
+            singles[j] = singles[j + 1]
+    return doubles, singles
+
+
 def strip_comments_and_strings(code: str) -> str:
-    """Referans çözümdeki yorum ve metin sabitleri tanımlayıcı sayılmaz (Türkçe sözcükler)."""
-    return _COMMENTS_STRINGS.sub(" ", code)
+    """Referans çözümdeki yorum ve metin sabitleri tanımlayıcı sayılmaz (Türkçe sözcükler).
+
+    Sonuç eski desenle (`//[^\\n]*|/\\*.*?\\*/|@?"…"|'…'`) birebir aynıdır; desen `/*a` × 40 KB
+    ve kapanmayan tırnaklarda karesel geri izleme yaptığı için tarayıcıya çevrildi (§12):
+    her eşleşme tek boşluğa dönüşür, kapanmayan yorum/tırnak olduğu gibi bırakılır.
+    """
+    doubles, singles = _body_closers(code)
+    out: list[str] = []
+    i, n = 0, len(code)
+    while i < n:
+        c = code[i]
+        if c == "/" and code[i + 1 : i + 2] in _COMMENT_OPEN:
+            if code[i + 1] == "/":
+                end = code.find("\n", i)
+                i = n if end < 0 else end
+            else:
+                close = code.find("*/", i + 2)
+                if close < 0:  # kapanmayan blok yorum: geri kalan metin aynen kalır
+                    out.append(code[i:])
+                    break
+                i = close + 2
+            out.append(" ")
+        elif c in "\"'" or (c == "@" and code[i + 1 : i + 2] == '"'):
+            # `@"…"`: eşleşme `@` ile birlikte boşalır, gövde tırnağı izleyen konumdan başlar
+            closers = doubles if c in '@"' else singles
+            end = closers[i + (2 if c == "@" else 1)]
+            if end < 0:  # kapanmayan tırnak: eşleşme yok, karakter aynen kalır
+                out.append(c)
+                i += 1
+            else:
+                out.append(" ")
+                i = end + 1
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
 
 
 def identifiers(text: str) -> set[str]:
@@ -128,7 +205,8 @@ def code_violations(text: str, student_code: str) -> list[Hit]:
         return [("code_block", "``` kod bloğu")]
     student = _squash(student_code)
     fragments = [m.group(0) for p in _CODE_PATTERNS for m in p.finditer(text)]
-    fragments += [m.group(0) for m in _ASSIGNMENT.finditer(text) if _code_like_rhs(m.group(1))]
+    if ";" in text and "=" in text:  # desen ikisini de zorunlu kılar: hızlı eleme (§12)
+        fragments += [m.group(0) for m in _ASSIGNMENT.finditer(text) if _code_like_rhs(m.group(1))]
     found: list[Hit] = [
         ("code_line", fragment.strip()[:80])
         for fragment in fragments
