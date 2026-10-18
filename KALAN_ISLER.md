@@ -101,7 +101,7 @@
   sayımın binary varlıkları metin gibi saydığı çıktı (`src/` 546 sahte satır) → yöntem metin-only
   yapıldı, README kaynak iddiası "~28 bin" → "~27 bin".
 
-### [ ] 🤖 4. K2 kalan regex taraması (kod + test)
+### [x] 🤖 4. K2 kalan regex taraması (kod + test) — ✅ **BİTTİ 2026-10-18**
 - **Kapsam:** `analysis/_recursion.py`, `verify/lines.py`, `verify/proof.py` ve `analysis/`+`rules/`
   içindeki desenler **en kötü girdiyle** ölçülür; karesel/kübik davranış varsa doğrusallaştırılır.
   Test: desen başına < 50 ms bütçesi + hypothesis ile uzunluk eğrisi.
@@ -109,8 +109,96 @@
 - **Doğrulama:** yeni testler; tam suite (`uv run pytest -m "not live"`) yeşil kalır.
 - **Boyut:** orta.
 - **Kaynak:** Bulgular §10 Faz A "K2 — Kalan tarama" kutusu (tek açık kutu).
+- **Sonuç (2026-10-18):** uygulandı — `tests/unit/test_regex_budget.py` (**339 satır**, 96 vaka):
+  (1) desenler `codementor.analysis` / `codementor.rules` / `codementor.verify` paketlerinden
+  **otomatik keşfedilir** (şu an 44 desen; alt sınır `>= 40` ile keşif bozulmasına karşı test);
+  (2) her desen 18 "en kötü girdi ailesi" ile 40 KB'da **< 50 ms** bütçesine karşı ölçülür
+  (CPU saati, en iyi 4 koşu); (3) hypothesis ile **uzunluk eğrisi** (4x girdi 8x'ten fazla
+  süre üretmez, 2 ms taban; duvar saati); (4) düzeltilen dört girdi noktası bilinen en kötü
+  yüküyle ayrıca sabitlenir; (5) eski desenler karşılaştırma ölçütü olarak testte tutulur ve
+  **eşdeğerlik** hem örnek hem rastgele (hypothesis fuzz) girdide doğrulanır.
+- **Bulunan ve düzeltilen beş desen (hepsi aynı zamanda değer üretir):**
+  (a) `analysis/call_costs.py` `_LAST_INDEX`/`_END_INDEX` — sınırsız taban sınıfı `[\w.]*`
+  geri izleme yapıyordu (`"a"*4000` → 48 ms, karesel; 40 KB → ~4-9 sn). Sondan çapalı küçük
+  desen + geriye doğru taban doğrulaması (`_index_base`); davranış eski `(?P<base>…)` ile aynı
+  (14 parametreli vaka + fuzz testi).
+  (b) `verify/leak_guard.py` `_ASSIGNMENT` — sol/sağ taraf sınırsız (`"_"*1600` → 29 ms, karesel).
+  Baştaki `\b`, sınırlı + sahiplenici sınıflar (`_MAX_ASSIGN_LHS=64`, `_MAX_ASSIGN_RHS=128`),
+  ayrıca `code_violations` içinde `;`/`=` hızlı elemesi (aynı işlevde `FENCE` kalıbı vardı).
+  (c) `verify/leak_guard.py` yorum/metin taraması — `/\*.*?\*/` kapanmayan yorumda ve
+  kapanmayan tırnaklarda karesel (`"/*a"*k` 40 KB'da ~1,2 sn). Desen yerine **ters yönlü tek
+  geçişle** hesaplanan kapanış dizisi + tek geçişli tarayıcı (`_body_closers`): sonuç eski
+  desenle birebir aynı, süre doğrusal.
+  (d) `verify/complexity.py` `_TRAILER` — baştaki `\s*` boşluk dizisinde karesel
+  (`" "*400` → 18 ms; 40 KB → dakikalar). `_before_trailer` (arama + `rstrip`) ile aynı sonuç.
+- **Mutasyon/eşdeğerlik kanıtı:** eski (süper-doğrusal) beş desen yeni büyüme kontrolüne
+  sokuldu → **5/5 kırmızı** (1 KB → 4 KB aralığında 16x büyüme; 40 KB'da 3,1 s – 176 s olurdu);
+  yeni desenler 40 KB'da 0,0–29,8 ms (en yüksek: `_ASSIGNMENT` tam yıldız/boşluk dizisinde).
+  Fuzz testi yazım sırasında iki gerçek hata yakaladı ve ikisi de düzeltildi
+  (`code="/"` → `IndexError`; `code="'//"` → eski desenden sapan çıktı).
+- **Doğrulama:** `ruff check` temiz · `ruff format --check` 478 dosya · `mypy src/` 216 dosya
+  temiz · yeni dosya **96 geçti** (~3 sn) · tam suite `pytest -m "not live"` **3859 geçti /
+  16 atlandı** (4:45; iş 3 sonrası 3763'ten +96) · testler ağa çıkmaz.
+- **Sapmalar (kayıt için):** (a) kapsam `analysis/` + `rules/` diyordu; `verify/` de eklendi
+  (üç adlandırılmış dosya orada). (b) `verify/` → `analysis/` importu **yok** (katman): yorum/metin
+  tarayıcısı `analysis/lexical.py` yerine `leak_guard` içinde yerel yazıldı. (c) İki desende
+  davranış birebir korunamazdı (`_ASSIGNMENT` sınırları): sınırlar tek deyim ölçeğinde cömert
+  seçildi ve testle belgelendi.
+- **Kaynak:** Bulgular §10 Faz A "K2 — Kalan tarama" kutusu → **kapandı**. Not: `detect.py`
+  taraması Faz A1'de yapılmıştı; bu tur üç paketin tamamını kapsar.
 
-### [ ] 🤖 5. Statik kural kaçırmaları (madde başına bağımsız dilim)
+### [ ] 🤖 4b. Zamanlama testlerini yük altında kırılgan olmaktan çıkar (O1-O4 + Tier 0 bütçesi)
+- **Sorun:** `tests/unit/test_facts_review.py` O1-O4 doğrusal süre testleri ve
+  `tests/unit/test_tier0_budget.py` **mutlak duvar saati** bütçesiyle koşuyor (1,5 sn). Tek başına
+  ölçülen süreler 0,14-0,76 sn; tam suite yükü altında **1,10 sn** (ölçüldü) ve tam suite koşusunda
+  `test_o1_many_inner_loops_linear` bir kez bütçeyi aşıp kırmızı oldu (yeniden koşuda yeşil).
+  `src/` değişmediği için iş 3/4 ile ilgisi yok: kırılganlık **eşiğin kendisinde**.
+- **Kapsam (önce karar, sonra uygulama):** üç yol var, seçim gerekçesiyle `PROGRESS.md`'ye yazılır —
+  (a) bütçeyi gerçekçi hâle getir (ör. 3 sn) + gerileme duyarlılığını korumak için ölçümü "en iyi N
+  koşu"ya çevir; (b) bu testleri `slow` işaretleyip `make check` dışında ayrı koş; (c) iş 4'teki
+  **göreli büyüme** kalıbını (büyük girdi ≤ N × küçük girdi) mutlak bütçenin yanına koy. Öneri:
+  (c) birincil (makine yükünden bağımsız), + (b) yalnız mutlak bütçe için.
+- **Dikkat (AGENTS.md altın kural 1):** eşik/niyet değişirse `docs/adr/0024-tier0-sure-siniri.md`
+  "gerileme testi < 1,5 s" ifadesi güncellenir; bu **ADR değişikliğidir** → gerekçe yazılıp onay
+  alınır (yeni ADR değil, mevcut ADR'e not).
+- **Dosyalar:** `tests/unit/test_facts_review.py`, `tests/unit/test_tier0_budget.py`; gerekirse
+  `pyproject.toml` (işaret) + `Makefile`/`AGENTS.md` komut notu, `docs/adr/0024-*.md`.
+- **Doğrulama:** seçilen kalıpla ilgili testler **3 tam suite koşusunda hiç kırmızı olmaz**; kasıtlı
+  yavaşlatma (ör. O1 girdisini karesel hâle getiren geçici yama) ilgili testi **kırmızı** yapar
+  (duyarlılık kanıtı); `ruff`/`format`/`mypy` temiz.
+- **Boyut:** küçük-orta (~1-2 saat; karar + küçük test düzenlemesi).
+- **Kaynak:** PROGRESS "Sonraya" (2026-10-18) — iş 3 derin doğrulamasından çıktı, iş 4 tam suite
+  koşusunda (4:45) tekrar görüldü.
+
+### [ ] 🤖 4c. `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` bayat sayıları tazele + teste bağla
+- **Kapsam (iş 1/3'te bilinçli kapsam dışıydı):** belgedeki sayı iddiaları ölçümle değiştirilir ve
+  teste bağlanır. Ölçülen bayatlıklar (2026-10-18, iş 4 sonrası; yöntem: izlenen **metin**
+  dosyalarında boş olmayan satır, binary varlıklar hariç):
+  - s.399 "~29 bin satır kaynak, ~28 bin satır test" → **~27 bin** (27 289) / **~38 bin** (37 732 +
+    yeni test dosyası 339 = 38 071) — README kardeşi iş 1/3'te tazelenip teste bağlanmıştı.
+  - s.50 ve s.91 "3.300+ test" → **3.700+ test** (README badge'iyle aynı, iş 1); s.50 ve s.423
+    "29 ADR" → **30 ADR** (`docs/adr/*.md` = 30).
+  - s.397-398 "400 satırı aşan dosyalar: `desktop/app.py` 505, `pipeline/orchestrator.py` 465,
+    `pipeline/passes.py` 426 (Faz F/G'de bölünecek)" → gerçek: **350 / 350 / 323**; bölmeler
+    yapıldı, "Faz F/G'de bölünecek" notu düşer.
+  - s.402-403 "`report/usage.py` → `storage`; Faz G'de düzeltilecek" → `usage.py` 62 satır ve
+    yalnız `models/` içe aktarıyor: **kapandı**, not düşer.
+  - s.404 ve s.572 "(~60 madde)" Sonraya sayısı → ölçüm: **120 madde / 52'si açık** (kapananlar
+    üstü çizili); hangi sayının raporlanacağı belgede tanımlanır (öneri: "açık" sayısı).
+- **Teste bağlama (tekrar bayatlamasın):** `tests/unit/test_release_readiness.py`'deki
+  `_tracked_nonblank_lines()` + ADR sayımı bu belge için de kullanılır: belgedeki "~N bin satır …"
+  iddiası ölçümün binde yuvarlamasıyla, "N ADR" iddiası `docs/adr/` sayısıyla, "N+ test" iddiası
+  gerçek toplamanın alt sınırıyla eşleşmeli. 400-satır listesi için: belgede `dosya NNN` diye yazılan
+  her satır sayısı gerçek dosya satır sayısıyla **toleranssız** eşleşmeli (amaç tazelik).
+- **Dosyalar:** `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md`, `tests/unit/test_release_readiness.py`.
+- **Doğrulama:** yeni testler yeşil; mutasyon kanıtı: "~27 bin"→"~33 bin", "30 ADR"→"29 ADR" ve bir
+  dosya satır sayısı kaydırıldığında ilgili test **kırmızı** olur; ağa çıkmaz; tam suite yeşil.
+- **Boyut:** küçük-orta (~1-1,5 saat; ~8 satır belge + ~60 satır test).
+- **Kaynak:** PROGRESS "Sonraya" (2026-10-18), `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` s.399;
+  kardeş iş: KALAN_ISLER.md iş 3 (README sayıları) ve iş 2 (Bulgular durum tazeleme).
+
+
+### [x] 🤖 5. Statik kural kaçırmaları (madde başına bağımsız dilim) — ✅ **BİTTİ 2026-10-18**
 - **Kapsam (tek tek yapılabilir):** CPP-OWN-001 akış duyarlılığı (erken `return`/istisna yolunda
   atlanan `delete` öneri değil **hata** sayılır, Faz 52 denetimi) · C-MEM-001 aynı dosyada başka
   fonksiyona geçirilen işaretçi (`print_arr(arr, n)`) sık kaçırma · UNITY-GC-001 dosyada tanımlı
@@ -123,6 +211,66 @@
 - **Doğrulama:** her dilim için yeni fixture + test; golden'lar üretilir; tam suite yeşil.
 - **Boyut:** orta (madde başına ~1-2 saat).
 - **Kaynak:** PROGRESS "Sonraya" (CPP-OWN-001, C-MEM-001/003, UNITY-GC-001, UE-GC-001 satırları).
+- **Sonuç (dilim 1 — CPP-OWN-001 akış duyarlılığı, 2026-10-18):** ✅ Davranış Faz H2'de zaten
+  vardı, ama o gün yalnız 4 fixture'la sınanıyordu ve PROGRESS "Sonraya" kaydı "açık" gibi
+  duruyordu. Fixture'lar genişletildi:
+  `tests/rules/fixtures/CPP-OWN-001/positive/` altına **6 dosya** (`goto_skip`, `loop_break_skip`,
+  `loop_continue_skip`, `nested_block_return` → `EXPECT_KIND: issue`; `loop_pair`,
+  `jump_outside_pair` → `suggestion`) + `tests/rules/test_finding_kinds.py`'ye **3 birim test**
+  (çift aralığının sınırları: `return` `new`'dan önce / `delete`'ten sonra; aynı dosyada iki türün
+  birlikte çıkması — fixture'ın ifade edemediği durumlar).
+- **Mutasyon kanıtı (dilim 1):** erken çıkış taraması devre dışı (`_skipped_deletes` → boş küme)
+  → **7 kırmızı** (6 fixture + 1 birim test); aşırı duyarlı hâle getirilmiş (aralık yerine kapsamda
+  herhangi bir atlama + lambda hariç tutması kaldırılmış) → **8 kırmızı** (yanlış pozitif
+  koruyucuları: `lambda_between`, `other_scope_return`, `jump_outside_pair`, `new_delete` + 4 birim
+  test). İki mutasyon da geri alındı: `src/codementor/rules/cpp.py` **değişmedi** (`git diff` boş).
+- **Doğrulama (dilim 1):** `ruff check` temiz · `ruff format --check` 478 dosya · `mypy src/` 216
+  dosya temiz · tam suite `pytest -m "not live"` **3868 geçti / 16 atlandı** (iş 4 sonrası 3859'dan
+  +9 = 6 fixture vakası + 3 birim test) · testler ağa çıkmaz.
+- **Sonuç (dilim 2 — C-MEM-001 okuyucu zinciri, 2026-10-18):** ✅ Gerçek kaçırma vardı: ödünç
+  aktarımı tek geçişte yalnız ilk halkayı görüyordu, `report` → `show` → `dump` zincirinde bulgu
+  çıkmıyordu. `rules/c.py` `_borrowers` artık sabit noktaya yakınsıyor (`_MAX_BORROW_ROUNDS = 8`;
+  küme yalnız büyür, tur başına bir halka, dosya başına sabit sayıda gezinti — mimari §12).
+  Yeni fixture'lar: `positive/passed_to_reader_chain.c` (2 halka), `positive/reader_defined_after.c`
+  (okuyucu sonra tanımlı); bilinçli sınırlar `negative/helper_returns_derived_pointer.c`
+  (`return v + i` sahiplik aktarımı), `negative/duplicate_helper_names.c` (`#ifdef` çift tanım),
+  `negative/prototype_only_helper.c` (yalnız bildirim). `tests/rules/test_c_memory_flow.py`:
+  4 test (1 halka, bütçe içi 6 halka, bütçeden derin zincir muhafazakâr, karşılıklı özyineleme
+  sabit noktaya yakınsar). **Mutasyon:** sabit nokta tek geçişe indirilince **2 kırmızı**
+  (`passed_to_reader_chain.c` + bütçe testi); geri alındı.
+- **Sonuç (dilim 3 — UNITY-GC-001 closure bastırması, 2026-10-18):** ✅ Bastırma satır yerine
+  **bayt aralığı** bazlı: LINQ lambdasının closure'ı olgularda artık ayrı `CLOSURE` değil
+  (`analysis/extractor.py` `_without_linq_lambdas`; önek maksimumu + `bisect`, O(L log L + C log L)),
+  `rules/unity.py`'deki satır kümesi ve `AllocationKind.LINQ` bağımlılığı kaldırıldı. Böylece aynı
+  satırdaki LINQ dışı lambda **bulgu veriyor** (eskiden sessizce bastırılıyordu) ve LINQ lambdası
+  çift raporlanmıyor. Yeni fixture `UNITY-GC-001/positive/closure_next_to_linq.cs`;
+  `tests/unit/test_extractor.py`'ye olgu testi (`test_sibling_lambda_on_linq_line_is_still_a_closure`)
+  + mevcut LINQ hot-path beklentisi güncellendi; `csharp-03`/`unity-03` facts golden'larında yalnız
+  LINQ satırındaki `closure` kaydı düştü. **Mutasyon:** bütün closure'ları bastır → **2 kırmızı**;
+  hiç bastırma → **3 kırmızı** (LINQ lambdası çift bulgu); ikisi de geri alındı.
+- **Sonuç (dilim 4 — UE-GC-001 iç içe kapsayıcı, 2026-10-18):** ✅ `TMap<FName, TArray<UObject*>>`
+  kaçırılıyordu: `_holds_uobject` artık `type_descriptor` sarmalayıcısını açıp
+  `_MAX_CONTAINER_DEPTH = 2` katmana kadar iniyor (sınır hem karesel süreyi hem yapay iç içe girdide
+  özyineleme taşmasını önlüyor). Yeni fixture'lar `UE-GC-001/positive/nested_container_fields.h`
+  (iç içe iki katman + UPROPERTY'li olan hariç + sınırı aşan), `negative/gc_safe_wrappers.h`
+  (`TWeakObjectPtr`/`TStrongObjectPtr`/`TSoftObjectPtr` sayılmaz) + `tests/rules/test_unreal_gc.py`'ye
+  2 test. **Mutasyon:** katman sınırı 1'e indirilince **3 kırmızı**; geri alındı.
+- **Sonuç (dilim 5 — C-MEM-003 denetim akışı, 2026-10-18):** ✅ Davranış Faz 57'de gelmişti
+  (`src/` değişmedi); eksik kalan **biçimler** sabitlendi. Yeni fixture'lar:
+  `positive/guard_before_allocation.c` (denetim tahsisten **önceyse** sayılmaz — aynı ad bir önceki
+  tahsise aitti), `positive/guard_on_one_switch_path.c` (tek dallı denetim `default` yolunu
+  kapatmaz), `positive/use_only_in_condition.c` (koşul içindeki ilk kullanım da kullanımdır),
+  `negative/guard_forms_in_branches.c` (aynı `case` içi denetim, `do/while` + `break`, döngüde
+  `continue`, `NULL == p`). `test_c_memory_flow.py`'ye 5 test: tahsis başına değerlendirme (aynı
+  dosyada korumalı/korumasız tahsis), `if (!(p = malloc(..)))` biçimi, switch dalı, koşulda kullanım.
+  **Mutasyon:** denetimin yol/konum ayrımı kaldırılınca **3 kırmızı**; geri alındı.
+- **Not (kapsam):** dilim 3–4'ün düzeltmesi `src/codementor/rules/` yerine analiz katmanında
+  (`analysis/extractor.py`, `analysis/_engine.py`) yapıldı: kaçırma orada üretilen olgulardan
+  kaynaklanıyordu (closure'ın `CLOSURE` olarak ayrı sayılması, şablon argümanının yalnız ilk
+  katmanının taranması). Dört kurala `catalog_note` eklendi; `docs/rules-catalog.md` `make
+  rules-doc` ile üretildi (elle düzenlenmez).
+- **Kalan dilimler:** yok — iş 5'in bütün maddeleri işlendi (CPP-OWN-001 dilim 1, C-MEM-001 dilim 2,
+  UNITY-GC-001 dilim 3, UE-GC-001 dilim 4, C-MEM-003 dilim 5).
 
 ### [ ] 🤖 6. Statik kapsam boşluklarını kapatacak yeni kurallar
 - **Kapsam:** CSS (`outline:none` + focus göstergesi yok → CSS-CL-004, sabit `px` yükseklik taşması

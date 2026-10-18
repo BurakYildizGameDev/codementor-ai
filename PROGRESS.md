@@ -200,7 +200,136 @@ alt sınır
 olarak alındı (tam eşitlik testleri sayı büyüdükçe anlamsız kırar).
 
 **Açık:** bayatlama sınırı — `tests/` 38 500 satırı geçerse (iddia "~39"), `src/` 27 500'ü geçerse
-(iddia "~28") ya da toplama 3 700'ün altına düşerse test kırmızı olur ve README güncellenmelidir. Sırada iş 2b, sonra iş 4 (K2 regex taraması).
+(iddia "~28") ya da toplama 3 700'ün altına düşerse test kırmızı olur ve README güncellenmelidir. Sırada iş 2b; iş 4 (K2 regex taraması) → **tamamlandı** (aşağıda).
+
+## Kod — K2 kalan regex taraması (KALAN_ISLER.md iş 4; 2026-10-18)
+
+> Yeni `tests/unit/test_regex_budget.py` (339 satır, 96 vaka) + üç kaynak dosyada desen
+> düzeltmesi: `analysis/call_costs.py`, `verify/leak_guard.py`, `verify/complexity.py`.
+> Bulgular §10 Faz A "K2 — Kalan tarama" kutusu **kapandı**.
+
+**Yapılanlar:** `codementor.analysis` / `codementor.rules` / `codementor.verify` paketlerindeki
+**tüm modül düzeyi desenler** (44) otomatik keşfedilip 18 "en kötü girdi ailesi" ile 40 KB'da
+ölçüldü (aileler: harf/rakam/boşluk/yeni satır dizileri, kapanmayan blok yorum ve tırnaklar,
+kaçış tırnakları, `@"…"`, `a.Count` zincirleri, `=b` tekrarları, `UPROPERTY(`, `#include` +
+boşluk). Beş desen süper-doğrusal çıktı ve **davranışı koruyarak** doğrusallaştırıldı:
+
+- `analysis/call_costs.py` `_LAST_INDEX`/`_END_INDEX`: sınırsız taban sınıfı geri izleme yapıyordu
+  (`"a"*4000` → 48 ms; 40 KB karesel). Yerine sondan çapalı küçük desen + `_index_base`
+  (geriye doğru taban doğrulaması). `test_call_costs.py` vakalarıyla birebir aynı sonuç.
+- `verify/leak_guard.py` `_ASSIGNMENT`: sınırsız sol/sağ taraf (`"_"*1600` → 29 ms). Baştaki `\b`,
+  sınırlı **ve sahiplenici** sınıflar (`_MAX_ASSIGN_LHS=64`, `_MAX_ASSIGN_RHS=128`) ve
+  `code_violations` içinde `;`/`=` hızlı elemesi (aynı işlevde `FENCE` kalıbı vardı).
+- `verify/leak_guard.py` yorum/metin taraması: `/\*.*?\*/` kapanmayan yorumda, tırnak alternatifleri
+  kapanmayan tırnakta kareseldi (`"/*a"×k` 40 KB'da ~1,2 sn). Desen, **ters yönlü tek geçişle**
+  hesaplanan kapanış dizisi (`_body_closers`) + tek geçişli tarayıcıyla değiştirildi; çıktı eski
+  desenle birebir aynı. `verify/` katmanı `analysis/` import etmediği için
+  (`analysis/lexical.py` kullanılamadı) tarayıcı yerel yazıldı.
+- `verify/complexity.py` `_TRAILER`: baştaki `\s*` boşluk dizisinde kareseldi (`" "*400` → 18 ms).
+  `_before_trailer` (arama + `rstrip`) eski `split(...)[0]` ile aynı sonucu verir.
+
+**Test tasarımı:** (1) keşif + `>= 40` alt sınırı (keşif sessizce boşalmasın);
+(2) desen başına **40 KB < 50 ms** bütçesi — CPU saati, en iyi 4 koşu: Windows'ta `process_time`
+kuantumu ~15,6 ms olduğundan hızlı desen 0 okunur, bütçeyi aşan en az bir kuantum gösterir;
+(3) hypothesis ile **uzunluk eğrisi** (4x girdi ≤ 8x süre + 2 ms taban) — duvar saati, en iyi
+5 koşu (oran ince değerlere duyarlı); (4) düzeltilen dört girdi noktası bilinen en kötü yüküyle
+ayrıca sabitlenir; (5) eski desenler **karşılaştırma ölçütü** olarak testte tutulur: hem örnek
+hem rastgele (hypothesis fuzz) girdide yeni/yeni-yol ile eski desenin çıktısı birebir karşılaştırılır.
+
+**Kanıt (mutasyon eşdeğeri):** eski beş desen yeni büyüme kontrolüne sokuldu → **5/5 kırmızı**
+(1 KB → 4 KB aralığında ~16x; 40 KB'a taşınsa 3,1 s – 176 s). Yeni desenler 40 KB'da
+0,0–29,8 ms. Fuzz testi yazım sırasında **iki gerçek hata** yakaladı, ikisi de düzeltildi:
+tek `/` girdisinde (`code="/"`) `"" in "/*"` doğru olduğu için `IndexError` (sabit
+`frozenset` ile çözüldü) ve `code="'//"` girdisinde "kapanmayan tırnak bölgesini atla" kısayolunun
+eski desenden sapması (kısayol tümden kaldırıldı, kapanış dizisi tasarımına geçildi).
+
+**Doğrulama:** `ruff check` temiz · `ruff format --check` **478 dosya** · `mypy src/` **216 dosya**
+temiz · yeni dosya **96 geçti** (~3 sn) · tam suite `pytest -m "not live"` **3859 geçti / 16 atlandı**
+(4:45; iş 3 sonrası 3763'ten +96) · testler ağa çıkmaz (yalnız yerel dosya sistemi).
+
+**Kararlar:** bütçe testi CPU saati, büyüme testi duvar saati kullanır (kuantum/çözünürlük
+gerekçeleri testte yazılı) · `_ASSIGNMENT` sınırları tek deyim ölçeğinde cömert seçildi (64/128)
+ve `test_assignment_bound_only_affects_oversized_statements` ile belgelendi · yeni desen eklenince
+bütçe/eşdeğerlik kapsamı otomatik genişler (keşif).
+
+**Açık:** iş 2b (§1 özet tablosu) hâlâ sırada; 2026-10-18'de listeye iki iş daha eklendi — **4b**
+(zamanlama testlerinin tam suite yükünde kırılganlığı) ve **4c**
+(`docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` bayat sayıları; bkz. "Sonraya" maddeleri). `_TRAILER`
+40 KB'da doğrusal ama sabiti görece yüksek (~25 ms, 13 alternatif); üretimde karmaşıklık dizeleri
+kısa olduğu için öncelik düşük.
+
+## Statik — CPP-OWN-001 akış duyarlılığı doğrulaması (KALAN_ISLER.md iş 5 dilim 1; test-only; 2026-10-18)
+
+> `tests/rules/fixtures/CPP-OWN-001/positive/` (+6 dosya) ve `tests/rules/test_finding_kinds.py`
+> (+3 test). **`src/` değişmedi:** davranış Faz H2'de gelmişti; bu tur onu sınadı ve kaydı tazeledi.
+
+**Durum tespiti:** İş listesindeki "CPP-OWN-001 akış duyarlılığı" maddesi açık görünüyordu ama
+`rules/cpp.py` (`_jump_positions`/`_skipped_deletes`) bunu Faz H2'de uygulamış ve 4 fixture
+(`early_return`, `throw_path`, `other_scope_return`, `lambda_between`) `EXPECT_KIND` ile tür ayrımını
+sabitliyordu. Eksik kalan **kapsamdı**: `goto`, döngü içi `break`/`continue`, iç bloktaki `return` ve
+çift aralığının sınırları hiç sınanmıyordu; PROGRESS "Sonraya" kaydı da kapanışı işaretlemiyordu.
+
+**Yapılanlar (test-only):**
+- Yeni fixture'lar (tek türlü durumlar, `EXPECT_KIND` ile): `goto_skip`, `loop_break_skip`,
+  `loop_continue_skip`, `nested_block_return` → **issue**; `loop_pair`, `jump_outside_pair` → **suggestion**.
+- Yeni birim testleri (fixture'ın ifade edemediği durumlar): çıkış `new`'dan **önce** → öneri · çıkış
+  `delete`'ten **sonra** → öneri · aynı fonksiyonda iki çift, yalnız korumasız olan hata (karışık tür
+  tek dosyada; fixture biçimi tek tür varsayıyor).
+
+**Mutasyon kanıtı (iki yön):** (a) erken çıkış taraması devre dışı (`_skipped_deletes` → boş küme):
+**7 kırmızı** = 6 fixture + 1 birim test. (b) aşırı duyarlı sürüm (aralık yerine "kapsamda herhangi bir
+atlama" + lambda hariç tutması kaldırılmış): **8 kırmızı** = `lambda_between`, `other_scope_return`,
+`jump_outside_pair`, `new_delete` fixture'ları + 4 birim test (yanlış pozitif koruyucuları). İkisi de
+geri alındı; `git diff src/codementor/rules/cpp.py` **boş** çıktı.
+
+**Doğrulama:** `ruff check` temiz · `ruff format --check` 478 dosya · `mypy src/` 216 dosya temiz ·
+tam suite `pytest -m "not live"` **3868 geçti / 16 atlandı** (iş 4 sonrası 3859 → +9: 6 fixture vakası
++ 3 birim test) · testler ağa çıkmaz.
+
+**Kararlar:** kapsam fonksiyon düzeyindedir (`scope_key`), bu yüzden döngü gövdesindeki eşleşme de
+öneri sayılır — `loop_pair.cpp` beklenen tür `suggestion` · `new int[i]` ile `delete p` **kasten**
+eşleşmez (aile uyuşmazlığı), bu yüzden loop fixture'ları `new int(i)` + `delete p` kullanır ·
+`break`/`continue` erken çıkış sayılır (o turun `delete`'i atlanır), `switch` içindeki `break` de aynı
+yola girer.
+
+**Açık:** yok — iş 5'in bütün dilimleri tamamlandı (dilim 2–5 aşağıdaki bölümde).
+
+## Statik — iş 5 dilim 2–5: dört kural kaçırması (2026-10-18)
+
+> KALAN_ISLER.md iş 5'in kalan dört maddesi. **Dilim 2 ve 4'te gerçek kaçırma kapatıldı** (ödünç
+> zinciri, iç içe kapsayıcı), **dilim 3** satır bazlı closure bastırmasını olgu düzeyinde kaldırdı,
+> **dilim 5** Faz 57 davranışını eksik biçimlerle sınadı. 12 yeni fixture + 12 test.
+
+**Yapılanlar:**
+- **C-MEM-001 (dilim 2):** `_borrowers` tek geçişte yalnız ilk halkayı görüyordu; artık sabit
+  noktaya yakınsıyor (`_MAX_BORROW_ROUNDS = 8`, küme yalnız büyür) → `report` → `show` → `dump`
+  zinciri bulgu veriyor. Bilinçli sınırlar fixture'la sabitlendi (türetilmiş işaretçi döndüren
+  yardımcı, `#ifdef` çift tanım, yalnız bildirim).
+- **UNITY-GC-001 (dilim 3):** LINQ lambdasının closure'ı `CLOSURE` olarak ayrı sayılmıyor
+  (`_without_linq_lambdas`; bayt aralığı + önek maksimumu, O(L log L + C log L)); `rules/unity.py`
+  satır kümesi kaldırıldı → aynı satırdaki LINQ dışı lambda artık bastırılmıyor.
+- **UE-GC-001 (dilim 4):** `_holds_uobject` `type_descriptor` sarmalayıcısını açıp
+  `_MAX_CONTAINER_DEPTH = 2` katmana iniyor → `TMap<FName, TArray<UObject*>>` sayılıyor.
+- **C-MEM-003 (dilim 5):** `src/` değişmedi; denetimin tahsise göre konumu (önce/sonra), tek dallı
+  denetim, switch/do-while/continue biçimleri ve koşulda kullanım fixture+test ile sabitlendi.
+- `docs/rules-catalog.md` dört kurala `catalog_note` eklenerek `make rules-doc` ile yeniden
+  üretildi (belge elle düzenlenmiyor; `test_committed_catalog_up_to_date` bunu zorluyor).
+
+**Mutasyon kanıtı (hepsi geri alındı):** sabit nokta → tek geçiş **2 kırmızı** · tüm closure'ları
+bastır **2**, hiç bastırma **3 kırmızı** (LINQ lambdası çift bulgu) · kapsayıcı katmanı 1 **3
+kırmızı** · C-MEM-003'te denetimin yol/konum ayrımı kaldırılınca **3 kırmızı**.
+
+**Doğrulama:** `ruff check` temiz · `ruff format --check` 479 dosya · `mypy src/` 216 dosya temiz ·
+tam suite `pytest -m "not live"` **3892 geçti / 16 atlandı** (dilim 1 sonrası 3868 → +24: 12 fixture
+vakası + 12 birim/olgu testi) · facts golden'ları `--update-golden` ile tazelendi: `csharp-03` ve
+`unity-03`'te yalnız LINQ satırındaki `closure` kaydı düştü (lambda zincirin içinde) · testler ağa
+çıkmaz.
+
+**Kararlar:** ödünç zinciri için tur bütçesi (8) sabit: dosya başına sabit sayıda ağaç gezintisi
+(mimari §12), daha derin zincirde kaçırma kabul edildi · kapsayıcı derinliği 2: yapay iç içe girdide
+özyineleme taşması ve karesel süre yok; `TWeakObjectPtr`/`TSoftObjectPtr`/`TStrongObjectPtr` zaten
+GC-güvenli sayılıyor · LINQ lambda closure'ı **olgu** düzeyinde birleştirildi (kural düzeyinde satır
+karşılaştırması yerine): hem çift bulgu bitti hem aynı satırdaki başka lambda görünür oldu.
 
 ## Faz J5 — Faz J denetiminden kalan küçük maddeler (test-only; 2026-10-17)
 
@@ -1287,10 +1416,13 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
   yükü altında 1,10 sn (ölçüldü). Tam suite koşusunda `test_o1_many_inner_loops_linear` bir kez
   bütçeyi aşıp kırmızı oldu, yeniden koşuda yeşil. `src/` değişmediği için iş 3'le ilgisi yok:
   ya bütçe gerçekçi hâle getirilmeli ya bu testler `slow` işaretlenip ayrı koşulmalı.
+  → **İş olarak açıldı: `KALAN_ISLER.md` iş 4b** (2026-10-18).
 - **`docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` (s.399) satır sayıları bayat:** "~29 bin satır
   kaynak, ~28 bin satır test" → gerçek (metin dosyaları, 2026-10-18): **27 194** kaynak /
   **37 732** test. README'deki kardeş iddia iş 1 + iş 3'te tazelendi ve teste bağlandı; bu belge
-  kapsam dışıydı (KALAN_ISLER.md'ye iş olarak girmesi kullanıcı kararı).
+  kapsam dışıydı.
+  → **İş olarak açıldı: `KALAN_ISLER.md` iş 4c** (2026-10-18; aynı belgede "3.300+ test" s.50/91,
+  "29 ADR" s.50/423, s.397-398 dosya satır sayıları ve s.404 "(~60 madde)" de bayat çıktı).
 - ~~**`tests/golden/test_facts_golden.py:50` aynı satır sonu kusuru (Faz J denetimi Küçük-1, 2026-10-17)**~~
   → **KAPANDI (J5)**: `write_snapshot` `newline="\n"` ile yazıyor; `--update-golden` sonrası 15 golden
   **CR=0** ve `git status` temiz; iddia `read_bytes()` üzerinden (`test_write_snapshot_writes_lf_bytes`).
@@ -1311,7 +1443,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
   bankadaki unity-03 referans çözümüyle (`private/`) karşılaştırılacak; aynı/benzerse yapay bir
   çözümle değiştirilip golden'lar yeniden üretilecek. GitHub'da secret scanning, push protection,
   Dependabot alerts açılacak (P13).
-- CPP-OWN-001 akış duyarlı eşleşme: erken `return`/istisna yolunda atlanan `delete` öneri yerine hata sayılsın (Faz 52 denetimi).
+- ~~CPP-OWN-001 akış duyarlı eşleşme: erken `return`/istisna yolunda atlanan `delete` öneri yerine hata sayılsın (Faz 52 denetimi).~~ → **KAPANDI (Faz H2; kaydı 2026-10-18'de tazelendi — KALAN_ISLER iş 5 dilim 1):** davranış H2'de geldi ama o gün yalnız 4 fixture'la sınanıyordu. Doğrulama genişletmesi: `fixtures/CPP-OWN-001/positive/` altına 6 fixture (`goto_skip`, `loop_break_skip`, `loop_continue_skip`, `nested_block_return` → hata; `loop_pair`, `jump_outside_pair` → öneri) + `tests/rules/test_finding_kinds.py`'de 3 birim test (çift aralığı sınırları, aynı dosyada iki tür). Mutasyon: erken çıkış taraması devre dışı → 7 kırmızı, aşırı duyarlı (aralık yerine kapsam) → 8 kırmızı; ikisi de geri alınınca yeşil, `src/` değişmedi.
 - Faz 51 denetimi: `RunConfig` etiket/veri seti sürümü taşımıyor; eski koşular yeni etiketlerle sessizce yeniden puanlanabiliyor (etiket özeti `RunConfig`'e + `compare` dipnotu). Ters yön: bellek erişimi olmayan `memory_safety` etiketleri (CPP-OWN-001 çıplak `new[]`: dev `cpp-009`, `cpp-105`, test `cpp-006`) yeni tanıma uymuyor → Faz 52 (kural bazında öneri türü) ile birlikte ele alınmalı. Etiketlerde serbest metin sezgisi yerine yapısal `boundary:` alanı.
 - Faz 49: `sessions` tablosu da sınırsız büyüyor (oturum başına bir satır); eski oturumları `updated_at`'e göre budamak. ~~Tier 1 derleyici sürümü önbellek imzasında yok.~~ (Faz B: araç kimliği + dosya boyutu/zamanı)
 - ~~Faz 49 denetimi O3~~ → **KAPANDI (Faz B + Faz J4, 2026-10-17)**: soru içeriği özeti ve
@@ -1386,11 +1518,16 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 - ~~`#pragma` makro genişletmeli biçimleri (`#pragma MACRO`) ve `#line` şu an serbest; derleyici kaynak okumadığı için risk düşük, ama include korumasına izin listesi eklenebilir.~~ → Faz H3'te yapıldı: `#pragma` izin listesi (`once`/`region`/`endregion`) + izin listesindeki adları tanımlayan `#define` reddi (macro ile `GCC dependency` atlatması kapanır) + `#line` yalnızca `#line <sayı>`. Kalan sınır: kullanıcının dahil ettiği bir başlık izin listesindeki adı tanımlarsa (yerel include'lar geçici/boş çalışma dizinine göre çözülür) izin listesi yine aldatılabilir; korunma için makro tablosu izlemek gerekir (yapılmadı).
 - ~~gcc kolonları "display" birimli, clang bayt; Tier 0 karakter. Unicode içeren satırlarda kolonlar farklı olabilir (`-fdiagnostics-column-unit=byte` gcc ≥ 11).~~ → Faz H3'te `-fdiagnostics-column-unit=byte` eklendi (gcc ≥ 9, clang ≥ 14); Tier 0 karakter saymaya devam eder, ASCII'de özdeş. Bayrağı tanımayan sürümde komut bayraksız yeniden denenir.
 - ~~Faz 6'da ertelenen 10 statik kural~~ → Faz 17'de yapıldı (2026-10-01).
-- ~~Faz 17: C-MEM-003 denetimin kullanımdan sonra yapıldığını görmüyor~~ (Faz 57'de çözüldü; yanlış dal ve koşullu koruma ayırt edilmiyor). UNITY-GC-001 closure bastırması satır bazlı.
+- ~~Faz 17: C-MEM-003 denetimin kullanımdan sonra yapıldığını görmüyor~~ (Faz 57'de çözüldü; yanlış
+  dal ve koşullu koruma ayırt edilmiyordu). UNITY-GC-001 closure bastırması satır bazlıydı.
+  → **KAPANDI (iş 5 dilim 3 ve 5, 2026-10-18):** LINQ lambdasının closure'ı olgularda ayrı `CLOSURE`
+  sayılmıyor (bayt aralığı; aynı satırdaki LINQ dışı lambda bulgu kalır, `positive/closure_next_to_linq.cs`);
+  C-MEM-003'ün akış biçimleri fixture+test ile sabitlendi (denetim tahsisten önceyse sayılmaz, tek
+  dallı denetim diğer yolu kapatmaz, koşulda kullanım; `negative/guard_forms_in_branches.c`).
 - `test_toolchain_install.py` tam koşuda bir kez 4 testle aralıklı düştü (Faz 57); tek başına yeşil. Tekrarlarsa paylaşılan geçici dizin/yarış incelenmeli. → Faz 58'de çözüldü (Windows tarayıcı kilidi; `_rename` yeniden denemesi).
-- C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi (`print_arr(arr, n)`) sahiplik aktarımı sayılıyor (sık kaçırma); çağrılan fonksiyon aynı dosyadaysa ve `free`/saklama yoksa bulgu verilebilir. Aynı değişkene iki kez `malloc`, gölgeleme ve `realloc` de bilinçli sınırlar.
-- UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı için `new Hit(3)` yanlış bulgu (değer tipi); Faz 5 `CSHARP_VALUE_TYPES` dosyadaki struct adlarıyla genişletilebilir.
-- UE-GC-001: `TArray<AActor*>`/`TMap<..., UObject*>` kapsayıcı alanları kaçırılıyor; UCLASS olmayan sınıfta (`FPlain`) öneri `UPROPERTY` değil `TStrongObjectPtr`/`FGCObject` olmalı.
+- ~~C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi (`print_arr(arr, n)`) sahiplik aktarımı sayılıyor (sık kaçırma)~~ → **KAPANDI (Faz 32 + iş 5 dilim 2, 2026-10-18):** aynı dosyada tanımlı okuyucu yardımcıya vermek kaçış sayılmıyor (`_borrowers`) ve ödünç artık **zincir boyunca** yayılıyor (`_MAX_BORROW_ROUNDS = 8` sabit noktası; `positive/passed_to_reader_chain.c`, `test_c_memory_flow.py`). Bilinçli sınırlar (kaçırma): aynı değişkene iki kez `malloc`, gölgeleme, `realloc`, yalnız bildirimli/çift adlı yardımcı ve işaretçiyi döndüren/saklayan yardımcı.
+- ~~UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı için `new Hit(3)` yanlış bulgu (değer tipi)~~ → **KAPANDI (Faz 21 + iş 5 dilim 3, 2026-10-18):** `analysis/_memory.py` `file_value_types` dosyadaki `struct`/`record struct` adlarını topluyor (fixture `negative/user_struct_new.cs`, `negative/value_types_in_update.cs`); dosyada tanımlı **sınıf** için bulgu sürüyor. Ayrıca closure bastırması satır bazlı olmaktan çıktı (bkz. üstteki Faz 17 satırı).
+- ~~UE-GC-001: `TArray<AActor*>`/`TMap<..., UObject*>` kapsayıcı alanları kaçırılıyor; UCLASS olmayan sınıfta (`FPlain`) öneri `UPROPERTY` değil `TStrongObjectPtr`/`FGCObject` olmalı~~ → **KAPANDI (Faz 32 + iş 5 dilim 4, 2026-10-18):** tek katman Faz 32'de gelmişti; **iç içe** kapsayıcı (`TMap<FName, TArray<UObject*>>`) da sayılıyor (`_MAX_CONTAINER_DEPTH = 2`, `type_descriptor` açılıyor). `TWeakObjectPtr`/`TSoftObjectPtr`/`TStrongObjectPtr` kapsam dışı (`negative/gc_safe_wrappers.h`); UCLASS/USTRUCT olmayan tipte soru `_UNREFLECTED` metnini kullanıyor.
 - ~~CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection` tipli değişkenler maliyet tablosunda çözülmüyor (kaçırma).~~ → Faz H2: `IList` → `List.Contains` (Faz 21), `IReadOnlyList.Contains` → `Enumerable.Contains` (LINQ) düzeltildi; `ICollection` bilinçli kaçırma (örnek metot).
 - ~~Kural motoru: çöken kuralın istisna izi loglanmıyor; structlog (Faz 10) ile `log.exception` eklenmeli.~~ → Faz 21/31.
 - Sıcak yol tespiti sınıf tabanını (MonoBehaviour / UCLASS) da denetlemeli (Faz 5 olgusu).

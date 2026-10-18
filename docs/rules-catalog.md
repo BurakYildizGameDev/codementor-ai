@@ -73,6 +73,8 @@ Toplam: 41 kural.
 
 Bu fonksiyonda `malloc`/`calloc` ile ayrılan bellek ne `free` ediliyor ne de fonksiyondan dışarı veriliyor. Fonksiyon bittiğinde bu bellek kimde kalıyor?
 
+*Kapsam ve sınırlar:* Aynı dosyada tanımlı ve işaretçiyi yalnızca okuyan yardımcıya vermek sahiplik aktarımı sayılmaz; bu ödünç zincir boyunca yayılır (`report` → `show` → `dump`), en çok 8 tur. Aynı adlı çift tanım, yalnız bildirimi olan fonksiyon ve işaretçiyi döndüren/saklayan yardımcı muhafazakâr sayılır (kaçırma). Alan/global hedefler, aynı değişkene iki kez `malloc`, gölgeleme ve `realloc` kapsam dışıdır.
+
 ### C-MEM-002 — realloc sonucu aynı işaretçiye atanıyor
 
 `realloc` başarısız olursa NULL döndürür ama eski blok serbest bırakılmaz. Sonuç doğrudan aynı işaretçiye yazıldığında eski bloğun adresi nerede kalır?
@@ -80,6 +82,8 @@ Bu fonksiyonda `malloc`/`calloc` ile ayrılan bellek ne `free` ediliyor ne de fo
 ### C-MEM-003 — Tahsis sonucu NULL denetimi yok
 
 `malloc`/`calloc`/`realloc` bellek ayıramazsa NULL döndürür. Bu işaretçi denetlenmeden kullanılıyor; tahsis başarısız olursa bu satırdan sonra ne olur?
+
+*Kapsam ve sınırlar:* Denetim tahsisten **sonra** ve ilk kullanımdan **önce**, kullanımın yolunda olmalıdır (`if`/`while` koşulu, `!p`, `p == NULL`, `assert`, tahsisle aynı koşul). Kullanım `p[i]`, `*p`, `p->alan` ile okunur. Yardımcıya geçirme (`die_if_null(p)`) ve takma ad belirsizdir: bulgu verilmez (muhafazakâr); aynı deyim içindeki denetim geçerlidir.
 
 ### C-PERF-001 — Döngü koşulunda strlen
 
@@ -215,6 +219,8 @@ Bu dosya ne zaman kapanıyor? Okuma sırasında bir hata olursa kapanma satırı
 
 Çöp toplayıcı yalnızca `UPROPERTY` ile işaretli alanları görür. Bu alanın gösterdiği nesne başka hiçbir yerden tutulmuyorsa GC onu toplar; alan ne gösterir?
 
+*Kapsam ve sınırlar:* `TArray`/`TSet`/`TMap` (iç içe ikinci katmana kadar), `TObjectPtr` ve çıplak `UObject`/`AActor` işaretçisi alanlar sayılır. `TWeakObjectPtr`, `TSoftObjectPtr` ve `TStrongObjectPtr` kendi GC yolunu taşıdığı için sayılmaz; ikiden derin iç içe kapsayıcı kapsam dışıdır. UCLASS/USTRUCT olmayan tipte soru `UPROPERTY` yerine `TStrongObjectPtr`/`FGCObject`'i düşündürür.
+
 ### UE-MEM-001 — Reserve olmadan TArray::Add
 
 Döngünün kaç kez döneceği belli ve her turda diziye bir eleman ekleniyor. Dizinin kapasitesi dolduğunda `Add` ne yapmak zorunda kalır ve bu döngüde kaç kez olabilir?
@@ -230,6 +236,8 @@ Bu abonelik `OnDisable`/`OnDestroy` içinde kaldırılmıyor. Nesne yok edildikt
 ### UNITY-GC-001 — Sıcak yolda heap tahsisi
 
 Bu satır her karede yeni bir nesne ayırıyor; çöp toplayıcı bunları bir noktada toplarken oyun takılabilir. Bu nesne bir kez oluşturulup yeniden kullanılabilir mi?
+
+*Kapsam ve sınırlar:* Yalnız MonoBehaviour tabanlı sınıfın `Update`/`FixedUpdate`/`LateUpdate` metodu içindeki `new` (referans tipleri), metin birleştirme ve lambda closure'ları sayılır; dosyada bildirilen `struct`/`record struct` değer tipidir. LINQ çağrısı ve ona verilen lambda CS-ALLOC-002'ye bırakılır; aynı satırdaki LINQ dışı lambda yine bu kuralın bulgusudur.
 
 ### UNITY-PERF-001 — Sıcak yolda bileşen/sahne araması
 

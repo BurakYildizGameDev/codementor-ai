@@ -727,9 +727,13 @@ dosya sistemine dokunmasını kesin olarak engellemek.
 - [x] **K2 — ReDoS:** `ingest/detect.py:133` deseni doğrusal hale gelir (kübik, saatler) — **Faz A1**
 - [x] **K2 — Karesel desenler:** `detect.py`'deki `re.M` + `^\s*` desenleri (Java deseni dahil,
       testin yakaladığı 7.) `^[ \t]*` ve satır içi `[^…\n]` sınıflarıyla düzeltildi — **Faz A1**
-- [ ] **K2 — Kalan tarama:** `analysis/_recursion.py:21`, `verify/lines.py:20`,
-      `verify/proof.py:50` ve `analysis/`, `rules/` içindeki diğer regex'ler en kötü girdiyle
-      taranır (A1'de yapılmadı; kısa metinlere uygulandıkları için öncelik düşük)
+- [x] **K2 — Kalan tarama:** `analysis/`, `rules/` ve `verify/` içindeki **tüm modül düzeyi
+      desenler** (44 desen) en kötü girdiyle tarandı; beşi süper-doğrusaldı ve doğrusallaştırıldı
+      (`call_costs._LAST_INDEX`/`_END_INDEX`, `leak_guard._ASSIGNMENT`, `leak_guard`
+      yorum/metin taraması, `complexity._TRAILER`). `analysis/_recursion.py:21`,
+      `verify/lines.py:20`, `verify/proof.py:50` ölçümde zaten doğrusal çıktı (bütçe içinde).
+      Test: `tests/unit/test_regex_budget.py` (otomatik keşif + 40 KB bütçesi + hypothesis
+      uzunluk eğrisi + eski desenle eşdeğerlik fuzz'ı) — **KALAN_ISLER.md iş 4, 2026-10-18**
 - [x] **K2 — Olay döngüsü:** `Orchestrator._ingest` iş parçacığında (`asyncio.to_thread`);
       `test_offloop.py` kapsıyor — **Faz A1**. Not: süre sınırı (`analysis_timeout_s`) hâlâ yalnız
       LLM geçişlerini kapsıyor; regex doğrusal olduğu için gerekmedi
@@ -991,14 +995,33 @@ tekrarlanabilir bir release'ten gelsin.
 - [x] CPP-OWN-001 erken `return`/istisna yolunda atlanan `delete` — **Faz H2:** eşleşen çiftin
       arasında aynı kapsamda erken çıkış varsa tür `issue`'ya yükseltildi (`rules/cpp.py`,
       `_jump_positions`/`_skipped_deletes`; fixture `early_return.cpp`, `throw_path.cpp`,
-      `other_scope_return.cpp`, `lambda_between.cpp`)
+      `other_scope_return.cpp`, `lambda_between.cpp`) · **doğrulama genişletmesi (2026-10-18,
+      KALAN_ISLER iş 5 dilim 1):** aynı klasöre 6 fixture eklendi (`goto_skip`, `loop_break_skip`,
+      `loop_continue_skip`, `nested_block_return` → hata; `loop_pair`, `jump_outside_pair` → öneri),
+      sınır/karışık tür vakaları `tests/rules/test_finding_kinds.py`'de; mutasyon kanıtı: erken çıkış
+      taraması kaldırılınca 7, aşırı duyarlı yapılınca 8 test kırmızı (`src/` değişmedi)
 - [x] C-MEM-001 aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi — **Faz 32'de kapandı**,
-      Faz H2'de fixture'la sabitlendi (`negative/passed_to_freeing_helper.c`)
+      Faz H2'de fixture'la sabitlendi (`negative/passed_to_freeing_helper.c`) · **kaçırma
+      kapatıldı (2026-10-18, iş 5 dilim 2):** ödünç aktarımı tek geçişte yalnız ilk halkayı
+      görüyordu; `_borrowers` artık sabit noktaya yakınsıyor (`_MAX_BORROW_ROUNDS = 8`), böylece
+      `report` → `show` → `dump` zinciri bulgu veriyor (`positive/passed_to_reader_chain.c`,
+      `test_c_memory_flow.py`)
 - [x] UNITY-GC-001 kullanıcı `struct`'ı için `new` yanlış bulgusu — **Faz 32'de kapandı**, H2'de
-      sabitlendi (`negative/user_struct_new.cs`)
+      sabitlendi (`negative/user_struct_new.cs`) · **closure bastırması satır bazlı olmaktan
+      çıktı (2026-10-18, iş 5 dilim 3):** LINQ lambdasının closure'ı olgularda ayrı `CLOSURE`
+      değil (bayt aralığı, `_without_linq_lambdas`); aynı satırdaki LINQ dışı lambda artık
+      bastırılmıyor (`positive/closure_next_to_linq.cs`)
 - [x] UE-GC-001 `TArray<AActor*>`/`TMap<…, UObject*>` alanları; UCLASS olmayan sınıfta doğru öneri —
       **Faz 32'de kapandı**, H2'de sabitlendi (`positive/container_fields.h`,
-      `positive/plain_class_pointer.h`, `tests/rules/test_unreal_gc.py`)
+      `positive/plain_class_pointer.h`, `tests/rules/test_unreal_gc.py`) · **iç içe kapsayıcı
+      kapatıldı (2026-10-18, iş 5 dilim 4):** `TMap<FName, TArray<UObject*>>` de sayılıyor
+      (`_MAX_CONTAINER_DEPTH = 2`; `positive/nested_container_fields.h`, `negative/gc_safe_wrappers.h`)
+- [x] C-MEM-003 kullanımdan sonra/yani yanlış dal ve koşullu koruma — **Faz 57'de kapandı**;
+      akış biçimleri 2026-10-18'de sabitlendi (iş 5 dilim 5): denetim tahsisten **önceyse**
+      sayılmaz (`positive/guard_before_allocation.c`), tek dallı denetim diğer yolu kapatmaz
+      (`positive/guard_on_one_switch_path.c`), koşul içindeki ilk kullanım da kullanımdır
+      (`positive/use_only_in_condition.c`); `do/while`+`break`, döngüde `continue`, `NULL == p`
+      ve aynı `case` içi denetim muhafazakâr (`negative/guard_forms_in_branches.c`)
 - [x] CS-PERF-001 `IList`/`IReadOnlyList`/`ICollection` — **Faz H2:** `IList` → `List.Contains`;
       `IReadOnlyList<T>.Contains` örnek metodu olmadığından LINQ'tir ve `using System.Linq` ile
       `Enumerable.Contains` olarak bulgu verir (`rules/csharp.py::_LINEAR_COLLECTIONS`'a `Enumerable`,
