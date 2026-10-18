@@ -47,7 +47,7 @@
 
 CodeMentor, "kodu düzeltmeyen, sorgulatan" bir mentor fikrini **teknik olarak ciddi** biçimde hayata
 geçiriyor: deterministik analiz + LLM, satır kanıtıyla doğrulama, çözüm sızıntısı koruması, ölçülmüş
-eval, 3.300+ test, 29 ADR. Bireysel bir proje için mühendislik kalitesi yüksek. **Ama bir eğitim
+eval, 3.700+ test, 30 ADR. Bireysel bir proje için mühendislik kalitesi yüksek. **Ama bir eğitim
 ürününün asıl kanıtlaması gereken şeyi — öğrencinin gerçekten daha iyi öğrendiğini — henüz
 kanıtlamadı**; hiç gerçek kullanıcısı olmadı; eval küçük ve büyük ölçüde tek modelli; kod
 çalıştırılmadığı için "çözüm doğru mu" sorusuna cevap veremiyor; dağıtımı zahmetli ve çoğunlukla
@@ -88,7 +88,7 @@ gerçek kullanıcı, geniş kural seti) geride kalınmasından geliyor.
   denetlenen README tabloları. Dev'de precision %27 → %78, recall korunarak.
 - **Güvenlik düşüncesi:** kod çalıştırılmıyor; derleyici yalıtımı; include koruması; prompt injection
   fixture'ları; tehdit modeli (`SECURITY.md`); birden fazla bağımsız güvenlik denetimi.
-- **Mühendislik:** mypy strict, 3.300+ test, ağsız testler, ADR kültürü, otomatik ve doğrulanmış release.
+- **Mühendislik:** mypy strict, 3.700+ test, ağsız testler, ADR kültürü, otomatik ve doğrulanmış release.
 - **Niş:** Unity/Unreal bağlamı, Türkçe öğrenci kitlesi.
 
 ---
@@ -394,14 +394,16 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
 ### 4.17 Kod tabanının sürdürülebilirliği 🟠
 
 - **Durum:**
-  - 400 satır kuralını aşan dosyalar: `desktop/app.py` 505, `pipeline/orchestrator.py` 465,
-    `pipeline/passes.py` 426 (Faz F/G'de bölünecek).
-  - ~29 bin satır kaynak, ~28 bin satır test; tek geliştirici.
+  - 400 satır kuralını aşan dosya yok (boş satırlar sayılmaz): en büyükler `analysis/extractor.py` 396
+    ve `config.py` 390. Faz F/G'de bölünenler artık sınırın altında: `desktop/app.py` 350,
+    `pipeline/orchestrator.py` 350, `pipeline/passes.py` 323.
+  - ~27 bin satır kaynak, ~39 bin satır test; tek geliştirici.
   - Masaüstü (CustomTkinter) testleri gerçek Tk penceresi açıyor: yavaş ve Linux CI'da atlanıyor
     (pencere testleri yalnız Windows'ta koşuyor).
-  - Bazı modüller arası bağımlılıklar katman sınırını zorluyor (ör. `report/usage.py` → `storage`;
-    Faz G'de düzeltilecek).
-  - Ertelenen küçük hatalar `PROGRESS.md` "Sonraya" ve "Denetim" notlarında birikiyor (~60 madde).
+  - Modüller arası bağımlılıklar katman sınırını zorluyordu; `report/usage.py` 62 satır ve yalnız
+    `models/` içe aktarıyor — **kapandı** (Faz G).
+  - Ertelenen küçük hatalar `PROGRESS.md` "Sonraya" ve "Denetim" notlarında birikiyor
+    (46 açık madde / 120 madde; "açık" = üstü çizili olmayan tek düzey madde).
 - **Neden önemli:** Büyüyen dosyalar ve biriken "sonraya"lar, yeni özellik eklemeyi yavaşlatır ve
   hata riskini artırır. Pencere testlerinin Linux'ta koşmaması, masaüstü gerilemelerinin CI'da
   yakalanmamasına yol açabilir.
@@ -420,7 +422,7 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
 ### 4.18 Belgeler dağınık ve Türkçe-öncelikli 🟡
 
 - **Durum:** `docs/` altında mimari (büyük), uygulama planı (büyük), bulgular, güncellemeler, devir
-  belgeleri, eval rehberleri, 29 ADR; kökte README (TR), README.en.md (kısa), PROGRESS. Faz D'de iç
+  belgeleri, eval rehberleri, 30 ADR; kökte README (TR), README.en.md (kısa), PROGRESS. Faz D'de iç
   belgeler `docs/gelistirme-gunlugu/`'ye taşındı ama hâlâ çok sayıda giriş noktası var.
 - **Neden önemli:** Yeni bir katkıcı ya da işe alım yapan kişi "nereden başlayayım" sorusunda kaybolabilir.
   Uluslararası okuyucu için İngilizce belge çok sınırlı.
@@ -568,8 +570,8 @@ Projeyi bir sonraki seviyeye en çok taşıyacak tek adım. Küçük, etik ve te
 | Deneyim | Tam analiz p50 | ~16-24 sn | < 12 sn (tek geçiş/küçük model seçeneğiyle) | eval gecikme sütunu |
 | Deneyim | Yardımsız kurulum başarısı | ölçülmedi | ≥ %80 | pilot |
 | Erişim | Anahtar/abonelik gerektirmeyen çalışan yol | yok (yerel model ölçülmedi) | en az bir yol, kalite eşiğiyle | Faz I |
-| Kod sağlığı | 400 satırı aşan dosya | 3 | 0 | `wc -l` |
-| Kod sağlığı | "Sonraya" madde sayısı | ~60 | < 30 | PROGRESS |
+| Kod sağlığı | 400 satırı aşan dosya (boş satır hariç) | 0 (en büyük 396) | 0 | `wc -l` |
+| Kod sağlığı | "Sonraya" madde sayısı (açık) | 46 (120 madde) | < 30 | PROGRESS |
 
 ---
 

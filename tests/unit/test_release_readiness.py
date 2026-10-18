@@ -252,3 +252,70 @@ def test_readme_phase_claims_match_progress() -> None:
     archive = ARCHIVE_DIR / f"PROGRESS-faz-0-{last_archived}.md"
     assert archive.exists(), archive
     assert f"Faz 0-{last_archived}" in archive.read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Zayıf yönler belgesi iddiaları (KALAN_ISLER.md iş 4c): sayılar ölçümle sabit
+# ---------------------------------------------------------------------------
+
+WEAK_DOC = "docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md"
+SRC_PREFIX = "src/codementor"
+
+
+def _open_sonraya_items() -> tuple[int, int]:
+    """`PROGRESS.md` "Sonraya" bölümündeki (toplam, açık) madde sayısı.
+
+    Madde = bölümdeki tek düzey `- ` satırı; kapalı olanlar üstü çizili başlar (`- ~~…~~`).
+    """
+    text = (REPO / "PROGRESS.md").read_text(encoding="utf-8")
+    heading = re.search(r"(?m)^## .*Sonraya.*$", text)
+    assert heading is not None, "PROGRESS.md'de Sonraya bölümü yok"
+    rest = text[heading.end() :]
+    following = re.search(r"(?m)^## ", rest)
+    section = rest[: following.start()] if following else rest
+    items = [line for line in section.splitlines() if line.startswith("- ")]
+    assert items, "Sonraya bölümü boş"
+    return len(items), sum(1 for line in items if not line.startswith("- ~~"))
+
+
+def test_weak_doc_line_count_claims_match_measurement() -> None:
+    """`~27 bin satır kaynak, ~38 bin satır test` iddiası ölçümün yuvarlamasıyla aynı olmalı."""
+    doc = _flat(WEAK_DOC)
+    tests_thousand = _number(doc, r"~(\d+) bin satır test")
+    src_thousand = _number(doc, r"~(\d+) bin satır kaynak")
+    assert round(_tracked_nonblank_lines("tests/") / 1000) == tests_thousand
+    assert round(_tracked_nonblank_lines("src/") / 1000) == src_thousand
+
+
+def test_weak_doc_test_count_and_adr_claims_match_reality() -> None:
+    """`N+ test` iddiaları alt sınır, `N ADR` iddiaları `docs/adr/` sayısıyla eşleşmeli."""
+    doc = _flat(WEAK_DOC)
+    claims = [int(re.sub(r"\D", "", value)) for value in re.findall(r"([\d.]+)\+ test", doc)]
+    assert len(claims) >= 2, f"belgede 'N+ test' iddiası beklenenden az: {claims}"
+    collected = _collected_test_count()
+    for claim in claims:
+        assert 0 < claim <= collected, f"test iddiası {claim} > toplama sayısı {collected}"
+    adr_claims = [int(value) for value in re.findall(r"(\d+) ADR\b", doc)]
+    assert adr_claims, "belgede 'N ADR' iddiası yok"
+    adr_files = [path for path in ADR_DIR.glob("*.md") if path.name[:4].isdigit()]
+    assert set(adr_claims) == {len(adr_files)}, (
+        f"ADR iddiaları {adr_claims} · dosya {len(adr_files)}"
+    )
+
+
+def test_weak_doc_file_line_counts_are_exact() -> None:
+    """`path.py NNN` biçimindeki her satır sayısı gerçek dosyayla toleranssız eşleşmeli."""
+    doc = _flat(WEAK_DOC)
+    claims = re.findall(r"`([\w/]+\.py)` (\d+)", doc)
+    assert len(claims) >= 6, f"beklenen dosya satır iddiası bulunamadı: {claims}"
+    for relative, claimed in claims:
+        actual = _count_lines((REPO / SRC_PREFIX / relative).read_bytes())
+        assert int(claimed) == actual, f"{relative}: belge {claimed}, gerçek {actual}"
+
+
+def test_weak_doc_sonraya_count_matches_progress() -> None:
+    """Belgedeki açık "Sonraya" madde sayısı `PROGRESS.md` ile aynı olmalı (tanım belgede)."""
+    doc = _flat(WEAK_DOC)
+    total, open_items = _open_sonraya_items()
+    assert _number(doc, r"madde sayısı \(açık\) \| (\d+)") == open_items
+    assert _number(doc, r"\((\d+) madde\)") == total
