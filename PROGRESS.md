@@ -410,6 +410,55 @@ diğer 400+ satırlık test dosyaları bu kapsamda bölünmedi (denetimde adı g
   sürüm farkı normaldir). Önbellek anahtarında referans çözüm **içeriği** hâlâ dosya damgasıyla
   temsil ediliyor ve etiket/veri seti sürümü yok (Faz 51 denetimi) → "Sonraya".
 
+## Testler + Belgeler — KALAN_ISLER iş 2b/4b/4c (2026-10-18)
+
+> KALAN_ISLER.md iş 2b (§1 özet tablosu), iş 4b (zamanlama testleri) ve iş 4c (zayıf yönler
+> belgesinin sayıları). `src/` **değişmedi**; iş 4b yalnız testlerin ölçüm yöntemini sertleştirdi.
+
+**2b — §1 özet tablo hizalaması**
+- `docs/BulgularVeDuzeltilecekler.md` §1'de 15 satırın 6. kolonuna kapanış etiketi eklendi
+  (Y1 → A2; Y3/Y4/Y5, O3/O4 → B; Y7/Y8/Y9, O9/O12 → C; O5 → G1; O15/O16 → E; O17 → "release; D").
+  5. kolon (Doğrulama) ve satır sayısı değişmedi; etiketler §4 başlıkları ve §10 `[x]` kutularıyla
+  birebir.
+
+**4b — zamanlama testleri (karar: göreli büyüme + min-of-3; ADR-0024 eşiği aynı)**
+- Seçim: **göreli büyüme birincil** (makine yükünden bağımsız) + mutlak bütçe korunur, ölçüm
+  **en iyi 3 koşu** (ısınma + 3 ölçüm). `slow` işaretleyip `make check` dışına alma **seçilmedi**:
+  gerileme koruması zayıflardı. Eşik **1,5 sn değişmedi** → ADR-0024 notu/onayı gerekmedi.
+- `tests/unit/test_facts_review.py`: `_best_of` (min) + O1/O2/O3 için dört büyüme testi
+  (`large <= 3 × small`, taban 20 ms; 2× girdi doğrusalda ≈2×, kareselde ≈4×).
+  `tests/unit/test_tier0_budget.py`: aynı `_best_of` + üç büyüme vakası (C++/CSS/C). HTML kapanmamış
+  `<div>` gramerde doğası gereği süper-doğrusal (ölçüm 2× girdi ≈3,3×) → yalnız mutlak bütçede
+  bırakıldı (gerekçe testte yazılı).
+- **Duyarlılık kanıtı:** `extract_facts`'a geçici karesel yama → `test_o1_growth_is_linear`
+  **0,336 → 1,071 sn** (kırmızı; mutlak test 1,071 < 1,5 olduğu için yeşil kalırdı → büyüme testinin
+  gerekliliği). `run_tier0`'a aynı yama → CSS **97 → 347 ms**, C **86 → 323 ms** (ikisi kırmızı).
+  Yamalar geri alındı; iki dosya SHA-256 ile bayt-bayt eski hâlinde.
+- **Kırılganlık kanıtı:** ilgili testler **3 tam suite koşusunda** hiç kırmızı olmadı.
+
+**4c — `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` tazeleme + teste bağlama**
+- Ölçüm (izlenen metin dosyaları, boş satır hariç): `src/` **27 367**, `tests/` **38 550** (iş 4b/4c
+  test eklemeleriyle +123; README'deki kardeş iddia yuvarlama testi yüzünden **~39 bin**'e
+  güncellendi), `web/` 6 139; `docs/adr/` **30** dosya; 400 satırı aşan dosya **0** (en büyükler:
+  `analysis/extractor.py` 396, `config.py` 390; Faz F/G'de bölünenler 350/350/323);
+  `report/usage.py` 62 satır ve yalnız `models/` import ediyor → bağımlılık notu **kapandı**;
+  "Sonraya" **46 açık / 120 madde**.
+- Belge düzeltmeleri: s.50/91 "3.300+" → **3.700+**, s.50/423 "29 ADR" → **30 ADR**, s.399
+  "~29 bin kaynak, ~28 bin test" → **"~27 bin satır kaynak, ~39 bin satır test"**, s.397-404
+  (dosya satırları, kapalı bağımlılık, madde sayısı), §10 özet tabloda iki satır (400 satır: 3 → **0**;
+  "Sonraya": ~60 → **46**).
+- `tests/unit/test_release_readiness.py` **+4 test** (~70 satır): satır sayısı iddiaları, "N+ test"
+  (alt sınır) ve "N ADR" (eşitlik), `path.py NNN` iddiaları **toleranssız**, "Sonraya" açık madde
+  sayısı (`PROGRESS.md` "Sonraya" bölümü; kapalı = `- ~~`).
+- **Mutasyon kanıtı (5/5 kırmızı):** "~27 bin"→"~33 bin" · "30 ADR"→"29 ADR" · extractor 396→397 ·
+  "48"→"47" (Sonraya) · "3.700+"→"9.999+". Belge bayt-bayt geri döndü (SHA-256).
+
+**Doğrulama:** `ruff check` temiz · `ruff format --check` 479 dosya · `mypy src/` 216 dosya hatasız ·
+hedefli testler yeşil · tam suite `pytest -m "not live"` **3 kez** yeşil: **3903 geçti / 16 atlandı**
+(352 s · 337 s · 240 s; iş 5 sonrası 3892 → +11: 4 büyüme (O1-O3) + 3 büyüme (Tier 0) + 4 belge testi).
+**Açık:** yok.
+
+
 ## Faz J — Notlar (isteğe bağlı küçük işler; 2026-10-17)
 
 > Devir §10'un üç maddesinden **biri** alındı: kontrol listesi anlık görüntü testi. Zig budama
@@ -1411,18 +1460,15 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Zamanlama testleri kırılgan (iş 3 derin doğrulamasından çıktı, 2026-10-18):** O1-O4 doğrusal
-  süre testleri 1,5 sn bütçesiyle koşuyor; tek başına ölçülen süreler 0,14-0,76 sn, tam suite
-  yükü altında 1,10 sn (ölçüldü). Tam suite koşusunda `test_o1_many_inner_loops_linear` bir kez
-  bütçeyi aşıp kırmızı oldu, yeniden koşuda yeşil. `src/` değişmediği için iş 3'le ilgisi yok:
-  ya bütçe gerçekçi hâle getirilmeli ya bu testler `slow` işaretlenip ayrı koşulmalı.
-  → **İş olarak açıldı: `KALAN_ISLER.md` iş 4b** (2026-10-18).
-- **`docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` (s.399) satır sayıları bayat:** "~29 bin satır
-  kaynak, ~28 bin satır test" → gerçek (metin dosyaları, 2026-10-18): **27 194** kaynak /
-  **37 732** test. README'deki kardeş iddia iş 1 + iş 3'te tazelendi ve teste bağlandı; bu belge
-  kapsam dışıydı.
-  → **İş olarak açıldı: `KALAN_ISLER.md` iş 4c** (2026-10-18; aynı belgede "3.300+ test" s.50/91,
-  "29 ADR" s.50/423, s.397-398 dosya satır sayıları ve s.404 "(~60 madde)" de bayat çıktı).
+- ~~**Zamanlama testleri kırılgan (iş 3 derin doğrulamasından çıktı, 2026-10-18)**~~ → **KAPANDI (iş 4b,
+  2026-10-18):** eşik değişmedi (1,5 sn, ADR-0024); ölçüm ısınma + 3 koşunun en hızlısına çevrildi ve
+  yanına **göreli büyüme** testleri eklendi (2× girdi ≤ 3× süre). Kasıtlı karesel yavaşlatma O1'i
+  0,34 → 1,07 sn (kırmızı), Tier 0'da CSS/C'yi 3,6-3,8× (kırmızı) yaptı; testler 3 tam suite koşusunda
+  kırmızı olmadı.
+- ~~**`docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` (s.399) satır sayıları bayat**~~ → **KAPANDI (iş 4c,
+  2026-10-18):** belge ölçümle tazelendi ("~27 bin / ~38 bin satır", "3.700+ test", "30 ADR",
+  400 satırı aşan dosya **0**, açık "Sonraya" maddesi **46 / 120**) ve `test_release_readiness.py`'de
+  dört testle ölçüme bağlandı.
 - ~~**`tests/golden/test_facts_golden.py:50` aynı satır sonu kusuru (Faz J denetimi Küçük-1, 2026-10-17)**~~
   → **KAPANDI (J5)**: `write_snapshot` `newline="\n"` ile yazıyor; `--update-golden` sonrası 15 golden
   **CR=0** ve `git status` temiz; iddia `read_bytes()` üzerinden (`test_write_snapshot_writes_lf_bytes`).

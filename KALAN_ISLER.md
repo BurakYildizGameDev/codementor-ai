@@ -61,12 +61,15 @@
   O6 `G2` konvansiyonu). (c) §10 P11 kutusu ikiye ayrıldı: derleme `[x]`, eski Faz 60 elle doğrulaması
   kullanıcıya devredildi (U5).
 
-### [ ] 🤖 2b. §1 özet tablosunu §4/§10 kapanışlarıyla hizala
+### [x] 🤖 2b. §1 özet tablosunu §4/§10 kapanışlarıyla hizala — ✅ **BİTTİ 2026-10-18**
 - **Kapsam (iş 2 sırasında ölçüldü):** §4 başlığında `✅ Faz X` olan ama §1 satırında kapanış etiketi
   bulunmayan bulgular — O3, O4, O5, O9, O12, O15, O16, O17 ve Y1, Y3, Y4, Y5, Y7, Y8, Y9 (O10/O13/O14
   iş 2'de yapıldı). Yalnız 6. kolona `Evet (Faz X)` eklenir; 5. kolon (Doğrulama) **değişmez**.
 - **Dosyalar:** `docs/BulgularVeDuzeltilecekler.md` (yalnız).
 - **Doğrulama:** her satır §4 başlığı ve §10 kutusuyla karşılaştırılır; satır sayısı sabit kalır.
+- **Sonuç (2026-10-18):** uygulandı — 15 satır (+0/−0, tablo 32 satır). Etiketler: Y1 → A2 ·
+  Y3/Y4/Y5, O3/O4 → B · Y7/Y8/Y9, O9/O12 → C · O5 → G1 · O15/O16 → E · O17 → "release; D". 5. kolon
+  ve diğer satırlar değişmedi; PROGRESS'e işlendi.
 - **Boyut:** küçük (~15 satır).
 
 ### [x] 🤖 3. Sayı iddialarını teste bağlama (tekrar bayatlamasın) — ✅ **BİTTİ 2026-10-18**
@@ -147,7 +150,7 @@
 - **Kaynak:** Bulgular §10 Faz A "K2 — Kalan tarama" kutusu → **kapandı**. Not: `detect.py`
   taraması Faz A1'de yapılmıştı; bu tur üç paketin tamamını kapsar.
 
-### [ ] 🤖 4b. Zamanlama testlerini yük altında kırılgan olmaktan çıkar (O1-O4 + Tier 0 bütçesi)
+### [x] 🤖 4b. Zamanlama testlerini yük altında kırılgan olmaktan çıkar (O1-O4 + Tier 0 bütçesi) — ✅ **BİTTİ 2026-10-18**
 - **Sorun:** `tests/unit/test_facts_review.py` O1-O4 doğrusal süre testleri ve
   `tests/unit/test_tier0_budget.py` **mutlak duvar saati** bütçesiyle koşuyor (1,5 sn). Tek başına
   ölçülen süreler 0,14-0,76 sn; tam suite yükü altında **1,10 sn** (ölçüldü) ve tam suite koşusunda
@@ -169,8 +172,17 @@
 - **Boyut:** küçük-orta (~1-2 saat; karar + küçük test düzenlemesi).
 - **Kaynak:** PROGRESS "Sonraya" (2026-10-18) — iş 3 derin doğrulamasından çıktı, iş 4 tam suite
   koşusunda (4:45) tekrar görüldü.
+- **Sonuç (2026-10-18):** uygulandı — seçim **(c)+(a)**: göreli büyüme (2× girdi ≤ 3× süre) birincil,
+  mutlak bütçe 1,5 s **korunur** ve ölçüm ısınma + 3 koşunun **en hızlısı**; `slow` işaretleyip
+  `make check` dışına alma (b) seçilmedi (gerileme korumasını boşaltırdı). Eşik değişmedi → ADR-0024
+  notu/onayı gerekmedi. `test_facts_review.py`: `_best_of` + 4 büyüme testi;
+  `test_tier0_budget.py`: `_best_of` + 3 büyüme vakası (HTML kapanmamış `<div>` doğası gereği
+  süper-doğrusal → yalnız bütçede). Duyarlılık: geçici karesel yama O1'de **0,336 → 1,071 sn**
+  (kırmızı; mutlak test 1,071 < 1,5 olduğu için yeşil kalırdı), Tier 0'da CSS **97 → 347 ms** ve
+  C **86 → 323 ms** (kırmızı); yamalar geri alındı, dosyalar SHA-256 ile aynı. İlgili testler
+  **3 tam suite** koşusunda kırmızı olmadı; `ruff`/`format`/`mypy` temiz.
 
-### [ ] 🤖 4c. `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` bayat sayıları tazele + teste bağla
+### [x] 🤖 4c. `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` bayat sayıları tazele + teste bağla — ✅ **BİTTİ 2026-10-18**
 - **Kapsam (iş 1/3'te bilinçli kapsam dışıydı):** belgedeki sayı iddiaları ölçümle değiştirilir ve
   teste bağlanır. Ölçülen bayatlıklar (2026-10-18, iş 4 sonrası; yöntem: izlenen **metin**
   dosyalarında boş olmayan satır, binary varlıklar hariç):
@@ -196,6 +208,22 @@
 - **Boyut:** küçük-orta (~1-1,5 saat; ~8 satır belge + ~60 satır test).
 - **Kaynak:** PROGRESS "Sonraya" (2026-10-18), `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` s.399;
   kardeş iş: KALAN_ISLER.md iş 3 (README sayıları) ve iş 2 (Bulgular durum tazeleme).
+- **Sonuç (2026-10-18):** uygulandı — belge ölçümle tazelendi: s.50/91 "3.300+ test" → **3.700+**,
+  s.50/423 "29 ADR" → **30 ADR**, s.399 "~29/~28 bin" → **"~27 bin / ~39 bin satır"**, s.397-404
+  dosya satırları (400 üstü **0**; en büyük `analysis/extractor.py` 396, `config.py` 390; bölünenler
+  350/350/323) + `report/usage.py` 62 satır / yalnız `models/` → bağımlılık notu **kapandı** +
+  "Sonraya" **46 açık / 120 madde**, §10 tabloda iki satır (400 satır: 3 → 0; Sonraya ~60 → 46).
+  `tests/unit/test_release_readiness.py` **+4 test** (~70 satır): satır sayısı iddiaları (yuvarlama),
+  "N+ test" (alt sınır) ve "N ADR" (eşitlik), `path.py NNN` (toleranssız), Sonraya açık madde sayısı
+  (`- ~~` = kapalı). Mutasyon **5/5 kırmızı** ("~27"→"~33", 30→29 ADR, 396→397, 48→47 madde,
+  "3.700+"→"9.999+"); belge bayt-bayt geri döndü (SHA-256).
+- **Sapmalar (kayıt için):** (a) test sayısı iddiası "~38 bin" → **"~39 bin"**: yeni testler `tests/`
+  satır sayısını **38 550**'ye çıkardı ve iş 3'ün yuvarlama testi 39 bekliyor; README'deki kardeş
+  iddia da aynı gerekçeyle güncellendi. (b) "400 satırı aşan dosya" metriği belgede **boş satır hariç**
+  olarak tanımlandı: toplam satırla `config.py` 492 / `extractor.py` 431 olurdu ve bu, belgedeki diğer
+  (boş satır hariç) sayılarla tutarsız kalırdı; tablo satırı "0 (en büyük 396)" oldu.
+  (c) "Sonraya" sayısı için **açık** madde sayısı raporlanıyor (belgede tanım yazılı); 48 → 46
+  çünkü iş 4b/4c maddeleri bu turda kapandı.
 
 
 ### [x] 🤖 5. Statik kural kaçırmaları (madde başına bağımsız dilim) — ✅ **BİTTİ 2026-10-18**
