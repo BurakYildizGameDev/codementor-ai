@@ -63,6 +63,13 @@ class UObjectWithoutUProperty(Rule):
     engines = UNREAL
     category = AuditCategory.GARBAGE_COLLECTION
     default_severity = Severity.HIGH
+    catalog_note = (
+        "`TArray`/`TSet`/`TMap` (iç içe ikinci katmana kadar), `TObjectPtr` ve çıplak "
+        "`UObject`/`AActor` işaretçisi alanlar sayılır. `TWeakObjectPtr`, `TSoftObjectPtr` ve "
+        "`TStrongObjectPtr` kendi GC yolunu taşıdığı için sayılmaz; ikiden derin iç içe kapsayıcı "
+        "kapsam dışıdır. UCLASS/USTRUCT olmayan tipte soru `UPROPERTY` yerine "
+        "`TStrongObjectPtr`/`FGCObject`'i düşündürür."
+    )
 
     def check(self, ctx: RuleContext) -> list[Finding]:
         symbols = ctx.facts.engine_symbols

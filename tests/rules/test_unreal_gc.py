@@ -46,3 +46,37 @@ def test_symbols_record_unreflected_fields() -> None:
     symbols = extract_facts(code).engine_symbols
     assert [s.line for s in symbols.uobject_fields] == [6, 13]
     assert [s.line for s in symbols.unreflected_fields] == [6]
+
+
+NESTED = """#pragma once
+#include "CoreMinimal.h"
+
+UCLASS()
+class AHolder : public AActor
+{
+    GENERATED_BODY()
+    TMap<FName, TArray<UObject*>> Nested;
+    TArray<TSet<AActor*>> Deep;
+    UPROPERTY()
+    TMap<FName, TArray<UObject*>> Tracked;
+    TMap<FName, TArray<TArray<UObject*>>> TooDeep;
+};
+"""
+
+
+def test_nested_container_field_is_recorded_as_uobject_field() -> None:
+    """Kapsayıcı içindeki kapsayıcı da UObject tutar (`TMap<FName, TArray<UObject*>>`)."""
+    code = normalize(NESTED, LanguageHint(language=Language.CPP, engine=Engine.UNREAL))
+    symbols = extract_facts(code).engine_symbols
+    assert [(s.name, s.line) for s in symbols.uobject_fields] == [
+        ("Nested", 8),
+        ("Deep", 9),
+        ("Tracked", 11),
+    ]
+
+
+def test_container_nesting_beyond_limit_is_not_claimed() -> None:
+    """İkiden derin iç içe kapsayıcı bilinçli olarak kapsam dışı (katman sınırı)."""
+    found = _gc_findings(NESTED)
+    assert set(found) == {8, 9}
+    assert "UPROPERTY" in found[8]  # UCLASS tipi: soru UPROPERTY'ye yönlendirir

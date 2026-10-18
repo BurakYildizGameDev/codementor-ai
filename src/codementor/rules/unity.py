@@ -13,7 +13,8 @@ from codementor.rules.registry import register_rule
 UNITY = frozenset({Engine.UNITY})
 CSHARP = frozenset({Language.CSHARP})
 
-# LINQ burada değil: daha özgül CS-ALLOC-002 raporlar (aynı satırda çift bulgu olmasın)
+# LINQ burada değil: daha özgül CS-ALLOC-002 raporlar; LINQ lambda'sının closure'ı da
+# olgularda ayrı CLOSURE olarak çıkmaz (LINQ tahsisinin parçası, çift bulgu olmasın)
 _HEAP = frozenset(
     {
         AllocationKind.CSHARP_NEW,
@@ -62,15 +63,20 @@ class HotPathAllocation(Rule):
     engines = UNITY
     category = AuditCategory.GARBAGE_COLLECTION
     default_severity = Severity.HIGH
+    catalog_note = (
+        "Yalnız MonoBehaviour tabanlı sınıfın `Update`/`FixedUpdate`/`LateUpdate` metodu içindeki "
+        "`new` (referans tipleri), metin birleştirme ve lambda closure'ları sayılır; dosyada "
+        "bildirilen `struct`/`record struct` değer tipidir. LINQ çağrısı ve ona verilen lambda "
+        "CS-ALLOC-002'ye bırakılır; aynı satırdaki LINQ dışı lambda yine bu kuralın bulgusudur."
+    )
 
     def check(self, ctx: RuleContext) -> list[Finding]:
-        hot = [a for a in ctx.facts.allocations if a.in_hot_path]
-        # LINQ'e verilen lambda'nın closure'ı LINQ bulgusunun parçası (CS-ALLOC-002)
-        linq_lines = {a.line for a in hot if a.kind is AllocationKind.LINQ}
+        # LINQ lambda'sının closure'ı olgularda ayrı tahsis değil: LINQ çağrısını CS-ALLOC-002
+        # raporlar. Satır bazlı bastırma gerekmez; aynı satırdaki LINQ dışı lambda bulgu kalır.
         return [
             self.finding(ctx, a.line)
-            for a in hot
-            if a.kind in _HEAP and not (a.kind is AllocationKind.CLOSURE and a.line in linq_lines)
+            for a in ctx.facts.allocations
+            if a.in_hot_path and a.kind in _HEAP
         ]
 
 

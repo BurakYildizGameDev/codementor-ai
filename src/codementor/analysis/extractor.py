@@ -15,6 +15,7 @@ Hata ayıklama: `uv run python -m codementor.analysis.extractor dosya.cs`
 
 from __future__ import annotations
 
+from bisect import bisect_right
 from collections.abc import Callable
 
 from tree_sitter import Node
@@ -70,6 +71,36 @@ from codementor.models.facts import (
 )
 from codementor.models.request import NormalizedCode
 from codementor.questions._loader import DataFileError
+
+
+def _without_linq_lambdas(
+    linq: list[Node], pairs: list[tuple[AllocationKind, Node]]
+) -> list[tuple[AllocationKind, Node]]:
+    """LINQ lambdasının closure'ı LINQ tahsisinin parçası: ayrı CLOSURE sayılmaz.
+
+    CS-ALLOC-002 zaten LINQ çağrısının satırını raporlar; ikinci bir tahsis olgusu çift
+    bulgu olurdu. Bastırma **bayt aralığı** bazlıdır: aynı satırda LINQ dışı bir lambda
+    varsa (`var q = xs.Where(f).ToList(); Action log = () => …;`) o lambda kalır (iş 5
+    dilim 3; eskiden aynı satırdaki bütün closure'lar bastırılıyordu). Aralık taraması
+    önek maksimumuyla O(L log L + C log L); iç içe zincirde karesel süre oluşmaz (§12).
+    """
+    if not linq:
+        return pairs
+    ordered = sorted(linq, key=lambda node: node.start_byte)
+    starts = [node.start_byte for node in ordered]
+    ends: list[int] = []
+    for node in ordered:  # başlangıcı buraya kadar olan aralıkların en büyük sonu
+        ends.append(max(ends[-1], node.end_byte) if ends else node.end_byte)
+
+    def inside(node: Node) -> bool:
+        index = bisect_right(starts, node.start_byte)
+        return index > 0 and ends[index - 1] >= node.end_byte
+
+    return [
+        (kind, node)
+        for kind, node in pairs
+        if kind is not AllocationKind.CLOSURE or not inside(node)
+    ]
 
 
 class _Extractor:
@@ -337,11 +368,13 @@ class _Extractor:
         )
         # LINQ: `Enumerable.*` olarak çözülen çağrılar (`Mathf.Max` LINQ değil); O(1)'e
         # indirgenen argümansız `First()`/`Any()` yineleyici tahsis etmez
-        pairs += [
-            (AllocationKind.LINQ, n)
+        linq = [
+            n
             for n, _, resolved in calls
             if resolved is not None and resolved[0].startswith("Enumerable.") and resolved[1] != "1"
         ]
+        pairs += [(AllocationKind.LINQ, n) for n in linq]
+        pairs = _without_linq_lambdas(linq, pairs)
         result = []
         for kind, node in pairs:
             fn = self._owner(node)

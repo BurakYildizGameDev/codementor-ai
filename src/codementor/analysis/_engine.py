@@ -61,6 +61,7 @@ _UNITY_LISTENERS = frozenset({"AddListener"})
 _OBJECT_PTR = frozenset({"TObjectPtr"})
 # GC'nin UPROPERTY ile izlediği kapsayıcılar; öğe ya da değer UObject ise alan aynı risktedir
 _CONTAINERS = frozenset({"TArray", "TSet", "TMap"})
+_MAX_CONTAINER_DEPTH = 2  # `TMap<FName, TArray<UObject*>>`; daha derin iç içe yapı incelenmez
 _UOBJECT_ARG = re.compile(r"^(?:class\s+)?[UA][A-Z][a-z]\w*\s*\*$|^TObjectPtr\s*<")
 _REFLECTION = re.compile(r"\b(?:UCLASS|USTRUCT)\s*\(")
 _MAX_TEMPLATE_BYTES = 300  # daha uzun şablon argümanı incelenmez (doğrusal süre)
@@ -129,16 +130,26 @@ def _is_method(field: Node) -> bool:
     )
 
 
-def _holds_uobject(type_node: Node | None) -> bool:
-    """`TArray<AActor*>`, `TMap<FName, UTexture2D*>`, `TSet<TObjectPtr<AEnemy>>`."""
-    if type_node is None or type_node.type != "template_type":
+def _holds_uobject(type_node: Node | None, depth: int = _MAX_CONTAINER_DEPTH) -> bool:
+    """`TArray<AActor*>`, `TMap<FName, UTexture2D*>`, `TSet<TObjectPtr<AEnemy>>`.
+
+    Kapsayıcı içinde kapsayıcı da sayılır (`TMap<FName, TArray<UObject*>>`); iç argümanlar
+    `type_descriptor` sarmalayıcısında gelir, açılır. `depth` katman sınırı hem karesel
+    süreyi hem yapay iç içe girdide özyineleme taşmasını önler (§12).
+    """
+    if type_node is not None and type_node.type == "type_descriptor":
+        type_node = next(iter(type_node.named_children), None)
+    if depth <= 0 or type_node is None or type_node.type != "template_type":
         return False
     if strip_templates(text(type_node)) not in _CONTAINERS:
         return False
     args = type_node.child_by_field_name("arguments")
     if args is None or args.end_byte - args.start_byte > _MAX_TEMPLATE_BYTES:
         return False
-    return any(_UOBJECT_ARG.match(text(a).strip()) for a in args.named_children)
+    return any(
+        _UOBJECT_ARG.match(text(arg).strip()) or _holds_uobject(arg, depth - 1)
+        for arg in args.named_children
+    )
 
 
 def _reflected(field: Node, masked_lines: list[str]) -> bool:

@@ -134,13 +134,6 @@
         "function": null
       },
       {
-        "kind": "closure",
-        "line": 23,
-        "loop_depth": 0,
-        "in_hot_path": true,
-        "function": "Update"
-      },
-      {
         "kind": "linq",
         "line": 23,
         "loop_depth": 0,

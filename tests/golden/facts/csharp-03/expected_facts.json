@@ -152,13 +152,6 @@
         "function": "Add"
       },
       {
-        "kind": "closure",
-        "line": 26,
-        "loop_depth": 0,
-        "in_hot_path": false,
-        "function": "GetAllAsync"
-      },
-      {
         "kind": "linq",
         "line": 26,
         "loop_depth": 0,

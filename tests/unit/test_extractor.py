@@ -345,11 +345,33 @@ def test_allocations_csharp_hot_path_and_loop_depth() -> None:
         (AllocationKind.STRING_CONCAT, 9, 1, True),
         (AllocationKind.STRING_CONCAT, 10, 1, True),
         (AllocationKind.STRING_CONCAT, 11, 1, True),
-        (AllocationKind.CLOSURE, 12, 1, True),
+        # LINQ lambda'sının closure'ı ayrı tahsis değil: LINQ çağrısının parçası (iş 5 dilim 3)
         (AllocationKind.LINQ, 12, 1, True),
         (AllocationKind.CSHARP_NEW, 13, 1, True),
     ]
     assert all(a.function == "Update" for a in facts.allocations)
+
+
+def test_sibling_lambda_on_linq_line_is_still_a_closure() -> None:
+    """Bastırma satır bazlı değil: aynı satırdaki LINQ dışı lambda tahsis sayılır (iş 5 dilim 3)."""
+    text = (
+        "using System;\n"
+        "using System.Collections.Generic;\n"
+        "using System.Linq;\n"
+        "using UnityEngine;\n"
+        "public class Radar : MonoBehaviour {\n"
+        "    List<int> xs;\n"
+        "    void Update() {\n"
+        "        var q = xs.Where(v => v > 0); Action log = () => Debug.Log(1);\n"
+        "        log();\n"
+        "    }\n"
+        "}\n"
+    )
+    facts = _facts(text, CS, Engine.UNITY)
+    assert [(a.kind, a.line) for a in facts.allocations] == [
+        (AllocationKind.CLOSURE, 8),
+        (AllocationKind.LINQ, 8),
+    ]
 
 
 def test_long_string_chain_is_linear() -> None:

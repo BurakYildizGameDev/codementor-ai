@@ -3,7 +3,8 @@
 `issue` → Sorunlar/Sokratik soru; `suggestion` → Öneriler (sayılmayan, kaynak filtre
 simgesiyle gizlenen) bölümünde gider (ADR-0022). Tür burada kural bazında değil,
 kural içi koşula göre verilir: aynı kapsamdaki kaynak tahsisle eşleşen `delete` /
-`close()` varsa bulgu öneridir; eşleşme yoksa hata kalır.
+`close()` varsa bulgu öneridir; eşleşme yoksa hata kalır. Eşleşme tek başına yetmez:
+`new` ile `delete` arasında aynı kapsamda erken çıkış varsa bulgu yine hatadır (Faz H2).
 """
 
 from __future__ import annotations
@@ -106,6 +107,53 @@ def test_cpp_unnamed_allocation_is_issue() -> None:
         Language.CPP,
     )
     assert found == {FindingKind.SUGGESTION: {2, 3}, FindingKind.ISSUE: {4}}
+
+
+# ---------------------------------------------------------------- Faz H2: erken çıkış
+# `new` ile `delete` aynı kapsamda eşleşse bile araya erken çıkış (`return`/`throw`/`goto`/
+# `break`/`continue`) girerse serbest bırakma atlanabilir: bulgu öneriye düşmez, hata kalır
+# (`cpp.py` `_skipped_deletes`). Tek türlü durumlar fixture'larda sabitlenir
+# (`fixtures/CPP-OWN-001/positive/`: `early_return`, `throw_path`, `goto_skip`, `loop_break_skip`,
+# `loop_continue_skip`, `nested_block_return` → hata; `loop_pair`, `jump_outside_pair` → öneri);
+# buradakiler fixture'ın ifade edemediği durumlar: çift aralığının sınırları ve aynı dosyada
+# iki türün birlikte çıkması.
+
+
+def test_cpp_early_exit_before_allocation_keeps_suggestion() -> None:
+    """Çıkış `new`'dan önceyse serbest bırakmayı atlatamaz."""
+    found = kinds(
+        "void f(int n) {\n"
+        "    if (n < 0) { return; }\n"
+        "    int* p = new int[n];\n"
+        "    delete[] p;\n"
+        "}\n",
+        Language.CPP,
+    )
+    assert found == {FindingKind.SUGGESTION: {3, 4}}
+
+
+def test_cpp_early_exit_after_delete_keeps_suggestion() -> None:
+    """`delete`'ten sonraki çıkışın serbest bırakmayla ilgisi yok."""
+    found = kinds(
+        "void f(int n) {\n    int* p = new int[n];\n    delete[] p;\n    return;\n}\n",
+        Language.CPP,
+    )
+    assert found == {FindingKind.SUGGESTION: {2, 3}}
+
+
+def test_cpp_early_exit_marks_only_the_affected_pair() -> None:
+    """İki çiftten yalnız korumasız olanı hata olur (eşleştirme çift bazında)."""
+    found = kinds(
+        "void f(int n) {\n"
+        "    int* a = new int[n];\n"
+        "    delete[] a;\n"
+        "    int* b = new int[n];\n"
+        "    if (n < 0) { return; }\n"
+        "    delete[] b;\n"
+        "}\n",
+        Language.CPP,
+    )
+    assert found == {FindingKind.SUGGESTION: {2, 3}, FindingKind.ISSUE: {4, 6}}
 
 
 def test_python_close_of_other_object_is_issue() -> None:

@@ -191,6 +191,13 @@ class MallocWithoutFree(Rule):
     languages = frozenset({Language.C})
     category = AuditCategory.RESOURCE_LEAK
     default_severity = Severity.HIGH
+    catalog_note = (
+        "Aynı dosyada tanımlı ve işaretçiyi yalnızca okuyan yardımcıya vermek sahiplik aktarımı "
+        "sayılmaz; bu ödünç zincir boyunca yayılır (`report` → `show` → `dump`), en çok 8 tur. "
+        "Aynı adlı çift tanım, yalnız bildirimi olan fonksiyon ve işaretçiyi döndüren/saklayan "
+        "yardımcı muhafazakâr sayılır (kaçırma). Alan/global hedefler, aynı değişkene iki kez "
+        "`malloc`, gölgeleme ve `realloc` kapsam dışıdır."
+    )
 
     def check(self, ctx: RuleContext) -> list[Finding]:
         owners = {a.function for a in ctx.facts.allocations if a.kind.value in _ALLOCATORS}
@@ -205,24 +212,41 @@ class MallocWithoutFree(Rule):
         ]
 
 
+_MAX_BORROW_ROUNDS = 8  # ödünç zinciri derinliği sınırı; daha derini muhafazakâr kalır (kaçırma)
+
+
 def _borrowers(ctx: RuleContext) -> dict[str, frozenset[int]]:
     """Aynı dosyada tanımlı fonksiyonların yalnızca ödünç aldığı parametre indeksleri.
 
     Parametre adı fonksiyon gövdesinde kaçış bağlamında (free, döndürme, saklama, başka bir
     fonksiyona verme) geçmiyorsa ödünç alınmıştır. Aynı adla birden çok tanım varsa (ör.
-    `static` yardımcılar) hiçbiri ödünç sayılmaz: hangisinin çağrıldığı bilinmez.
+    `static` yardımcılar) hiçbiri ödünç sayılmaz: hangisinin çağrıldığı bilinmez; yalnızca
+    bildirimi olan fonksiyon da sahiplenir sayılır.
+
+    Ödünç zincir boyunca yayılır (`report` → `show` → `dump`): işaretçiyi yalnızca okuyan
+    yardımcıya veren fonksiyon da sahiplenmez. Tek geçiş zincirin ilk halkasını görürdü; her
+    tur bir halka daha çözer. Küme yalnız büyüdüğü için sabit noktaya yakınsar ve en çok
+    fonksiyon sayısı kadar tur sürer; `_MAX_BORROW_ROUNDS` turda durulur (dosya başına sabit
+    sayıda ağaç gezintisi, mimari §12). Karşılıklı özyineleme (`a` → `b` → `a`) boş kümeyle
+    başlar ve öyle kalır: muhafazakâr.
     """
     seen: dict[str, int] = {}
     for fn in ctx.function_nodes:
         seen[fn.fact.name] = seen.get(fn.fact.name, 0) + 1
-    result: dict[str, frozenset[int]] = {}
-    for fn in ctx.function_nodes:
-        if seen[fn.fact.name] != 1 or not fn.fact.parameters:
-            continue
-        released = _Owners(fn.node).released
-        result[fn.fact.name] = frozenset(
-            i for i, name in enumerate(fn.fact.parameters) if name not in released
-        )
+    candidates = [fn for fn in ctx.function_nodes if seen[fn.fact.name] == 1 and fn.fact.parameters]
+    result: dict[str, frozenset[int]] = {fn.fact.name: frozenset() for fn in candidates}
+    for _ in range(_MAX_BORROW_ROUNDS):
+        updated = {
+            fn.fact.name: frozenset(
+                i
+                for i, name in enumerate(fn.fact.parameters)
+                if name not in _Owners(fn.node, result).released
+            )
+            for fn in candidates
+        }
+        if updated == result:
+            break
+        result = updated
     return result
 
 

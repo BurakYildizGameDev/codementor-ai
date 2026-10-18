@@ -338,6 +338,12 @@ class UncheckedAllocation(Rule):
     languages = frozenset({Language.C})
     category = AuditCategory.MEMORY_SAFETY
     default_severity = Severity.MEDIUM
+    catalog_note = (
+        "Denetim tahsisten **sonra** ve ilk kullanımdan **önce**, kullanımın yolunda olmalıdır "
+        "(`if`/`while` koşulu, `!p`, `p == NULL`, `assert`, tahsisle aynı koşul). Kullanım "
+        "`p[i]`, `*p`, `p->alan` ile okunur. Yardımcıya geçirme (`die_if_null(p)`) ve takma ad "
+        "belirsizdir: bulgu verilmez (muhafazakâr); aynı deyim içindeki denetim geçerlidir."
+    )
 
     def check(self, ctx: RuleContext) -> list[Finding]:
         owners = {c.function for c in ctx.facts.calls if c.name in _ALLOCATORS}
