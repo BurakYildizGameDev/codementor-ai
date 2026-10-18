@@ -18,10 +18,11 @@
 - **Kapsam:** `README.md` s.13 badge `testler-3300%2B` → **3700+** · s.42 "3.300+ test … 29 ADR" →
   **3.700+ test … 30 ADR** · s.150 "(docs/adr/, 29 kayıt)" → **30 kayıt** · s.480 "~28 bin satır test
   (~29 bin satır kaynak koda karşı)" → **"~38 bin satır test (~28 bin satır kaynak koda karşı)"** ·
-  s.485 faz anlatımı "Faz 0-63, ardından public öncesi Faz A-D ve K" → **"… Faz A-H ve J"**;
+  s.485 faz anlatımı "Faz 0-63, ardından public öncesi Faz A-D ve K" → **"… Faz A-H, J ve K"**;
   ayrıca `README.en.md` s.43 "3,300+ tests … 29 ADRs" → **"3,700+ tests … 30 ADRs"**.
-- **Ölçüm (2026-10-17; tazelemede aynı komutla tekrar üretilir):** `docs/adr/*.md` = **30 dosya** ·
-  izlenen `src/` dosyaları **28 369** satır, `tests/` **37 595** satır (`web/` 6 139) ·
+- **Ölçüm (2026-10-18'de doğrulandı):** yöntem = izlenen dosyalarda **boş olmayan** satır sayısı
+  (`git ls-files`, boş satırlar hariç) · `docs/adr/*.md` = **30 dosya** ·
+  `src/` **27 740** satır, `tests/` **37 595** satır, `web/` **6 139** satır ·
   `pytest -m "not live"` **3758 geçti / 16 atlandı**.
 - **Dosyalar:** `README.md`, `README.en.md`.
 - **Doğrulama:** `uv run pytest tests/unit/eval/test_readme_table.py -q` (eval tablosu testle
@@ -29,6 +30,11 @@
 - **Sonuç (2026-10-17):** uygulandı; ayrıca diğer sayı iddiaları ölçülüp **doğru** bulundu (41 statik
   kural, 166 eval örneği dev 96 / test 70, 60'tan fazla faz). Eski kalıp taraması temiz, iki dosyada
   CR=0, `ruff check` temiz, `pytest -m "not live"` 3758 geçti.
+- **Düzeltme (2026-10-18):** (a) `src/` için kaydedilen **28 369 yanlıştı** → **27 740** (yeniden
+  ölçüm; `tests/`/`web/` değerleri birebir tutuyor) — README'nin "~28 bin" iddiası etkilenmedi.
+  (b) faz listesi iş 3'te teste bağlanınca **K**'nın atlandığı çıktı: README
+  "… Faz A-H ve J" → **"… Faz A-H, J ve K"** (PROGRESS.md'de bölümü olan fazlar; I henüz
+  yapılmadığı için listede yok).
 - **Boyut:** küçük (2 dosya, ~8 satır).
 
 ### [x] 🤖 2. `docs/BulgularVeDuzeltilecekler.md` durum tazeleme — ✅ **BİTTİ 2026-10-17**
@@ -61,7 +67,7 @@
 - **Doğrulama:** her satır §4 başlığı ve §10 kutusuyla karşılaştırılır; satır sayısı sabit kalır.
 - **Boyut:** küçük (~15 satır).
 
-### [ ] 🤖 3. Sayı iddialarını teste bağlama (tekrar bayatlamasın)
+### [x] 🤖 3. Sayı iddialarını teste bağlama (tekrar bayatlamasın) — ✅ **BİTTİ 2026-10-18**
 - **Kapsam:** `tests/unit/test_release_readiness.py` yanına yeni testler: `README.md` ve
   `README.en.md`'deki ADR sayısı iddiası == `docs/adr/*.md` sayısı; README badge test sayısı ↔
   gerçek toplama sayısı (ya da alt sınır); `~N bin satır` iddiaları ölçüme karşı; README'deki faz
@@ -70,6 +76,19 @@
 - **Doğrulama:** yeni testler yeşil; kasıtlı bozma (mutation) ile kırmızı olduğu kanıtlanır; ağa
   çıkmaz.
 - **Boyut:** küçük-orta (yeni vakalar ~120 satır).
+- **Sonuç (2026-10-18):** uygulandı — `tests/unit/test_release_readiness.py` içine **4 test + 5
+  yardımcı** (+136 satır): (1) ADR sayısı iddiaları (TR "30 ADR"/"30 kayıt", EN "30 ADRs") ↔
+  `docs/adr/*.md`; (2) badge ve "N+ test" iddiaları ↔ gerçek toplama sayısı (alt sınır; alt
+  süreçte `--collect-only -q -m "not live"`, ~7 sn, tek koşu); (3) "~N bin satır" iddiaları ↔
+  `git ls-files` + boş olmayan satır ölçümü (binde yuvarlama; git yoksa atlanır); (4) README faz
+  listesi ↔ `PROGRESS.md`'de bölümü olan faz harfleri + `PROGRESS-faz-0-63.md` arşivi.
+- **Mutasyon kanıtı:** ADR 30→31 · badge 3700→9999 · "~38 bin"→"~44 bin" · faz listesi
+  "A-H, J ve K"→"A-H ve J" bozulduğunda ilgili test **kırmızı (4/4)**, geri alınınca yeşil.
+- **Ölçüm (iş 3 sonrası, aynı yöntem):** `src/` **27 740**, `tests/` **37 710** (bu işten +115
+  satır), `web/` **6 139** → README'nin "~38 bin / ~28 bin" iddiası geçerli.
+- **Sapmalar (kayıt için):** (a) kapsam "PROGRESS.md durum tablosu" diyordu; tabloda D satırı
+  yok, bu yüzden ölçüt **bölümü olan fazlar** alındı (A-H, J, K). (b) Test yazılırken README'nin
+  faz listesinin K'yı atladığı bulundu → iş 1 düzeltmesi (yukarıda).
 
 ### [ ] 🤖 4. K2 kalan regex taraması (kod + test)
 - **Kapsam:** `analysis/_recursion.py`, `verify/lines.py`, `verify/proof.py` ve `analysis/`+`rules/`

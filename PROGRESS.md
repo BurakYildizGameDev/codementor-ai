@@ -82,7 +82,7 @@
 (⏸) madde; her maddede kapsam, dokunulacak dosyalar, doğrulama ve boyut var. Yeni fikirlerin akışı
 netleşti: fikir önce buradaki "Sonraya" bölümüne, iş sırası/kabul kriteri `KALAN_ISLER.md`'ye.
 Tarama sırasında ölçülen gerçekler de kayda geçirildi: **ADR 30** (`README.md` s.42/s.150 ve
-`README.en.md` s.43 hâlâ 29 diyor), `src/` **28 369** satır / `tests/` **37 595** satır
+`README.en.md` s.43 hâlâ 29 diyor), `src/` **27 740** satır / `tests/` **37 595** satır
 (`README.md` s.480 "~28 bin satır test (~29 bin satır kaynak koda karşı)" diyor → sayılar ters),
 `pytest -m "not live"` **3758** geçti.
 
@@ -100,7 +100,8 @@ uygulanmadı → `KALAN_ISLER.md` iş 1-2; `git push` ve Y2 kullanıcıda.
 **Yapılanlar:** `README.md` s.13 badge `testler-3300%2B` → `testler-3700%2B` · s.42 "3.300+ test …
 29 ADR" → "3.700+ test … 30 ADR" · s.150 "29 kayıt" → "30 kayıt" · s.480 "~28 bin satır test
 (~29 bin satır kaynak koda karşı)" → "~38 bin satır test (~28 bin satır kaynak koda karşı)"
-(ölçüm: `src/` 28 369, `tests/` 37 595 satır) · s.485-486 faz listesi "Faz A-D ve K" → "Faz A-H ve
+(ölçüm: izlenen dosyalarda boş olmayan satır — `src/` 27 740, `tests/` 37 595,
+`web/` 6 139) · s.485-486 faz listesi "Faz A-D ve K" → "Faz A-H ve
 J"; `README.en.md` s.43 "3,300+ tests … 29 ADRs" → "3,700+ tests … 30 ADRs". Diğer sayı iddiaları
 ölçülüp **doğru** çıktı: 41 statik kural (katalog ve registry 41), 166 eval örneği (dev 96 / test
 70), 60'tan fazla faz.
@@ -110,8 +111,14 @@ satır test`, `Faz A-D` hiçbirinde yok) · `ruff check` temiz · `ruff format -
 `pytest -m "not live"` **3758 geçti**, 16 atlandı, 6 seçilmedi (4:52) · iki README'de CR=0 ve blob
 boyutu çalışma kopyasıyla aynı (LF).
 
-**Açık:** aynı sayıların tekrar bayatlamasını önleyen test iş 3'te; `BulgularVeDuzeltilecekler.md`
-§6/§10 tazelemesi iş 2'de → **iş 2 tamamlandı** (aşağıdaki bölüm).
+**Düzeltme (2026-10-18):** (a) bu bölümde önce kaydedilen `src/` değeri **28 369 yanlıştı**; aynı
+yöntemle yeniden ölçüldü → **27 740** (`tests/` 37 595 ve `web/` 6 139 birebir tutuyor) — README
+iddiaları ("~38 bin" / "~28 bin") etkilenmedi, sayım yöntemi artık yazılı ve teste bağlı.
+(b) Faz listesi iş 3'ün testiyle ölçülünce **K**'nın atlandığı çıktı → `README.md` s.485-486 artık
+**"… Faz A-H, J ve K"** (aşağıdaki iş 3 bölümü).
+
+**Açık:** aynı sayıların tekrar bayatlamasını önleyen test iş 3'te → **iş 3 tamamlandı**;
+`BulgularVeDuzeltilecekler.md` §6/§10 tazelemesi iş 2'de → **iş 2 tamamlandı**.
 
 ## Belge — Bulgular durum tazeleme (KALAN_ISLER.md iş 2; doküman-only; 2026-10-17)
 
@@ -139,7 +146,45 @@ kutusu `[x]` + eski Faz 60 elle doğrulaması kullanıcıya devredildi (U5).
 (3) §10 P11 tek kutu iken derleme ve elle doğrulama ayrıldı.
 
 **Açık:** iş 2b (iş 2 sırasında ölçülen §1 kayması: O3, O4, O5, O9, O12, O15-O17 ve Y1, Y3-Y9
-satırlarında kapanış etiketi yok) ve iş 3 (sayıları teste bağlama) sırada.
+satırlarında kapanış etiketi yok) sırada; iş 3 (sayıları teste bağlama) → **tamamlandı**.
+
+## Belge — Sayı iddialarını teste bağlama (KALAN_ISLER.md iş 3; 2026-10-18)
+
+> `README.md` (2 satır) + `tests/unit/test_release_readiness.py` (+136 satır). Kaynak kod (`src/`) değişmedi.
+
+**Yapılanlar:** `tests/unit/test_release_readiness.py` içine 4 test + 5 yardımcı eklendi:
+(1) `test_readme_adr_claims_match_adr_directory` — TR "30 ADR" / "(docs/adr/, 30 kayıt)" ve EN
+"30 ADRs" iddiaları `docs/adr/*.md` sayısına eşit. (2) `test_readme_test_count_claims_are_lower_bounds`
+— badge `3700+`, "3.700+ test" ve EN "3,700+ tests" iddiaları gerçek toplama sayısının **alt sınırı**
+(toplam alt süreçte: `pytest tests --collect-only -q -m "not live"`, ~7 sn, `lru_cache` ile tek koşu;
+şu an 3774). (3) `test_readme_line_count_claims_match_measurement` — "~38 bin satır test (~28 bin
+satır kaynak koda karşı)" iddiası ölçümün binde yuvarlamasıyla aynı (`git ls-files` + boş olmayan
+satır; `git` yoksa atlanır). (4) `test_readme_phase_claims_match_progress` — README'nin
+"(Faz 0-63, ardından public öncesi Faz A-H, J ve K)" ifadesi, `PROGRESS.md`'de bölümü olan faz
+harfleriyle birebir; ayrıca `docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md` arşivi var ve aralığı doğru.
+
+**Düzeltmeler (testin bulduğu bayatlık):** (a) README'nin faz listesi **K**'yı atlıyordu (iş 1'de
+"A-H ve J" yazılmıştı); kaynak kodda bölümü olan fazlar A-H, J, K olduğundan `README.md` s.485-486
+"… Faz A-H, J ve K" olarak düzeltildi (**I** henüz yapılmadı, listede yok — `KALAN_ISLER.md` iş 10-11).
+(b) İş 1'de kaydedilen `src/` satır sayısı düzeltildi: 28 369 → **27 740**; sayım yöntemi artık yazılı
+(izlenen dosyalar, boş olmayan satır) ve teste bağlı (`tests/` 37 595 ve `web/` 6 139 aynı yöntemle
+birebir tutuyor).
+
+**Doğrulama:** `pytest tests/unit/test_release_readiness.py -q` **10 geçti** (8,1 sn) ·
+`test_readme_table.py` ile birlikte **15 geçti** · **mutasyon kanıtı 4/4 kırmızı**: ADR 30→31, badge
+3700→9999, "~38 bin"→"~44 bin", faz listesi "A-H, J ve K"→"A-H ve J" bozulunca ilgili test düştü,
+geri alınınca yeşil · `ruff check` temiz · `ruff format --check` 477 dosya · `mypy src/` 216 dosya
+temiz · testler ağa çıkmaz (yalnız yerel `git` + alt süreç pytest).
+
+**Ölçüm (iş 3 sonrası, aynı yöntem):** `src/` 27 740 · `tests/` **37 710** (bu işten +115 satır) ·
+`web/` 6 139 → README'nin "~38 bin / ~28 bin" iddiası hâlâ doğru ve artık teste bağlı.
+
+**Kararlar:** faz ölçütü "durum tablosu" değil **bölümü olan fazlar** (durum tablosunda D satırı yok) ·
+sayım yöntemi tek ve yazılı: `git ls-files` + boş olmayan satır · badge için toplama sayısı alt sınır
+olarak alındı (tam eşitlik testleri sayı büyüdükçe anlamsız kırar).
+
+**Açık:** istenen bayatlama sınırı — `tests/` 38 500 satırı geçerse ya da toplama 3 700'ün altına
+düşerse test kırmızı olur ve README güncellenmelidir. Sırada iş 2b, sonra iş 4 (K2 regex taraması).
 
 ## Faz J5 — Faz J denetiminden kalan küçük maddeler (test-only; 2026-10-17)
 

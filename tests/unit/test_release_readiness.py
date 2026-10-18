@@ -1,11 +1,17 @@
-"""Faz D: tek kaynaklı sürüm (O18) ve exe duman testi (`--self-check`, O17)."""
+"""Faz D: tek kaynaklı sürüm (O18), exe duman testi (`--self-check`, O17).
+
+Ayrıca public belge iddiaları (README sayıları ve faz listesi) teste bağlanır.
+"""
 
 from __future__ import annotations
 
+import functools
 import importlib.metadata
 import importlib.util
 import json
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -84,3 +90,134 @@ def test_launch_flag_runs_without_window(tmp_path: Path, monkeypatch: pytest.Mon
         launch.main()
     assert exit_info.value.code == 0
     assert json.loads((tmp_path / "rapor" / "sonuc.json").read_text(encoding="utf-8"))["ok"]
+
+
+# ---------------------------------------------------------------------------
+# Public belge iddiaları (KALAN_ISLER.md iş 3): sayılar, badge ve faz listesi
+# ---------------------------------------------------------------------------
+
+ADR_DIR = REPO / "docs" / "adr"
+ARCHIVE_DIR = REPO / "docs" / "gelistirme-gunlugu"
+
+
+def _flat(relative: str) -> str:
+    """Belgeyi okur; satır kaydırmalarını gizlemek için boşlukları tekler."""
+    return re.sub(r"\s+", " ", (REPO / relative).read_text(encoding="utf-8"))
+
+
+def _number(text: str, pattern: str) -> int:
+    """Kalıbın ilk grubunu tam sayı olarak döndürür (binlik ayraçlar atılır)."""
+    match = re.search(pattern, text)
+    assert match is not None, f"kalıp bulunamadı: {pattern}"
+    return int(re.sub(r"\D", "", match.group(1)))
+
+
+def _tracked_nonblank_lines(prefix: str) -> int:
+    """İzlenen dosyalarda boş olmayan satır sayısı (README `~N bin satır` iddiasının ölçümü)."""
+    if shutil.which("git") is None:
+        pytest.skip("git bulunamadı")
+    listing = subprocess.run(
+        ["git", "ls-files", prefix],
+        cwd=REPO,
+        capture_output=True,
+        check=True,
+        text=True,
+        encoding="utf-8",
+    )
+    total = 0
+    for name in listing.stdout.splitlines():
+        raw = (REPO / name).read_bytes().decode("utf-8", "replace")
+        total += sum(1 for row in raw.split("\n") if row.strip())
+    return total
+
+
+@functools.lru_cache(maxsize=1)
+def _collected_test_count() -> int:
+    """Test toplama sayısı (alt süreç; ağa çıkmaz, ~7 sn sürer)."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests",
+            "--collect-only",
+            "-q",
+            "-m",
+            "not live",
+            "-p",
+            "no:cacheprovider",
+        ],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=300,
+    )
+    match = re.search(r"(\d+)(?:/\d+)? tests collected", result.stdout)
+    assert match is not None, result.stdout[-500:]
+    return int(match.group(1))
+
+
+def _expand_phases(claim: str) -> set[str]:
+    """`A-H, J ve K` gibi bir ifadeyi harf kümesine açar."""
+    letters: set[str] = set()
+    for part in re.split(r",|\bve\b", claim):
+        part = part.strip()
+        if not part:
+            continue
+        assert re.fullmatch(r"[A-K](?:-[A-K])?", part), f"beklenmeyen faz ifadesi: {part!r}"
+        if "-" in part:
+            first, last = part.split("-")
+            letters.update(chr(code) for code in range(ord(first), ord(last) + 1))
+        else:
+            letters.add(part)
+    return letters
+
+
+def test_readme_adr_claims_match_adr_directory() -> None:
+    """ADR sayısı iddiaları (TR + EN) `docs/adr/` içeriğiyle aynı olmalı."""
+    adr_files = [path for path in ADR_DIR.glob("*.md") if path.name[:4].isdigit()]
+    assert adr_files
+    readme = _flat("README.md")
+    assert _number(readme, r"(\d+) ADR\b") == len(adr_files)
+    assert _number(readme, r"(\d+) kayıt\)") == len(adr_files)
+    assert _number(_flat("README.en.md"), r"(\d+) ADRs") == len(adr_files)
+
+
+def test_readme_test_count_claims_are_lower_bounds() -> None:
+    """`3700+` badge'i ve `N+ test` iddiaları gerçek toplama sayısının alt sınırı olmalı."""
+    collected = _collected_test_count()
+    readme = _flat("README.md")
+    claims = {
+        "badge": _number(readme, r"badge/testler-(\d+)%2B"),
+        "kalite tablosu": _number(readme, r"([\d.]+)\+ test"),
+        "README.en.md": _number(_flat("README.en.md"), r"([\d,]+)\+ tests"),
+    }
+    for name, value in claims.items():
+        assert 0 < value <= collected, f"{name}: {value} > toplama sayısı {collected}"
+
+
+def test_readme_line_count_claims_match_measurement() -> None:
+    """`~38 bin satır test (~28 bin satır kaynak)` iddiası ölçümün yuvarlamasıyla aynı olmalı."""
+    readme = _flat("README.md")
+    tests_thousand = _number(readme, r"~(\d+) bin satır test")
+    src_thousand = _number(readme, r"\(~(\d+) bin satır kaynak")
+    assert round(_tracked_nonblank_lines("tests/") / 1000) == tests_thousand
+    assert round(_tracked_nonblank_lines("src/") / 1000) == src_thousand
+
+
+def test_readme_phase_claims_match_progress() -> None:
+    """README'nin faz listesi, PROGRESS.md'de bölümü olan fazlarla birebir olmalı."""
+    readme = _flat("README.md")
+    match = re.search(r"\(Faz 0-(\d+), ardından public öncesi Faz ([^)]*)\)", readme)
+    assert match is not None, "README'de faz anlatımı bulunamadı"
+    last_archived = int(match.group(1))
+    claimed = _expand_phases(match.group(2))
+    progress = (REPO / "PROGRESS.md").read_text(encoding="utf-8")
+    documented = set(re.findall(r"(?m)^#{2,4}\s+Faz\s+([A-K])", progress))
+    assert documented, "PROGRESS.md'de faz bölümü bulunamadı"
+    assert claimed == documented, f"README {sorted(claimed)} · PROGRESS {sorted(documented)}"
+    archive = ARCHIVE_DIR / f"PROGRESS-faz-0-{last_archived}.md"
+    assert archive.exists(), archive
+    assert f"Faz 0-{last_archived}" in archive.read_text(encoding="utf-8")

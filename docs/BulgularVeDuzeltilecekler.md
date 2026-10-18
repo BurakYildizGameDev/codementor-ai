@@ -567,7 +567,7 @@ de aynı yapıda (maskelenmiş metinde çalışıyor; ayrıca ölçülmeli).
 | P4 | Referans çözüm sızıntısı | ❓ Y2 — `tests/fixtures/llm_responses/unity03_reference.cs` bankada çözüm gövdesi taşıyor; karar `private/` ile karşılaştırmayı gerektiriyor | Kontrol et (kullanıcı) |
 | P5 | İç çalışma belgeleri | ✅ Faz D: hepsi `docs/gelistirme-gunlugu/` altına taşındı (`DEVIR_*` ×3, `CODEX_3_4_YAPILANLAR`, `YAPILANLAR_60_62_ANTIGRAVITY`, `FAZ36_OLCUM_DURUMU`, `EVAL_PARCA_REHBERI`); kökte kalmadı (2026-10-17 doğrulandı) | — |
 | P6 | `PROGRESS.md` | ✅ Faz D: arşivlendi (`docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md`, 224 KB); kökteki özet 2026-10-17'de 146 KB (142,6 KiB) | — |
-| P7 | README doğruluğu | ✅ Faz D + 2026-10-17 tazeleme: faz anlatımı "Faz 0-63, ardından public öncesi A-H ve J"; test 3.700+, ADR 30, satır sayıları ölçümle eşitlendi | — |
+| P7 | README doğruluğu | ✅ Faz D + 2026-10-17 tazeleme, 2026-10-18 düzeltmesi: faz anlatımı "Faz 0-63, ardından public öncesi A-H, J ve K"; test 3.700+, ADR 30, satır sayıları ölçümle eşitlendi ve teste bağlandı (`test_release_readiness.py`, 2026-10-18) | — |
 | P8 | İngilizce README | ✅ Faz D: `README.en.md` var (ne, neden, hızlı başlangıç, sonuçlar) | — |
 | P9 | `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, issue/PR şablonları | ✅ Faz D: dördü de var; şablonlar `.github/ISSUE_TEMPLATE/{hata,oneri}.yml` + `PULL_REQUEST_TEMPLATE.md`; `dependabot.yml` eklendi | — |
 | P10 | Release | ⚠️ Kısmi: `release.yml` hazır ve `v0.1.1` etiketi yerelde var; GitHub Release + zip yüklemesi kullanıcıda | Etiket/release (kullanıcı) |

@@ -482,8 +482,8 @@ golden prompt anlık görüntüleri, hypothesis özellik testleri, her kural iç
 fixture'lar, 40 KB kötü niyetli girdiyle doğrusal zaman testleri, Playwright e2e. Testler ağa
 çıkmaz; CI Ubuntu ve Windows'ta koşar, her `main` koşusu exe'yi de derler.
 
-**Nasıl geliştirildi:** proje 60'tan fazla fazda (Faz 0-63, ardından public öncesi Faz A-H ve
-J), her faz ayrı dalda, kabul kriterleri ve testlerle geliştirildi
+**Nasıl geliştirildi:** proje 60'tan fazla fazda (Faz 0-63, ardından public öncesi Faz A-H, J ve
+K), her faz ayrı dalda, kabul kriterleri ve testlerle geliştirildi
 ([uygulama planı](docs/UYGULAMA_PLANI.md), [ilerleme günlüğü](PROGRESS.md),
 [geliştirme günlüğü](docs/gelistirme-gunlugu/)).
 Mimariden her sapma bir ADR'dir. Kodlama ajanlarıyla çalışıldı; fazların çoğu bağımsız bir
