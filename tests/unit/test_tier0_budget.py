@@ -4,11 +4,17 @@
 `a<`×20000 girdisinde süreç içinde ~10-12 s ve ~4,2 GB sürdüğü (parse'ın kendisi) ADR-0024'te
 kabul edilmişti; Faz 59'dan beri `validation.tier0_isolation` açıkken alt süreçte süre ve
 bellek sınırıyla durdurulur (ADR-0025) ve bu dosyada o yolla sabitlenir.
+
+Süre iddiaları iki katmanlıdır (KALAN_ISLER.md iş 4b): (1) **göreli büyüme** — girdi iki katına
+çıkınca süre en çok `_GROWTH_LIMIT` kat artar (makine yükünden bağımsız); (2) **mutlak bütçe**
+1,5 s (ADR-0024, eşik değişmedi). Her ölçüm ısınma + `_RUNS` koşunun en hızlısıdır; tek koşu tam
+suite yükü altında tepe gecikmesi görüp bütçeyi bir kez aşmıştı.
 """
 
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 
 import pytest
 
@@ -16,6 +22,21 @@ from codementor.ingest.normalize import normalize
 from codementor.models.enums import Language
 from codementor.models.request import LanguageHint
 from codementor.validation.tier0 import run_tier0
+
+_RUNS = 3
+_GROWTH_LIMIT = 3.0  # 2× girdi: doğrusal ≈2×, karesel ≈4×
+_TIME_FLOOR = 0.02  # çok kısa ölçümlerde oran gürültüsünü engeller
+
+
+def _best_of(run: Callable[[], None]) -> float:
+    """Isınma + `_RUNS` koşunun en hızlısı (saniye); yük altında tepe gecikmesini eler."""
+    run()
+    best = float("inf")
+    for _ in range(_RUNS):
+        start = time.perf_counter()
+        run()
+        best = min(best, time.perf_counter() - start)
+    return best
 
 
 def _deadline(seconds: float) -> float:
@@ -60,11 +81,34 @@ def _valid_cpp(max_lines: int = 600, max_bytes: int = 39 * 1024) -> str:
 )
 def test_tier0_worst_bounded_inputs(language: Language, text: str) -> None:
     code = normalize(text, LanguageHint(language=language))
-    run_tier0(code)  # ısınma: dil yüklemesi ölçüme karışmasın
-    start = time.perf_counter()
-    run_tier0(code)
-    elapsed = time.perf_counter() - start
+    elapsed = _best_of(lambda: run_tier0(code))
     assert elapsed < _deadline(1.5), f"{language.value}: {elapsed * 1000:.1f} ms"
+
+
+@pytest.mark.parametrize(
+    ("language", "fragment", "small", "large"),
+    [
+        (Language.CPP, "a<", 10000, 20000),  # şablon belirsizliği
+        (Language.CSS, "{", 20000, 40000),  # iç içe bloklar
+        (Language.C, "(", 20000, 40000),  # kapanmamış parantezler
+    ],
+    ids=["cpp-template-ambiguity", "css-nested-braces", "c-open-parens"],
+)
+def test_tier0_growth_is_linear(language: Language, fragment: str, small: int, large: int) -> None:
+    """Girdi iki katına çıkınca süre en çok 3× artar (yükten bağımsız gerileme testi).
+
+    HTML kapanmamış `<div>` girdisi gramerde doğası gereği süper-doğrusal (ölçüm: 2× girdi ≈3,3×);
+    bu yüzden yalnız mutlak bütçeyle sınırlanır.
+    """
+
+    def measure(count: int) -> float:
+        code = normalize(fragment * count, LanguageHint(language=language))
+        return _best_of(lambda: run_tier0(code))
+
+    small_time, large_time = measure(small), measure(large)
+    assert large_time <= _GROWTH_LIMIT * max(small_time, _TIME_FLOOR), (
+        f"{language.value}: {small_time * 1000:.1f} ms → {large_time * 1000:.1f} ms"
+    )
 
 
 def test_valid_cpp_near_limit_parses_clean() -> None:
