@@ -40,32 +40,32 @@ hiçbir dosya değiştirilmedi.
 |---|---|---|---|---|---|
 | K1 | 🔴 | Tier 1 güvenlik | Include koruması `#/**/include` ile atlatılıyor | ✅ | Evet |
 | K2 | 🔴 | API / ingest | Dil tespitinde kübik ReDoS + 6 karesel desen, olay döngüsünü kilitliyor | ✅ | Evet |
-| Y1 | 🟠 | Tier 1 güvenlik | Windows'ta çalışma dizinindeki sahte derleyici seçilebiliyor | 🔬 (koşullu) | Evet |
+| Y1 | 🟠 | Tier 1 güvenlik | Windows'ta çalışma dizinindeki sahte derleyici seçilebiliyor | 🔬 (koşullu) | Evet (Faz A2) |
 | Y2 | 🟠 | Gizlilik | Repoda referans çözüm olabilir (`unity03_reference.cs`) | ❓ | Evet |
-| Y3 | 🟠 | Pipeline | Onarım döngüsü doğrulanmış bulguları atıyor | 🔬 | Evet |
-| Y4 | 🟠 | Pipeline | Geçiş B hatası Geçiş A'yı da atıyor | 📖 | Evet |
-| Y5 | 🟠 | Önbellek | Fallback raporu birincil sağlayıcının anahtarıyla saklanıyor | 📖 | Evet |
+| Y3 | 🟠 | Pipeline | Onarım döngüsü doğrulanmış bulguları atıyor | 🔬 | Evet (Faz B) |
+| Y4 | 🟠 | Pipeline | Geçiş B hatası Geçiş A'yı da atıyor | 📖 | Evet (Faz B) |
+| Y5 | 🟠 | Önbellek | Fallback raporu birincil sağlayıcının anahtarıyla saklanıyor | 📖 | Evet (Faz B) |
 | Y6 | 🟠 | İpucu merdiveni | Masaüstü kavram adını her seviyede gösteriyor; API/JSON da veriyor | ✅ | Evet |
-| Y7 | 🟠 | Masaüstü | toml yazıcısı kullanıcı ayarını siliyor, atomik değil | 🔬 | Evet |
-| Y8 | 🟠 | Masaüstü (exe) | toml yokken yapılandırma konumu ve yeniden yükleme yanlış | 📖 | Evet |
-| Y9 | 🟠 | CLI | Sistem hatası 1 çıkış koduyla dönüyor (bulgu ile karışıyor) | 🔬 | Evet |
+| Y7 | 🟠 | Masaüstü | toml yazıcısı kullanıcı ayarını siliyor, atomik değil | 🔬 | Evet (Faz C) |
+| Y8 | 🟠 | Masaüstü (exe) | toml yokken yapılandırma konumu ve yeniden yükleme yanlış | 📖 | Evet (Faz C) |
+| Y9 | 🟠 | CLI | Sistem hatası 1 çıkış koduyla dönüyor (bulgu ile karışıyor) | 🔬 | Evet (Faz C) |
 | O1 | 🟡 | Belgeler / web | Faz 62 belgesi yapılmamış web/toplu silmeyi yapıldı diyor | ✅ | Evet (belge) |
 | O2 | 🟡 | Pipeline | `single_pass` doğrulanmamış bulgudan soru üretiyor | 🔬 | Evet |
-| O3 | 🟡 | Önbellek | Anahtarda `tier1`, `rules.disabled`, prompt ayarları yok | 📖 | Önerilir |
-| O4 | 🟡 | Önbellek | Önbellekten dönen raporda eski `cost_est` | 🔬 | Önerilir |
-| O5 | 🟡 | Sağlayıcılar | CLI ajan çıktısı 64 KB'de kesiliyor, sonuç olayı kayboluyor | ❓ | Sonra |
+| O3 | 🟡 | Önbellek | Anahtarda `tier1`, `rules.disabled`, prompt ayarları yok | 📖 | Evet (Faz B) |
+| O4 | 🟡 | Önbellek | Önbellekten dönen raporda eski `cost_est` | 🔬 | Evet (Faz B) |
+| O5 | 🟡 | Sağlayıcılar | CLI ajan çıktısı 64 KB'de kesiliyor, sonuç olayı kayboluyor | ❓ | Evet (Faz G1) |
 | O6 | 🟡 | Sağlayıcılar | Kalıcı CLI hataları 3 kez yeniden deneniyor | ✅ | G2 |
 | O7 | 🟡 | Config | BOM'lu toml uygulamayı tamamen durduruyor | ✅ | Evet |
 | O8 | 🟡 | Config | `.env` hiç okunmuyor; `.env.example` eski | ✅ | Evet |
-| O9 | 🟡 | Paketleme | Wheel'e varsayılan toml girmiyor | 📖 | Önerilir |
+| O9 | 🟡 | Paketleme | Wheel'e varsayılan toml girmiyor | 📖 | Evet (Faz C) |
 | O10 | 🟡 | Masaüstü | Bozuk veritabanında exe hiç açılmıyor | 📖 | Evet (Faz F) |
 | O11 | 🟡 | CLI | Kök `--help` Türkçe karakterleri bozuk basıyor | 🔬 | Evet |
-| O12 | 🟡 | CLI | `toolchain` ve `eval compare` traceback veriyor | 🔬 | Önerilir |
+| O12 | 🟡 | CLI | `toolchain` ve `eval compare` traceback veriyor | 🔬 | Evet (Faz C) |
 | O13 | 🟡 | Masaüstü | Dışa aktarma hatası sessiz | 📖 | Evet (Faz F) |
 | O14 | 🟡 | Gizlilik | "Geçmişi temizle" sonrası kod veritabanı dosyasında kalıyor | 📖 | Evet (Faz F) |
-| O15 | 🟡 | Web güvenlik | Monaco hover güvenilmeyen markdown işliyor | 📖 | Önerilir |
-| O16 | 🟡 | Web / API | CSP ve güvenlik başlıkları yok | 📖 | Sonra |
-| O17 | 🟡 | CI | Etiketle release yok, `permissions` yok, duman testi yok | 📖 | Evet (release) |
+| O15 | 🟡 | Web güvenlik | Monaco hover güvenilmeyen markdown işliyor | 📖 | Evet (Faz E) |
+| O16 | 🟡 | Web / API | CSP ve güvenlik başlıkları yok | 📖 | Evet (Faz E) |
+| O17 | 🟡 | CI | Etiketle release yok, `permissions` yok, duman testi yok | 📖 | Evet (release; Faz D) |
 | O18 | 🟡 | Sürüm | v0.1.0 main'in gerisinde; sürüm iki yerde | ✅ | Evet |
 | D1-D20 | 🟢 | Çeşitli | Bkz. §5 (tamamı ✅; D20 satırı kapanış denetiminde güncellendi) | ✅ | Bitti (C/E/F/G) |
 
