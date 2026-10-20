@@ -39,7 +39,7 @@ soruyu veriyor. Web arayüzü: [docs/img/web-live.png](docs/img/web-live.png).</
 | **Eval** | 166 elle etiketlenmiş örnek, dev/test ayrımlı (dev 96 / test 70) |
 | **Arayüzler** | Windows masaüstü (.exe), web (React), CLI, REST API + SSE |
 | **Çıktılar** | JSON · Markdown · SARIF · Rich terminal paneli |
-| **Kalite** | 3.700+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 31 ADR |
+| **Kalite** | 3.700+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 32 ADR |
 
 ## İçindekiler
 
@@ -147,7 +147,7 @@ Ayrıntı: [docs/mimari.md](docs/mimari.md).
 
 ## Mühendislik kararları
 
-Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 31 kayıt). Öne çıkanlar:
+Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 32 kayıt). Öne çıkanlar:
 
 - **Hibrit, LLM sarmalayıcısı değil.** Deterministik katman, yanıtların bir kısmını LLM'siz
   verir (sözdizimi hatalarında erken çıkış precision/recall %100) ve LLM'e olgu sağlar: olgular

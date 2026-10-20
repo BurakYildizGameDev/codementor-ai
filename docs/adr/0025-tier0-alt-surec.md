@@ -56,7 +56,7 @@ gerçek bir hizmet dışı bırakma riski.
 - Yalıtım kapalıyken (varsayılan) davranış ve hız değişmez; risk ADR-0024'teki gibi kabul
   edilmiş durumdadır.
 - Her yalıtılmış analiz bir Python süreci açar (Windows'ta ~280 ms). Daha yüksek yükte sıcak
-  işçi havuzu düşünülebilir (Sonraya).
+  işçi havuzu: `validation.tier0_warm_workers`, aynı sınırlarla (ADR-0032).
 - Testler: `tests/unit/test_tier0_isolation.py` (gerçek alt süreçle eşdeğerlik, süre ve bellek
   sınırı, hata yolları, exe geri dönüşü), `test_tier0_budget.py` (C# vakası artık kapsamda),
   `tests/integration/test_pipeline.py` (erken çıkış, LLM çağrısı yok).

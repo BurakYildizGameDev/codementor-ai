@@ -211,8 +211,8 @@ def test_stopped_flag_is_structural_not_textual() -> None:
     assert not stopped(Tier0Result(diagnostics=[_syntax_error("beklenmeyen '}' simgesi")]))
     # işçi süreci sınırından geçerken (JSON) bayrak korunur
     assert stopped(Tier0Result.model_validate_json(changed.model_dump_json()))
-    # `_stopped` tek durdurma üreticisi: bayrağı kendisi koyar
-    assert tier0_isolation._stopped("herhangi bir metin").stopped
+    # `stopped_result` tek durdurma üreticisi: bayrağı kendisi koyar
+    assert tier0_isolation.stopped_result("herhangi bir metin").stopped
 
 
 def _syntax_error(message: str) -> Diagnostic:

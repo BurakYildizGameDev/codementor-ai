@@ -168,7 +168,7 @@ def sanitized_env(temp_dir: str, extra: Mapping[str, str] | None = None) -> dict
     return env
 
 
-def _launch_argv(argv: list[str], limits: ProcessLimits) -> list[str]:
+def launch_argv(argv: list[str], limits: ProcessLimits) -> list[str]:
     """POSIX'te rlimit başlatıcısını öne ekler; Windows'ta argv aynen kalır."""
     if sys.platform == "win32":
         return argv
@@ -197,8 +197,8 @@ class _Job(Protocol):
     def close(self) -> None: ...
 
 
-class _Tree:
-    """Platforma göre süreç ağacı yönetimi."""
+class ProcessTree:
+    """Platforma göre süreç ağacı yönetimi (sıcak Tier 0 işçisi de kullanır, ADR-0032)."""
 
     def __init__(self, limits: ProcessLimits) -> None:
         self._limits = limits
@@ -273,10 +273,10 @@ def run_process(
     if cancel is not None and cancel.is_set():
         return ProcessResult(None, "", "", cancelled=True)
     with tempfile.TemporaryDirectory(prefix="cm-t1-", ignore_cleanup_errors=True) as work:
-        tree = _Tree(limits)
+        tree = ProcessTree(limits)
         try:
             proc = subprocess.Popen(
-                _launch_argv(list(argv), limits),
+                launch_argv(list(argv), limits),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -336,7 +336,7 @@ def _wait(
 
 def _supervise(
     proc: subprocess.Popen[bytes],
-    tree: _Tree,
+    tree: ProcessTree,
     data: bytes,
     timeout_s: float,
     cancel: threading.Event | None = None,

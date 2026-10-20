@@ -24,7 +24,7 @@ from codementor.questions.bank import QuestionBank
 from codementor.questions.user_store import save_question
 from codementor.storage.cache import usage_totals
 from codementor.storage.db import AnalysisRow, Database
-from codementor.validation.tier0_isolation import INFRA_MESSAGE, _stopped
+from codementor.validation.tier0_isolation import INFRA_MESSAGE, stopped_result
 from tests.integration.conftest import (
     LINKED_LIST,
     REPO,
@@ -89,7 +89,9 @@ async def test_all_questions_dropped_by_leak_guard_not_cached(
 async def test_tier0_stop_report_not_cached(
     settings: Settings, db: Database, fake: FakeFactory, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(orchestrator_module, "check_syntax", lambda *_a: _stopped(INFRA_MESSAGE))
+    monkeypatch.setattr(
+        orchestrator_module, "check_syntax", lambda *_a: stopped_result(INFRA_MESSAGE)
+    )
     first = await orchestrator(settings, db, fake()).analyze(_request())
     assert first.meta.early_exit
     monkeypatch.undo()

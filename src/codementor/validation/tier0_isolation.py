@@ -12,8 +12,10 @@ Süre aşımı ya da işçi hatası **error** tanısına çevrilir: politika ana
 
 from __future__ import annotations
 
+import atexit
 import sys
 import threading
+from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
 
@@ -24,6 +26,9 @@ from codementor.models.request import NormalizedCode
 from codementor.models.validation import Tier0Result
 from codementor.validation.runner import ProcessLimits, ProcessResult, run_process
 from codementor.validation.tier0 import run_tier0
+
+if TYPE_CHECKING:  # tier0_pool bu modülün mesajlarını içe aktarır: çalışma anında döngü olmasın
+    from codementor.validation.tier0_pool import Tier0WorkerPool
 
 WORKER_MODULE = "codementor.validation.tier0_worker"
 TIMEOUT_MESSAGE = (
@@ -45,24 +50,38 @@ FAILURE_MESSAGE = (
 
 log = get_logger("codementor.tier0")
 _frozen_warned = False  # exe uyarısı her analizde değil, bir kez
-_global_pool: object | None = None
+_global_pool: Tier0WorkerPool | None = None
 _pool_lock = threading.Lock()
+_atexit_registered = False
 
 
-def get_tier0_pool(max_workers: int = 1) -> object:
-    global _global_pool
+def get_tier0_pool(settings: ValidationSettings) -> Tier0WorkerPool:
+    """Süreç geneli sıcak havuz (ADR-0032); ayarlar değiştiyse eskisi kapatılıp yeniden kurulur."""
+    global _global_pool, _atexit_registered
+    from codementor.validation.tier0_pool import Tier0WorkerPool
+
+    key = (settings.tier0_warm_workers, settings.tier0_memory_mb, settings.tier0_timeout_s)
     with _pool_lock:
+        if _global_pool is not None and _global_pool.key != key:
+            _global_pool.close()  # meşgul işçiler bırakılınca kapanır
+            _global_pool = None
         if _global_pool is None:
-            from codementor.validation.tier0_pool import Tier0WorkerPool
-
-            _global_pool = Tier0WorkerPool(max_workers=max_workers)
+            _global_pool = Tier0WorkerPool(
+                settings.tier0_warm_workers,
+                memory_mb=settings.tier0_memory_mb,
+                timeout_s=settings.tier0_timeout_s,
+            )
+            if not _atexit_registered:
+                atexit.register(close_tier0_pool)
+                _atexit_registered = True
         return _global_pool
 
 
 def close_tier0_pool() -> None:
+    """Sıcak havuzu kapatır (süreç çıkışında `atexit` ile de çağrılır)."""
     global _global_pool
     with _pool_lock:
-        if _global_pool is not None and hasattr(_global_pool, "close"):
+        if _global_pool is not None:
             _global_pool.close()
             _global_pool = None
 
@@ -88,11 +107,9 @@ def check_syntax(code: NormalizedCode, settings: ValidationSettings) -> Tier0Res
             _frozen_warned = True
         return run_tier0(code)
     if settings.tier0_warm_workers > 0:
-        pool = get_tier0_pool(settings.tier0_warm_workers)
-        from codementor.validation.tier0_pool import Tier0WorkerPool
-
-        assert isinstance(pool, Tier0WorkerPool)
-        return pool.check_syntax(code, settings.tier0_timeout_s)
+        warm = get_tier0_pool(settings).try_check_syntax(code)
+        if warm is not None:
+            return warm  # None: tüm sıcak işçiler meşgul → aynı sınırlarla soğuk yol
     limits = ProcessLimits(timeout_s=settings.tier0_timeout_s, memory_mb=settings.tier0_memory_mb)
     result = run_process(worker_argv(), code.model_dump_json(), limits)
     return _parse(result, settings.tier0_timeout_s)
@@ -101,10 +118,10 @@ def check_syntax(code: NormalizedCode, settings: ValidationSettings) -> Tier0Res
 def _parse(result: ProcessResult, timeout_s: float) -> Tier0Result:
     if result.timed_out:
         log.warning("tier0_timeout", timeout_s=timeout_s)
-        return _stopped(TIMEOUT_MESSAGE.format(seconds=f"{timeout_s:g}"))
+        return stopped_result(TIMEOUT_MESSAGE.format(seconds=f"{timeout_s:g}"))
     if result.error:
         log.error("tier0_worker_unavailable", error=result.error)
-        return _stopped(INFRA_MESSAGE)
+        return stopped_result(INFRA_MESSAGE)
     if result.cancelled or result.truncated or result.returncode != 0:
         # stderr kullanıcı kodundan parça taşıyabilir: yalnız son satırın başı loglanır
         tail = result.stderr.strip().splitlines()[-1][:120] if result.stderr.strip() else ""
@@ -115,19 +132,19 @@ def _parse(result: ProcessResult, timeout_s: float) -> Tier0Result:
             truncated=result.truncated,
             stderr_tail=tail,
         )
-        return _stopped(FAILURE_MESSAGE)
+        return stopped_result(FAILURE_MESSAGE)
     try:
         return Tier0Result.model_validate_json(result.stdout)
     except ValidationError:
         log.warning("tier0_worker_bad_output", stdout_bytes=len(result.stdout))
-        return _stopped(FAILURE_MESSAGE)
+        return stopped_result(FAILURE_MESSAGE)
 
 
 def stopped(result: Tier0Result) -> bool:
     """Sonuç, yalıtımın durdurma tanısı mı (süre, bellek, çökme ya da altyapı).
 
     D18: karar `Tier0Result.stopped` bayrağına dayanır — durdurma tanısı üreten tek yer
-    `_stopped(...)`; çağıran tanı metnine bakmaz, metin değişince sessizce bozulmaz. Metin
+    `stopped_result(...)`; çağıran tanı metnine bakmaz, metin değişince sessizce bozulmaz. Metin
     karşılaştırması yalnızca bayrağı taşımayan sonuçlar için yedek olarak kalır (eski bir işçi
     sürecinden gelen JSON ya da elle kurulmuş sonuç).
     """
@@ -139,7 +156,8 @@ def stopped(result: Tier0Result) -> bool:
     )
 
 
-def _stopped(message: str) -> Tier0Result:
+def stopped_result(message: str) -> Tier0Result:
+    """Yalıtımın durdurma sonucu (`stopped=True`); soğuk yol ve sıcak havuz ortak kullanır."""
     diagnostic = Diagnostic(
         tool="tree-sitter", severity="error", line=1, column=None, message=message
     )

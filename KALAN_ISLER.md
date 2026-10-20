@@ -399,7 +399,7 @@
 > toml, `516ffc9`), #4 (karmaşıklık politikası, `395b1ea`) ve satır sayısı belgeleri kapandı. Kanıt ve
 > satır numaraları: `PROGRESS.md` "Sonraya" → "Tam tarama kalan bulguları".
 
-### [ ] 🤖 14. Tier 0 sıcak işçi havuzunu güvenlik sınırına bağla (tarama #2 — **Yüksek**)
+### [x] 🤖 14. Tier 0 sıcak işçi havuzunu güvenlik sınırına bağla (tarama #2 — **Yüksek**) — ✅ **BİTTİ 2026-10-20** (seçenek a, ADR-0032)
 - **Sorun:** `tier0_pool.Tier0Worker` düz `subprocess.Popen` kullanıyor; `runner.run_process`'in bellek
   sınırı (Job Object/RLIMIT, `tier0_memory_mb`), ortam izin listesi (API anahtarları işçiye geçiyor), boş
   cwd ve `CREATE_NO_WINDOW` yok. Havuz boşken her istek yeni işçi açıyor → eşzamanlı işçi sınırsız.
@@ -519,7 +519,7 @@
 
 - Bulgu kimlikleri ve ayrıntı: `docs/BulgularVeDuzeltilecekler.md` (§1 özet, §4 orta, §5 düşük,
   §6 public hazırlığı P1-P13, §8 eksik testler, §9 önerilen özellikler, §10 faz planı A-J).
-- Faz notları ve "Sonraya" (120 madde, 43 açık): `PROGRESS.md`.
+- Faz notları ve "Sonraya" (120 madde, 42 açık): `PROGRESS.md`.
 - Faz planı ve fazların kabul kriterleri: `docs/UYGULAMA_PLANI.md`.
 - Bu dosya **yaşayan listedir**: iş bitince `[x]` yapılır + `PROGRESS.md`'ye işlenir; ayrıntılı
   gerekçe buraya kopyalanmaz, kaynağına bağlantı verilir.

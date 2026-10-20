@@ -74,6 +74,22 @@
 | J5 | ✅ (Faz J denetimi küçük maddeleri; test-only) | faz/j5-test-hijyeni | 2026-10-17 | Cline / — |
 | I (dilim 1) | ✅ (yargıç + parçalar + fewshot) | faz/i-eval-altyapi | 2026-10-20 | Antigravity / — |
 
+## Kod — Tam tarama işleri (KALAN_ISLER 14-19; 2026-10-20)
+
+**İş 14 — Tier 0 sıcak işçi havuzu güvenlik sınırında (ADR-0032, seçenek a):** `Tier0Worker` artık
+`runner`'ın `ProcessTree` (Windows askıda başlat + Job Object, fail-closed), `sanitized_env`,
+`launch_argv` (POSIX rlimit) parçalarıyla, ömrü boyunca yaşayan boş geçici cwd'de ve `stderr`
+atılarak başlıyor. POSIX CPU sınırı birikimli olduğundan işçi 100 istekte geri dönüştürülüyor.
+Canlı işçi sayısı semaforla sınırlı; hepsi meşgulse `try_check_syntax` `None` → aynı sınırlarla soğuk
+yol. Mesajlar soğuk yolla ortak (`TIMEOUT/FAILURE/INFRA_MESSAGE`), loglarda yalnız hata türü. `close()`
+stdin'i kapatıp bekliyor, gerekirse ağacı öldürüyor, boruları + Job Object'i kapatıyor; `get_tier0_pool`
+ayar değişince yeniden kuruyor, `atexit` ile kapanıyor. `runner._Tree`/`_launch_argv` → `ProcessTree`/
+`launch_argv`, `tier0_isolation._stopped` → `stopped_result`. **Testler:** `test_tier0_pool.py` 5 → 14
+(ortam/cwd/Job Object sandbox, gerçek bellek sınırı — ADR-0024 bombası 1024 MB'de ~2 sn'de durdu, eski
+havuzda ~4,2 GB alıp geçerdi —, fail-closed başlatma, pid yeniden kullanımı, bütçe ile geri dönüşüm,
+süre aşımı, işçi hatası, ölü işçi, işçi sınırı, meşgulken soğuk yol, ayar değişince yeniden kurulum).
+Belgeler: ADR-0032, ADR-0025 sonuç satırı, `mimari.md` §5.2/§12/§16/§20, ADR sayısı 31 → 32.
+
 ## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
 
 **Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken
@@ -1579,26 +1595,26 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 düzeltildi):**
-  - Yüksek: `validation/tier0_pool.py` sıcak işçileri `runner.run_process` yerine düz `Popen`
-    → bellek sınırı/ortam süzme/boş cwd yok, eşzamanlı işçi sınırsız; havuzun ADR'si yok (ADR-0025:58
-    hâlâ "Sonraya" diyor). Yalnız `tier0_warm_workers > 0` iken.
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14 kapandı;
+  iş sırası `KALAN_ISLER.md` 14-23):**
+  - ~~Yüksek: `validation/tier0_pool.py` sıcak işçileri düz `Popen` (bellek/ortam/cwd sınırı yok,
+    işçi sayısı sınırsız, tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, mesajlar şablonla
+    eşleşmiyor)~~ → **KAPANDI (iş 14, ADR-0032).**
   - ~~Orta: güvenilmeyen toml `storage.max_analyses` / `session_retention_days` / `data.checklists_dir`
     serbest~~ → **KAPANDI (#3, 2026-10-20).**
   - ~~Orta: `verify/complexity_policy.py` `O(n^2)` (≠ `parse_bigo` gösterimi), `is_optimal`
     yeniden hesaplanmıyor~~ → **KAPANDI (#4, 2026-10-20)**; `agreement="agrees"` bilinçli korundu.
-  - Orta: `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i satır referansı sayıyor; tekrar
+  - Orta (iş 15): `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i satır referansı sayıyor; tekrar
     algılayıcı sayı dizilerini dejenerasyon sanıyor; `pipeline/socratic_pass.py:73` kapı uyarıları
     soru listesi değişmezse kayboluyor.
-  - Orta: `web/src/types/question_public.ts` bayat (`sample_io` yok; `npm run gen:types`).
-  - Orta: `tests/network_guard.py` Windows Proactor `ConnectEx` yolunu yakalamıyor;
-    `python_check.py` `warnings.catch_warnings` iş parçacığı güvenli değil; havuz hata mesajları
-    şablon önekiyle eşleşmiyor; `eval/judge.py` + `judge.j2` girdileri `guard`'sız; Codex iptalinde
-    `TemporaryDirectory` temizlik hatası iptali maskeleyebilir.
-  - Düşük: havuz tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, `RateLimiter._records`
-    sınırsız, `mimari.md:1126` hız sınırı çelişkisi, `sessions.updated_at` NULL budanmıyor,
-    `toolchain_prune.py:40` `PruneReport` models/ dışında. (README/ZAYIF "~39 bin" → "~40 bin"
-    satır sayısı bu committe düzeltildi; büyüdükçe yine kırılır — tolerans payı düşünülebilir.)
+  - Orta (iş 16): `web/src/types/question_public.ts` bayat (`sample_io` yok; `npm run gen:types`).
+  - Orta (iş 17): `tests/network_guard.py` Windows Proactor `ConnectEx` yolunu yakalamıyor.
+  - Orta (iş 18): `python_check.py` `warnings.catch_warnings` iş parçacığı güvenli değil.
+  - Orta (iş 19): `eval/judge.py` + `judge.j2` girdileri `guard`'sız, hata yönetimi zayıf.
+  - Orta (iş 20): Codex iptalinde `TemporaryDirectory` temizlik hatası iptali maskeleyebilir.
+  - Düşük (iş 21): `RateLimiter._records` sınırsız, `mimari.md:1126` hız sınırı çelişkisi,
+    `sessions.updated_at` NULL budanmıyor, `toolchain_prune.py:40` `PruneReport` models/ dışında.
+    (README/ZAYIF satır sayıları ölçüme göre güncel; büyüdükçe yine kırılır → iş 23.)
 - ~~**Zamanlama testleri kırılgan (iş 3 derin doğrulamasından çıktı, 2026-10-18)**~~ → **KAPANDI (iş 4b,
   2026-10-18):** eşik değişmedi (1,5 sn, ADR-0024); ölçüm ısınma + 3 koşunun en hızlısına çevrildi ve
   yanına **göreli büyüme** testleri eklendi (2× girdi ≤ 3× süre). Kasıtlı karesel yavaşlatma O1'i
@@ -1691,7 +1707,8 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 - ~~C# 11 raw string (`"""…"""`) maskelemesi (Faz 55'te kapsam dışı bırakıldı).~~ → Faz H3'te yapıldı (`mask_non_code(text, language)`; `$`/`$$` önekleri ve kapanış tırnağı dizisi dahil).
 - `mask_non_code` bir `language` parametresi aldı (Faz H3, C# 11 ham metni için) ama C++ ham metni yolu bilinçli olarak dilden bağımsız kaldı: Python/C# dosyasındaki `R"(…)` görünümü ham metin sayılıp içeriği maskelenir. Etkisi yalnızca `using_std`/`using_linq` sinyalleriyle sınırlı (Python'da kullanılmıyor); C++ yolunu dille sınırlamak gerekirse `language is Language.CPP` koşulu eklenir.
 - ~~Tier 0 parse'ı sert zaman aşımıyla alt süreçte izole etmek (ADR-0024 sonucu)~~ → Faz 59'da yapıldı (ADR-0025; varsayılan kapalı).
-- Tier 0 yalıtımında sıcak işçi havuzu (her analizde ~280 ms süreç açma maliyeti; yüksek yükte) (Faz 59).
+- ~~Tier 0 yalıtımında sıcak işçi havuzu (her analizde ~280 ms süreç açma maliyeti; yüksek yükte) (Faz 59).~~
+  → **KAPANDI** (Faz J iş 12; güvenlik sınırı KALAN_ISLER iş 14, ADR-0032).
 - ~~`data/` dizini paket dışında; `pip install` ile dağıtımda veri dosyaları gelmez. Faz 13'te (Docker/dağıtım) `importlib.resources` veya paket verisi olarak ele alınmalı.~~ → Faz 23
 - ~~Göreli veri dizinleri (`data.questions_dir`) çalışma dizinine göre çözülüyor; proje dışından çalıştırınca bulunamıyor. Config dosyasına göre çözme veya paket verisi (yukarıdaki madde) ile birlikte ele alınmalı.~~ → Faz 23
 - ~~`.gitattributes` ile `* text=auto eol=lf`: Windows'taki CRLF uyarılarını ve şema dosyalarında satır sonu farklarını önler.~~ → Faz 23

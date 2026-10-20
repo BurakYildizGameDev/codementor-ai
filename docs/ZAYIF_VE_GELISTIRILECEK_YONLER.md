@@ -47,7 +47,7 @@
 
 CodeMentor, "kodu düzeltmeyen, sorgulatan" bir mentor fikrini **teknik olarak ciddi** biçimde hayata
 geçiriyor: deterministik analiz + LLM, satır kanıtıyla doğrulama, çözüm sızıntısı koruması, ölçülmüş
-eval, 3.700+ test, 31 ADR. Bireysel bir proje için mühendislik kalitesi yüksek. **Ama bir eğitim
+eval, 3.700+ test, 32 ADR. Bireysel bir proje için mühendislik kalitesi yüksek. **Ama bir eğitim
 ürününün asıl kanıtlaması gereken şeyi — öğrencinin gerçekten daha iyi öğrendiğini — henüz
 kanıtlamadı**; hiç gerçek kullanıcısı olmadı; eval küçük ve büyük ölçüde tek modelli; kod
 çalıştırılmadığı için "çözüm doğru mu" sorusuna cevap veremiyor; dağıtımı zahmetli ve çoğunlukla
@@ -422,7 +422,7 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
 ### 4.18 Belgeler dağınık ve Türkçe-öncelikli 🟡
 
 - **Durum:** `docs/` altında mimari (büyük), uygulama planı (büyük), bulgular, güncellemeler, devir
-  belgeleri, eval rehberleri, 31 ADR; kökte README (TR), README.en.md (kısa), PROGRESS. Faz D'de iç
+  belgeleri, eval rehberleri, 32 ADR; kökte README (TR), README.en.md (kısa), PROGRESS. Faz D'de iç
   belgeler `docs/gelistirme-gunlugu/`'ye taşındı ama hâlâ çok sayıda giriş noktası var.
 - **Neden önemli:** Yeni bir katkıcı ya da işe alım yapan kişi "nereden başlayayım" sorusunda kaybolabilir.
   Uluslararası okuyucu için İngilizce belge çok sınırlı.
@@ -571,7 +571,7 @@ Projeyi bir sonraki seviyeye en çok taşıyacak tek adım. Küçük, etik ve te
 | Deneyim | Yardımsız kurulum başarısı | ölçülmedi | ≥ %80 | pilot |
 | Erişim | Anahtar/abonelik gerektirmeyen çalışan yol | yok (yerel model ölçülmedi) | en az bir yol, kalite eşiğiyle | Faz I |
 | Kod sağlığı | 400 satırı aşan dosya (boş satır hariç) | 0 (en büyük 400) | 0 | `wc -l` |
-| Kod sağlığı | "Sonraya" madde sayısı (açık) | 43 (120 madde) | < 30 | PROGRESS |
+| Kod sağlığı | "Sonraya" madde sayısı (açık) | 42 (120 madde) | < 30 | PROGRESS |
 
 ---
 
