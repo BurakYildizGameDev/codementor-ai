@@ -81,15 +81,34 @@ def compare_table(results: list[RunResult]) -> str:
     lines += ["| " + " | ".join(row(r)) + " |" for r in results]
     versions = sorted(
         {
-            (r.config.prompt_version, r.config.rules_version, r.config.schema_version)
+            (
+                r.config.prompt_version,
+                r.config.rules_version,
+                r.config.schema_version,
+                r.config.dataset_version,
+            )
             for r in results
         }
     )
     lines.append("")
-    lines += [f"Sürümler: prompt {p} · kurallar {k} · şema {s}" for p, k, s in versions]
+    lines += [
+        f"Sürümler: prompt {p} · kurallar {k} · şema {s}" + (f" · veri seti {d}" if d else "")
+        for p, k, s, d in versions
+    ]
     splits = {r.config.split for r in results}
     if len(splits) > 1:
         lines.append(
             "⚠ Tabloda farklı bölümler (dev/test) karışık; satırlar doğrudan kıyaslanamaz."
         )
+    dataset_versions = {
+        r.config.dataset_version for r in results if r.config.dataset_version is not None
+    }
+    if len(dataset_versions) > 1:
+        lines.append("⚠ Tabloda farklı veri seti sürümleri var; satırlar doğrudan kıyaslanamaz.")
+    if len(results) > 1 and all(r.config.part is not None for r in results):
+        from codementor.eval.parts import check_parts_coverage
+
+        overlapping, _ = check_parts_coverage(results)
+        if overlapping:
+            lines.append(f"⚠ Parçalı koşularda çakışan örnekler var: {', '.join(overlapping)}")
     return "\n".join(lines) + "\n"

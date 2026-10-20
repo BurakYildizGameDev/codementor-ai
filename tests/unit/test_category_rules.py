@@ -47,8 +47,17 @@ def _findings() -> list[tuple[str, dict[str, object]]]:
 
 
 def memory_boundary_violation(sample: str, finding: dict[str, object]) -> bool:
-    """Bellek erişimi notlu bulgu memory_safety değilse ihlal; Unreal'da GC'nin topladığı
-    nesneye kalan sarkan işaretçi `garbage_collection` sayılır (yalnız Unreal örneklerinde)."""
+    """Bellek erişimi notlu veya yapısal boundary'li bulgu memory_safety değilse ihlal;
+    Unreal'da GC'nin topladığı nesneye kalan sarkan işaretçi `garbage_collection` sayılır
+    (yalnız Unreal örneklerinde). Yapısal `boundary` alanı serbest metin sezgisinden önce gelir."""
+    boundary = finding.get("boundary")
+    if boundary == "ownership_scope":
+        return False
+    if boundary is not None:
+        allowed = {str(boundary)} | (
+            {"garbage_collection"} if "unreal-" in sample and boundary == "memory_safety" else set()
+        )
+        return finding["category"] not in allowed
     if not MEMORY_HINTS.search(str(finding.get("note", ""))):
         return False
     allowed = {"memory_safety"} | ({"garbage_collection"} if "unreal-" in sample else set())
@@ -64,6 +73,9 @@ def memory_boundary_violation(sample: str, finding: dict[str, object]) -> bool:
         ("test/cs-1", {"category": "edge_case", "note": "boş listede IndexOutOfRange"}, True),
         ("dev/c-1", {"category": "memory_safety", "note": "sınır dışı okuma"}, False),
         ("dev/c-1", {"category": "performance", "note": "gereksiz kopya"}, False),
+        ("dev/cpp-1", {"category": "memory_safety", "boundary": "memory_safety"}, False),
+        ("dev/cpp-1", {"category": "performance", "boundary": "memory_safety"}, True),
+        ("dev/cpp-1", {"category": "memory_safety", "boundary": "ownership_scope"}, False),
     ],
 )
 def test_memory_boundary_heuristic(sample: str, finding: dict[str, object], violates: bool) -> None:

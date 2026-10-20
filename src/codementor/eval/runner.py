@@ -17,6 +17,7 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from codementor.config import Settings
+from codementor.eval.dataset import dataset_version
 from codementor.eval.metrics import compute_metrics
 from codementor.models.enums import Language, PipelineMode
 from codementor.models.eval import PricingFile, RunConfig, RunResult, Sample, SampleResult, Split
@@ -205,6 +206,7 @@ async def run_eval(
         reviewed_only=all(s.label.reviewed for s in samples),
         languages=wanted,
         part=part,
+        dataset_version=dataset_version(samples),
     )
     results: list[SampleResult] = []
     for index, sample in enumerate(samples, start=1):

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import shutil
+from collections.abc import Sequence
 from pathlib import Path
 
 from codementor.ingest.normalize import split_lines
@@ -63,6 +64,41 @@ def load_split(root: Path, split: str) -> list[Sample]:
     if not directory.is_dir():
         raise DatasetError(f"Veri seti bölümü bulunamadı: {directory}")
     return [load_sample(d) for d in sorted(directory.iterdir()) if d.is_dir()]
+
+
+def dataset_version(target: Sequence[Sample] | Path | None = None) -> str:
+    """`"d1+" + sha256(...)[:8]`: veri seti ve etiket içeriklerinin özeti (Faz 51/İş 7).
+
+    Örneklerin kimlikleri, kodları (LF normalleştirilmiş) ve etiketleri üzerinden özet çıkarır.
+    Satır sonu (CRLF/LF) farkları normalleştirildiği için hash'i değiştirmez.
+    """
+    if target is None:
+        target = DATASET_DIR
+    if isinstance(target, Path):
+        if not target.exists():
+            return "d1+none"
+        if (target / "label.yaml").is_file():
+            samples = [load_sample(target)]
+        else:
+            sample_dirs = sorted(
+                {
+                    p.parent
+                    for p in target.glob("**/label.yaml")
+                    if p.is_file() and DRAFT not in p.parts
+                }
+            )
+            samples = [load_sample(d) for d in sample_dirs]
+    else:
+        samples = list(target)
+
+    digest = hashlib.sha256()
+    for sample in sorted(samples, key=lambda s: s.label.id):
+        digest.update(sample.label.id.encode("utf-8") + b"\0")
+        code_bytes = sample.code.replace("\r\n", "\n").encode("utf-8")
+        digest.update(code_bytes + b"\0")
+        label_bytes = sample.label.model_dump_json(exclude_none=True).encode("utf-8")
+        digest.update(label_bytes + b"\0")
+    return f"d1+{digest.hexdigest()[:8]}"
 
 
 def _fingerprint(code: str) -> str:

@@ -9,8 +9,8 @@ expected:
   time_complexity: "n"
   space_complexity: "n"
   findings:
-    - { category: memory_safety, line: 6, rule_id: CPP-OWN-001, note: "sahiplik elle yönetiliyor" }
-    - { category: memory_safety, line: 10, rule_id: CPP-OWN-001, note: "çıplak delete[]" }
+    - { category: memory_safety, line: 6, rule_id: CPP-OWN-001, boundary: ownership_scope, note: "sahiplik elle yönetiliyor" }
+    - { category: memory_safety, line: 10, rule_id: CPP-OWN-001, boundary: ownership_scope, note: "çıplak delete[]" }
     - { category: memory_safety, line: 20, note: "değerle geçiş sığ kopya yapar; iki yıkıcı aynı tamponu siler" }
     - { category: design, line: 4, note: "soru gereksinimi: double tamponu, operator[] ve resize(n) yok; kopyalanabilirlik (Faz 22B)" }
   must_not_contain: ["std::vector<char> data_", "= delete;"]

@@ -25,6 +25,9 @@ class ExpectedFinding(StrictModel):
     line: int = Field(ge=1)
     rule_id: str | None = Field(default=None, description="Statik kural bulmalıysa")
     note: str | None = Field(default=None, description="İnceleyen için kısa gerekçe")
+    boundary: str | None = Field(
+        default=None, description="Kategori sınırı kuralı/gerekçesi (Faz 51/İş 7)"
+    )
 
 
 class Expected(StrictModel):
@@ -110,6 +113,9 @@ class RunConfig(StrictModel):
     part: str | None = Field(
         default=None, description='Dengeli parça, ör. "1/4" (`eval run --part`); yoksa tümü'
     )
+    dataset_version: str | None = Field(
+        default=None, description="Veri seti ve etiket özeti (Faz 51/İş 7); eski koşularda None"
+    )
 
 
 class Metrics(StrictModel):
@@ -166,3 +172,19 @@ class PricingFile(StrictModel):
     version: int = Field(ge=1)
     currency: str = "USD"
     prices: list[ModelPrice] = Field(default_factory=list)
+
+
+class SocraticCriterionScore(StrictModel):
+    score: int = Field(ge=1, le=5, description="1-5 arası puan")
+    rationale: str = Field(description="Puanın kısa gerekçesi")
+
+
+class SocraticJudgeReport(StrictModel):
+    """LLM-as-judge ile Sokratik kalite değerlendirme raporu (Faz I / İş 10)."""
+
+    pedagogical_value: SocraticCriterionScore
+    code_relevance: SocraticCriterionScore
+    socratic_depth: SocraticCriterionScore
+    leakage_free: bool = Field(description="Çözüm veya düzeltilmiş kod doğrudan ifşa edilmedi")
+    overall_score: float = Field(ge=1.0, le=5.0, description="Sokratik kalite ortalaması (1-5)")
+    summary: str = Field(description="Özet değerlendirme")

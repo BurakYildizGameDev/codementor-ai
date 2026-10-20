@@ -30,6 +30,7 @@ from codementor.eval.dataset import (
     DRAFT,
     DatasetError,
     check_disjoint,
+    dataset_version,
     load_split,
     promote,
 )
@@ -163,12 +164,24 @@ def _result_and_labels(
     """Sonuç dosyası + tüm bölümlerin güncel etiketleri; hata → çıkış kodu 3."""
     try:
         (result,) = load_results([path])
-        labels = {
-            s.label.id: s.label
+        split_samples = [
+            s
             for split in ("dev", "test")
             if (dataset / split).is_dir()
             for s in load_split(dataset, split)
-        }
+        ]
+        labels = {s.label.id: s.label for s in split_samples}
+        if result.config.dataset_version is not None:
+            matched_samples = [
+                s for s in split_samples if s.label.id in set(result.config.sample_ids)
+            ]
+            current_version = dataset_version(matched_samples)
+            if result.config.dataset_version != current_version:
+                console.print(
+                    f"[yellow]Uyarı:[/yellow] Kayıtlı veri seti ({result.config.dataset_version}) "
+                    f"ile diskteki etiketler ({current_version}) uyuşmuyor; "
+                    "metrikler yeniden puanlanırken farklı etiketler kullanılıyor olabilir."
+                )
     except (DatasetError, ValidationError, OSError) as exc:
         console.print(f"[red]Hata:[/red] {escape(str(exc))}")
         raise typer.Exit(EXIT_SYSTEM_ERROR) from exc
@@ -279,3 +292,34 @@ def promote_cmd(
             console.print(f"[red]Hata:[/red] {escape(str(exc))}")
             raise typer.Exit(EXIT_SYSTEM_ERROR) from exc
         console.print(f"taşındı: {path.as_posix()}")
+
+
+@eval_app.command("judge")
+def judge_cmd(
+    path: Annotated[Path, typer.Argument(help="Sonuç dosyası.")],
+    dataset: Annotated[Path, typer.Option(help="Veri seti kökü.")] = DATASET_DIR,
+    provider: Annotated[str | None, typer.Option(help="Yargıç LLM sağlayıcısı.")] = None,
+    out: Annotated[Path | None, typer.Option(help="Yargıç raporunu dosyaya yaz.")] = None,
+) -> None:
+    """LLM-as-judge ile Sokratik kalite puanı üretir (Faz I / İş 10)."""
+    console = Console(stderr=True)
+    settings = _settings(console)
+    result, _ = _result_and_labels(path, dataset, console)
+    samples = {
+        s.label.id: s
+        for split in ("dev", "test")
+        if (dataset / split).is_dir()
+        for s in load_split(dataset, split)
+    }
+    name = provider or settings.providers.default
+    from codementor.eval.judge import judge_run_result, judge_summary_markdown
+    from codementor.eval.runner import _default_factory
+
+    factory = _default_factory(settings)
+    llm = factory(name)
+    reports = asyncio.run(judge_run_result(result, samples, llm))
+    text = judge_summary_markdown(reports)
+    if out is not None:
+        with system_errors(console, "çıktı yazılamadı"):
+            out.write_text(text, encoding="utf-8", newline="\n")
+    typer.echo(text)
