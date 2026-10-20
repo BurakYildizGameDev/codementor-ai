@@ -5,6 +5,7 @@ Hiçbir test gerçek süreç başlatmaz: `find` ve `spawn` sahte geçirilir (AGE
 
 from __future__ import annotations
 
+import shlex
 import subprocess
 import sys
 from collections.abc import Callable
@@ -95,8 +96,37 @@ def test_linux_login_command_falls_back_to_gnome_terminal() -> None:
 
 
 def test_macos_login_command_opens_terminal_app() -> None:
+    """`osascript` yoksa eski yol: `open` ek argüman geçiremez, yalnız CLI yolu."""
     argv = login_command("darwin", CLI, login_args=LOGIN_ARGS, find=finder("open"))
     assert argv == ["/usr/bin/open", "-a", "Terminal", CLI]
+
+
+def test_macos_login_command_passes_args_via_osascript() -> None:
+    """Sonraya #42: `osascript` ile Terminal'e argümanlı komut (`claude auth login`) gider."""
+    argv = login_command("darwin", CLI, login_args=LOGIN_ARGS, find=finder("osascript", "open"))
+    assert argv == [
+        "/usr/bin/osascript",
+        "-e",
+        'tell application "Terminal" to do script "/usr/local/bin/claude auth login"',
+        "-e",
+        'tell application "Terminal" to activate',
+    ]
+
+
+def test_macos_osascript_command_is_shell_and_applescript_escaped() -> None:
+    """Yoldaki boşluk/tırnak/ters bölü/`$` ne kabukta ne AppleScript dizesinde kod olur."""
+    cli = '/Users/a b/"x"\\$(id)/claude'
+    argv = login_command("darwin", cli, login_args=LOGIN_ARGS, find=finder("osascript"))
+    assert argv is not None
+    script = argv[2]
+    prefix = 'tell application "Terminal" to do script "'
+    assert script.startswith(prefix)
+    assert script.endswith('"')
+    literal = script[len(prefix) : -1]
+    # AppleScript kaçışını geri al → kabuğa giden komut; shlex ile ayrıştırınca argv aynen döner
+    shell = literal.replace('\\"', '"').replace("\\\\", "\\")
+    assert shlex.split(shell) == [cli, *LOGIN_ARGS]
+    assert '"' not in literal.replace('\\"', "")  # kaçışsız tırnak dizeyi erken kapatmaz
 
 
 def test_login_command_is_none_when_no_terminal_tool_exists() -> None:

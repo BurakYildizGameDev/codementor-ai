@@ -78,13 +78,25 @@ def login_command(
 
     Windows: CLI doğrudan yeni konsolda başlatılır (mevcut davranış, `CREATE_NEW_CONSOLE`).
     Linux: `x-terminal-emulator -e <cli> …`, yoksa `gnome-terminal -- <cli> …`.
-    macOS: `open -a Terminal <cli>` — Terminal uygulaması ek argümanları belge yolu saydığı için
-    `open` ile yalnız çalıştırılabilir yol geçirilir; CLI argümansız da kendi oturum açma akışını
-    başlatır. Hiç süreç başlatılmaz, yalnız argv üretilir.
+    macOS: `osascript` ile Terminal'e `do script "<cli> …"` (argümanlar dahil; Sonraya #42).
+    Komut önce kabuk için (`shlex.join`), sonra AppleScript dizesi için kaçışlanır. `osascript`
+    yoksa `open -a Terminal <cli>` — `open` ek argümanları belge yolu saydığından yalnız
+    çalıştırılabilir yol geçer; CLI argümansız da kendi oturum açma akışını başlatır.
+    Hiç süreç başlatılmaz, yalnız argv üretilir.
     """
     if platform.startswith("win"):
         return [cli_path, *login_args]
     if platform == "darwin":
+        osascript = find("osascript")
+        if osascript:
+            command = _applescript_string(shlex.join([cli_path, *login_args]))
+            return [
+                osascript,
+                "-e",
+                f'tell application "Terminal" to do script {command}',
+                "-e",
+                'tell application "Terminal" to activate',
+            ]
         opener = find("open")
         return [opener, "-a", "Terminal", cli_path] if opener else None
     for name, separator in _TERMINALS:
@@ -92,6 +104,11 @@ def login_command(
         if terminal:
             return [terminal, *separator, cli_path, *login_args]
     return None
+
+
+def _applescript_string(text: str) -> str:
+    """AppleScript dize sabiti: ters bölü ve çift tırnak kaçışlanır (kabuk kaçışı `shlex`'te)."""
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def manual_login_hint(argv: Sequence[str]) -> str:
