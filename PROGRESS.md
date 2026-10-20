@@ -74,6 +74,22 @@
 | J5 | ✅ (Faz J denetimi küçük maddeleri; test-only) | faz/j5-test-hijyeni | 2026-10-17 | Cline / — |
 | I (dilim 1) | ✅ (yargıç + parçalar + fewshot) | faz/i-eval-altyapi | 2026-10-20 | Antigravity / — |
 
+## CI — Faz E-J'nin ilk Linux/CI koşusu (2026-10-20)
+
+Faz E-J ve KALAN_ISLER commit'leri 2026-10-20'ye dek hiç push edilmemişti; ilk CI koşusu yalnız testlerdeki
+platform varsayımlarını yakaladı (ürün kodu değişmedi):
+- `tests/desktop/test_connections_2.py` (iş 22 bölmesi) `ConnectionsController`'ı modül düzeyinde içe
+  aktarıyordu (customtkinter → tkinter); Linux CI'da tkinter yok → dosya toplanamadı. İki test
+  `pytest.importorskip` ile alır; dosyanın Tk'siz 27 testi Linux'ta koşar. Yerel taklit: `sys.modules`'ta
+  `tkinter`/`_tkinter` = None ile tam koşu 3969 geçti.
+- `test_login.py` (4): `resolve_executable` sembolik bağlantıyı çözer (Linux venv python → `/usr/bin/python3.x`);
+  beklenen yol da çözülmüş yol.
+- `test_needs_update_false_without_configured_source`: host'un `linux-x86_64` olmadığını varsayıyordu →
+  `platform_key` sahtelenir.
+- `test_linear_time_large_input[c-nested-call]` Windows CI'da 2,046 sn > 2,0 sn (yerelde 0,42; `--cov`
+  yavaşlatması). Üç dosyada kopyalanmış Faz 53 `_deadline` kalıbı ortak `tests/timing.py` oldu; kural
+  motoru testi de kullanır (kapsamasız 2,0 sn, `--cov` altında 8,0 sn).
+
 ## Bağımlılıklar — Dependabot PR'ları (#1, #3, #5, #6, #7; 2026-10-20)
 
 - **#7 (python-minor, 12 paket) olduğu gibi alınmadı:** Dependabot `tree-sitter>=0.25.2,<0.26` sınırını
