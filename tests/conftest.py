@@ -10,7 +10,6 @@ import io
 import json
 import logging
 import os
-import socket
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -20,7 +19,7 @@ import pytest
 import codementor.config
 from codementor.log import configure_logging, logging_snapshot, restore_logging
 from codementor.validation.toolchain import clear_toolchain_cache
-from tests.network_guard import guarded_methods
+from tests.network_guard import guarded_patches
 
 
 @pytest.fixture(autouse=True)
@@ -71,8 +70,8 @@ def _no_network(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch)
     `@pytest.mark.live` testleri muaf."""
     if request.node.get_closest_marker("live") is not None:
         return
-    for name, method in guarded_methods().items():
-        monkeypatch.setattr(socket.socket, name, method)
+    for target, name, replacement in guarded_patches():
+        monkeypatch.setattr(target, name, replacement)
 
 
 @pytest.fixture(autouse=True)

@@ -104,6 +104,14 @@ metnini hiç göstermiyordu: yeni `QuestionDetails` kartı (başlık, metin, kı
 çıktı + açıklama) yan panelin başında. **Testler:** `QuestionDetails.test.tsx` (3); web 54 → 57 test,
 `tsc` ve `vite build` temiz. Playwright e2e bu makinede koşulmadı (CI'da koşar).
 
+**İş 17 — Test ağ koruması Windows async yolu:** Proactor döngüsü `sock_connect`'i `socket.connect`
+yerine `IocpProactor.connect` → `_overlapped.ConnectEx` ile yapıyordu; respx'siz `httpx.AsyncClient`
+Windows'ta ağa çıkabilirdi. `tests/network_guard.guarded_patches()` artık bu yolu (Windows) ve
+`socket.getaddrinfo`'yu (loopback adı / IP literali dışı ad → DNS sızıntısı) da yamalıyor;
+`conftest._no_network` hepsini uyguluyor. **Testler:** `test_network_guard.py` +4 test + 8 vaka
+(async dış bağlantı düşer, async loopback serbest, DNS engelli, yerel çözümleme serbest). Tam paket
+4028 test yeşil: hiçbir mevcut test DNS'e ya da dış ağa çıkmıyormuş.
+
 ## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
 
 **Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken
@@ -1609,7 +1617,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-16 kapandı;
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-17 kapandı;
   iş sırası `KALAN_ISLER.md` 14-23):**
   - ~~Yüksek: `validation/tier0_pool.py` sıcak işçileri düz `Popen` (bellek/ortam/cwd sınırı yok,
     işçi sayısı sınırsız, tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, mesajlar şablonla
@@ -1621,7 +1629,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
   - ~~Orta (iş 15): `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i satır referansı sayıyor; tekrar
     algılayıcı sayı dizilerini dejenerasyon sanıyor; kapı uyarıları kayboluyor~~ → **KAPANDI (iş 15).**
   - ~~Orta (iş 16): `web/src/types/question_public.ts` bayat (`sample_io` yok)~~ → **KAPANDI (iş 16).**
-  - Orta (iş 17): `tests/network_guard.py` Windows Proactor `ConnectEx` yolunu yakalamıyor.
+  - ~~Orta (iş 17): `tests/network_guard.py` Windows Proactor `ConnectEx` yolunu yakalamıyor~~ → **KAPANDI (iş 17).**
   - Orta (iş 18): `python_check.py` `warnings.catch_warnings` iş parçacığı güvenli değil.
   - Orta (iş 19): `eval/judge.py` + `judge.j2` girdileri `guard`'sız, hata yönetimi zayıf.
   - Orta (iş 20): Codex iptalinde `TemporaryDirectory` temizlik hatası iptali maskeleyebilir.

@@ -431,7 +431,7 @@
 - **Dosyalar:** `web/src/types/`, ilgili soru bileşeni + vitest, `.github/workflows/ci.yml`.
 - **Boyut:** küçük.
 
-### [ ] 🤖 17. Test ağ korumasını Windows async yoluna genişlet (tarama #8)
+### [x] 🤖 17. Test ağ korumasını Windows async yoluna genişlet (tarama #8) — ✅ **BİTTİ 2026-10-20**
 - **Sorun:** `tests/network_guard.py` yalnız `socket.connect/connect_ex`'i yamalıyor; Windows Proactor
   `sock_connect` `_overlapped.ConnectEx` kullanıyor, DNS de engellenmiyor → respx'siz `httpx.AsyncClient`
   geliştirici makinesinde ağa çıkabilir (şu an böyle test yok).
