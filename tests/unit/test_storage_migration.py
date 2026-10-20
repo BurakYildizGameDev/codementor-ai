@@ -199,3 +199,28 @@ def test_migrated_sessions_get_timestamp_and_are_pruned(
         assert sessions.prune_old_sessions(db, days=90) == 1
     finally:
         db.close()
+
+
+def test_version_2_database_with_null_sessions_is_repaired(tmp_path: Path) -> None:
+    """Denetim: sürüm 2'de göç görmüş (sütun var, değer NULL) DB de onarılır (eskiden değil)."""
+    db_file = tmp_path / "v2.db"
+    conn = sqlite3.connect(str(db_file))
+    conn.execute(
+        "CREATE TABLE sessions (session_id VARCHAR, question_id VARCHAR, attempt_count INT, "
+        "current_hint_level INT, updated_at TIMESTAMP, PRIMARY KEY (session_id, question_id))"
+    )
+    conn.execute("INSERT INTO sessions VALUES ('s-v2', 'q1', 1, 1, NULL)")
+    conn.execute("PRAGMA user_version = 2")
+    conn.commit()
+    conn.close()
+
+    db = Database(db_file)
+    try:
+        with db.engine.connect() as connection:
+            assert connection.execute(text("PRAGMA user_version")).scalar() == SCHEMA_DB_VERSION
+            nulls = connection.execute(
+                text("SELECT COUNT(*) FROM sessions WHERE updated_at IS NULL")
+            ).scalar()
+        assert nulls == 0
+    finally:
+        db.close()

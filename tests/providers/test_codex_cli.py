@@ -308,3 +308,17 @@ async def test_cancel_waits_for_process_before_removing_workdir() -> None:
         await task
     assert runner.workdir is not None
     assert not runner.workdir.exists()
+
+
+async def test_second_cancel_during_drain_still_waits_for_process() -> None:
+    """Denetim: bekleme sırasında gelen ikinci iptal dizini süreç ölmeden sildirmez."""
+    runner = LingeringRunner()
+    task = asyncio.create_task(_run(_provider(runner)))  # type: ignore[arg-type]  # sahte çalıştırıcı
+    assert await asyncio.to_thread(runner.started.wait, 5)
+    task.cancel()
+    await asyncio.sleep(0.05)  # çalıştırıcı dosyayı hâlâ tutuyor
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert runner.workdir is not None
+    assert not runner.workdir.exists()

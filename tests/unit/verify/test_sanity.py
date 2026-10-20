@@ -96,6 +96,7 @@ def test_is_guard_hallucination_keeps_unguarded_evidence(evidence: str) -> None:
         "assert(n > 0);",
         "assert idx < len(arr)",
         "Debug.Assert(index < items.Length);",
+        "int n = 1'000; if (i < n) a[i] = 0;",  # C++14 basamak ayırıcısı karakter sabiti değil
     ],
 )
 def test_is_guard_hallucination_detects_real_guards(evidence: str) -> None:

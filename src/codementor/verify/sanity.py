@@ -17,10 +17,11 @@ from codementor.models.findings import Finding
 _GUARD_EVIDENCE_RE = re.compile(r"\b(?:el)?if\b|\bassert\b", re.IGNORECASE)
 
 # Denetim aranmadan önce silinen dize/karakter sabitleri ve yorumlar (`// if n is 0` denetim değil).
+# Rakamdan sonraki `'` C++14 basamak ayırıcısıdır (`1'000`), karakter sabiti açmaz.
 # Kapanmayan dize satır sonunda, kapanmayan `/*` metin sonunda biter (kapanış isteğe bağlı): aksi
 # halde her açılış sona kadar tarayıp başarısız olur ve süre karesel büyür (§12, regex bütçesi).
 _NOISE_RE = re.compile(
-    r"\"(?:\\.|[^\"\\\n])*\"?|'(?:\\.|[^'\\\n])*'?|//[^\n]*|/\*[\s\S]*?(?:\*/|\Z)|#[^\n]*"
+    r"\"(?:\\.|[^\"\\\n])*\"?|(?<![0-9])'(?:\\.|[^'\\\n])*'?|//[^\n]*|/\*[\s\S]*?(?:\*/|\Z)|#[^\n]*"
 )
 
 # Açıklamada "kontrol edilmiyor / eksik" iddiasına işaret eden kalıplar

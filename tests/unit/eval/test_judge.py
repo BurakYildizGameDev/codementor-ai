@@ -304,3 +304,27 @@ def test_cli_eval_judge_uses_configured_prompts_dir(
     result = CliRunner().invoke(app, ["eval", "judge", str(run_file), "--dataset", str(dataset)])
     assert result.exit_code == 0, result.output
     assert provider.calls[0].messages[0].content.startswith("OZEL-YARGIC")
+
+
+def test_cli_eval_judge_fails_when_every_sample_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Denetim: tüm örnekler başarısızsa çıkış kodu 1 (eskiden 0 + boş tablo)."""
+    from codementor.eval import runner
+
+    provider = FakeProvider(script=[FakeReply(raw="bozuk")])
+    monkeypatch.setattr(runner, "_default_factory", lambda _settings: lambda _name: provider)
+    dataset = tmp_path / "dataset"
+    sample_dir = dataset / "dev" / "c-001"
+    sample_dir.mkdir(parents=True)
+    (sample_dir / "code.c").write_text("int sum(int n) { return 0; }", encoding="utf-8")
+    (sample_dir / "label.yaml").write_text(
+        "id: c-001\nlanguage: c\nengine: none\nsyntax_valid: true\n"
+        "expected:\n  compilation_status: passed\n",
+        encoding="utf-8",
+    )
+    run_file = tmp_path / "result.json"
+    run_file.write_text(_run_result("c-001").model_dump_json(), encoding="utf-8")
+
+    result = CliRunner().invoke(app, ["eval", "judge", str(run_file), "--dataset", str(dataset)])
+    assert result.exit_code == 1

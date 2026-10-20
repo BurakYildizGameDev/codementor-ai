@@ -149,10 +149,14 @@ class Tier0Worker:
             self._tree.kill(proc)
             with contextlib.suppress(subprocess.TimeoutExpired):
                 proc.wait(timeout=_CLOSE_WAIT_S)
-        for stream in (proc.stdin, proc.stdout):
-            if stream is not None:
-                with contextlib.suppress(OSError, ValueError):
-                    stream.close()
+        # Süreç ölmediyse boruları kapatma: `exchange` iş parçacığı `readline`/`write` içinde
+        # akışın kilidini tutar, `close()` çağıranı askıda bırakırdı. Job Object kapanışı
+        # (KILL_ON_JOB_CLOSE) süreci yine öldürür; borular süreçle birlikte serbest kalır.
+        if proc.poll() is not None:
+            for stream in (proc.stdin, proc.stdout):
+                if stream is not None:
+                    with contextlib.suppress(OSError, ValueError):
+                        stream.close()
         self._tree.close()
         self._work.cleanup()
 

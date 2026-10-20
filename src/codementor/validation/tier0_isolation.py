@@ -61,10 +61,10 @@ def get_tier0_pool(settings: ValidationSettings) -> Tier0WorkerPool:
     from codementor.validation.tier0_pool import Tier0WorkerPool
 
     key = (settings.tier0_warm_workers, settings.tier0_memory_mb, settings.tier0_timeout_s)
+    stale: Tier0WorkerPool | None = None
     with _pool_lock:
         if _global_pool is not None and _global_pool.key != key:
-            _global_pool.close()  # meşgul işçiler bırakılınca kapanır
-            _global_pool = None
+            stale, _global_pool = _global_pool, None
         if _global_pool is None:
             _global_pool = Tier0WorkerPool(
                 settings.tier0_warm_workers,
@@ -74,16 +74,21 @@ def get_tier0_pool(settings: ValidationSettings) -> Tier0WorkerPool:
             if not _atexit_registered:
                 atexit.register(close_tier0_pool)
                 _atexit_registered = True
-        return _global_pool
+        pool = _global_pool
+    # Kilit dışında: boştaki işçilerin kapanmasını (işçi başına ≤2 sn) diğer analizler beklemesin.
+    # Eskinin meşgul işçileri bırakılınca kapanır; geçiş sırasında canlı işçi en çok 2× sınır.
+    if stale is not None:
+        stale.close()
+    return pool
 
 
 def close_tier0_pool() -> None:
     """Sıcak havuzu kapatır (süreç çıkışında `atexit` ile de çağrılır)."""
     global _global_pool
     with _pool_lock:
-        if _global_pool is not None:
-            _global_pool.close()
-            _global_pool = None
+        pool, _global_pool = _global_pool, None
+    if pool is not None:
+        pool.close()
 
 
 def is_frozen() -> bool:

@@ -45,5 +45,10 @@ sessizce geri geliyordu.
 - Her 100 istekte bir işçi yeniden açılır (~280 ms); ortalama maliyet ihmal edilebilir.
 - Havuz meşgulken düşülen soğuk yol eski davranışla aynıdır; eşzamanlılık API'nin analiz yuvalarıyla
   zaten sınırlıdır.
+- Bilinen sınırlar (denetim, 2026-10-20): bellek sınırı işçinin **ömrüne** uygulanır; büyük bir istekten
+  sonra geri verilmeyen bellek, soğuk yolda geçecek bir sonraki isteği sıcak işçide `FAILURE_MESSAGE` ile
+  durdurabilir (100 istekte geri dönüşüm ve hata sonrası işçinin kapatılması etkiyi sınırlar). Ayar
+  değişince havuz yeniden kurulurken eski havuzun meşgul işçileri bırakılana dek canlı işçi sayısı geçici
+  olarak en çok 2× sınır olabilir; süreç başına ayar sabit olduğundan pratikte görülmez.
 - `runner._Tree` / `_launch_argv` public adlar aldı (`ProcessTree`, `launch_argv`); `tier0_isolation._stopped`
   → `stopped_result`.

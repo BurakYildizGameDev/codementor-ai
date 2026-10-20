@@ -16,6 +16,7 @@ ADR-0012'deki CLI ajanı kuralları aynen geçerlidir (mesajlar yalnızca stdin'
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import re
 import tempfile
@@ -61,6 +62,23 @@ NAME = "codex"
 SCHEMA_FILE = "schema.json"
 # İptalde çalıştırıcının süreç ağacını öldürüp dönmesi için üst sınır (iptal 0,1 sn'de görülür)
 _CANCEL_DRAIN_S = 10.0
+
+
+async def _drain(work: asyncio.Future[Any]) -> None:
+    """İptal sonrası çalıştırıcının dönmesini bekler (üst sınır `_CANCEL_DRAIN_S`).
+
+    Bekleme sırasında gelen ikinci iptal (ör. süre sınırı + istemci kopması aynı anda) beklemeyi
+    kesmez: dizin süreç ölmeden silinmesin. Görevin istisnası alınır ("never retrieved" yok).
+    """
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + _CANCEL_DRAIN_S
+    while not work.done() and (remaining := deadline - loop.time()) > 0:
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.wait({work}, timeout=remaining)
+    if work.done() and not work.cancelled():
+        work.exception()
+
+
 # D4: HTTP kodları kelime sınırlı regex; çıplak `"429"` "line 4291" ile de eşleşiyordu.
 Hint = str | re.Pattern[str]
 _LOGIN_HINTS: tuple[Hint, ...] = (
@@ -212,7 +230,7 @@ class CodexCliProvider(NamedProvider):
                     # Codex `--cd workdir` ile dizinde dosya açık tutar: süreç ağacı ölmeden dizin
                     # silinirse Windows'ta WinError 32 iptali `PermissionError`'a çevirirdi
                     cancel.set()
-                    await asyncio.wait({work}, timeout=_CANCEL_DRAIN_S)
+                    await _drain(work)
                     raise
             return self._result(result, model, start)
 

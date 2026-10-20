@@ -23,7 +23,8 @@ DEFAULT_DB_PATH = Path.home() / ".codementor" / "codementor.db"
 MEMORY = ":memory:"
 # Oturum denemesi `INSERT … ON CONFLICT DO UPDATE … RETURNING` kullanır (Faz 49)
 MIN_SQLITE = (3, 35)
-SCHEMA_DB_VERSION = 2
+# 3: `sessions.updated_at` NULL onarımı (sürüm 2'de göç görmüş DB'ler de yeniden göçe girer)
+SCHEMA_DB_VERSION = 3
 
 
 def _migrate(connection: Any, current: int) -> None:
@@ -53,8 +54,9 @@ def _migrate(connection: Any, current: int) -> None:
         connection.execute(text("ALTER TABLE sessions ADD COLUMN updated_at TIMESTAMP"))
     if existing_sessions_cols:
         # Göçle eklenen sütun NULL kalıyordu → `prune_old_sessions` (`updated_at < cutoff`) bu
-        # satırları hiç budamıyordu. Göç anı başlangıç sayılır; daha önce göç görmüş DB'ler de
-        # onarılır. Biçim SQLAlchemy'nin SQLite DateTime biçimiyle aynı (UTC).
+        # satırları hiç budamıyordu. Göç anı başlangıç sayılır; sürüm 3 sayesinde sürüm 2'de
+        # göç görmüş DB'ler de buradan geçip onarılır. Biçim SQLAlchemy'nin SQLite DateTime
+        # biçimiyle aynı (UTC).
         connection.execute(
             text(
                 "UPDATE sessions SET updated_at = strftime('%Y-%m-%d %H:%M:%S.000000', 'now') "

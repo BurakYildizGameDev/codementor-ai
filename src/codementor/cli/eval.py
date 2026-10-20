@@ -331,6 +331,9 @@ def judge_cmd(
             f"[yellow]Uyarı:[/yellow] {len(failed)} örnek yargılanamadı (bozuk yanıt ya da "
             f"sağlayıcı hatası): {escape(', '.join(failed))}"
         )
+        if not reports:  # hiçbiri yargılanamadı: betik/CI başarı saymasın
+            console.print("[red]Hata:[/red] hiçbir örnek yargılanamadı.")
+            raise typer.Exit(EXIT_PROBLEMS)
     text = judge_summary_markdown(reports)
     if out is not None:
         with system_errors(console, "çıktı yazılamadı"):
