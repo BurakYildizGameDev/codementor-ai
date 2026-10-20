@@ -19,7 +19,6 @@ from codementor.desktop.connections import (
     probe,
     try_connection,
 )
-from codementor.desktop.connections_controller import ConnectionsController
 from codementor.desktop.services import OllamaPullError, ollama_pull_argv, run_ollama_pull
 from codementor.models.provider import GenerationOptions
 from codementor.providers.base import RetryPolicy
@@ -207,12 +206,17 @@ def test_ollama_pull_cancelled_outcome_is_turkish() -> None:
     assert "iptal edildi" in outcome.message
 
 
+def _controller_cls() -> Any:
+    """`ConnectionsController` customtkinter'a bağlı: tkinter yoksa (Linux CI) test atlanır."""
+    return pytest.importorskip("codementor.desktop.connections_controller").ConnectionsController
+
+
 def test_controller_cancel_pull(settings: Settings, store: KeyStore) -> None:
     """F10/İş 9: cancel_pull süren görevin iptalini tetikler ve bayrağı temizler."""
     from codementor.desktop.bridge import Bridge
 
     fake_app = SimpleNamespace(settings=settings, bridge=Bridge())
-    ctrl = ConnectionsController(fake_app, store)  # type: ignore[arg-type]
+    ctrl = _controller_cls()(fake_app, store)
     cancellation = Cancellation()
     ctrl._pull_cancellations["ollama"] = cancellation
     assert ctrl.is_pulling
@@ -233,7 +237,7 @@ def test_runtime_confirm_close_checks_pulling(settings: Settings, store: KeyStor
         settings=settings,
         bridge=Bridge(),
     )
-    ctrl = ConnectionsController(fake_app, store)  # type: ignore[arg-type]
+    ctrl = _controller_cls()(fake_app, store)
     fake_app.connections = ctrl
     ctrl._pull_cancellations["ollama"] = Cancellation()
     assert runtime.confirm_close(fake_app) is False  # type: ignore[arg-type]
