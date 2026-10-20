@@ -74,6 +74,25 @@
 | J5 | ✅ (Faz J denetimi küçük maddeleri; test-only) | faz/j5-test-hijyeni | 2026-10-17 | Cline / — |
 | I (dilim 1) | ✅ (yargıç + parçalar + fewshot) | faz/i-eval-altyapi | 2026-10-20 | Antigravity / — |
 
+## Kod — Tam tarama bulgusu #3: güvenilmeyen toml geçmişi budayabiliyordu (2026-10-20)
+
+**Sorun:** ADR-0029 listesi `storage`'da yalnız `db_path`'i, `data`'da yalnız `user_questions_dir`'i
+engelliyordu. Öğrenci projesindeki `[storage] max_analyses = 1` global veritabanındaki tüm geçmişi,
+`session_retention_days = 1` ipucu merdivenini budayabiliyordu; `data.checklists_dir` (prompt'a
+`guard`'sız giren maddeler), `mentor_templates_file` (öğrenciye gösterilen metin) ve
+`verify.common_identifiers_file` (sızıntı denetimini körleştirebilir) serbestti.
+
+**Yapılanlar:** `config._UNTRUSTED_SECTION_KEYS` → `storage` bölümünün tamamı, `data`'nın tüm yol
+alanları (`frozenset(DataSettings.model_fields)`: yeni veri yolu da kendiliğinden engellenir),
+`verify.common_identifiers_file`. `config.py` boş olmayan **400** satırda (sınırda; bir sonraki
+eklemede bölünmeli — ör. katman/güven mantığı `config_layers.py`'ye). ADR-0029 Karar 3 listesi tarihli notla genişletildi
+(sapma değil, gerekçe aynı); `mimari.md` §17 cümlesi güncellendi. `CODEMENTOR_CONFIG_FILE` ile verilen
+dosya bu ayarları hâlâ değiştirebilir.
+
+**Testler:** `test_audit_fixes_unit.py` +2: güvenilmeyen katman beş anahtarı yok sayar, stderr'de adıyla
+listeler, aynı dosyadaki güvenli `verify.leak_ngram_n` uygulanır; açık dosyada `max_analyses == 1`.
+Eski kodla ilk test kırmızı.
+
 ## Kod — Tam tarama bulgusu #1: sağduyu filtresi geçerli bulguları siliyordu (2026-10-20)
 
 > Tam tarama (ruff/mypy/pytest + kod-denetci) sonrası en acil madde. Kalan bulgular "Sonraya"da.
@@ -1544,12 +1563,12 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1 düzeltildi):**
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3 düzeltildi):**
   - Yüksek: `validation/tier0_pool.py` sıcak işçileri `runner.run_process` yerine düz `Popen`
     → bellek sınırı/ortam süzme/boş cwd yok, eşzamanlı işçi sınırsız; havuzun ADR'si yok (ADR-0025:58
     hâlâ "Sonraya" diyor). Yalnız `tier0_warm_workers > 0` iken.
-  - Orta: güvenilmeyen toml `storage.max_analyses` / `session_retention_days` / `data.checklists_dir`
-    serbest (`config.py` `_UNTRUSTED_SECTION_KEYS`) → global geçmiş budanabilir.
+  - ~~Orta: güvenilmeyen toml `storage.max_analyses` / `session_retention_days` / `data.checklists_dir`
+    serbest~~ → **KAPANDI (#3, 2026-10-20).**
   - Orta: `verify/complexity_policy.py` `O(n^2)` (≠ `parse_bigo` gösterimi), `is_optimal`
     yeniden hesaplanmıyor, `agreement` zorla `agrees`.
   - Orta: `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i satır referansı sayıyor; tekrar

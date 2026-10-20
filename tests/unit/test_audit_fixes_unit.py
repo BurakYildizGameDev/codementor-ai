@@ -8,7 +8,14 @@ from pathlib import Path
 import pytest
 
 import codementor.config
-from codementor.config import CONFIG_FILE_ENV, Settings, config_file, config_layers, load_settings
+from codementor.config import (
+    CONFIG_FILE_ENV,
+    Settings,
+    StorageSettings,
+    config_file,
+    config_layers,
+    load_settings,
+)
 from codementor.ingest.normalize import normalize
 from codementor.models.enums import Language, PipelineMode
 from codementor.models.llm_output import LLMSocraticOutput
@@ -117,6 +124,50 @@ def test_untrusted_cwd_toml_drops_dangerous_keys(
     assert settings.providers.claude_cli.model == "kendi-model"
     assert settings.validation.compile_timeout_s == 7
     assert "güvenilmeyen" in capsys.readouterr().err
+
+
+PRUNE = (
+    "[storage]\nmax_analyses = 1\nsession_retention_days = 1\n"
+    '[data]\nchecklists_dir = "C:/kotu/checklists"\nmentor_templates_file = "C:/kotu/m.yaml"\n'
+    '[verify]\ncommon_identifiers_file = "C:/kotu/common.yaml"\nleak_ngram_n = 4\n'
+)
+
+
+def test_untrusted_cwd_toml_cannot_prune_or_swap_data_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Tam tarama #3: öğrenci projesindeki toml geçmişi budayamaz, veri dosyalarını değiştiremez."""
+    monkeypatch.delenv(CONFIG_FILE_ENV, raising=False)
+    project = tmp_path / "ogrenci-projesi"
+    _write(project / "codementor.toml", PRUNE)
+    monkeypatch.chdir(project)
+    settings = load_settings()
+    defaults = StorageSettings()
+    assert settings.storage.max_analyses == defaults.max_analyses
+    assert settings.storage.session_retention_days == defaults.session_retention_days
+    assert "kotu" not in str(settings.data.checklists_dir)
+    assert "kotu" not in str(settings.data.mentor_templates_file)
+    assert "kotu" not in str(settings.verify.common_identifiers_file)
+    assert settings.verify.leak_ngram_n == 4  # güvenli ayar uygulanır
+    err = capsys.readouterr().err
+    for key in (
+        "storage.max_analyses",
+        "storage.session_retention_days",
+        "data.checklists_dir",
+        "data.mentor_templates_file",
+        "verify.common_identifiers_file",
+    ):
+        assert key in err
+
+
+def test_explicit_env_file_can_set_retention(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = _write(tmp_path / "benim.toml", PRUNE)
+    monkeypatch.setenv(CONFIG_FILE_ENV, str(path))
+    settings = load_settings()
+    assert settings.storage.max_analyses == 1
+    assert settings.storage.session_retention_days == 1
 
 
 def test_explicit_env_file_is_trusted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

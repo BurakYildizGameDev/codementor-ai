@@ -1329,7 +1329,8 @@ codementor-ai/
 çalışma dizinindeki `codementor.toml` → `~/.codementor/codementor.toml` → paketteki varsayılan
 (ilk güvenilir katmanda durulur). Çalışma dizinindeki dosya paketin kendi dosyası değilse
 **güvenilmez**dir: sağlayıcı `command`/`base_url`/`api_key_env`/`allow_tool_agent`, derleyici ve
-şablon yolları, veritabanı yolu, API ağ ayarları gibi anahtarları yok sayılır (uyarı basılır);
+şablon yolları, veritabanı yolu ve saklama/budama ayarları, veri dosyası yolları, API ağ ayarları
+gibi anahtarları yok sayılır (uyarı basılır);
 eksikler alttaki güvenilir katmandan gelir. `.env` hiç yüklenmez (Faz C).
 
 **Yol çözümü (Faz 23, ADR-0016):** göreli bir yol, değerin geldiği yere göre çözülür. Varsayılan

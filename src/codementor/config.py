@@ -447,14 +447,16 @@ def config_file() -> Path:
 
 
 # Güvenilmeyen (çalışma dizinindeki) toml'un değiştiremeyeceği anahtarlar (ADR-0029): komut
-# çalıştırma, ağ hedefi/anahtar adı, dosya sistemi yolları, şablon dizini (Jinja korumasız)
+# çalıştırma, ağ hedefi/anahtar adı, dosya sistemi yolları, şablon dizini (Jinja korumasız),
+# global veritabanını budayan saklama ayarları ve veri dosyaları (prompt'a/öğrenciye giden içerik)
 _UNTRUSTED_PROVIDER_KEYS = frozenset({"command", "base_url", "api_key_env", "allow_tool_agent"})
 _UNTRUSTED_SECTION_KEYS: dict[str, frozenset[str]] = {
     "validation": frozenset(
         {"toolchain_dir", "zig", "roslyn_check_dll", "roslyn_check_exe", "stub_header"}
     ),
-    "storage": frozenset({"db_path"}),
-    "data": frozenset({"user_questions_dir"}),
+    "storage": frozenset({"db_path", "max_analyses", "session_retention_days"}),
+    "data": frozenset(DataSettings.model_fields),  # hepsi dosya yolu; yeni yol da kendiliğinden
+    "verify": frozenset({"common_identifiers_file"}),
     "prompts": frozenset({"dir"}),
     "api": frozenset({"host", "cors_origins", "allowed_hosts", "api_key_env", "allowed_providers"}),
 }

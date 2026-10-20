@@ -24,8 +24,14 @@ okumuyordu.
    bu durumdadır, güvenilirdir) **güvenilmez katmandır**: tehlikeli anahtarları yok sayılır ve
    stderr'e uyarı basılır. Liste `config._UNTRUSTED_*`: sağlayıcı `command`, `base_url`,
    `api_key_env`, `allow_tool_agent`; `validation.toolchain_dir`, `zig`, `roslyn_check_*`,
-   `stub_header`; `storage.db_path`; `data.user_questions_dir`; `prompts.dir`; `api.host`,
-   `cors_origins`, `allowed_hosts`, `api_key_env`, `allowed_providers`.
+   `stub_header`; `storage.db_path`, `max_analyses`, `session_retention_days`; `data`'nın tüm
+   yolları (`questions_dir`, `checklists_dir`, `call_costs_file`, `mentor_templates_file`,
+   `pricing_file`, `user_questions_dir`); `verify.common_identifiers_file`; `prompts.dir`;
+   `api.host`, `cors_origins`, `allowed_hosts`, `api_key_env`, `allowed_providers`.
+   *Güncelleme 2026-10-20 (tam tarama #3):* saklama ayarları ve veri dosyası yolları eklendi —
+   öğrenci projesindeki `max_analyses = 1` global geçmişi budayabiliyor, kontrol listesi / mentor
+   şablonu / yaygın tanımlayıcı dosyası prompt'a, öğrenciye ve sızıntı denetimine giden içeriği
+   değiştirebiliyordu. Gerekçe aynı ("dosya sistemi yolları"); karar genişletildi, değişmedi.
 4. Güvenli anahtarlar (model adı, varsayılan sağlayıcı, süre ve bütçe ayarları, kurallar, sınırlar)
    çalışma dizininden uygulanmaya devam eder: proje başına ayar akışı bozulmaz.
 
