@@ -218,13 +218,45 @@ def test_readme_test_count_claims_are_lower_bounds() -> None:
         assert 0 < value <= collected, f"{name}: {value} > toplama sayısı {collected}"
 
 
+# KALAN_ISLER iş 23: "~N bin" yaklaşık bir iddiadır; birebir yuvarlama her değişiklikte kırılıyordu
+# (tam taramada 3 kez). Ölçüm iddianın ±1 bin içinde olmalı; ters yazılmış ya da çok bayat sayılar
+# (iş 1'deki "~28 bin test / ~29 bin kaynak" gibi) yine yakalanır. Dosya satırı iddiaları ±15 satır.
+THOUSAND_TOLERANCE = 1
+FILE_LINE_TOLERANCE = 15
+
+
+def _approx_thousand(lines: int, claimed_thousand: int) -> bool:
+    """Ölçülen satır sayısı "~N bin" iddiasının toleransı içinde mi."""
+    return abs(lines / 1000 - claimed_thousand) <= THOUSAND_TOLERANCE
+
+
+def _assert_thousand(prefix: str, claimed_thousand: int) -> None:
+    lines = _tracked_nonblank_lines(prefix)
+    assert _approx_thousand(lines, claimed_thousand), (
+        f"{prefix}: belge ~{claimed_thousand} bin, ölçüm {lines} (±{THOUSAND_TOLERANCE} bin)"
+    )
+
+
+@pytest.mark.parametrize(
+    ("lines", "claimed", "ok"),
+    [
+        (39_662, 40, True),
+        (39_662, 39, True),
+        (40_990, 40, True),
+        (41_100, 40, False),
+        (38_000, 40, False),
+    ],
+)
+def test_thousand_tolerance_bounds(lines: int, claimed: int, ok: bool) -> None:
+    """Tolerans yaklaşık iddiayı kabul eder, bayat ya da ters iddiayı reddeder."""
+    assert _approx_thousand(lines, claimed) is ok
+
+
 def test_readme_line_count_claims_match_measurement() -> None:
-    """`~38 bin satır test (~27 bin satır kaynak)` iddiası ölçümün yuvarlamasıyla aynı olmalı."""
+    """`~40 bin satır test (~29 bin satır kaynak)` iddiası ölçümün ±1 bin içinde olmalı."""
     readme = _flat("README.md")
-    tests_thousand = _number(readme, r"~(\d+) bin satır test")
-    src_thousand = _number(readme, r"\(~(\d+) bin satır kaynak")
-    assert round(_tracked_nonblank_lines("tests/") / 1000) == tests_thousand
-    assert round(_tracked_nonblank_lines("src/") / 1000) == src_thousand
+    _assert_thousand("tests/", _number(readme, r"~(\d+) bin satır test"))
+    _assert_thousand("src/", _number(readme, r"\(~(\d+) bin satır kaynak"))
 
 
 def test_line_count_measurement_skips_binary_assets() -> None:
@@ -279,12 +311,10 @@ def _open_sonraya_items() -> tuple[int, int]:
 
 
 def test_weak_doc_line_count_claims_match_measurement() -> None:
-    """`~27 bin satır kaynak, ~38 bin satır test` iddiası ölçümün yuvarlamasıyla aynı olmalı."""
+    """`~29 bin satır kaynak, ~40 bin satır test` iddiası ölçümün ±1 bin içinde olmalı."""
     doc = _flat(WEAK_DOC)
-    tests_thousand = _number(doc, r"~(\d+) bin satır test")
-    src_thousand = _number(doc, r"~(\d+) bin satır kaynak")
-    assert round(_tracked_nonblank_lines("tests/") / 1000) == tests_thousand
-    assert round(_tracked_nonblank_lines("src/") / 1000) == src_thousand
+    _assert_thousand("tests/", _number(doc, r"~(\d+) bin satır test"))
+    _assert_thousand("src/", _number(doc, r"~(\d+) bin satır kaynak"))
 
 
 def test_weak_doc_test_count_and_adr_claims_match_reality() -> None:
@@ -303,14 +333,16 @@ def test_weak_doc_test_count_and_adr_claims_match_reality() -> None:
     )
 
 
-def test_weak_doc_file_line_counts_are_exact() -> None:
-    """`path.py NNN` biçimindeki her satır sayısı gerçek dosyayla toleranssız eşleşmeli."""
+def test_weak_doc_file_line_counts_within_tolerance() -> None:
+    """`path.py NNN` biçimindeki her satır sayısı gerçek dosyanın ±15 satırı içinde olmalı."""
     doc = _flat(WEAK_DOC)
     claims = re.findall(r"`([\w/]+\.py)` (\d+)", doc)
     assert len(claims) >= 6, f"beklenen dosya satır iddiası bulunamadı: {claims}"
     for relative, claimed in claims:
         actual = _count_lines((REPO / SRC_PREFIX / relative).read_bytes())
-        assert int(claimed) == actual, f"{relative}: belge {claimed}, gerçek {actual}"
+        assert abs(int(claimed) - actual) <= FILE_LINE_TOLERANCE, (
+            f"{relative}: belge {claimed}, gerçek {actual} (tolerans ±{FILE_LINE_TOLERANCE})"
+        )
 
 
 def test_weak_doc_sonraya_count_matches_progress() -> None:

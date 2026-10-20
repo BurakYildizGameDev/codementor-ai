@@ -183,6 +183,12 @@ sabitlendi; eski kodla kırmızı.
   kırıldı, tek başına ve 40 tekrarda (0/40) tekrarlanmadı — Windows'ta atomik `os.replace` sırasında dosya
   kilidi (antivirüs/indeksleyici) olası; tekrarlarsa izlenmeli.
 
+**İş 23 — Satır sayısı testleri kırılganlıktan çıktı:** `test_release_readiness.py`'deki "~N bin satır"
+iddiaları birebir yuvarlama yerine ölçümün **±1 bin** içinde olmalı (bu taramada 3 kez her değişiklikte
+kırılıyordu); `path.py NNN` dosya iddiaları **±15 satır** toleranslı (`..._within_tolerance`). ADR sayısı
+birebir, `N+ test` alt sınır olarak kaldı. Ters ya da çok bayat iddialar (iş 1'deki "~28 bin test / ~29 bin
+kaynak" gibi) yine yakalanıyor: `test_thousand_tolerance_bounds` (5 vaka, iki red).
+
 ## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
 
 **Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken
@@ -1688,7 +1694,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-21 kapandı;
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-23 kapandı;
   iş sırası `KALAN_ISLER.md` 14-23):**
   - ~~Yüksek: `validation/tier0_pool.py` sıcak işçileri düz `Popen` (bellek/ortam/cwd sınırı yok,
     işçi sayısı sınırsız, tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, mesajlar şablonla
@@ -1707,7 +1713,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
   - ~~Düşük (iş 21): `RateLimiter._records` sınırsız, `mimari.md:1126` hız sınırı çelişkisi,
     `sessions.updated_at` NULL budanmıyor, `PruneReport` models/ dışında~~ → **KAPANDI (iş 21)**; ayrıca
     `root_path` arkasında API anahtarı atlanması bulundu ve kapandı.
-    (README/ZAYIF satır sayıları ölçüme göre güncel; büyüdükçe yine kırılır → iş 23.)
+    (README/ZAYIF satır sayısı testleri artık toleranslı → iş 23 kapandı.)
 - ~~**Zamanlama testleri kırılgan (iş 3 derin doğrulamasından çıktı, 2026-10-18)**~~ → **KAPANDI (iş 4b,
   2026-10-18):** eşik değişmedi (1,5 sn, ADR-0024); ölçüm ısınma + 3 koşunun en hızlısına çevrildi ve
   yanına **göreli büyüme** testleri eklendi (2× girdi ≤ 3× süre). Kasıtlı karesel yavaşlatma O1'i

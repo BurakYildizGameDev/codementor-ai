@@ -475,7 +475,7 @@
   `integration/test_pipeline.py` (toplama kimlikleri birebir korunmalı; J5 `test_tier1.py` örneği).
 - `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` dosya satırı iddiaları birlikte güncellenir. **Boyut:** orta.
 
-### [ ] 🤖 23. Satır sayısı testlerini kırılganlıktan çıkar
+### [x] 🤖 23. Satır sayısı testlerini kırılganlıktan çıkar — ✅ **BİTTİ 2026-10-20**
 - `tests/unit/test_release_readiness.py` "~N bin satır" ve `path.py NNN` iddiaları neredeyse her kod
   değişikliğinde kırılıyor (bu taramada 3 kez). Öneri: bin yuvarlamasına ±1 tolerans ya da iddiaları
   belgeden kaldırıp ölçümü `make` hedefine bağlamak. **Boyut:** küçük.
