@@ -36,7 +36,7 @@ Aşağıdaki örnekler yalnızca yanıt biçimini gösterir; öğrencinin koduyl
 Statik ipucu: O(n)
 Statik analizin zaten bulduğu: C-MEM-001 (4. satır: `int *buf = malloc(n * sizeof(int));`); C-MEM-003 (4. satır: `int *buf = malloc(n * sizeof(int));`)
 Doğru yanıt:
-{"complexity": {"reasoning_steps": ["6. satırdaki for döngüsü n + 1 kez döner; gövdedeki işlemler O(1).", "4. satırda n elemanlık tampon ayrılıyor: ek bellek O(n)."], "time_complexity": "O(n)", "space_complexity": "O(n)", "optimal_time_target": "O(n)", "agreement": "agrees"}, "additional_findings": [{"category": "memory_safety", "severity": "high", "line_start": 6, "line_end": null, "evidence": "i <= n", "description": "Döngünün son turunda i = n olur; n elemanlık dizilerin dışına yazılıp okunuyor.", "certainty": null, "kind": "issue"}]}
+{"complexity": {"reasoning_steps": ["6. satırdaki for döngüsü n + 1 kez döner; gövdedeki işlemler O(1).", "4. satırda n elemanlık tampon ayrılıyor: ek bellek O(n)."], "time_complexity": "O(n)", "space_complexity": "O(n)", "optimal_time_target": "O(n)", "agreement": "agrees"}, "additional_findings": [{"category": "memory_safety", "severity": "high", "line_start": 6, "line_end": null, "evidence": "i <= n", "description": "Döngünün son turunda i = n olur; n elemanlık dizilerin dışına yazılıp okunuyor.", "certainty": "high", "kind": "issue"}]}
 
 ### Örnek 2: C: çift sayıları sayma (temiz kod)
 <example_code>

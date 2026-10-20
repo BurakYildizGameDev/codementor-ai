@@ -30,6 +30,7 @@ analysis:
     - category: design
       severity: low
       kind: suggestion
+      certainty: high
       line_start: 7
       line_end: null
       evidence: "if (word.size() > best) {"

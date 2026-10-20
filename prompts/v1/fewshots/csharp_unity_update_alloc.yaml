@@ -42,6 +42,7 @@ analysis:
   additional_findings:
     - category: engine_best_practice
       severity: medium
+      certainty: high
       line_start: 11
       line_end: null
       evidence: "e.position"

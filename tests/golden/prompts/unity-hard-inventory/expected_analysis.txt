@@ -41,7 +41,7 @@ Aşağıdaki örnekler yalnızca yanıt biçimini gösterir; öğrencinin koduyl
 Statik ipucu: O(n)
 Statik analizin zaten bulduğu: UNITY-GC-001 (9. satır: `var nearby = new List<Transform>();`); UNITY-PERF-001 (14. satır: `GetComponent<RadarUI>().Show(nearby);`)
 Doğru yanıt:
-{"complexity": {"reasoning_steps": ["Update her karede çalışır; aşağıdakiler kare başına maliyettir.", "10. satırdaki foreach n düşman üzerinde bir kez döner; Vector3.Distance O(1).", "nearby listesi en fazla n eleman tutar: ek bellek O(n)."], "time_complexity": "O(n)", "space_complexity": "O(n)", "optimal_time_target": "O(n)", "agreement": "agrees"}, "additional_findings": [{"category": "engine_best_practice", "severity": "medium", "line_start": 11, "line_end": null, "evidence": "e.position", "description": "Listedeki bir düşman yok edilirse e.position erişimi hata verir; bu durum ele alınmıyor.", "certainty": null, "kind": "issue"}]}
+{"complexity": {"reasoning_steps": ["Update her karede çalışır; aşağıdakiler kare başına maliyettir.", "10. satırdaki foreach n düşman üzerinde bir kez döner; Vector3.Distance O(1).", "nearby listesi en fazla n eleman tutar: ek bellek O(n)."], "time_complexity": "O(n)", "space_complexity": "O(n)", "optimal_time_target": "O(n)", "agreement": "agrees"}, "additional_findings": [{"category": "engine_best_practice", "severity": "medium", "line_start": 11, "line_end": null, "evidence": "e.position", "description": "Listedeki bir düşman yok edilirse e.position erişimi hata verir; bu durum ele alınmıyor.", "certainty": "high", "kind": "issue"}]}
 
 ### Örnek 2: Unity: bekleme süresi sayacı (temiz kod)
 <example_code>

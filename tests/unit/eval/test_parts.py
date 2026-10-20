@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -11,8 +12,16 @@ from typer.testing import CliRunner
 
 from codementor.cli.main import app
 from codementor.eval.breakdown import group_of
+from codementor.eval.compare import compare_table
 from codementor.eval.dataset import load_split
-from codementor.eval.parts import parse_part, sample_kind, select_part
+from codementor.eval.parts import (
+    check_parts_coverage,
+    parse_part,
+    part_signature,
+    sample_kind,
+    select_part,
+)
+from codementor.models.eval import Metrics, RunConfig, RunResult
 
 DATASET = Path(__file__).resolve().parents[3] / "eval" / "dataset"
 SAMPLES = load_split(DATASET, "dev")
@@ -100,3 +109,63 @@ def test_cli_part_and_limit_conflict(tmp_path: Path) -> None:
     )
     assert result.exit_code != 0
     assert "--part" in result.output
+
+
+def test_part_signature_is_deterministic() -> None:
+    sig1 = part_signature(SAMPLES, 4)
+    sig2 = part_signature(list(reversed(SAMPLES)), 4)
+    assert sig1 == sig2
+    assert sig1.startswith("p4+")
+
+    sig_other_parts = part_signature(SAMPLES, 3)
+    assert sig_other_parts.startswith("p3+")
+    assert sig_other_parts != sig1
+
+
+def test_check_parts_coverage_detects_overlaps_and_missing() -> None:
+    now = datetime.now(UTC)
+    dummy_metrics = Metrics(samples=2)
+
+    r1 = RunResult(
+        config=RunConfig(
+            split="dev",
+            provider=None,
+            model=None,
+            mode="static",
+            static_only=True,
+            prompt_version="v1",
+            rules_version="r3",
+            schema_version="1.0.0",
+            started_at=now,
+            sample_ids=["py-001", "py-002"],
+            part="1/2",
+        ),
+        metrics=dummy_metrics,
+        samples=[],
+    )
+    r2 = RunResult(
+        config=RunConfig(
+            split="dev",
+            provider=None,
+            model=None,
+            mode="static",
+            static_only=True,
+            prompt_version="v1",
+            rules_version="r3",
+            schema_version="1.0.0",
+            started_at=now,
+            sample_ids=["py-002", "cpp-001"],
+            part="2/2",
+        ),
+        metrics=dummy_metrics,
+        samples=[],
+    )
+
+    all_ids = ["py-001", "py-002", "cpp-001", "rs-001"]
+    overlapping, missing = check_parts_coverage([r1, r2], all_sample_ids=all_ids)
+
+    assert overlapping == ["py-002"]
+    assert missing == ["rs-001"]
+
+    table_output = compare_table([r1, r2])
+    assert "Parçalı koşularda çakışan örnekler var: py-002" in table_output

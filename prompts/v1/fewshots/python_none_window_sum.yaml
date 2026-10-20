@@ -26,18 +26,21 @@ analysis:
   additional_findings:
     - category: edge_case
       severity: medium
+      certainty: high
       line_start: 3
       line_end: null
       evidence: "range(len(values) - k)"
       description: "Son pencere hiç denenmiyor; liste tam k elemanlıysa döngü bir kez bile dönmez ve sonuç 0 olur."
     - category: edge_case
       severity: medium
+      certainty: high
       line_start: 2
       line_end: null
       evidence: "best = 0"
       description: "Tüm değerler negatifse hiçbir pencere 0'ı geçemez; fonksiyon gerçek en büyük toplam yerine 0 döndürür."
     - category: performance
       severity: medium
+      certainty: high
       line_start: 4
       line_end: null
       evidence: "sum(values[i:i + k])"

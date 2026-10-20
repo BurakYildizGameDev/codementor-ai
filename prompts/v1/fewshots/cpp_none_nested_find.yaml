@@ -30,12 +30,14 @@ analysis:
   additional_findings:
     - category: performance
       severity: medium
+      certainty: high
       line_start: 7
       line_end: null
       evidence: "std::find(b.begin(), b.end(), x)"
       description: "a'daki her eleman için b tamamen taranıyor; kesişim karesel sürede hesaplanıyor."
     - category: edge_case
       severity: low
+      certainty: high
       line_start: 8
       line_end: null
       evidence: "out.push_back(x);"

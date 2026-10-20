@@ -36,6 +36,7 @@ analysis:
   additional_findings:
     - category: memory_safety
       severity: high
+      certainty: high
       line_start: 6
       line_end: null
       evidence: "i <= n"

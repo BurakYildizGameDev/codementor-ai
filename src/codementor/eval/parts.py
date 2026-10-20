@@ -8,11 +8,13 @@ her parça tüm bölümün küçük bir kopyası gibi davranır ve parçaların 
 
 from __future__ import annotations
 
+import hashlib
 import re
 from collections import Counter
+from collections.abc import Sequence
 
 from codementor.eval.breakdown import group_of
-from codementor.models.eval import Label, Sample
+from codementor.models.eval import Label, RunResult, Sample
 
 _PART = re.compile(r"^(\d+)/(\d+)$")
 
@@ -99,3 +101,33 @@ def select_part(samples: list[Sample], index: int, parts: int) -> list[Sample]:
     return sorted(
         (s for s in samples if assignment[s.label.id] == index - 1), key=lambda s: s.label.id
     )
+
+
+def part_signature(samples: list[Sample], parts: int) -> str:
+    """Parça atamasının deterministik kimlik özeti (Faz I / İş 10)."""
+    assignment = _assign(samples, parts)
+    lines = [f"{s_id}:{p}" for s_id, p in sorted(assignment.items())]
+    digest = hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
+    return f"p{parts}+{digest[:8]}"
+
+
+def check_parts_coverage(
+    part_results: list[RunResult],
+    all_sample_ids: Sequence[str] | None = None,
+) -> tuple[list[str], list[str]]:
+    """Parçalı sonuçların çakışan ve eksik örnek kimliklerini denetler (Faz I / İş 10).
+
+    Dönüş: (çakışan_kimlikler, eksik_kimlikler)
+    """
+    seen: set[str] = set()
+    overlapping: set[str] = set()
+    for r in part_results:
+        for sid in r.config.sample_ids:
+            if sid in seen:
+                overlapping.add(sid)
+            seen.add(sid)
+    missing: list[str] = []
+    if all_sample_ids is not None:
+        expected = set(all_sample_ids)
+        missing = sorted(expected - seen)
+    return sorted(overlapping), missing
