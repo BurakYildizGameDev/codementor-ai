@@ -438,7 +438,7 @@
 - **Kapsam:** `loop.sock_connect` / `getaddrinfo` / `socket.create_connection` yamaları + async test.
 - **Dosyalar:** `tests/network_guard.py`, `tests/unit/test_network_guard.py`. **Boyut:** küçük.
 
-### [ ] 🤖 18. Python Tier 1 uyarı yakalamasını iş parçacığı güvenli yap (tarama #9)
+### [x] 🤖 18. Python Tier 1 uyarı yakalamasını iş parçacığı güvenli yap (tarama #9) — ✅ **BİTTİ 2026-10-20**
 - **Sorun:** `validation/python_check.py:26` `warnings.catch_warnings` global durumu değiştiriyor;
   `asyncio.to_thread` ile eşzamanlı (API'de 4 yuva) → uyarılar kaybolur/başka analize düşer.
 - **Kapsam:** kilit ya da `compile` uyarılarını alt süreçte/ayrı mekanizmayla toplamak + eşzamanlı test.

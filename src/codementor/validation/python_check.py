@@ -9,6 +9,7 @@ kurulur; bu, `import` ya da ifade değerlendirmesi yapmaz. Girdi boyutu ingest s
 from __future__ import annotations
 
 import ast
+import threading
 import warnings
 from typing import Literal
 
@@ -19,11 +20,15 @@ from codementor.models.validation import SkipReason, Tier1Result
 
 TOOL: Literal["python"] = "python"
 _FILENAME = "<ogrenci>"
+# `warnings.catch_warnings` süreç geneli durumu (filtreler, gösterim işlevi) değiştirir ve iş
+# parçacığı güvenli değildir; Tier 1 `asyncio.to_thread` ile eşzamanlı koşar (API'de 4 yuva).
+# Kilitsiz iç içe girişlerde uyarılar başka analize düşüyor, "always" filtresi kalıcı kalıyordu.
+_WARNINGS_LOCK = threading.Lock()
 
 
 def check_python(code: NormalizedCode) -> Tier1Result:
     """Sözdizimi hatası → FAILED, yalnız uyarı (ör. geçersiz kaçış dizisi) → WARNING."""
-    with warnings.catch_warnings(record=True) as caught:
+    with _WARNINGS_LOCK, warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
             compile(code.text, _FILENAME, "exec", flags=ast.PyCF_ONLY_AST, dont_inherit=True)
@@ -47,7 +52,8 @@ def check_python(code: NormalizedCode) -> Tier1Result:
             message=f"{w.category.__name__}: {w.message}",
         )
         for w in caught
-        if issubclass(w.category, SyntaxWarning | DeprecationWarning)
+        # kilit dışı iş parçacıklarının uyarıları da yakalanır: yalnız öğrenci kodunun derlemesi
+        if w.filename == _FILENAME and issubclass(w.category, SyntaxWarning | DeprecationWarning)
     ]
     status = CompilationStatus.WARNING if found else CompilationStatus.PASSED
     return Tier1Result(status=status, tool=TOOL, diagnostics=found)

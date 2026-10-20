@@ -112,6 +112,14 @@ Windows'ta ağa çıkabilirdi. `tests/network_guard.guarded_patches()` artık bu
 (async dış bağlantı düşer, async loopback serbest, DNS engelli, yerel çözümleme serbest). Tam paket
 4028 test yeşil: hiçbir mevcut test DNS'e ya da dış ağa çıkmıyormuş.
 
+**İş 18 — Python Tier 1 iş parçacığı güvenliği:** `python_check` `warnings.catch_warnings` bloğunu
+modül düzeyinde `threading.Lock` altında koşuyor (süreç geneli filtre/gösterim durumu; Tier 1
+`asyncio.to_thread` ile eşzamanlı) ve yakalanan uyarıları `filename == "<ogrenci>"` ile süzüyor
+(kilit dışındaki iş parçacığının uyarısı rapora girmez). **Testler:** yeni `test_python_check.py` (2):
+derleme sırasında yayılan yabancı `DeprecationWarning` rapora girmez (eski kodla 3/3 kırmızı); 8 iş
+parçacığı × 400 çağrıda sonuçlar girdiye ait ve `warnings.filters` değişmez (eski kodla bu makinede
+yarış tekrarlanmadı — koruyucu test olarak duruyor).
+
 ## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
 
 **Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken
@@ -1617,7 +1625,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-17 kapandı;
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-18 kapandı;
   iş sırası `KALAN_ISLER.md` 14-23):**
   - ~~Yüksek: `validation/tier0_pool.py` sıcak işçileri düz `Popen` (bellek/ortam/cwd sınırı yok,
     işçi sayısı sınırsız, tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, mesajlar şablonla
@@ -1630,7 +1638,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
     algılayıcı sayı dizilerini dejenerasyon sanıyor; kapı uyarıları kayboluyor~~ → **KAPANDI (iş 15).**
   - ~~Orta (iş 16): `web/src/types/question_public.ts` bayat (`sample_io` yok)~~ → **KAPANDI (iş 16).**
   - ~~Orta (iş 17): `tests/network_guard.py` Windows Proactor `ConnectEx` yolunu yakalamıyor~~ → **KAPANDI (iş 17).**
-  - Orta (iş 18): `python_check.py` `warnings.catch_warnings` iş parçacığı güvenli değil.
+  - ~~Orta (iş 18): `python_check.py` `warnings.catch_warnings` iş parçacığı güvenli değil~~ → **KAPANDI (iş 18).**
   - Orta (iş 19): `eval/judge.py` + `judge.j2` girdileri `guard`'sız, hata yönetimi zayıf.
   - Orta (iş 20): Codex iptalinde `TemporaryDirectory` temizlik hatası iptali maskeleyebilir.
   - Düşük (iş 21): `RateLimiter._records` sınırsız, `mimari.md:1126` hız sınırı çelişkisi,
