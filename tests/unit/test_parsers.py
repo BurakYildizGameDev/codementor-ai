@@ -238,7 +238,8 @@ print(len(found), len(rows))
 
 @pytest.mark.slow
 def test_tree_sitter_binding_is_memory_safe() -> None:
-    """tree-sitter 0.26.0 bu kalıpta erişim ihlaliyle çöküyor; sürüm `<0.26` sabitlendi.
+    """tree-sitter 0.26.0 bu kalıpta erişim ihlaliyle çöküyor (`Point` refcount hatası,
+    py-tree-sitter#472; düzeltme 0.26.1'i bekliyor); sürüm `<0.26` sabitlendi.
 
     Sürüm yükseltilirse bu test yeni sürümün güvenli olup olmadığını söyler.
     """

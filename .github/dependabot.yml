@@ -11,8 +11,8 @@ updates:
       python-minor:
         update-types: [minor, patch]
     ignore:
-      # tree-sitter 0.26: Linux CI'da test_parsers kırmızı + segfault (PR #7, 2026-10-20);
-      # pyproject'teki `<0.26` sınırı bilinçli. Uyum ayrı işte denenir (PROGRESS "Sonraya").
+      # tree-sitter 0.26.0: Point refcount hatası → segfault (py-tree-sitter#472, düzeltme 0.26.1'i
+      # bekliyor). pyproject'teki `<0.26` sınırı bilinçli; 0.26.1 çıkınca bu blok kaldırılır.
       - dependency-name: tree-sitter
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
 
