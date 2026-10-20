@@ -1135,7 +1135,7 @@ Faz A-I'ya girmeyen, ihtiyaç doğunca ele alınacak maddeler:
 - [ ] CI Windows: MinGW g++ soğuk başlangıç süresi; clang için `--target=x86_64-w64-mingw32`
 - [ ] Soru bankası: öğretmen içerik incelemesi, örnek giriş/çıkış alanı, `METHOD_LEAKS`'i soru
       verisine taşıma, kontrol listesi anlık görüntü testi
-- [ ] Faz 18 etiket kararı (`c-008`, `csharp-009` için Faz 17 bulguları; kullanıcı kararı)
+- [x] Faz 18 etiket kararı (`c-008`, `csharp-009` için Faz 17 bulguları) — Faz 21'de uygulanmıştı, 2026-10-20'de doğrulandı
 - [ ] OpenAI katı mod kısıtlarının canlı doğrulanması (sağlayıcı geri gelirse)
 - [ ] JS (tarayıcı) desteği; cppcheck/clang-tidy entegrasyonu; VS Code eklentisi; Rust/Go
       (README yol haritası v1.1/v2.0)

@@ -6,6 +6,7 @@ gerekmezler; kararların ve ölçümlerin nasıl alındığını görmek isteyen
 | Belge | İçerik |
 |---|---|
 | [PROGRESS-faz-0-63.md](PROGRESS-faz-0-63.md) | Faz 0-63'ün ayrıntılı notları (yapılanlar, kararlar, denetimler) |
+| [PROGRESS-faz-A-J.md](PROGRESS-faz-A-J.md) | Public öncesi Faz A-K, `KALAN_ISLER.md` iş 1-23 ve 2026-10-20 tam taramasının notları |
 | [YAPILANLAR.md](YAPILANLAR.md) | Faz 0-16 özeti |
 | [DEVIR_FAZ52_54.md](DEVIR_FAZ52_54.md), [DEVIR_FAZ55.md](DEVIR_FAZ55.md), [DEVIR_FAZ60_62.md](DEVIR_FAZ60_62.md) | Başka kodlama ajanlarına verilen iş devirleri |
 | [CODEX_3_4_YAPILANLAR.md](CODEX_3_4_YAPILANLAR.md), [YAPILANLAR_60_62_ANTIGRAVITY.md](YAPILANLAR_60_62_ANTIGRAVITY.md) | O ajanların teslim raporları |

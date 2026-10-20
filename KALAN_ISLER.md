@@ -482,7 +482,7 @@
 
 ## B. Yalnız kullanıcının yapabileceği işler
 
-### [ ] 👤 U1. `git push`
+### [x] 👤 U1. `git push` — ✅ **2026-10-20** (`3ef973c..9a65052`, 105 commit)
 - `main`, `origin/main`'in **yetmişin üzerinde** commit önünde (bu dosyanın kaydı sırasında 71; kesin
   sayı: `git rev-list --count origin/main..main`). Push olmadan CI ve release akışı yeni commit'leri
   görmez.
@@ -507,19 +507,23 @@
 
 ## C. Karar bekleyenler
 
-- [ ] ⏸ **P12:** `.agents/`, `.claude/` repoda kalacak mı (kalması önerildi; bilinçli karar
-  `BulgularVeDuzeltilecekler.md` §6'ya yazılır).
-- [ ] ⏸ **P6 ikinci arşiv turu:** `PROGRESS.md` 140 KB (Faz D'de 263 → 31 KB'ydı; E-J notlarıyla
+- [x] ⏸ **P12:** `.agents/`, `.claude/` repoda kalacak mı → **kalıyor** (2026-10-20 incelendi:
+  izin listesi, `private/` okuma yasağı, denetçi ajanı ve faz akışı; kişisel yol/anahtar yok;
+  `BulgularVeDuzeltilecekler.md` §6).
+- [x] ⏸ **P6 ikinci arşiv turu:** ✅ 2026-10-20 — 203 KB → 35 KB; notlar
+  `docs/gelistirme-gunlugu/PROGRESS-faz-A-J.md`'de. Eski metin: `PROGRESS.md` 140 KB (Faz D'de 263 → 31 KB'ydı; E-J notlarıyla
   tekrar büyüdü). İstenirse E-J notları `docs/gelistirme-gunlugu/PROGRESS-faz-E-J.md`'ye taşınır,
   kökte "Durum" tablosu + son fazların özeti kalır.
-- [ ] ⏸ **Faz 18 etiket kararı:** `c-008`, `csharp-009` için Faz 17 bulgularının etiketlenmesi
+- [x] ⏸ **Faz 18 etiket kararı:** ✅ Faz 21'de uygulanmıştı (`label.yaml` notları), 2026-10-20
+  doğrulandı. Eski metin: `c-008`, `csharp-009` için Faz 17 bulgularının etiketlenmesi
   (kullanıcı kararı, Bulgular §10 Faz J).
 
 ## D. Kaynaklar ve tazeleme kuralı
 
 - Bulgu kimlikleri ve ayrıntı: `docs/BulgularVeDuzeltilecekler.md` (§1 özet, §4 orta, §5 düşük,
   §6 public hazırlığı P1-P13, §8 eksik testler, §9 önerilen özellikler, §10 faz planı A-J).
-- Faz notları ve "Sonraya" (120 madde, 42 açık): `PROGRESS.md`.
+- Faz notları: `docs/gelistirme-gunlugu/PROGRESS-faz-A-J.md` (A-K, iş 1-23); "Sonraya" (120
+  madde, 41 açık): `PROGRESS.md`.
 - Faz planı ve fazların kabul kriterleri: `docs/UYGULAMA_PLANI.md`.
 - Bu dosya **yaşayan listedir**: iş bitince `[x]` yapılır + `PROGRESS.md`'ye işlenir; ayrıntılı
   gerekçe buraya kopyalanmaz, kaynağına bağlantı verilir.

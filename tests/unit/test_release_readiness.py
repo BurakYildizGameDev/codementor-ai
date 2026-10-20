@@ -271,15 +271,19 @@ def test_line_count_measurement_skips_binary_assets() -> None:
 
 
 def test_readme_phase_claims_match_progress() -> None:
-    """README'nin faz listesi, PROGRESS.md'de bölümü olan fazlarla birebir olmalı."""
+    """README'nin faz listesi, PROGRESS.md'de ya da A-J arşivinde bölümü olan fazlarla birebir."""
     readme = _flat("README.md")
     match = re.search(r"\(Faz 0-(\d+), ardından public öncesi Faz ([^)]*)\)", readme)
     assert match is not None, "README'de faz anlatımı bulunamadı"
     last_archived = int(match.group(1))
     claimed = _expand_phases(match.group(2))
-    progress = (REPO / "PROGRESS.md").read_text(encoding="utf-8")
+    # P6 ikinci arşiv turu (2026-10-20): Faz A-K notları kökten arşive taşındı
+    progress = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (REPO / "PROGRESS.md", ARCHIVE_DIR / "PROGRESS-faz-A-J.md")
+    )
     documented = set(re.findall(r"(?m)^#{2,4}\s+Faz\s+([A-K])", progress))
-    assert documented, "PROGRESS.md'de faz bölümü bulunamadı"
+    assert documented, "PROGRESS.md ve A-J arşivinde faz bölümü bulunamadı"
     assert claimed == documented, f"README {sorted(claimed)} · PROGRESS {sorted(documented)}"
     archive = ARCHIVE_DIR / f"PROGRESS-faz-0-{last_archived}.md"
     assert archive.exists(), archive

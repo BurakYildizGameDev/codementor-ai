@@ -276,7 +276,7 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
 <!-- eval-table:dev:end -->
 
-> En güncel dev ölçümü (Faz 51, 2026-10-05): **Claude 96 örnek — Denetim P / R / F1 = 78 / 96 / 86** (karışıklık 7 → 2). Ayrıntı: `PROGRESS.md` "Faz 51 — Notlar".
+> En güncel dev ölçümü (Faz 51, 2026-10-05): **Claude 96 örnek — Denetim P / R / F1 = 78 / 96 / 86** (karışıklık 7 → 2). Ayrıntı: [geliştirme günlüğü](docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md) "Faz 51 — Notlar".
 
 > Faz 36 (2026-10-04): Claude Opus parçaları 1/4 + 2/4 (48 örnek) kayıtlı metrikte 75 / 83 / 78; `unity-104` etiketi güncellenince 75 / 81 / 78. Codex `gpt-6-luna` aynı promptla dört parçayı koştu: 96 örnekte 79 / 77 / 78. Sağlayıcılar farklı olduğundan sonuçlar birleştirilmez. Ayrıntı: `docs/eval-findings.md` §11.
 
