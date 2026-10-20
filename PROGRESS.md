@@ -89,6 +89,11 @@ platform varsayımlarını yakaladı (ürün kodu değişmedi):
 - `test_linear_time_large_input[c-nested-call]` Windows CI'da 2,046 sn > 2,0 sn (yerelde 0,42; `--cov`
   yavaşlatması). Üç dosyada kopyalanmış Faz 53 `_deadline` kalıbı ortak `tests/timing.py` oldu; kural
   motoru testi de kullanır (kapsamasız 2,0 sn, `--cov` altında 8,0 sn).
+- `test_tier0_growth_is_linear[cpp-template-ambiguity]` Windows CI'da 2× girdide 3,12× (sınır 3,0×);
+  yerelde her 2× adımda ~2,0× (ölçüldü, gerileme yok). Neden: küçük ve büyük girdi art arda ölçülüyordu,
+  koşucudaki geçici yük yalnız büyüğe denk gelince oran şişiyordu. Ortak `tests/timing.best_pair` iki
+  girdiyi **dönüşümlü** ölçer (ısınma + 3 tur, en iyisi); Tier 0 ve O1-O3 büyüme testleri kullanır.
+  Sınır değişmedi; sonda: karesel iş 4,39× (yakalanır), doğrusal 1,98×.
 
 ## Bağımlılıklar — Dependabot PR'ları (#1, #3, #5, #6, #7; 2026-10-20)
 

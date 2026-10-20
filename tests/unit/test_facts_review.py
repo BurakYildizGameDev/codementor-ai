@@ -16,6 +16,7 @@ from codementor.ingest.normalize import normalize
 from codementor.models.enums import AllocationKind, Engine, Language, LoopBound
 from codementor.models.facts import CodeFacts
 from codementor.models.request import LanguageHint
+from tests.timing import best_pair
 from tests.timing import deadline as _deadline
 
 C, CPP, CS = Language.C, Language.CPP, Language.CSHARP
@@ -255,6 +256,16 @@ def _timed(text: str, language: Language) -> float:
     return _best_of(lambda: compute_hint(extract_facts(code)))
 
 
+def _growth(build: Callable[[int], str], counts: tuple[int, int], language: Language) -> None:
+    """Büyüme oranı testi: iki boyut dönüşümlü ölçülür; büyük ≤ `_GROWTH_LIMIT` × küçük."""
+    small_code, large_code = (normalize(build(c), LanguageHint(language=language)) for c in counts)
+    small, large = best_pair(
+        lambda: compute_hint(extract_facts(small_code)),
+        lambda: compute_hint(extract_facts(large_code)),
+    )
+    assert large <= _GROWTH_LIMIT * max(small, _TIME_FLOOR), f"{small:.3f} s → {large:.3f} s"
+
+
 def _inner_loops(count: int) -> str:
     inner = " ".join(["while (j < n) j++;"] * count)
     return f"void f(int n) {{ int j = 0; for (int i = 0; i < n; i++) {{ {inner} }} }}\n"
@@ -278,8 +289,7 @@ def test_o1_many_inner_loops_linear() -> None:
 
 
 def test_o1_growth_is_linear() -> None:
-    small, large = (_timed(_inner_loops(count), C) for count in (1000, 2000))
-    assert large <= _GROWTH_LIMIT * max(small, _TIME_FLOOR), f"{small:.3f} s → {large:.3f} s"
+    _growth(_inner_loops, (1000, 2000), C)
 
 
 def test_o2_many_functions_linear() -> None:
@@ -287,8 +297,7 @@ def test_o2_many_functions_linear() -> None:
 
 
 def test_o2_growth_is_linear() -> None:
-    small, large = (_timed(_functions(count), C) for count in (650, 1300))
-    assert large <= _GROWTH_LIMIT * max(small, _TIME_FLOOR), f"{small:.3f} s → {large:.3f} s"
+    _growth(_functions, (650, 1300), C)
 
 
 def test_o3_long_member_chain_linear() -> None:
@@ -296,8 +305,7 @@ def test_o3_long_member_chain_linear() -> None:
 
 
 def test_o3_member_chain_growth_is_linear() -> None:
-    small, large = (_timed(_member_chain(count), CPP) for count in (3500, 7000))
-    assert large <= _GROWTH_LIMIT * max(small, _TIME_FLOOR), f"{small:.3f} s → {large:.3f} s"
+    _growth(_member_chain, (3500, 7000), CPP)
 
 
 def test_o3_long_concat_chain_linear() -> None:
@@ -305,8 +313,7 @@ def test_o3_long_concat_chain_linear() -> None:
 
 
 def test_o3_concat_chain_growth_is_linear() -> None:
-    small, large = (_timed(_concat_chain(count), CS) for count in (3000, 6000))
-    assert large <= _GROWTH_LIMIT * max(small, _TIME_FLOOR), f"{small:.3f} s → {large:.3f} s"
+    _growth(_concat_chain, (3000, 6000), CS)
 
 
 def test_o4_long_call_chain_keeps_hint() -> None:

@@ -22,6 +22,7 @@ from codementor.ingest.normalize import normalize
 from codementor.models.enums import Language
 from codementor.models.request import LanguageHint
 from codementor.validation.tier0 import run_tier0
+from tests.timing import best_pair
 from tests.timing import deadline as _deadline
 
 _RUNS = 3
@@ -93,11 +94,10 @@ def test_tier0_growth_is_linear(language: Language, fragment: str, small: int, l
     bu yüzden yalnız mutlak bütçeyle sınırlanır.
     """
 
-    def measure(count: int) -> float:
-        code = normalize(fragment * count, LanguageHint(language=language))
-        return _best_of(lambda: run_tier0(code))
-
-    small_time, large_time = measure(small), measure(large)
+    small_code, large_code = (
+        normalize(fragment * count, LanguageHint(language=language)) for count in (small, large)
+    )
+    small_time, large_time = best_pair(lambda: run_tier0(small_code), lambda: run_tier0(large_code))
     assert large_time <= _GROWTH_LIMIT * max(small_time, _TIME_FLOOR), (
         f"{language.value}: {small_time * 1000:.1f} ms → {large_time * 1000:.1f} ms"
     )
