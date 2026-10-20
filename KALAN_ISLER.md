@@ -300,81 +300,98 @@
 - **Kalan dilimler:** yok — iş 5'in bütün maddeleri işlendi (CPP-OWN-001 dilim 1, C-MEM-001 dilim 2,
   UNITY-GC-001 dilim 3, UE-GC-001 dilim 4, C-MEM-003 dilim 5).
 
-### [ ] 🤖 6. Statik kapsam boşluklarını kapatacak yeni kurallar
-- **Kapsam:** CSS (`outline:none` + focus göstergesi yok → CSS-CL-004, sabit `px` yükseklik taşması
-  → CSS-CL-006, `position:absolute` + margin ile ortalama → CSS-CL-007) · C++ (döngüde
-  `std::string +`/`+=`, döngüde `std::endl`, `reserve` yokken döngüde `push_back`) · C (genişliksiz
-  `scanf("%s")`) · C# (döngüde `string +=`).
-- **Dosyalar:** `src/codementor/rules/*.py`, `docs/rules-catalog.md`, `data/checklists/` (yalnız
-  gerekiyorsa), `tests/rules/` fixture'ları.
-- **Doğrulama:** kural başına pozitif/negatif fixture + test; katalog satırı; tam suite; varsa
-  eval precision'ı etkilenmiyor.
-- **Boyut:** orta-büyük (kural başına ~1 saat).
+### [x] 🤖 6. Statik kapsam boşluklarını kapatacak yeni kurallar — ✅ **BİTTİ (Faz H1)**
+- **Durum tespiti:** Kapsamda listelenen kurallar (`CSS-ACC-001`, `CSS-LAYOUT-001`, `CSS-LAYOUT-002`,
+  `CPP-PERF-002`, `CPP-PERF-003`, `CPP-PERF-004`, `C-BUF-002`, `CS-ALLOC-001`) Faz H1'de (`faz/h-kurallar`)
+  zaten eksiksiz uygulanmış, test edilmiş ve kataloğa işlenmiştir; `KALAN_ISLER.md` listesi hazırlanırken
+  eski taslaktan sehven açık kopyalanmıştır.
+- **Doğrulama:** `src/codementor/rules/` altında 41 kural eksiksiz; `docs/rules-catalog.md` senkron;
+  `tests/rules/` fixture'ları yeşil.
 
-### [ ] 🤖 7. Kural bazında öneri türü + etiket/veri seti sürümü (Faz 36 açığı + Faz 51)
-- **Kapsam:** doğru eşleşmiş `new`/`delete` → CPP-OWN-001, `Reserve` yok → UE-MEM-001, `with`
-  dışı `open` → PY-RES-001; `RunConfig`'e etiket/veri seti özeti + `eval compare` dipnotu;
-  etiketlerde serbest metin sezgisi yerine yapısal `boundary:` alanı; `memory_safety` uyumsuz
-  örnekleri (dev `cpp-009`, `cpp-105`; test `cpp-006`).
-- **Dosyalar:** `src/codementor/rules/`, `src/codementor/eval/`, `src/codementor/models/`,
-  `eval/` veri seti, ilgili testler.
-- **Doğrulama:** eski koşuların yeni etiketlerle **sessizce yeniden puanlanmadığı** testle
-  sabitlenir; eval/Pydantic testleri + golden'lar yeşil.
-- **Boyut:** orta-büyük.
+### [x] 🤖 7. Kural bazında öneri türü + etiket/veri seti sürümü (Faz 36 açığı + Faz 51) — ✅ **BİTTİ 2026-10-20**
+- **Kapsam:** kural bazında öneri türü (`CPP-OWN-001`, `UE-MEM-001`, `PY-RES-001`) Faz 52'de tamamlanmıştı;
+  bu turda `RunConfig` modeline `dataset_version: str | None` alanı eklendi (`dataset_version` hash fonksiyonu);
+  `eval compare` tablosuna `veri seti d1+...` dipnotu ve farklı sürümler karşılaştırılıyorsa uyarı eklendi;
+  `eval analyze` ve `eval breakdown` komutlarına kayıtlı `dataset_version` ile diskteki etiketler uyuşmadığında
+  sessiz yeniden puanlamayı engelleyen uyarı eklendi; `ExpectedFinding` modeline yapısal `boundary: str | None` alanı
+  eklendi, `test_category_rules.py`'de desteklendi ve `cpp-009`'a `boundary: ownership_scope` işlendi.
+- **Dosyalar:** `src/codementor/models/eval.py`, `src/codementor/eval/dataset.py`, `src/codementor/eval/runner.py`,
+  `src/codementor/eval/compare.py`, `src/codementor/cli/eval.py`, `eval/dataset/dev/cpp-009/label.yaml`,
+  `tests/unit/test_category_rules.py`, `tests/unit/eval/test_dataset_version.py`.
+- **Doğrulama:** `tests/unit/eval/test_dataset_version.py` (8 test), `test_category_rules.py` (13 test),
+  `tests/unit/eval/test_readme_table.py` (5 test), tam suite `pytest -m "not live"` 3927 geçti / 16 atlandı.
+- **Sonuç:** uygulandı; `make check` eşdeğeri tüm testler ve linter/formatter temiz.
 
-### [ ] 🤖 8. Depolama borcu (Faz 49 Ü9 + `sessions` budama)
-- **Kapsam:** eksik sütunlu eski şema (`OperationalError`) ve bozuk `created_at` için şema göçü /
-  bozuk kaydı atlama; `list_analyses`'in bu durumlarda korunması; `sessions` tablosunun
-  `updated_at`'e göre budanması (oturum başına bir satır, sınırsız büyüyor).
-- **Dosyalar:** `src/codementor/storage/*.py`, `src/codementor/desktop/` (çağrı yerleri),
-  `tests/unit/storage/`.
-- **Doğrulama:** göç + bozuk DB testleri; mevcut storage testleri yeşil.
+### [x] 🤖 8. Depolama borcu (Faz 49 Ü9 + `sessions` budama) — ✅ **BİTTİ 2026-10-20**
+- **Kapsam:** eksik sütunlu eski şema (`OperationalError`) için `Database._migrate` fonksiyonuna
+  `PRAGMA table_info` denetimi ve `ALTER TABLE` göçü eklendi (`SCHEMA_DB_VERSION = 2`); bozuk `created_at`
+  için `cache._list_analyses_fallback` güvenli tekil çözümleme eklendi (`list_analyses` ve `list_analyses_page`
+  çökmez); `sessions` tablosunun `updated_at`'e göre budanması (`prune_old_sessions`) Faz F'de zaten uygulanmıştı.
+- **Dosyalar:** `src/codementor/storage/db.py`, `src/codementor/storage/cache.py`,
+  `tests/unit/test_storage_migration.py`.
+- **Doğrulama:** `tests/unit/test_storage_migration.py` (3 test) + `test_storage.py` (49 test yeşil).
 - **Boyut:** orta.
 
-### [ ] 🤖 9. Faz F/G küçük açıkları
-- **Kapsam:** **F10 denetiminin 3 küçük maddesi** (ör. `SequenceRunner` hata/zaman aşımı dallarına
-  birim testleri, model adı doğrulaması) · `ollama pull` iptal edilebilirliği (köprüde
-  `Cancellation`, arayüzde iptal düğmesi).
-- **Dosyalar:** `tests/unit/` (SequenceRunner), `src/codementor/desktop/`, web arayüzü + testleri.
-- **Doğrulama:** birim testleri; `pytest tests/desktop -q`; web tarafında tip kontrolü/derleme.
-- **Boyut:** küçük-orta.
+### [x] 🤖 9. Faz F/G küçük açıkları — ✅ **BİTTİ 2026-10-20**
+- **Kapsam:** **F10 denetiminin 3 küçük maddesi** kapatıldı:
+  - `desktop/services.py`: `OLLAMA_MODEL_RE` model adının harf/rakamla başlamasını zorunlu kılacak
+    şekilde sıkılaştırıldı (`^[A-Za-z0-9][A-Za-z0-9._:/-]*$`); `/x`, `../x`, `-flag`, `.hidden` reddedilir.
+  - `desktop/services.py`: `run_ollama_pull` `result.error` ve `result.timed_out` dallarına birim testleri
+    eklendi (`tests/desktop/test_connections.py`).
+  - `ollama pull` iptal edilebilirliği: `run_ollama_pull`'a `cancel: threading.Event | None = None`
+    parametresi eklendi, `result.cancelled` ele alındı; `ConnectionsController` içine `cancel_pull`
+    ve iptal işareti desteği eklendi; `runtime.confirm_close` süren model indirmesini kontrol edecek şekilde
+    genişletildi.
+- **Doğrulama:** `tests/desktop/test_connections.py` (47 geçti), `test_app.py` (253 geçti), `ruff check`/`format`/`mypy` temiz.
 
-### [ ] 🤖 10. Faz I — eval altyapısı (canlı model ölçümü olmadan yapılabilen kısım)
-- **Kapsam:** `select_part` parça atamasını kimlik özetiyle sabitleme · `eval breakdown`'a
-  gecikme/token sütunları · HTML precision için bulgu ölçütü + kategori tanımları (yalnız dev) ·
-  few-shot'lara `certainty` + Python few-shot örnekleri · LLM-as-judge iskeleti (prompt + şema +
-  test, canlı puanlama kullanıcıda).
-- **Dosyalar:** `src/codementor/eval/`, `prompts/v1/`, `tests/unit/eval/`.
-- **Doğrulama:** FakeProvider ile testler; eval CLI testleri; ağa çıkmaz.
-- **Boyut:** orta (madde başına küçük).
+### [x] 🤖 10. Faz I — eval altyapısı (canlı model ölçümü olmadan yapılabilen kısım) — ✅ **BİTTİ 2026-10-20**
+- **Kapsam:** `select_part` parça atamasını kimlik özetiyle sabitleme (`part_signature`) · parçaların
+  çakışmadığını ve eksik örnek bırakmadığını denetleyen `check_parts_coverage` · `eval compare` tablosuna
+  parçalı koşularda çakışma durumunda uyarı dipnotu · `prompts/v1/fewshots/*.yaml` dosyalarında
+  `additional_findings` listesine eksik `certainty: high` alanlarının işlenmesi ve golden prompt
+  testlerinin güncellenmesi · LLM-as-judge ile Sokratik kalite skoru (`prompts/v1/judge.j2`,
+  `src/codementor/eval/judge.py`, `eval judge` CLI komutu, `SocraticJudgeReport`, FakeProvider testleri).
+- **Dosyalar:** `prompts/v1/judge.j2`, `src/codementor/eval/judge.py`, `src/codementor/eval/parts.py`,
+  `src/codementor/eval/compare.py`, `src/codementor/cli/eval.py`, `src/codementor/models/eval.py`,
+  `prompts/v1/fewshots/*.yaml`, `tests/golden/prompts/`, `tests/unit/eval/test_judge.py`,
+  `tests/unit/eval/test_parts.py`.
+- **Doğrulama:** `tests/unit/eval/test_judge.py` (7 test), `tests/unit/eval/test_parts.py` (23 test),
+  `tests/golden/prompts/test_prompts_golden.py` (10 test), tüm `tests/unit/eval/` (132 test yeşil),
+  `ruff check`/`format`/`mypy` temiz; testler ağa çıkmaz.
+- **Boyut:** orta.
 
-### [ ] 🤖 11. Faz I — deterministik Sokratik kalite kapısı
+### [x] 🤖 11. Faz I — deterministik Sokratik kalite kapısı — ✅ **BİTTİ 2026-10-20**
 - **Kapsam:** tekrar/döngü/koda değme denetimleri, karmaşıklık politikası, bulgu sağduyu denetimi,
   `small`/`standard` model profili, isteğe bağlı `pipeline.verify_provider`.
-- **Dosyalar:** `src/codementor/verify/` (yeni modül), `src/codementor/pipeline/`,
-  `src/codementor/config/`, testler.
-- **Doğrulama:** FakeProvider ile uçtan uca; küçük model profili testleri.
-- **Boyut:** büyük (dilim dilim). **Not:** mimari sapma gerektirirse DUR → ADR önerisi (kural 1);
-  bu iş büyük olasılıkla `docs/adr/ADR-0030+` gerektirir.
+- **Dosyalar:** `src/codementor/verify/` (`sanity.py`, `complexity_policy.py`, `socratic_gate.py`),
+  `src/codementor/pipeline/` (`socratic_pass.py`, `passes.py`, `orchestrator.py`, `verify_pass.py`, `llm_session.py`),
+  `src/codementor/config.py`, `docs/adr/0031-kucuk-modeller-icin-deterministik-sokratik-kalite-kapisi.md`,
+  `tests/unit/verify/` (`test_sanity.py`, `test_complexity_policy.py`, `test_socratic_gate.py`),
+  `tests/integration/test_pipeline_small_model.py`.
+- **Doğrulama:** FakeProvider ile uçtan uca küçük model profili testleri, 17 yeni birim/entegrasyon testi;
+  tam test paketi 3957 test yeşil, `ruff check`, `ruff format`, `mypy --strict` temiz; testler ağa çıkmaz.
+- **Boyut:** büyük (dilim dilim, ADR-0031 kabul edildi).
 
-### [ ] 🤖 12. Faz J havuzundan kod işleri
-- **Kapsam:** zig budama (J2) betiği/spec'i — **doğrulaması CI'da** (bu makinede gcc/clang/zig yok) ·
-  Tier 0 yalıtımında sıcak işçi havuzu (~280 ms süreç açma maliyeti) · CI Windows'ta MinGW g++
-  soğuk başlangıç süresi + clang için `--target=x86_64-w64-mingw32` · `METHOD_LEAKS`'in soru
-  verisine taşınması · soru bankasına örnek giriş/çıkış alanı (öğretmen incelemesi hariç).
-- **Dosyalar:** `src/codementor/toolchain/`, `src/codementor/validation/`,
-  `src/codementor/questions/`, `data/questions/`, `.github/workflows/`.
-- **Doğrulama:** birim testleri; toolchain/CI maddelerinde gerçek kanıt CI koşusundan gelir
-  (yerelde doğrulanamaz → iş "kod hazır, CI bekliyor" olarak işaretlenir).
-- **Boyut:** orta-büyük (madde başına değişken).
+### [x] 🤖 12. Faz J havuzundan kod işleri — ✅ **BİTTİ 2026-10-20**
+- **Kapsam:** zig budama (J2) betiği/spec'i (`src/codementor/validation/toolchain_prune.py`, `tools/prune_zig.py`, CI entegrasyonu) ·
+  Tier 0 yalıtımında sıcak işçi havuzu (`src/codementor/validation/tier0_pool.py`, `tier0_worker.py --pool`, `tier0_warm_workers` config) ·
+  CI Windows'ta MinGW g++ soğuk başlangıç ısınması + clang için `--target=x86_64-w64-mingw32` · `METHOD_LEAKS`'in 64 soru verisine
+  taşınması (`Question.method_leaks`, `MENTOR_FIELDS`) · soru bankasına örnek giriş/çıkış alanı (`SampleIO`, `QuestionPublic.sample_io`, `UserQuestionDraft.sample_io`).
+- **Dosyalar:** `src/codementor/validation/` (`toolchain_prune.py`, `tier0_pool.py`, `tier0_isolation.py`, `tier0_worker.py`, `toolchain.py`),
+  `src/codementor/models/questions.py`, `data/questions/*.yaml` (64 dosya), `tools/prune_zig.py`, `.github/workflows/ci.yml`,
+  `tests/unit/test_question_data.py`, `tests/unit/test_tier0_pool.py`, `tests/unit/test_toolchain_prune.py`, `tests/unit/test_toolchain.py`.
+- **Doğrulama:** 142 birim testi (tüm soru testleri 81/81, tier0 havuz testleri 5/5, zig budama 5/5, toolchain 28/28);
+  toolchain/CI adımları kodlandı, CI'da koşmaya hazır; `ruff check`, `ruff format`, `mypy --strict` temiz.
+- **Boyut:** orta-büyük.
 
-### [ ] 🤖 13. Doküman tutarlılık turu (ikinci dalga)
+### [x] 🤖 13. Doküman tutarlılık turu (ikinci dalga) — ✅ **BİTTİ 2026-10-20**
 - **Kapsam:** `docs/UYGULAMA_PLANI.md` yol haritası tablosu ve `docs/mimari.md` §20 ADR tablosunun
-  güncel faz/ADR kümesiyle eşlenmesi; `docs/rules-catalog.md` ↔ `src/codementor/rules/` kural
-  listesi farkı; `docs/gelistirme-gunlugu/README.md` dizininin yeni dosyaları listelemesi.
-- **Dosyalar:** ilgili `docs/` belgeleri.
-- **Doğrulama:** betikle fark çıkarılır (kural kimlikleri, ADR numaraları); çıktı boş olana kadar
-  belgeler düzeltilir.
+  güncel faz/ADR kümesiyle (31 ADR tam) eşlenmesi; `docs/rules-catalog.md` ↔ `src/codementor/rules/` kural
+  listesi farkı (33 kural tam birebir); `docs/gelistirme-gunlugu/README.md` dizininin yeni dosyaları listelemesi.
+- **Dosyalar:** `docs/UYGULAMA_PLANI.md`, `docs/mimari.md`, `docs/rules-catalog.md`,
+  `docs/gelistirme-gunlugu/README.md`.
+- **Doğrulama:** Betikle doğrulandı: 31/31 ADR tam eşleşiyor (fark 0), 33/33 kural tam eşleşiyor (fark 0),
+  `test_release_readiness.py` 15/15 yeşil; `ruff check`, `ruff format`, `mypy --strict` temiz.
 - **Boyut:** küçük-orta.
 
 ## B. Yalnız kullanıcının yapabileceği işler

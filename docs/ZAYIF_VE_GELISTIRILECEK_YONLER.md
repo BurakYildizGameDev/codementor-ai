@@ -47,7 +47,7 @@
 
 CodeMentor, "kodu düzeltmeyen, sorgulatan" bir mentor fikrini **teknik olarak ciddi** biçimde hayata
 geçiriyor: deterministik analiz + LLM, satır kanıtıyla doğrulama, çözüm sızıntısı koruması, ölçülmüş
-eval, 3.700+ test, 30 ADR. Bireysel bir proje için mühendislik kalitesi yüksek. **Ama bir eğitim
+eval, 3.700+ test, 31 ADR. Bireysel bir proje için mühendislik kalitesi yüksek. **Ama bir eğitim
 ürününün asıl kanıtlaması gereken şeyi — öğrencinin gerçekten daha iyi öğrendiğini — henüz
 kanıtlamadı**; hiç gerçek kullanıcısı olmadı; eval küçük ve büyük ölçüde tek modelli; kod
 çalıştırılmadığı için "çözüm doğru mu" sorusuna cevap veremiyor; dağıtımı zahmetli ve çoğunlukla
@@ -394,16 +394,16 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
 ### 4.17 Kod tabanının sürdürülebilirliği 🟠
 
 - **Durum:**
-  - 400 satır kuralını aşan dosya yok (boş satırlar sayılmaz): en büyükler `analysis/extractor.py` 396
-    ve `config.py` 390. Faz F/G'de bölünenler artık sınırın altında: `desktop/app.py` 350,
-    `pipeline/orchestrator.py` 350, `pipeline/passes.py` 323.
-  - ~27 bin satır kaynak, ~39 bin satır test; tek geliştirici.
+  - 400 satır kuralını aşan dosya yok (boş satırlar sayılmaz): en büyükler `config.py` 398
+    ve `analysis/extractor.py` 396. Faz F/G'de bölünenler artık sınırın altında: `pipeline/orchestrator.py` 360,
+    `desktop/app.py` 350, `pipeline/passes.py` 302.
+  - ~28 bin satır kaynak, ~39 bin satır test; tek geliştirici.
   - Masaüstü (CustomTkinter) testleri gerçek Tk penceresi açıyor: yavaş ve Linux CI'da atlanıyor
     (pencere testleri yalnız Windows'ta koşuyor).
   - Modüller arası bağımlılıklar katman sınırını zorluyordu; `report/usage.py` 62 satır ve yalnız
     `models/` içe aktarıyor — **kapandı** (Faz G).
   - Ertelenen küçük hatalar `PROGRESS.md` "Sonraya" ve "Denetim" notlarında birikiyor
-    (46 açık madde / 120 madde; "açık" = üstü çizili olmayan tek düzey madde).
+    (42 açık madde / 119 madde; "açık" = üstü çizili olmayan tek düzey madde).
 - **Neden önemli:** Büyüyen dosyalar ve biriken "sonraya"lar, yeni özellik eklemeyi yavaşlatır ve
   hata riskini artırır. Pencere testlerinin Linux'ta koşmaması, masaüstü gerilemelerinin CI'da
   yakalanmamasına yol açabilir.
@@ -422,7 +422,7 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
 ### 4.18 Belgeler dağınık ve Türkçe-öncelikli 🟡
 
 - **Durum:** `docs/` altında mimari (büyük), uygulama planı (büyük), bulgular, güncellemeler, devir
-  belgeleri, eval rehberleri, 30 ADR; kökte README (TR), README.en.md (kısa), PROGRESS. Faz D'de iç
+  belgeleri, eval rehberleri, 31 ADR; kökte README (TR), README.en.md (kısa), PROGRESS. Faz D'de iç
   belgeler `docs/gelistirme-gunlugu/`'ye taşındı ama hâlâ çok sayıda giriş noktası var.
 - **Neden önemli:** Yeni bir katkıcı ya da işe alım yapan kişi "nereden başlayayım" sorusunda kaybolabilir.
   Uluslararası okuyucu için İngilizce belge çok sınırlı.
@@ -571,7 +571,7 @@ Projeyi bir sonraki seviyeye en çok taşıyacak tek adım. Küçük, etik ve te
 | Deneyim | Yardımsız kurulum başarısı | ölçülmedi | ≥ %80 | pilot |
 | Erişim | Anahtar/abonelik gerektirmeyen çalışan yol | yok (yerel model ölçülmedi) | en az bir yol, kalite eşiğiyle | Faz I |
 | Kod sağlığı | 400 satırı aşan dosya (boş satır hariç) | 0 (en büyük 396) | 0 | `wc -l` |
-| Kod sağlığı | "Sonraya" madde sayısı (açık) | 46 (120 madde) | < 30 | PROGRESS |
+| Kod sağlığı | "Sonraya" madde sayısı (açık) | 42 (119 madde) | < 30 | PROGRESS |
 
 ---
 

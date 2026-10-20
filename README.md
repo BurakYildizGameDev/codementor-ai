@@ -39,7 +39,7 @@ soruyu veriyor. Web arayüzü: [docs/img/web-live.png](docs/img/web-live.png).</
 | **Eval** | 166 elle etiketlenmiş örnek, dev/test ayrımlı (dev 96 / test 70) |
 | **Arayüzler** | Windows masaüstü (.exe), web (React), CLI, REST API + SSE |
 | **Çıktılar** | JSON · Markdown · SARIF · Rich terminal paneli |
-| **Kalite** | 3.700+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 30 ADR |
+| **Kalite** | 3.700+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 31 ADR |
 
 ## İçindekiler
 
@@ -147,7 +147,7 @@ Ayrıntı: [docs/mimari.md](docs/mimari.md).
 
 ## Mühendislik kararları
 
-Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 30 kayıt). Öne çıkanlar:
+Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 31 kayıt). Öne çıkanlar:
 
 - **Hibrit, LLM sarmalayıcısı değil.** Deterministik katman, yanıtların bir kısmını LLM'siz
   verir (sözdizimi hatalarında erken çıkış precision/recall %100) ve LLM'e olgu sağlar: olgular
@@ -477,13 +477,13 @@ CODEMENTOR_E2E_LIVE=1 npx playwright test live   # web/ içinde; gerçek API ve 
 uv run codementor eval run --split dev --provider claude_cli --mode two_pass
 ```
 
-**Test disiplini:** ~39 bin satır test (~27 bin satır kaynak koda karşı): birim, entegrasyon,
+**Test disiplini:** ~39 bin satır test (~28 bin satır kaynak koda karşı): birim, entegrasyon,
 golden prompt anlık görüntüleri, hypothesis özellik testleri, her kural için pozitif/negatif
 fixture'lar, 40 KB kötü niyetli girdiyle doğrusal zaman testleri, Playwright e2e. Testler ağa
 çıkmaz; CI Ubuntu ve Windows'ta koşar, her `main` koşusu exe'yi de derler.
 
-**Nasıl geliştirildi:** proje 60'tan fazla fazda (Faz 0-63, ardından public öncesi Faz A-H, J ve
-K), her faz ayrı dalda, kabul kriterleri ve testlerle geliştirildi
+**Nasıl geliştirildi:** proje 60'tan fazla fazda (Faz 0-63, ardından public öncesi Faz A-K),
+her faz ayrı dalda, kabul kriterleri ve testlerle geliştirildi
 ([uygulama planı](docs/UYGULAMA_PLANI.md), [ilerleme günlüğü](PROGRESS.md),
 [geliştirme günlüğü](docs/gelistirme-gunlugu/)).
 Mimariden her sapma bir ADR'dir. Kodlama ajanlarıyla çalışıldı; fazların çoğu bağımsız bir

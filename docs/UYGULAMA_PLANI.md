@@ -1877,18 +1877,18 @@ Tam tarama (dört `kod-denetci` ajanı) sonrası fazlar **harfle** numaralanır;
 PROGRESS "Sonraya"dan dağıtılan açık maddeler tek kaynakta:
 [BulgularVeDuzeltilecekler.md §10](BulgularVeDuzeltilecekler.md#10-faz-planı-a-j).
 
-| Faz | Kapsam | Zaman |
+| Faz | Kapsam | Zaman / Durum |
 |---|---|---|
-| A | Güvenlik açıkları (include koruması, ReDoS, araç keşfi, referans çözüm) | 18 Ekim öncesi, **şart** |
-| B | Bulgu kaybı ve önbellek doğruluğu | 18 Ekim öncesi |
-| C | İpucu merdiveni, yapılandırma, CLI | 18 Ekim öncesi |
-| D | Public belgeler ve release | 18 Ekim öncesi |
-| E | Web: geçmiş, silme, güvenlik başlıkları | Sonra |
-| F | Masaüstü sağlamlık ve UX | Sonra |
-| G | Sağlayıcı sağlamlığı ve kod temizliği | Sonra |
-| H | Statik kurallar ve analiz doğruluğu | Sonra |
-| I | Yerel modeller ve eval (eski Faz 64-66) | Sonra |
-| J | Açık kalan diğer işler (havuz) | İhtiyaç oldukça |
+| A | Güvenlik açıkları (include koruması, ReDoS, araç keşfi, referans çözüm) | ✅ 2026-10-18 |
+| B | Bulgu kaybı ve önbellek doğruluğu | ✅ 2026-10-18 |
+| C | İpucu merdiveni, yapılandırma, CLI | ✅ 2026-10-18 |
+| D | Public belgeler ve release | ✅ 2026-10-18 |
+| E | Web: geçmiş, silme, güvenlik başlıkları | ✅ 2026-10-19 |
+| F | Masaüstü sağlamlık ve UX | ✅ 2026-10-19 |
+| G | Sağlayıcı sağlamlığı ve kod temizliği | ✅ 2026-10-19 |
+| H | Statik kurallar ve analiz doğruluğu | ✅ 2026-10-19 |
+| I | Yerel modeller, eval altyapısı ve Sokratik kalite kapısı | ✅ 2026-10-20 |
+| J | Açık kalan diğer kod işleri (havuz: zig budama, sıcak işçi, MinGW) | ✅ 2026-10-20 |
 | K | Kullanıcı soruları + token kullanımı (kullanıcı isteği, C'den önce) | ✅ 2026-10-13 |
 
 ---

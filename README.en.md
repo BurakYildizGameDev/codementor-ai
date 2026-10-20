@@ -40,7 +40,7 @@ submits it without ever seeing the bug. CodeMentor reverses that flow:
 | **LLM providers** | Claude Code CLI (default), Codex CLI, Anthropic API, Ollama, Gemini |
 | **Interfaces** | Windows desktop app (.exe), web UI (React), CLI, REST API + SSE |
 | **Outputs** | JSON · Markdown · SARIF 2.1.0 · Rich terminal panel |
-| **Quality** | 3,700+ tests, `mypy --strict`, ruff, Windows + Ubuntu CI, 30 ADRs |
+| **Quality** | 3,700+ tests, `mypy --strict`, ruff, Windows + Ubuntu CI, 31 ADRs |
 
 ## How it works
 

@@ -1546,6 +1546,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0028 | Kullanıcı kendi sorularını ekleyebilir | `data.user_questions_dir` altında aynı YAML biçimi, `origin: user`; yazma yüzeyi masaüstü formu + CLI, web/API salt okunur ([docs/adr/0028](adr/0028-kullanici-sorulari.md)) |
 | ADR-0029 | Çalışma dizinindeki `codementor.toml` güvenilmez katmandır | Öğrenci projesindeki toml sağlayıcı komutunu, `base_url`'ü, araç iznini ve şablon dizinini değiştiremez; tehlikeli anahtarlar yok sayılır, güvenli ayarlar uygulanır ([docs/adr/0029](adr/0029-guvenilmeyen-calisma-dizini-toml.md)) |
 | ADR-0030 | `LLMProvider.primary_name` protokol üyesi | Önbellek kararı zincirin ilk halkasına bakmalı; sağlayıcıya özel `chain` alanını yoklamak yerine protokol üyesi (ortak `NamedProvider` tabanı) ([docs/adr/0030](adr/0030-primary-name-protokolu.md)) |
+| ADR-0031 | Küçük modeller için deterministik Sokratik kalite kapısı ve sağduyu korumaları | Küçük modellerin ürettiği döngüsel dejenerasyonu, kopya soruları, ters denetim çelişkilerini ve yanlış karmaşıklığı deterministik kurallarla filtreleme ([docs/adr/0031](adr/0031-kucuk-modeller-icin-deterministik-sokratik-kalite-kapisi.md)) |
 
 ---
 
