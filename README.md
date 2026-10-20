@@ -39,7 +39,7 @@ soruyu veriyor. Web arayüzü: [docs/img/web-live.png](docs/img/web-live.png).</
 | **Eval** | 166 elle etiketlenmiş örnek, dev/test ayrımlı (dev 96 / test 70) |
 | **Arayüzler** | Windows masaüstü (.exe), web (React), CLI, REST API + SSE |
 | **Çıktılar** | JSON · Markdown · SARIF · Rich terminal paneli |
-| **Kalite** | 3.700+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 32 ADR |
+| **Kalite** | 3.700+ test, `mypy --strict`, ruff, Windows + Ubuntu CI, 33 ADR |
 
 ## İçindekiler
 
@@ -147,7 +147,7 @@ Ayrıntı: [docs/mimari.md](docs/mimari.md).
 
 ## Mühendislik kararları
 
-Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 32 kayıt). Öne çıkanlar:
+Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 33 kayıt). Öne çıkanlar:
 
 - **Hibrit, LLM sarmalayıcısı değil.** Deterministik katman, yanıtların bir kısmını LLM'siz
   verir (sözdizimi hatalarında erken çıkış precision/recall %100) ve LLM'e olgu sağlar: olgular
@@ -175,7 +175,7 @@ geliştirildi; test bölümü dokunulmadan tutuldu.
 
 | Ölçüm | Claude Opus (`claude_cli`) | Yalnızca statik (LLM yok) |
 |---|---|---|
-| Denetim P / R / F1, dev 96 | **78 / 96 / 86** (Faz 51, güncel prompt) | 100 / 57 / 73 |
+| Denetim P / R / F1, dev 96 | **79 / 97 / 87** (2026-10-21, güncel prompt) | 100 / 57 / 73 |
 | Denetim P / R / F1, test 70 | 27 / 92 / 42 (Faz 12 prompt'u, 49 örnek) | 94 / 55 / 69 |
 | Erken çıkış P / R | %100 / %100 | %100 / %100 |
 | Big-O birebir / sınıf (test) | %91–94 / %94–97 | %97 / %97 |
@@ -264,6 +264,10 @@ Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 | Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 55% / 71% | 100% | 0% | — | 0.1 / 0.7 | — |
 | Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 57% / 73% | 100% | 0% | — | 0.1 / 0.8 | — |
 | Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 57% / 73% | 100% | 0% | — | 0.1 / 0.9 | — |
+| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 87% / 100% / 93% | 100% | 0% | 100% | 17.2 / 34.3 | 14652 |
+| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 95% / 100% | 100% / 100% | 93% / 93% | 75% / 100% / 86% | 100% | 0% | 100% | 21.2 / 39.6 | 16912 |
+| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 78% / 90% / 84% | 100% | 0% | 100% | 14.9 / 35.4 | 15016 |
+| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 76% / 96% / 85% | 100% | 0% | 100% | 21.7 / 34.8 | 16475 |
 
 Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
 Sürümler: prompt v1+2579008b · kurallar r2+2256b8a8 · şema 1.1
@@ -273,10 +277,17 @@ Sürümler: prompt v1+632620d8 · kurallar r2+e29a16e4 · şema 1.1
 Sürümler: prompt v1+7205d091 · kurallar r1+d1852061 · şema 1.1
 Sürümler: prompt v1+a4c5ebfc · kurallar r1+d1852061 · şema 1.1
 Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
+Sürümler: prompt v1+fc8f4d72 · kurallar r3+4f5e54ee · şema 1.1 · veri seti d1+01b6cdf6
+Sürümler: prompt v1+fc8f4d72 · kurallar r3+4f5e54ee · şema 1.1 · veri seti d1+8ee20994
+Sürümler: prompt v1+fc8f4d72 · kurallar r3+4f5e54ee · şema 1.1 · veri seti d1+bd83e983
+Sürümler: prompt v1+fc8f4d72 · kurallar r3+4f5e54ee · şema 1.1 · veri seti d1+c068a9cf
 Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
+⚠ Tabloda farklı veri seti sürümleri var; satırlar doğrudan kıyaslanamaz.
 <!-- eval-table:dev:end -->
 
-> En güncel dev ölçümü (Faz 51, 2026-10-05): **Claude 96 örnek — Denetim P / R / F1 = 78 / 96 / 86** (karışıklık 7 → 2). Ayrıntı: [geliştirme günlüğü](docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md) "Faz 51 — Notlar".
+> En güncel dev ölçümü (2026-10-21, prompt `v1+fc8f4d72`, kurallar r3): **Claude 96 örnek — Denetim P / R / F1 = 79 / 97 / 87**. Faz 51 koşusu güncel etiketlerle 75 / 95 / 84 (kayıtlı 78 / 96 / 86); eşli bootstrap'te F1 farkı %95 aralığı −1,8 … +7,8, yani anlamlı bir değişim yok. HTML precision 10/13 (Faz 18'de %22).
+
+> Faz 51 (2026-10-05): Claude 96 örnek — 78 / 96 / 86 (karışıklık 7 → 2). Ayrıntı: [geliştirme günlüğü](docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md) "Faz 51 — Notlar".
 
 > Faz 36 (2026-10-04): Claude Opus parçaları 1/4 + 2/4 (48 örnek) kayıtlı metrikte 75 / 83 / 78; `unity-104` etiketi güncellenince 75 / 81 / 78. Codex `gpt-6-luna` aynı promptla dört parçayı koştu: 96 örnekte 79 / 77 / 78. Sağlayıcılar farklı olduğundan sonuçlar birleştirilmez. Ayrıntı: `docs/eval-findings.md` §11.
 

@@ -442,3 +442,26 @@ Faz 35B Opus doğrulama koşusuyla ortak 46 örnekte eski sonuç 79 / 89 / 84, C
 75 / 73 / 74. Model değiştiği için bu yalnız betimleyici bir kıyastır; Faz 36'nın precision veya
 recall üzerindeki nedensel etkisini ölçmez. Bu koşu, Claude ile yapılması planlanan canlı ölçümün
 yerine geçmez ve "kaçırma oranı düşmez" hedefini doğrulamaz.
+
+## 12. Canlı dev 96 yeniden ölçüm (2026-10-21, Claude Opus, two_pass)
+
+Prompt `v1+fc8f4d72`, kurallar `r3+4f5e54ee`, şema 1.1, veri seti `d1+8ee20994`. Dört parça
+(`eval/results/20261020T2*_claude_cli_claude-opus-5-5_two_pass_part{1..4}-4_dev.json`) 96 tekil
+örnek, çakışma ve hata yok. İlk 4/4 denemesi oturum sınırına (429) takılıp statik rapora
+düştüğü için atıldı ve parça yeniden koşuldu.
+
+| Koşu (güncel etiketlerle) | P | R | F1 |
+|---|---|---|---|
+| 2026-10-21 | 79 | 97 | 87 |
+| Faz 51 (2026-10-05; kayıtlı 78 / 96 / 86) | 75 | 95 | 84 |
+
+Eşli bootstrap (2000 yeniden örnekleme, örnek bazında): fark %95 aralığı P −2,5 … +10,2,
+R −2,4 … +5,6, F1 −1,8 … +7,8. Değişim anlamlı değil, gerileme yok.
+
+- Dil bazında precision: HTML 10/13 (Faz 18'de %22), CSS 14/17, C++ 11/16, Unity 12/17.
+- Önem: `low` 15/18, `medium` 36/53, `high` 33/36. `low`u ayrı göstermek precision'ı artırmaz.
+- Kategori: `design` 14/24 en büyük FP kaynağı. 23 FP'nin 14'ü doğru bir bulgunun ±1 satırında;
+  bir kısmı aynı sorunu başka kategoriyle yineliyor, bir kısmı etiket dışı olası gerçek sorun
+  (PROGRESS Sonraya, "Kategori-ötesi yakın yineleme").
+- Token: Geçiş A tahmini (`estimate_messages`) gerçek girdinin medyan 0,48'i. Onarımsız 53
+  örnekte gerçek ≈ 1,64 × tahmin + 1379 (r = 0,998) → `CHARS_PER_TOKEN` 3 → 2 (ADR-0033).

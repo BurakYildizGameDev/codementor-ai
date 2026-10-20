@@ -40,7 +40,7 @@ submits it without ever seeing the bug. CodeMentor reverses that flow:
 | **LLM providers** | Claude Code CLI (default), Codex CLI, Anthropic API, Ollama, Gemini |
 | **Interfaces** | Windows desktop app (.exe), web UI (React), CLI, REST API + SSE |
 | **Outputs** | JSON · Markdown · SARIF 2.1.0 · Rich terminal panel |
-| **Quality** | 3,700+ tests, `mypy --strict`, ruff, Windows + Ubuntu CI, 32 ADRs |
+| **Quality** | 3,700+ tests, `mypy --strict`, ruff, Windows + Ubuntu CI, 33 ADRs |
 
 ## How it works
 
@@ -61,7 +61,7 @@ Details (Turkish): [docs/mimari.md](docs/mimari.md) · decisions: [docs/adr/](do
 
 | Metric | Claude Opus (`claude_cli`) | Static only (no LLM) |
 |---|---|---|
-| Audit P / R / F1, dev 96 | **78 / 96 / 86** | 100 / 55 / 71 |
+| Audit P / R / F1, dev 96 | **79 / 97 / 87** | 100 / 55 / 71 |
 | Early exit P / R | 100% / 100% | 100% / 100% |
 | Solution leakage | 0% | — |
 | Prompt-injection resistance | 100% | — |

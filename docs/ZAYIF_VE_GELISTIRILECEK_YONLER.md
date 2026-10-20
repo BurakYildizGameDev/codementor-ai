@@ -47,7 +47,7 @@
 
 CodeMentor, "kodu düzeltmeyen, sorgulatan" bir mentor fikrini **teknik olarak ciddi** biçimde hayata
 geçiriyor: deterministik analiz + LLM, satır kanıtıyla doğrulama, çözüm sızıntısı koruması, ölçülmüş
-eval, 3.700+ test, 32 ADR. Bireysel bir proje için mühendislik kalitesi yüksek. **Ama bir eğitim
+eval, 3.700+ test, 33 ADR. Bireysel bir proje için mühendislik kalitesi yüksek. **Ama bir eğitim
 ürününün asıl kanıtlaması gereken şeyi — öğrencinin gerçekten daha iyi öğrendiğini — henüz
 kanıtlamadı**; hiç gerçek kullanıcısı olmadı; eval küçük ve büyük ölçüde tek modelli; kod
 çalıştırılmadığı için "çözüm doğru mu" sorusuna cevap veremiyor; dağıtımı zahmetli ve çoğunlukla
@@ -424,7 +424,7 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
 ### 4.18 Belgeler dağınık ve Türkçe-öncelikli 🟡
 
 - **Durum:** `docs/` altında mimari (büyük), uygulama planı (büyük), bulgular, güncellemeler, devir
-  belgeleri, eval rehberleri, 32 ADR; kökte README (TR), README.en.md (kısa), PROGRESS. Faz D'de iç
+  belgeleri, eval rehberleri, 33 ADR; kökte README (TR), README.en.md (kısa), PROGRESS. Faz D'de iç
   belgeler `docs/gelistirme-gunlugu/`'ye taşındı ama hâlâ çok sayıda giriş noktası var.
 - **Neden önemli:** Yeni bir katkıcı ya da işe alım yapan kişi "nereden başlayayım" sorusunda kaybolabilir.
   Uluslararası okuyucu için İngilizce belge çok sınırlı.
@@ -558,7 +558,7 @@ Projeyi bir sonraki seviyeye en çok taşıyacak tek adım. Küçük, etik ve te
 
 | Alan | Ölçüt | Bugün | Hedef (Aşama 2-4 sonu) | Nasıl ölçülür |
 |---|---|---|---|---|
-| Doğruluk | Denetim precision / recall / F1 (dev, Opus) | 78 / 96 / 86 | koru; güven aralığıyla raporla | `eval run --split dev` + bootstrap |
+| Doğruluk | Denetim precision / recall / F1 (dev, Opus) | 79 / 97 / 87 (2026-10-21) | koru; güven aralığıyla raporla | `eval run --split dev` + bootstrap |
 | Doğruluk | Denetim P/R/F1 (test, güncel prompt) | ölçülmedi (eski: 27/92/42) | ölçülmüş ve README'de | `eval run --split test --final` |
 | Doğruluk | Statik recall | %55 | %65+ | statik dev eval |
 | Doğruluk | Yanlış çözümün yakalanma oranı (test çalıştırarak) | yok | Python/C görevlerinde %90+ | yeni eval türü (4.4) |
@@ -573,7 +573,7 @@ Projeyi bir sonraki seviyeye en çok taşıyacak tek adım. Küçük, etik ve te
 | Deneyim | Yardımsız kurulum başarısı | ölçülmedi | ≥ %80 | pilot |
 | Erişim | Anahtar/abonelik gerektirmeyen çalışan yol | yok (yerel model ölçülmedi) | en az bir yol, kalite eşiğiyle | Faz I |
 | Kod sağlığı | 400 satırı aşan dosya (boş satır hariç) | 0 (en büyük 396) | 0 | `wc -l` |
-| Kod sağlığı | "Sonraya" madde sayısı (açık) | 5 (121 madde) | < 30 | PROGRESS |
+| Kod sağlığı | "Sonraya" madde sayısı (açık) | 3 (122 madde) | < 30 | PROGRESS |
 
 ---
 
