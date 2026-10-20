@@ -90,6 +90,14 @@ havuzda ~4,2 GB alıp geçerdi —, fail-closed başlatma, pid yeniden kullanım
 süre aşımı, işçi hatası, ölü işçi, işçi sınırı, meşgulken soğuk yol, ayar değişince yeniden kurulum).
 Belgeler: ADR-0032, ADR-0025 sonuç satırı, `mimari.md` §5.2/§12/§16/§20, ADR sayısı 31 → 32.
 
+**İş 15 — Sokratik kapı doğruluğu:** `_LINE_REF_RE` rakam istiyor ("12. satır", "satır 12",
+"line 8", "3-5. satırlar"); "lineer", "Hangi satır?" artık koda temas sayılmıyor (small profilde jenerik
+sorular kapıdan geçiyordu). `has_repetition_loop` yalnız rakamlardan oluşan n-gram'ları saymıyor
+("0 0 0 …" girdi örneği tüm çıktıyı şablona düşürüyordu). `socratic_pass.apply_gate` (saf yardımcı):
+kapı geçip uyardığında uyarı soru listesi değişmese de rapora taşınıyor (eskiden atılıyordu).
+ADR-0031 Karar 1'e tarihli not (n-gram boyu 3/4/5 kodla hizalandı). **Testler:** `test_socratic_gate.py`
++3 (11 parametreli vaka), yeni `test_socratic_pass_gate.py` (4); eski kodla 4 vaka kırmızı.
+
 ## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
 
 **Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken
@@ -1595,7 +1603,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14 kapandı;
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-15 kapandı;
   iş sırası `KALAN_ISLER.md` 14-23):**
   - ~~Yüksek: `validation/tier0_pool.py` sıcak işçileri düz `Popen` (bellek/ortam/cwd sınırı yok,
     işçi sayısı sınırsız, tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, mesajlar şablonla
@@ -1604,9 +1612,8 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
     serbest~~ → **KAPANDI (#3, 2026-10-20).**
   - ~~Orta: `verify/complexity_policy.py` `O(n^2)` (≠ `parse_bigo` gösterimi), `is_optimal`
     yeniden hesaplanmıyor~~ → **KAPANDI (#4, 2026-10-20)**; `agreement="agrees"` bilinçli korundu.
-  - Orta (iş 15): `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i satır referansı sayıyor; tekrar
-    algılayıcı sayı dizilerini dejenerasyon sanıyor; `pipeline/socratic_pass.py:73` kapı uyarıları
-    soru listesi değişmezse kayboluyor.
+  - ~~Orta (iş 15): `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i satır referansı sayıyor; tekrar
+    algılayıcı sayı dizilerini dejenerasyon sanıyor; kapı uyarıları kayboluyor~~ → **KAPANDI (iş 15).**
   - Orta (iş 16): `web/src/types/question_public.ts` bayat (`sample_io` yok; `npm run gen:types`).
   - Orta (iş 17): `tests/network_guard.py` Windows Proactor `ConnectEx` yolunu yakalamıyor.
   - Orta (iş 18): `python_check.py` `warnings.catch_warnings` iş parçacığı güvenli değil.

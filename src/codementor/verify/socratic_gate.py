@@ -11,7 +11,11 @@ import re
 from dataclasses import dataclass, field
 
 _WORD_RE = re.compile(r"\b\w+\b", re.IGNORECASE)
-_LINE_REF_RE = re.compile(r"\b(satır|satırdaki|line)\s*(\d+)?|\b\d+\.\s*satır", re.IGNORECASE)
+# Satır referansı rakam ister: "satır 12", "satırda 12", "line 8", "6. satırda", "3-5. satırlar".
+# Rakamsız "Hangi satır?" ya da "lineer" koda temas sayılmaz (tam tarama #5).
+_LINE_REF_RE = re.compile(
+    r"\b(?:satır\w*|lines?)\s*\d+\b|\b\d+(?:\s*[-\u2013]\s*\d+)?\.\s*satır", re.IGNORECASE
+)
 
 # Genel programlama anahtar kelimeleri: koda özgü tanımlayıcı sayılmaz
 _COMMON_KEYWORDS = {
@@ -129,13 +133,14 @@ def has_repetition_loop(text: str) -> bool:
     if len(words) < 9:
         return False
 
-    # 3'lü, 4'lü ve 5'li n-gram ardışık tekrar kontrolü (3 kez peş peşe)
+    # 3'lü, 4'lü ve 5'li n-gram ardışık tekrar kontrolü (3 kez peş peşe). Yalnız rakamlardan
+    # oluşan öbekler sayılmaz: "Dizi 0 0 0 0 0 0 0 0 0 ile başlarsa?" meşru bir girdi örneği.
     for n in (3, 4, 5):
         for i in range(len(words) - 3 * n + 1):
             gram1 = words[i : i + n]
             gram2 = words[i + n : i + 2 * n]
             gram3 = words[i + 2 * n : i + 3 * n]
-            if gram1 == gram2 == gram3:
+            if gram1 == gram2 == gram3 and not all(w.isdigit() for w in gram1):
                 return True
     return False
 

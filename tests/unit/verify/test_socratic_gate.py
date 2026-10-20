@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from codementor.verify.socratic_gate import (
     deduplicate_questions,
     evaluate_socratic_gate,
@@ -57,6 +59,14 @@ def test_has_repetition_loop() -> None:
     assert not has_repetition_loop(normal)
 
 
+def test_numeric_sequences_are_not_degeneration() -> None:
+    """Tam tarama #5: sayı dizisi meşru girdi örneğidir, tüm çıktıyı şablona düşürmemeli."""
+    assert not has_repetition_loop("Dizi 0 0 0 0 0 0 0 0 0 ile başlarsa sum ne olur?")
+    assert not has_repetition_loop("Girdi 1 2 3 1 2 3 1 2 3 olduğunda döngü kaç tur döner?")
+    # Kelime içeren tekrar hâlâ döngü
+    assert has_repetition_loop("x 0 ise x 0 ise x 0 ise ne olur?")
+
+
 def test_touches_code() -> None:
     identifiers = {"binary_search", "arr", "size", "target", "low", "high", "mid"}
 
@@ -70,6 +80,34 @@ def test_touches_code() -> None:
 
     # Koda hiç temas etmeyen jenerik soru
     assert not touches_code("Kodunuzun mantığını adım adım inceleyin.", identifiers)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Bu yaklaşım lineer mi?",  # "line" öneki
+        "Hangi satır sorunlu olabilir?",  # rakamsız satır
+        "Satırlar arasındaki ilişki nedir?",
+        "Online bir çözüm düşündün mü?",
+    ],
+)
+def test_generic_line_words_do_not_touch_code(text: str) -> None:
+    """Tam tarama #5: jenerik sorular "satır"/"line" kelimesiyle kapıdan geçmemeli."""
+    assert not touches_code(text, {"binary_search", "arr", "low"})
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "12. satırda ne oluyor?",
+        "satır 12 neyi döndürür?",
+        "line 8 kontrolünü inceleyin.",
+        "lines 3 neden gerekli?",
+        "3-5. satırlar aynı işi mi yapıyor?",
+    ],
+)
+def test_numbered_line_refs_touch_code(text: str) -> None:
+    assert touches_code(text, set())
 
 
 def test_evaluate_socratic_gate_fails_on_loop() -> None:

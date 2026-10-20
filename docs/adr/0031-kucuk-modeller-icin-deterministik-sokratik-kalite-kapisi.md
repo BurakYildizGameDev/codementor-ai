@@ -17,8 +17,9 @@ Bu durumları engellemek için deterministik, LLM çağrısı gerektirmeyen kura
 
 1. **Sokratik Kalite Kapısı (`src/codementor/verify/socratic_gate.py`):**
    - **Özdeş Soru Eleme:** Sorular tokenize edilip ikili Jaccard benzerliği hesaplanır; `similarity >= 0.70` olan soruların ikincisi elenir.
-   - **Tekrar/Döngü Tespiti:** Sorularda ve ipucunda 4'lü kelime n-gram'larının ardışık 3 veya daha fazla tekrarı dejenerasyon kabul edilir.
-   - **Koda Temas (`touches_code`):** İpucu seviyesi >= 2 olduğunda veya küçük model profilinde, Sokratik soruların veya ipucunun koddaki tanımlayıcılardan (tanımlı fonksiyon, değişken, parametre veya satır numarası) en az birine temas etmesi beklenir.
+   - **Tekrar/Döngü Tespiti:** Sorularda ve ipucunda 3, 4 veya 5'li kelime n-gram'larının ardışık 3 tekrarı dejenerasyon kabul edilir; yalnız rakamlardan oluşan öbekler ("0 0 0 …" girdi örneği) sayılmaz.
+   - **Koda Temas (`touches_code`):** İpucu seviyesi >= 2 olduğunda veya küçük model profilinde, Sokratik soruların veya ipucunun koddaki tanımlayıcılardan (tanımlı fonksiyon, değişken, parametre veya satır numarası) en az birine temas etmesi beklenir. Satır referansı rakam ister ("12. satır", "satır 12", "line 8"); rakamsız "satır" ya da "lineer" temas sayılmaz.
+   - *Güncelleme 2026-10-20 (tam tarama #5, KALAN_ISLER iş 15):* n-gram boyu kodla hizalandı (önceki metin "4'lü" diyordu), sayı dizisi ve rakamsız satır kelimesi istisnaları eklendi; kapı geçip uyardığında (soru listesi değişmese de) uyarı rapora taşınır.
    - **Zarif Şablona Düşüş:** Çıktı kapıdan geçemezse model soruları yerine statik olgulardan üretilen şablon sorulara dönülür ve rapora `degraded_socratic` uyarısı işlenir.
 
 2. **Bulgu Sağduyu Denetimi (`src/codementor/verify/sanity.py`):**

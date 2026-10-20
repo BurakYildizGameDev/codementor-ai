@@ -415,7 +415,7 @@
   pid ile yeniden kullanım).
 - **Boyut:** orta-büyük.
 
-### [ ] 🤖 15. Sokratik kapı doğruluğu (tarama #5)
+### [x] 🤖 15. Sokratik kapı doğruluğu (tarama #5) — ✅ **BİTTİ 2026-10-20**
 - **Sorun:** `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i ve rakamsız "satır"ı koda temas sayıyor
   (jenerik sorular kapıdan geçiyor); `has_repetition_loop` "0 0 0 0 0 0" gibi sayı dizilerini dejenerasyon
   sanıp tüm çıktıyı şablona düşürüyor; ADR-0031 4-gram diyor, kod 3/4/5. `pipeline/socratic_pass.py:73`

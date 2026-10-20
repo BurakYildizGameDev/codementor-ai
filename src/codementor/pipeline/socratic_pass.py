@@ -11,7 +11,7 @@ from codementor.models.prompts import BuiltPrompt, MentoringProfile, SocraticPro
 from codementor.models.verification import AnalysisVerification, SocraticVerification
 from codementor.pipeline.llm_session import LLMSession
 from codementor.pipeline.stages import VerifyArgs
-from codementor.verify.socratic_gate import evaluate_socratic_gate
+from codementor.verify.socratic_gate import SocraticGateResult, evaluate_socratic_gate
 
 
 async def run_pass_socratic(
@@ -64,19 +64,21 @@ async def run_pass_socratic(
             hint_level=profile.hint_level,
             model_profile=llm.settings.pipeline.model_profile,
         )
-        if not gate.passed:
-            return SocraticVerification(
-                decision=checked.decision,
-                result=None,
-                warnings=[*checked.warnings, *gate.warnings],
-            )
-        if gate.filtered_questions != checked.result.guiding_questions:
-            updated_res = checked.result.model_copy(
-                update={"guiding_questions": gate.filtered_questions}
-            )
-            return SocraticVerification(
-                decision=checked.decision,
-                result=updated_res,
-                warnings=[*checked.warnings, *gate.warnings],
-            )
+        return apply_gate(checked, gate)
     return checked
+
+
+def apply_gate(checked: SocraticVerification, gate: SocraticGateResult) -> SocraticVerification:
+    """Kapı kararını uygular: geçemediyse sonuç düşer (şablona dönülür), geçtiyse elenen sorular
+    çıkarılır. Kapı uyarıları her durumda rapora taşınır — soru listesi değişmese de."""
+    if not gate.passed:
+        result = None
+    elif checked.result is not None and gate.filtered_questions != checked.result.guiding_questions:
+        result = checked.result.model_copy(update={"guiding_questions": gate.filtered_questions})
+    else:
+        result = checked.result
+    if result is checked.result and not gate.warnings:
+        return checked
+    return SocraticVerification(
+        decision=checked.decision, result=result, warnings=[*checked.warnings, *gate.warnings]
+    )
