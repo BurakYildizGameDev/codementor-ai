@@ -147,8 +147,10 @@ sahte çalıştırıcı) — eski kodla bu makinede **WinError 32** ile kırmız
 - `api/guard.RateLimiter`: monotonik, enjekte edilebilir saat; dakikada bir süpürme ile penceresi boşalan
   IP kayıtları siliniyor (eskiden her IP kalıcıydı). Yeni `test_rate_limiter.py` (3).
 - `docs/mimari.md` §12: "istek/dakika hız sınırı yok" → IP başına `api.rate_limit_per_minute` (30).
-- `storage/db.py` göçü: `sessions.updated_at` NULL satırlar göç anıyla dolduruluyor (önceden göç görmüş
-  DB'ler de onarılır) → saklama süresi sonunda budanıyor. Test: eski şema + satır; eski kodla NULL kalıyor.
+- `storage/db.py` göçü: `sessions.updated_at` NULL satırlar göç anıyla dolduruluyor → saklama süresi
+  sonunda budanıyor. Test: eski şema + satır; eski kodla NULL kalıyor. (Düzeltme, denetim: ilk sürümde
+  "önceden göç görmüş DB'ler de onarılır" iddiası yanlıştı — onarım `user_version < 2` kapısının
+  arkasındaydı; `SCHEMA_DB_VERSION` 3'e çıkarıldı, sürüm 2 + NULL vakası test edildi.)
 - `toolchain_prune`: silinemeyen dizin "kaldırıldı" sayılmıyor, `PruneReport.failed_dirs`;
   `PruneReport` `models/validation.py`'ye taşındı (AGENTS kod stili). Test: etkisiz `rmtree`.
 - `desktop/bridge.py:165` **değişmedi:** beklenmeyen hata ayrıntısı kullanıcının kendi makinesindeki yerel
@@ -181,7 +183,29 @@ sabitlendi; eski kodla kırmızı.
   "~41 bin satır test".
 - Not: tam koşulardan birinde `test_config_cli_faz_c.py::test_writer_reads_bom_and_writes_without` bir kez
   kırıldı, tek başına ve 40 tekrarda (0/40) tekrarlanmadı — Windows'ta atomik `os.replace` sırasında dosya
-  kilidi (antivirüs/indeksleyici) olası; tekrarlarsa izlenmeli.
+  kilidi (antivirüs/indeksleyici) olası; tekrarlarsa izlenmeli. → Tekrarladı, kapatıldı (aşağıda "Dosya kilidi").
+
+**Oturum commit denetimi (kod-denetci, `5ba51ae..HEAD`, 2026-10-20) — kritik yok; düzeltilenler:**
+- Orta (doğrulandı): db onarımı sürüm kapısının arkasındaydı → `SCHEMA_DB_VERSION = 3` + test (eski kodla kırmızı).
+- Codex: bekleme sırasında gelen ikinci iptal dizini süreç ölmeden sildiriyordu → `_drain` ikinci iptali
+  yutup beklemeyi sürdürüyor, görev istisnası alınıyor; test (önceki kodla dizin sızıyordu).
+- Tier 0 havuzu: ayar değişiminde eski havuz kilit dışında kapatılıyor (diğer analizler ≤2 sn/işçi
+  beklemiyor); süreç ölmediyse borular kapatılmıyor (`exchange` iş parçacığının akış kilidinde askıda kalma
+  riski). Bellek tabanı kayması ve geçici 2× işçi ADR-0032'ye bilinen sınır olarak yazıldı.
+- Sağduyu filtresi: `1'000` (C++14 basamak ayırıcısı) karakter sabiti sanılıp satırın gerisi silinmiyor.
+- `eval judge`: hiçbir örnek yargılanamazsa çıkış 1 (eskiden 0 + boş tablo).
+- `mimari.md` §12: hız sınırı yalnız analiz uçlarında ve vekil arkasında `--proxy-headers` gerektiği yazıldı.
+
+**Dosya kilidi — atomik yazımlar yeniden dener (2026-10-20):** tam koşuda
+`test_app_2.py::test_recent_menu_opens_file_and_drops_missing` kırıldı (bellekteki son dosyalar güncel,
+diskteki `desktop.json` eski). Kök neden yukarıdaki notla aynı: Windows'ta tarayıcı/indeksleyici yeni
+yazılan dosyayı kısa süre açık tutunca `os.replace` `PermissionError` (WinError 5/32) verir; `save_prefs`
+bunu **sessizce yutuyordu** (gerçek kullanıcıda da tercih kaybı), `config_writer` ve `user_store` ise
+hatayı yukarı iletiyordu. Düzeltme: ortak `paths.replace_file` (yalnız Windows'ta, yalnız
+`PermissionError`'da toplam ~0,8 sn yeniden dener; kalıcı hata yine yükselir — Faz 58'deki toolchain
+`_rename` ile aynı yaklaşım) üç yazıcıda da kullanılıyor. Testler: ortak `locked_replace` fixture'ı
+(`tests/conftest.py`); yardımcı için 4, yazıcılar için 3 test — üç yazıcı testi eski kodla kırmızı
+(tercih kayboluyor / `PermissionError` / `UserQuestionError`). Tam paket 4064 yeşil.
 
 **İş 23 — Satır sayısı testleri kırılganlıktan çıktı:** `test_release_readiness.py`'deki "~N bin satır"
 iddiaları birebir yuvarlama yerine ölçümün **±1 bin** içinde olmalı (bu taramada 3 kez her değişiklikte

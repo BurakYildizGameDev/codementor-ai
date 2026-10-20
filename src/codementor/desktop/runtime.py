@@ -123,14 +123,15 @@ def load_prefs(directory: Path | None = None) -> DesktopPrefs:
 
 
 def save_prefs(prefs: DesktopPrefs, directory: Path | None = None) -> None:
-    """Tercihleri atomik yazar (geçici dosya + `os.replace`; yarıda kesilen yazım eski dosyayı
-    bozmaz, Faz 49); yazılamazsa sessizce geçer (uygulama yine çalışır)."""
+    """Tercihleri atomik yazar (geçici dosya + `paths.replace_file`; yarıda kesilen yazım eski
+    dosyayı bozmaz, Faz 49; Windows'taki geçici dosya kilidi yeniden denenir); yazılamazsa
+    sessizce geçer (uygulama yine çalışır)."""
     path = (directory or user_dir()) / PREFS_FILE
     temp = path.with_name(f"{PREFS_FILE}.{os.getpid()}.tmp")  # iki örnek aynı dosyaya yazmasın
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         temp.write_text(prefs.model_dump_json(indent=2), encoding="utf-8")
-        os.replace(temp, path)
+        paths.replace_file(temp, path)
     except OSError:
         with contextlib.suppress(OSError):
             temp.unlink(missing_ok=True)

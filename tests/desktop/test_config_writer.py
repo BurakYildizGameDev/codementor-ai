@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -138,3 +139,15 @@ def test_line_endings_are_preserved(tmp_path: Path, newline: str) -> None:
     assert "\n" not in written.replace(newline, "")  # tek satır sonu bile dönüşmedi
     assert tomllib.loads(written)["providers"]["default"] == "claude_cli"
     assert tomllib.loads(written)["providers"]["ollama"]["model"] == "qwen2.5-coder:14b"
+
+
+def test_write_survives_transient_file_lock(
+    tmp_path: Path, locked_replace: Callable[[int], list[int]]
+) -> None:
+    path = tmp_path / "codementor.toml"
+    path.write_text(ORIGINAL, encoding="utf-8")
+    left = locked_replace(2)
+    write_provider_prefs(path, PREFS)
+    assert left == [0]
+    assert tomllib.loads(path.read_text(encoding="utf-8"))["providers"]["default"] == "claude_cli"
+    assert [p.name for p in tmp_path.iterdir()] == ["codementor.toml"]

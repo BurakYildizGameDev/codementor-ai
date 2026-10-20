@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -209,3 +210,15 @@ def test_clear_sources_keeps_other_files(tmp_path: Path) -> None:
     assert (sources_dir / "notlar.md").exists()
     assert (sources_dir / "alt" / "B.txt").exists()
     assert outside.exists()
+
+
+def test_save_prefs_survives_transient_file_lock(
+    tmp_path: Path, locked_replace: Callable[[int], list[int]]
+) -> None:
+    """Tarayıcı dosyayı kısa süre tutunca tercih sessizce kaybolmamalı (aralıklı test kırığı)."""
+    runtime.save_prefs(DesktopPrefs(recent_files=["a.c"]), tmp_path)
+    left = locked_replace(2)
+    runtime.save_prefs(DesktopPrefs(recent_files=["b.c"]), tmp_path)
+    assert left == [0]
+    assert runtime.load_prefs(tmp_path).recent_files == ["b.c"]
+    assert [p.name for p in tmp_path.iterdir()] == [runtime.PREFS_FILE]

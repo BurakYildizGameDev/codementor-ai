@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -62,3 +63,61 @@ def test_resolve_config_relative_missing_everywhere_stays_toml_dir(tmp_path: Pat
 def test_resolve_config_relative_keeps_absolute(tmp_path: Path) -> None:
     absolute = tmp_path / "yok.yaml"
     assert paths.resolve_config_relative(absolute, Path("/baska")) == absolute
+
+
+# --- replace_file: Windows'taki geçici dosya kilidi ---------------------------------------------
+
+
+def _pair(tmp_path: Path) -> tuple[Path, Path]:
+    source, target = tmp_path / "yeni.tmp", tmp_path / "hedef.json"
+    source.write_text("yeni", encoding="utf-8")
+    target.write_text("eski", encoding="utf-8")
+    return source, target
+
+
+def test_replace_file_retries_transient_lock(
+    tmp_path: Path, locked_replace: Callable[[int], list[int]]
+) -> None:
+    source, target = _pair(tmp_path)
+    left = locked_replace(2)
+    paths.replace_file(source, target)
+    assert left == [0]
+    assert target.read_text(encoding="utf-8") == "yeni"
+    assert not source.exists()
+
+
+def test_replace_file_persistent_lock_raises(
+    tmp_path: Path, locked_replace: Callable[[int], list[int]]
+) -> None:
+    source, target = _pair(tmp_path)
+    locked_replace(100)
+    with pytest.raises(PermissionError):
+        paths.replace_file(source, target)
+    assert target.read_text(encoding="utf-8") == "eski"
+
+
+def test_replace_file_no_retry_off_windows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, locked_replace: Callable[[int], list[int]]
+) -> None:
+    source, target = _pair(tmp_path)
+    left = locked_replace(1)
+    monkeypatch.setattr(paths, "_RETRY_REPLACE", False)
+    with pytest.raises(PermissionError):
+        paths.replace_file(source, target)
+    assert left == [0]
+
+
+def test_replace_file_other_errors_not_retried(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[int] = []
+
+    def broken(_source: object, _target: object) -> None:
+        calls.append(1)
+        raise OSError("disk dolu")
+
+    monkeypatch.setattr(paths, "_RETRY_REPLACE", True)
+    monkeypatch.setattr(paths.os, "replace", broken)
+    with pytest.raises(OSError, match="disk dolu"):
+        paths.replace_file(*_pair(tmp_path))
+    assert calls == [1]

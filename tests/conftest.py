@@ -112,3 +112,30 @@ def captured_logs() -> Iterator[Callable[[], list[dict[str, Any]]]]:
 
     yield read
     restore_logging(previous)  # Faz 31: varsayılanı değil, önceki yapılandırmayı geri yükle
+
+
+@pytest.fixture
+def locked_replace(monkeypatch: pytest.MonkeyPatch) -> Callable[[int], list[int]]:
+    """`os.replace`'i ilk `failures` çağrıda Windows dosya kilidi (WinError 32) gibi düşürür.
+
+    Yeniden deneme her platformda açılır, beklemeler sıfırlanır; dönen liste kalan hata sayısıdır.
+    """
+    from codementor import paths
+
+    real = os.replace
+
+    def arm(failures: int) -> list[int]:
+        left = [failures]
+
+        def replace(source: Any, target: Any) -> None:
+            if left[0] > 0:
+                left[0] -= 1
+                raise PermissionError(32, "Dosya başka bir işlem tarafından kullanılıyor")
+            real(source, target)
+
+        monkeypatch.setattr(os, "replace", replace)
+        monkeypatch.setattr(paths, "_RETRY_REPLACE", True)
+        monkeypatch.setattr(paths, "_REPLACE_DELAYS_S", (0.0,) * len(paths._REPLACE_DELAYS_S))
+        return left
+
+    return arm

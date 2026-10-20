@@ -12,11 +12,19 @@ Yapılandırmadaki göreli yollar kaynağına göre çözülür: varsayılan →
 
 from __future__ import annotations
 
+import os
 import sys
+import time
 from importlib.resources import files
 from pathlib import Path
 
 RESOURCES_DIR = "_resources"
+
+# Windows'ta tarayıcı/indeksleyici yeni yazılan dosyayı kısa süre açık tutunca `os.replace`
+# WinError 5/32 (PermissionError) verir (Faz 58'deki toolchain kilidiyle aynı). Küçük dosyalar
+# için toplam ~0,8 sn yeniden denenir (masaüstünde arayüz iş parçacığından da çağrılır).
+_RETRY_REPLACE = os.name == "nt"
+_REPLACE_DELAYS_S = (0.02, 0.05, 0.1, 0.2, 0.4)
 
 
 def _package_resources() -> Path:
@@ -57,3 +65,17 @@ def resolve_config_relative(path: Path, base: Path) -> Path:
         return resolved
     bundled = resource_path(str(path))
     return bundled if bundled.exists() else resolved
+
+
+def replace_file(source: Path, target: Path) -> None:
+    """`os.replace(source, target)`; Windows'taki geçici dosya kilidinde kısa beklemelerle yineler.
+
+    Kalıcı hata (son deneme) çağırana iletilir.
+    """
+    for delay in _REPLACE_DELAYS_S if _RETRY_REPLACE else ():
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError:
+            time.sleep(delay)
+    os.replace(source, target)

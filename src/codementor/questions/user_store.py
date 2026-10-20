@@ -22,6 +22,7 @@ from codementor.models.questions import (
     Question,
     UserQuestionDraft,
 )
+from codementor.paths import replace_file
 from codementor.questions._loader import DataFileError, list_yaml_files, load_model
 
 log = get_logger("codementor.questions")
@@ -70,7 +71,7 @@ def _write_atomic(path: Path, text: str) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(text)
-        os.replace(tmp, path)
+        replace_file(Path(tmp), path)
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise

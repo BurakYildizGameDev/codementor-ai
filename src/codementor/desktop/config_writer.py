@@ -28,6 +28,7 @@ from tomlkit import TOMLDocument
 from tomlkit.items import InlineTable, Table
 
 from codementor.models.desktop import DesktopPrefs
+from codementor.paths import replace_file
 
 _BOM = "\ufeff"  # kaynakta görünmez karakter olmasın diye kaçışla
 
@@ -66,7 +67,7 @@ def _write_atomic(path: Path, text: str) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
             handle.write(text)
-        os.replace(temp, path)
+        replace_file(Path(temp), path)
     except BaseException:
         Path(temp).unlink(missing_ok=True)
         raise

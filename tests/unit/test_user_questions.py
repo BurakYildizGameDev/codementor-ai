@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -306,3 +307,13 @@ def test_question_model_round_trip_yaml(tmp_path: Path) -> None:
     assert "origin: user" in text
     assert "reference_solution_path" not in text
     assert isinstance(get_question(saved.id, tmp_path), Question)
+
+
+def test_save_survives_transient_file_lock(
+    tmp_path: Path, locked_replace: Callable[[int], list[int]]
+) -> None:
+    left = locked_replace(2)
+    saved = save_question(_draft(), tmp_path)
+    assert left == [0]
+    assert get_question(saved.id, tmp_path) == saved
+    assert [p.suffix for p in tmp_path.iterdir()] == [".yaml"]
