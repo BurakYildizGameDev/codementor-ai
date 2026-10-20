@@ -51,6 +51,16 @@ def _migrate(connection: Any, current: int) -> None:
     existing_sessions_cols = {row[1] for row in cursor_sessions.fetchall()}
     if existing_sessions_cols and "updated_at" not in existing_sessions_cols:
         connection.execute(text("ALTER TABLE sessions ADD COLUMN updated_at TIMESTAMP"))
+    if existing_sessions_cols:
+        # Göçle eklenen sütun NULL kalıyordu → `prune_old_sessions` (`updated_at < cutoff`) bu
+        # satırları hiç budamıyordu. Göç anı başlangıç sayılır; daha önce göç görmüş DB'ler de
+        # onarılır. Biçim SQLAlchemy'nin SQLite DateTime biçimiyle aynı (UTC).
+        connection.execute(
+            text(
+                "UPDATE sessions SET updated_at = strftime('%Y-%m-%d %H:%M:%S.000000', 'now') "
+                "WHERE updated_at IS NULL"
+            )
+        )
 
     connection.execute(text(f"PRAGMA user_version = {SCHEMA_DB_VERSION}"))
 

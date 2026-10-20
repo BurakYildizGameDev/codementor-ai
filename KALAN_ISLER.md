@@ -458,7 +458,7 @@
   0,1 sn daha yaşarken Windows WinError 32 → `PermissionError` `CancelledError`'ı maskeler, dizin sızar.
 - **Kapsam:** `ignore_cleanup_errors=True` + süreç bitişini bekleme; iptal testi. **Boyut:** küçük.
 
-### [ ] 🤖 21. Düşük öncelikli tarama maddeleri (tek dilimde)
+### [x] 🤖 21. Düşük öncelikli tarama maddeleri (tek dilimde) — ✅ **BİTTİ 2026-10-20** (+ `root_path` API anahtarı atlaması)
 - `api/guard.py` `RateLimiter._records` boşalan IP'leri silmiyor (sınırsız büyüme), `time.time()` yerine
   `time.monotonic()` · `docs/mimari.md:1126` "hız sınırı yok" ↔ kod varsayılan 30/dk (belge çelişkisi) ·
   `storage/db.py:53` göçle eklenen `sessions.updated_at` NULL → `prune_old_sessions` budamıyor ·

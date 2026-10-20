@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from codementor.validation import toolchain_prune
 from codementor.validation.toolchain_prune import _is_unrelated_target, prune_zig_directory
 from tools import prune_zig
 
@@ -88,3 +91,21 @@ def test_tools_prune_zig_cli(tmp_path: Path) -> None:
 
     rc = prune_zig.main([str(tmp_path), "--dry-run", "--platform=linux-x86_64"])
     assert rc == 0
+
+
+def test_prune_reports_undeletable_dirs_as_failed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tam tarama: `rmtree(ignore_errors=True)` silemediği dizini de "kaldırıldı" sayıyordu."""
+    include = tmp_path / "lib" / "libc" / "include"
+    prunable = include / "mips-linux-gnu"
+    prunable.mkdir(parents=True)
+    (prunable / "stdio.h").write_text("// mips", encoding="utf-8")
+    monkeypatch.setattr(toolchain_prune.shutil, "rmtree", lambda *_a, **_k: None)  # kilitli
+
+    report = prune_zig_directory(tmp_path, platform="linux-x86_64")
+
+    assert prunable.exists()
+    assert report.removed_dirs == []
+    assert report.removed_files_count == 0
+    assert report.failed_dirs == ["lib/libc/include/mips-linux-gnu"]

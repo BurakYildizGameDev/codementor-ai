@@ -109,3 +109,16 @@ class DownloadProgress(StrictModel):
     stage: Literal["download", "extract", "check"]
     done: int = Field(ge=0, description="İndirilen bayt / açılan dosya sayısı")
     total: int | None = Field(default=None, ge=0, description="Bilinmiyorsa None")
+
+
+class PruneReport(StrictModel):
+    """Zig libc başlık budaması raporu (Faz J, `validation/toolchain_prune.py`)."""
+
+    removed_dirs: list[str]
+    removed_files_count: int
+    reclaimed_bytes: int
+    dry_run: bool
+    failed_dirs: list[str] = Field(
+        default_factory=list,
+        description="Silinemeyen (kilitli/izinsiz) dizinler; kaldırılmış sayılmaz",
+    )

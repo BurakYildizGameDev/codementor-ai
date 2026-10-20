@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import threading
 import time
-from collections import defaultdict, deque
+from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from starlette.datastructures import Headers
@@ -28,21 +29,35 @@ ANY_HOST = "*"
 _BODY_METHODS = frozenset({"POST", "PUT", "PATCH"})
 
 
-class RateLimiter:
-    """İstemci IP başına kayan pencere (dakika) hız sınırlayıcı (Faz E, mimari §17)."""
+_WINDOW_S = 60.0
 
-    def __init__(self, limit_per_minute: int | None) -> None:
+
+class RateLimiter:
+    """İstemci IP başına kayan pencere (dakika) hız sınırlayıcı (Faz E, mimari §17).
+
+    Saat monotoniktir (sistem saati geri alınınca pencere bozulmaz). Penceresi boşalan IP'lerin
+    kayıtları dakikada bir süpürülür: geçip giden istemciler sözlüğü sınırsız büyütmez.
+    """
+
+    def __init__(
+        self, limit_per_minute: int | None, clock: Callable[[], float] = time.monotonic
+    ) -> None:
         self.limit = limit_per_minute
+        self._clock = clock
         self._lock = threading.Lock()
-        self._records: dict[str, deque[float]] = defaultdict(deque)
+        self._records: dict[str, deque[float]] = {}
+        self._next_sweep = clock() + _WINDOW_S
 
     def check(self, client_host: str) -> None:
         if self.limit is None:
             return
-        now = time.time()
-        cutoff = now - 60.0
+        now = self._clock()
+        cutoff = now - _WINDOW_S
         with self._lock:
-            timestamps = self._records[client_host]
+            if now >= self._next_sweep:
+                self._sweep(cutoff)
+                self._next_sweep = now + _WINDOW_S
+            timestamps = self._records.setdefault(client_host, deque())
             while timestamps and timestamps[0] <= cutoff:
                 timestamps.popleft()
             if len(timestamps) >= self.limit:
@@ -52,6 +67,19 @@ class RateLimiter:
                     headers={"Retry-After": "60"},
                 )
             timestamps.append(now)
+
+    def _sweep(self, cutoff: float) -> None:
+        """Son isteği pencerenin dışında kalan IP'leri siler (kilit altında çağrılır)."""
+        stale = [
+            host for host, stamps in self._records.items() if not stamps or stamps[-1] <= cutoff
+        ]
+        for host in stale:
+            del self._records[host]
+
+    def tracked_clients(self) -> int:
+        """İzlenen IP sayısı (testler ve tanılama)."""
+        with self._lock:
+            return len(self._records)
 
 
 def host_of(header: str) -> str | None:

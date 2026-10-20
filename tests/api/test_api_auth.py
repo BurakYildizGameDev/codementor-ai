@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 
+from codementor.api.app import create_app
+from codementor.api.auth import route_path
 from codementor.config import Settings
+from codementor.storage.db import Database
 from tests.api.conftest import ClientFactory
 from tests.integration.conftest import LINKED_LIST, FakeFactory, analysis_reply, socratic_reply
 
@@ -170,3 +174,34 @@ async def test_internal_endpoints_protected_with_key(
     for path in protected_paths:
         resp = await client_open.get(path)
         assert resp.status_code == 200, f"{path} anahtarsız modda açık olmalı"
+
+
+async def test_root_path_prefix_does_not_bypass_key(
+    settings: Settings, db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tam tarama: vekil arkasında (`--root-path /api`) `/api/v1/*` de anahtar ister (eski: 200)."""
+    monkeypatch.setenv(KEY_ENV, KEY)
+    app = create_app(_with_key(settings), db=db)
+    transport = httpx.ASGITransport(app=app, root_path="/api")
+    async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1") as client:
+        assert (await client.get("/api/v1/rules")).status_code == 401
+        assert (await client.get("/api/v1/rules/")).status_code == 401
+        ok = await client.get("/api/v1/rules", headers={"X-API-Key": KEY})
+        assert ok.status_code == 200
+        assert (await client.get("/api/health")).status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("path", "root", "expected"),
+    [
+        ("/v1/rules", "", "/v1/rules"),
+        ("/api/v1/rules", "/api", "/v1/rules"),
+        ("/api", "/api", ""),
+        ("/apix/v1/rules", "/api", "/apix/v1/rules"),  # önek bölüt sınırında değil
+        ("/v1/rules", "/api", "/v1/rules"),  # sunucu yolu önekli vermediyse olduğu gibi
+    ],
+)
+def test_route_path_strips_root_path_on_segment_boundary(
+    path: str, root: str, expected: str
+) -> None:
+    assert route_path({"path": path, "root_path": root}) == expected

@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import hmac
 import os
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, MutableMapping
+from typing import Any
 
 from fastapi import FastAPI, Request
 from starlette.responses import Response
@@ -39,6 +40,22 @@ def _is_protected(path: str) -> bool:
     return path.rstrip("/") in PROTECTED_EXACT_PATHS
 
 
+def route_path(scope: MutableMapping[str, Any]) -> str:
+    """Yönlendiricinin eşleştirdiği yol: `root_path` öneki çıkarılmış `scope["path"]`.
+
+    Tam tarama: vekil arkasında (`uvicorn --root-path /api`) `scope["path"]` `/api/v1/...` olur;
+    önek çıkarılmadan bakılınca `/v1/` koruması tutmuyor, anahtarsız istek 200 dönüyordu.
+    Starlette'in `get_route_path` kuralıyla aynı: önek yalnız bir yol bölütü sınırında çıkarılır.
+    """
+    path: str = scope["path"]
+    root: str = scope.get("root_path", "")
+    if not root or not path.startswith(root):
+        return path
+    if path == root:
+        return ""
+    return path[len(root) :] if path[len(root)] == "/" else path
+
+
 def configured_key(settings: Settings) -> str | None:
     """Etkin anahtar; tanımsız ya da boşsa None."""
     name = settings.api.api_key_env
@@ -58,7 +75,7 @@ def install_api_key(app: FastAPI, settings: Settings) -> None:
     async def require_key(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if request.method == "OPTIONS" or not _is_protected(request.url.path):
+        if request.method == "OPTIONS" or not _is_protected(route_path(request.scope)):
             return await call_next(request)
         given = request.headers.get(API_KEY_HEADER, "").encode("utf-8")
         if not hmac.compare_digest(given, expected):

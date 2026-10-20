@@ -14,7 +14,7 @@ import shutil
 from pathlib import Path
 
 from codementor.log import get_logger
-from codementor.models._base import StrictModel
+from codementor.models.validation import PruneReport
 from codementor.validation.toolchain_install import platform_key
 
 log = get_logger("codementor.toolchain.prune")
@@ -35,15 +35,6 @@ FOREIGN_ARCHS = frozenset(
         "sparc",
     }
 )
-
-
-class PruneReport(StrictModel):
-    """Budama işlemi raporu."""
-
-    removed_dirs: list[str]
-    removed_files_count: int
-    reclaimed_bytes: int
-    dry_run: bool
 
 
 def _is_unrelated_target(name: str, target_os: str, target_arch: str) -> bool:
@@ -89,6 +80,7 @@ def prune_zig_directory(
 
     libc_dir = zig_root / "lib" / "libc"
     removed_dirs: list[str] = []
+    failed_dirs: list[str] = []
     removed_files = 0
     reclaimed_bytes = 0
 
@@ -132,17 +124,21 @@ def prune_zig_directory(
                 with contextlib.suppress(OSError):
                     b_count += (Path(root) / f).stat().st_size
 
+        if not dry_run:
+            shutil.rmtree(cand, ignore_errors=True)
+            if cand.exists():  # kilitli dosya ya da izin: silinmeyeni "kaldırıldı" sayma
+                failed_dirs.append(rel)
+                continue
+
         removed_dirs.append(rel)
         removed_files += f_count
         reclaimed_bytes += b_count
-
-        if not dry_run:
-            shutil.rmtree(cand, ignore_errors=True)
 
     log.info(
         "zig_pruned",
         platform=key,
         dirs_removed=len(removed_dirs),
+        dirs_failed=len(failed_dirs),
         files_removed=removed_files,
         bytes_reclaimed=reclaimed_bytes,
         dry_run=dry_run,
@@ -153,4 +149,5 @@ def prune_zig_directory(
         removed_files_count=removed_files,
         reclaimed_bytes=reclaimed_bytes,
         dry_run=dry_run,
+        failed_dirs=failed_dirs,
     )

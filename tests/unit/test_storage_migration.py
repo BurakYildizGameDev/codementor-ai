@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import sqlite3
+from datetime import timedelta
 from pathlib import Path
 
+import pytest
 from sqlalchemy import text
 
-from codementor.storage import cache
+from codementor.storage import cache, sessions
 from codementor.storage.db import SCHEMA_DB_VERSION, AnalysisRow, Database, SessionRow
 
 
@@ -161,5 +163,39 @@ def test_list_analyses_page_recovers_from_corrupt_created_at(tmp_path: Path) -> 
         assert len(items) == 2
         ids = {r.id for r in items}
         assert ids == {"valid_1", "corrupt_1"}
+    finally:
+        db.close()
+
+
+def test_migrated_sessions_get_timestamp_and_are_pruned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tam tarama: göçle eklenen `updated_at` NULL kalınca eski oturumlar hiç budanmıyordu."""
+    db_file = tmp_path / "legacy_sessions.db"
+    conn = sqlite3.connect(str(db_file))
+    conn.execute(
+        "CREATE TABLE sessions (session_id VARCHAR, question_id VARCHAR, attempt_count INT, "
+        "current_hint_level INT, PRIMARY KEY (session_id, question_id))"
+    )
+    conn.execute("INSERT INTO sessions VALUES ('s-eski', 'q1', 3, 2)")
+    conn.commit()
+    conn.close()
+
+    db = Database(db_file)
+    try:
+        with db.engine.connect() as connection:
+            nulls = connection.execute(
+                text("SELECT COUNT(*) FROM sessions WHERE updated_at IS NULL")
+            ).scalar()
+        assert nulls == 0
+        with db.session() as s:
+            row = s.get(SessionRow, ("s-eski", "q1"))
+            assert row is not None
+            assert row.updated_at is not None  # SQLAlchemy biçimiyle okunabilir
+
+        assert sessions.prune_old_sessions(db, days=90) == 0  # saklama süresi yeni başladı
+        later = sessions.utcnow() + timedelta(days=91)
+        monkeypatch.setattr(sessions, "utcnow", lambda: later)
+        assert sessions.prune_old_sessions(db, days=90) == 1
     finally:
         db.close()
