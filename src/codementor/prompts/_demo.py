@@ -18,12 +18,15 @@ from codementor.models.enums import Engine, Language
 from codementor.models.prompts import AnalysisPromptInput, BuiltPrompt, QuestionContext
 from codementor.models.questions import Question
 from codementor.models.request import LanguageHint
+from codementor.paths import resource_root
 from codementor.prompts.builder import build_analysis_messages, build_single_pass_messages
 from codementor.questions.bank import QuestionBank
 from codementor.questions.checklists import Checklists
 from codementor.rules.engine import run_rules
 
-GOLDEN_DIR = Path("tests/golden/prompts")
+# Geliştirici aracı: depo köküne göre (çalışma dizininden bağımsız; Sonraya #33). Kurulu
+# pakette `tests/` yoktur, o zaman `--code` verilmeli.
+GOLDEN_DIR = resource_root() / "tests" / "golden" / "prompts"
 
 
 def sample_input(

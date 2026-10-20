@@ -15,7 +15,7 @@ from codementor.config import CONFIG_FILE_ENV, Settings, load_settings
 from codementor.models.enums import Engine, Language
 from codementor.models.llm_output import LLMComplexity
 from codementor.models.prompts import AnalysisPromptInput, BuiltPrompt, SocraticPromptInput
-from codementor.prompts._demo import sample_input
+from codementor.prompts._demo import GOLDEN_DIR, demo_input, sample_input
 from codementor.prompts.builder import (
     build_analysis_messages,
     build_single_pass_messages,
@@ -101,3 +101,13 @@ def test_prompt_snapshot(case: Path, mode: str, settings: Settings, update_golde
 def test_cases_exist() -> None:
     names = {c.name for c in CASES}
     assert {"unity-hard-inventory", "c-medium-linked-list", "free-cpp"} <= names
+
+
+def test_demo_golden_dir_independent_of_cwd(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sonraya #33: demo örnek kodu çalışma dizininden bağımsız depo kökünden bulur."""
+    assert GOLDEN_DIR == ROOT
+    monkeypatch.chdir(tmp_path)
+    inp = demo_input(CASES[0].name)
+    assert inp.code.text
