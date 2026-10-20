@@ -17,6 +17,7 @@ from tests.rules.engine_support import (
     _timed,
     run_text,
 )
+from tests.timing import deadline
 
 
 @pytest.mark.parametrize(
@@ -335,7 +336,7 @@ from tests.rules.engine_support import (
 )
 def test_linear_time_large_input(text: str, language: Language, engine: Engine) -> None:
     assert len(text.encode()) <= 40960
-    assert _timed(text, language, engine) < 2.0
+    assert _timed(text, language, engine) < deadline(2.0)
 
 
 def test_linq_in_update_reported_once() -> None:

@@ -16,6 +16,7 @@ from codementor.ingest.normalize import normalize
 from codementor.models.enums import AllocationKind, Engine, Language, LoopBound
 from codementor.models.facts import CodeFacts
 from codementor.models.request import LanguageHint
+from tests.timing import deadline as _deadline
 
 C, CPP, CS = Language.C, Language.CPP, Language.CSHARP
 
@@ -252,15 +253,6 @@ def _best_of(run: Callable[[], None]) -> float:
 def _timed(text: str, language: Language) -> float:
     code = normalize(text, LanguageHint(language=language))
     return _best_of(lambda: compute_hint(extract_facts(code)))
-
-
-def _deadline(seconds: float) -> float:
-    """Zaman sınırı; kapsama ölçümü yavaşlattığı için ölçümde genişletilir (Faz 53)."""
-    try:
-        from coverage import Coverage
-    except ImportError:  # pragma: no cover
-        return seconds
-    return seconds * (4.0 if Coverage.current() is not None else 1.0)
 
 
 def _inner_loops(count: int) -> str:

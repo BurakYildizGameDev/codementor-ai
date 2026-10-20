@@ -28,21 +28,13 @@ from hypothesis import strategies as st
 from codementor.analysis.call_costs import _END_INDEX, _LAST_INDEX, _index_base
 from codementor.verify.complexity import _before_trailer
 from codementor.verify.leak_guard import _ASSIGNMENT, strip_comments_and_strings
+from tests.timing import deadline as _deadline
 
 _PACKAGES = ("codementor.analysis", "codementor.rules", "codementor.verify")
 _SIZE = 40_960  # kullanıcı kodu sınırı (40 KB, mimari §12)
 _BUDGET_S = 0.05  # desen başına en kötü girdi bütçesi (KALAN_ISLER.md iş 4)
 _GROWTH = 8.0  # 4x uzunlukta 8x'ten fazla artış süper-doğrusal sayılır
 _MIN_PATTERNS = 40  # keşif bozulursa (import hatası vb.) test sessizce boş kalmasın
-
-
-def _deadline(seconds: float) -> float:
-    """Zaman sınırı; kapsama ölçümü yavaşlattığı için ölçümde genişletilir (Faz 53 kalıbı)."""
-    try:
-        from coverage import Coverage
-    except ImportError:  # pragma: no cover
-        return seconds
-    return seconds * (4.0 if Coverage.current() is not None else 1.0)
 
 
 def _discover() -> list[tuple[str, re.Pattern[str]]]:

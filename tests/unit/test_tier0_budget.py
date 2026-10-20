@@ -22,6 +22,7 @@ from codementor.ingest.normalize import normalize
 from codementor.models.enums import Language
 from codementor.models.request import LanguageHint
 from codementor.validation.tier0 import run_tier0
+from tests.timing import deadline as _deadline
 
 _RUNS = 3
 _GROWTH_LIMIT = 3.0  # 2× girdi: doğrusal ≈2×, karesel ≈4×
@@ -37,15 +38,6 @@ def _best_of(run: Callable[[], None]) -> float:
         run()
         best = min(best, time.perf_counter() - start)
     return best
-
-
-def _deadline(seconds: float) -> float:
-    """Zaman sınırı; kapsama ölçümü yavaşlattığı için ölçümde genişletilir (Faz 53 kalıbı)."""
-    try:
-        from coverage import Coverage
-    except ImportError:  # pragma: no cover
-        return seconds
-    return seconds * (4.0 if Coverage.current() is not None else 1.0)
 
 
 def _valid_cpp(max_lines: int = 600, max_bytes: int = 39 * 1024) -> str:
