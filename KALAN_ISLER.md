@@ -394,6 +394,92 @@
   `test_release_readiness.py` 15/15 yeşil; `ruff check`, `ruff format`, `mypy --strict` temiz.
 - **Boyut:** küçük-orta.
 
+### Tam tarama (2026-10-20) kalan işleri
+> Kaynak: ruff/mypy/pytest + kod-denetci tam taraması. #1 (sağduyu filtresi, `17b8242`), #3 (güvenilmeyen
+> toml, `516ffc9`), #4 (karmaşıklık politikası, `395b1ea`) ve satır sayısı belgeleri kapandı. Kanıt ve
+> satır numaraları: `PROGRESS.md` "Sonraya" → "Tam tarama kalan bulguları".
+
+### [ ] 🤖 14. Tier 0 sıcak işçi havuzunu güvenlik sınırına bağla (tarama #2 — **Yüksek**)
+- **Sorun:** `tier0_pool.Tier0Worker` düz `subprocess.Popen` kullanıyor; `runner.run_process`'in bellek
+  sınırı (Job Object/RLIMIT, `tier0_memory_mb`), ortam izin listesi (API anahtarları işçiye geçiyor), boş
+  cwd ve `CREATE_NO_WINDOW` yok. Havuz boşken her istek yeni işçi açıyor → eşzamanlı işçi sınırsız.
+  Yalnız `tier0_warm_workers > 0` iken etkin. Havuzun ADR'si yok (ADR-0025:58 hâlâ "Sonraya").
+- **Karar (⏸ kullanıcı):** (a) işçiyi `runner`'ın sınır/ortam/Job Object yoluyla başlat + eşzamanlılık
+  semaforu, ya da (b) havuzu varsayılan kapalı tut, açılınca uyar, ADR'de "güvenlik sınırı yok" diye yaz.
+- **Aynı işte:** `close()` boruları kapatmıyor / `kill()` sonrası `wait()` yok (tutamak, POSIX zombi),
+  `stderr=PIPE` okunmuyor · `str(exc)` kullanıcı kodu parçasını logluyor (§12) · `close_tier0_pool`
+  hiçbir yerde çağrılmıyor, `get_tier0_pool` sonraki `max_workers`'ı yok sayıyor · hata mesajları
+  `data/mentor_templates.yaml` önekiyle eşleşmiyor, `TIMEOUT/INFRA/FAILURE_MESSAGE` kullanılmıyor (ADR-0025 Ö2).
+- **Dosyalar:** `src/codementor/validation/` (`tier0_pool.py`, `tier0_isolation.py`, `runner.py`),
+  yeni ADR, `docs/mimari.md` §12/§16, `tests/unit/test_tier0_pool.py` (zaman aşımı, bellek, eşzamanlılık,
+  pid ile yeniden kullanım).
+- **Boyut:** orta-büyük.
+
+### [ ] 🤖 15. Sokratik kapı doğruluğu (tarama #5)
+- **Sorun:** `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i ve rakamsız "satır"ı koda temas sayıyor
+  (jenerik sorular kapıdan geçiyor); `has_repetition_loop` "0 0 0 0 0 0" gibi sayı dizilerini dejenerasyon
+  sanıp tüm çıktıyı şablona düşürüyor; ADR-0031 4-gram diyor, kod 3/4/5. `pipeline/socratic_pass.py:73`
+  kapı `passed=True` + uyarı döndüğünde soru listesi değişmemişse uyarılar kayboluyor.
+- **Dosyalar:** `socratic_gate.py`, `socratic_pass.py`, `tests/unit/verify/test_socratic_gate.py`,
+  gerekirse ADR-0031 notu.
+- **Boyut:** küçük-orta.
+
+### [ ] 🤖 16. Web tip senkronu ve örnek giriş/çıkış gösterimi (tarama #6)
+- **Sorun:** `web/src/types/question_public.ts` bayat (`sample_io`, `SampleIO` yok); API gönderiyor ama
+  arayüz göstermiyor. Şema→TS kaymasını yakalayan test yok.
+- **Kapsam:** `npm run gen:types`; soru panelinde örnekler; CI/test: `gen:types` sonrası `git diff --exit-code`.
+- **Dosyalar:** `web/src/types/`, ilgili soru bileşeni + vitest, `.github/workflows/ci.yml`.
+- **Boyut:** küçük.
+
+### [ ] 🤖 17. Test ağ korumasını Windows async yoluna genişlet (tarama #8)
+- **Sorun:** `tests/network_guard.py` yalnız `socket.connect/connect_ex`'i yamalıyor; Windows Proactor
+  `sock_connect` `_overlapped.ConnectEx` kullanıyor, DNS de engellenmiyor → respx'siz `httpx.AsyncClient`
+  geliştirici makinesinde ağa çıkabilir (şu an böyle test yok).
+- **Kapsam:** `loop.sock_connect` / `getaddrinfo` / `socket.create_connection` yamaları + async test.
+- **Dosyalar:** `tests/network_guard.py`, `tests/unit/test_network_guard.py`. **Boyut:** küçük.
+
+### [ ] 🤖 18. Python Tier 1 uyarı yakalamasını iş parçacığı güvenli yap (tarama #9)
+- **Sorun:** `validation/python_check.py:26` `warnings.catch_warnings` global durumu değiştiriyor;
+  `asyncio.to_thread` ile eşzamanlı (API'de 4 yuva) → uyarılar kaybolur/başka analize düşer.
+- **Kapsam:** kilit ya da `compile` uyarılarını alt süreçte/ayrı mekanizmayla toplamak + eşzamanlı test.
+- **Boyut:** küçük.
+
+### [ ] 🤖 19. Eval yargıcı sağlamlığı (tarama #11)
+- **Sorun:** `prompts/v1/judge.j2` `{{ code }}`/`{{ q }}` `guard`'sız ve ```` ``` ```` çitli (çit kırılır,
+  model çıktısı yargıca talimat verebilir) · `judge.py` özel `_environment`'ı doğrudan çağırıyor,
+  `TemplateError` → `PromptTemplateError` değil · `settings.prompts.dir` yok sayılıyor
+  (`cli/eval.py:320`) · tek `ValidationError`/`ProviderError` tüm koşuyu düşürüyor · `judge_summary_markdown`
+  `|`/satır sonunu kaçırmıyor.
+- **Dosyalar:** `src/codementor/eval/judge.py`, `prompts/v1/judge.j2`, `src/codementor/cli/eval.py`, eval testleri.
+- **Boyut:** küçük-orta.
+
+### [ ] 🤖 20. Codex iptalinde geçici dizin temizliği (tarama #7, OLASI)
+- **Sorun:** `providers/codex_cli.py:195` `TemporaryDirectory` `ignore_cleanup_errors` olmadan; iptalde süreç
+  0,1 sn daha yaşarken Windows WinError 32 → `PermissionError` `CancelledError`'ı maskeler, dizin sızar.
+- **Kapsam:** `ignore_cleanup_errors=True` + süreç bitişini bekleme; iptal testi. **Boyut:** küçük.
+
+### [ ] 🤖 21. Düşük öncelikli tarama maddeleri (tek dilimde)
+- `api/guard.py` `RateLimiter._records` boşalan IP'leri silmiyor (sınırsız büyüme), `time.time()` yerine
+  `time.monotonic()` · `docs/mimari.md:1126` "hız sınırı yok" ↔ kod varsayılan 30/dk (belge çelişkisi) ·
+  `storage/db.py:53` göçle eklenen `sessions.updated_at` NULL → `prune_old_sessions` budamıyor ·
+  `validation/toolchain_prune.py:140` `rmtree(ignore_errors=True)` silinemeyeni de "kaldırıldı" sayıyor ·
+  `toolchain_prune.py:40` `PruneReport` `models/` dışında (AGENTS kod stili) · OLASI: `api/auth.py:61`
+  `root_path` arkasında `/v1/` öneki, `desktop/bridge.py:165` `str(exc)[:300]` loglaması.
+- **Boyut:** küçük (madde başına).
+
+### [ ] 🤖 22. Büyük dosyaları böl
+- `src/codementor/config.py` boş olmayan **400** satırda (sınırda; öneri: katman/güven mantığı →
+  `config_layers.py`). Testlerde 400'ü aşanlar: `desktop/test_app.py`, `unit/test_extractor.py`,
+  `unit/test_models.py`, `providers/test_cli_agent.py`, `unit/test_toolchain_install.py`,
+  `unit/test_storage.py`, `unit/test_bigo.py`, `rules/test_engine.py`, `desktop/test_connections.py`,
+  `integration/test_pipeline.py` (toplama kimlikleri birebir korunmalı; J5 `test_tier1.py` örneği).
+- `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` dosya satırı iddiaları birlikte güncellenir. **Boyut:** orta.
+
+### [ ] 🤖 23. Satır sayısı testlerini kırılganlıktan çıkar
+- `tests/unit/test_release_readiness.py` "~N bin satır" ve `path.py NNN` iddiaları neredeyse her kod
+  değişikliğinde kırılıyor (bu taramada 3 kez). Öneri: bin yuvarlamasına ±1 tolerans ya da iddiaları
+  belgeden kaldırıp ölçümü `make` hedefine bağlamak. **Boyut:** küçük.
+
 ## B. Yalnız kullanıcının yapabileceği işler
 
 ### [ ] 👤 U1. `git push`
@@ -433,10 +519,10 @@
 
 - Bulgu kimlikleri ve ayrıntı: `docs/BulgularVeDuzeltilecekler.md` (§1 özet, §4 orta, §5 düşük,
   §6 public hazırlığı P1-P13, §8 eksik testler, §9 önerilen özellikler, §10 faz planı A-J).
-- Faz notları ve "Sonraya" (~60 madde): `PROGRESS.md`.
+- Faz notları ve "Sonraya" (120 madde, 43 açık): `PROGRESS.md`.
 - Faz planı ve fazların kabul kriterleri: `docs/UYGULAMA_PLANI.md`.
 - Bu dosya **yaşayan listedir**: iş bitince `[x]` yapılır + `PROGRESS.md`'ye işlenir; ayrıntılı
   gerekçe buraya kopyalanmaz, kaynağına bağlantı verilir.
-- Kayıt tarihi: 2026-10-17 (Faz J5 sonrası tarama).
+- Kayıt tarihi: 2026-10-17 (Faz J5 sonrası tarama); iş 14-23 2026-10-20 tam taramasından eklendi.
 
 
