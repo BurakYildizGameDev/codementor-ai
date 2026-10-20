@@ -25,3 +25,8 @@ hint_ladder:
   1: "Formüldeki 9 / 5 ifadesinin C#'ta sonucu tam olarak kaç?"
   2: "Kullanıcı 'otuz' yazarsa sayıya çeviren satır ne yapıyor? Programın geri kalanı çalışıyor mu?"
   3: "Bu kavramlar 'tam sayı bölmesi' ve 'istisnasız ayrıştırma (TryParse)' olarak bilinir."
+method_leaks:
+  - "tryparse"
+  - "9.0"
+  - "/ 5.0"
+  - "cultureinfo"

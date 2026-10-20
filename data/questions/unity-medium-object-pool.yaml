@@ -26,3 +26,8 @@ hint_ladder:
   1: "Bir dakikalık ateş boyunca kaç mermi nesnesi oluşturulup yok ediliyor?"
   2: "Sahneden kalkan bir merminin nesnesi gerçekten yok edilmek zorunda mı?"
   3: "Bu kavram 'nesne havuzu (object pooling)' olarak bilinir."
+method_leaks:
+  - "havuz"
+  - "pool"
+  - "setactive"
+  - "yeniden kullan"

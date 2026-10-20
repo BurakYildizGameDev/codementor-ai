@@ -29,3 +29,8 @@ hint_ladder:
   1: "Seviye kapanırken ya da başka bir sistem bir mermiyi yok ettiğinde, havuzundaki ham işaretçi neyi gösterir?"
   2: "Gizlediğin bir mermi hâlâ çarpışma üretiyor ve her karede güncelleniyor mu?"
   3: "Bu kavramlar 'nesne havuzu (object pooling)' ve 'çöp toplayıcının izlediği referanslar (UPROPERTY ile TObjectPtr)' olarak bilinir."
+method_leaks:
+  - "uproperty()"
+  - "sethiddeningame"
+  - "setactorenablecollision"
+  - "reserve("

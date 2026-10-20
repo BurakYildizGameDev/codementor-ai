@@ -28,3 +28,9 @@ hint_ladder:
   1: "Bir alanı sayıya çevirmek için önce onu ayrı bir string olarak kopyalamanız gerekiyor mu?"
   2: "Orijinal satırın bir bölümüne, onu kopyalamadan 'bakmanın' hangi yolları var?"
   3: "Bu kavramlar 'bellek dilimi (slice) üzerinde çalışma' ve 'sıfır tahsisli ayrıştırma' olarak bilinir."
+method_leaks:
+  - "span"
+  - "memory<"
+  - "stackalloc"
+  - "readonlyspan"
+  - "tryparse"

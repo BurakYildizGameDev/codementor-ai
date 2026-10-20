@@ -27,3 +27,9 @@ hint_ladder:
   1: "Tüketici uyandığında kuyruğun hâlâ boş olmadığından nasıl emin oluyorsun? Onu başka bir tüketici boşaltmış olabilir mi?"
   2: "Kuyruk kapatılırken uykuda bekleyen beş tüketiciden kaçı uyanıyor?"
   3: "Bu kavramlar 'koşul değişkeniyle bekleme', 'sahte uyanma (spurious wakeup)' ve 'kayıp bildirim' olarak bilinir."
+method_leaks:
+  - "condition_variable"
+  - "notify_all"
+  - "std::mutex"
+  - "lock_guard"
+  - "unique_lock"

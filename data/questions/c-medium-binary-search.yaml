@@ -27,3 +27,8 @@ hint_ladder:
   1: "Alt ve üst sınır iki milyara yakınken toplamları kullandığın türe sığıyor mu?"
   2: "Aralığı daraltırken üst sınırı 'orta - 1' yaptığında, orta 0 ise işaretsiz bir sayıya ne olur?"
   3: "Bu kavramlar 'orta nokta hesabında tamsayı taşması' ve 'işaretsiz sayının alttan sarması' olarak bilinir."
+method_leaks:
+  - "(hi - lo)"
+  - "lo + ("
+  - "lower_bound"
+  - "yarı açık"

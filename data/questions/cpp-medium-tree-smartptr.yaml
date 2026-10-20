@@ -26,3 +26,7 @@ hint_ladder:
   1: "Kökü yok ettiğinizde her düğümü kim serbest bırakıyor; bir düğümü hâlâ 'tutan' başka bir nesne kalıyor mu?"
   2: "Çocuk ebeveynini, ebeveyn de çocuğunu sahiplenirse hangisi önce yok edilebilir?"
   3: "Bu kavramlar 'döngüsel sahiplik (reference cycle)' ve 'sahiplenmeyen geri referans' olarak bilinir."
+method_leaks:
+  - "weak_ptr"
+  - "shared_ptr"
+  - "unique_ptr"

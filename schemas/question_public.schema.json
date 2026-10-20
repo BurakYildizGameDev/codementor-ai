@@ -57,6 +57,41 @@
       ],
       "title": "Language",
       "type": "string"
+    },
+    "SampleIO": {
+      "additionalProperties": false,
+      "description": "Problem için örnek girdi ve beklenen çıktı (öğrencinin problemi anlaması için).",
+      "properties": {
+        "explanation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "İsteğe bağlı açıklama",
+          "title": "Explanation"
+        },
+        "input": {
+          "description": "Örnek girdi (stdin veya argüman temsili)",
+          "title": "Input",
+          "type": "string"
+        },
+        "output": {
+          "description": "Örnek çıktı (stdout veya dönüş değeri temsili)",
+          "title": "Output",
+          "type": "string"
+        }
+      },
+      "required": [
+        "input",
+        "output"
+      ],
+      "title": "SampleIO",
+      "type": "object"
     }
   },
   "$id": "question_public.schema.json",
@@ -113,6 +148,14 @@
       "minLength": 1,
       "title": "Prompt",
       "type": "string"
+    },
+    "sample_io": {
+      "description": "Örnek girdi/çıktı listesi (öğrenciye gösterilir)",
+      "items": {
+        "$ref": "#/$defs/SampleIO"
+      },
+      "title": "Sample Io",
+      "type": "array"
     },
     "title": {
       "maxLength": 120,

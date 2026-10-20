@@ -27,3 +27,7 @@ hint_ladder:
   1: "UTF-8'deki 'ş' harfinin baytları char olarak okunduğunda hangi sayısal değerleri alıyor?"
   2: "ctype.h fonksiyonlarının kabul ettiği değer aralığı nedir; senin verdiğin değer bu aralıkta mı?"
   3: "Bu kavram 'işaretli char değerinin ctype fonksiyonlarında tanımsız davranışa yol açması' olarak bilinir."
+method_leaks:
+  - "unsigned char"
+  - "two pointer"
+  - "iki uç"

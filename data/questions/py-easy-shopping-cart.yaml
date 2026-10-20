@@ -28,3 +28,8 @@ hint_ladder:
   1: "İki kullanıcı başlangıç ürünü vermeden sepet oluşturup birine ürün eklerse, diğerinin sepetinde ne görünür?"
   2: "Varsayılan argüman değeri fonksiyon tanımlandığında mı, her çağrıda mı oluşturulur?"
   3: "Bu kavram 'değiştirilebilir varsayılan argüman (mutable default argument)' olarak bilinir."
+method_leaks:
+  - "= none"
+  - "is not none"
+  - "default_factory"
+  - "decimal"

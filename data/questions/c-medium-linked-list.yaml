@@ -26,3 +26,7 @@ hint_ladder:
   1: "Bir düğümü serbest bıraktıktan hemen sonra o düğüme ait hangi bilgiye hâlâ ihtiyacınız var?"
   2: "Baş düğüm silindiğinde fonksiyonun dışındaki değişken hangi adresi göstermeye devam ediyor?"
   3: "Bu kavramlar 'serbest bırakma sonrası kullanım (use-after-free)' ve 'sarkan pointer (dangling pointer)' olarak bilinir."
+method_leaks:
+  - "**"
+  - "pointer to pointer"
+  - "çift pointer"

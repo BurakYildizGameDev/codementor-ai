@@ -24,3 +24,8 @@ hint_ladder:
   1: "Kullanıcı e-posta alanına yazmaya başladığında yer tutucu metin kayboluyor; alanın ne olduğunu artık nereden hatırlıyor?"
   2: "Telefonda e-posta alanına dokunulduğunda '@' tuşu olan klavye açılıyor mu? Bunu ne belirliyor?"
   3: "Bu kavramlar 'form etiketi (label) ilişkisi' ve 'girdi türleri ile yerleşik doğrulama' olarak bilinir."
+method_leaks:
+  - "<label"
+  - "type=\"email\""
+  - "required"
+  - "autocomplete"

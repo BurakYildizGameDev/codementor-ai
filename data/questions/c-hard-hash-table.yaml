@@ -26,3 +26,9 @@ hint_ladder:
   1: "Çağıran anahtarı tuttuğu tamponu bir sonraki satırı okumak için yeniden kullanırsa sözlükteki anahtar neyi gösterir?"
   2: "Eleman sayısı tablo boyutunu geçtikçe bir kovadaki ortalama eleman sayısına ne oluyor; tablo ne zaman büyümeli?"
   3: "Bu kavramlar 'anahtarın sahipliği (kopyalanması)' ve 'yük faktörüne göre yeniden karma (rehash)' olarak bilinir."
+method_leaks:
+  - "rehash"
+  - "strdup"
+  - "yük faktörü"
+  - "load factor"
+  - "fnv"

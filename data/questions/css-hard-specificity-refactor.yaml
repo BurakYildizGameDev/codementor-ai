@@ -27,3 +27,8 @@ hint_ladder:
   1: "'#app .toolbar button.btn' ile '.btn-small' çakışırsa hangisi kazanır? Kazananı değiştirmek için ne yapmak zorunda kalırsın?"
   2: "Varyantlar aynı özellikleri farklı değerlerle yeniden yazmak yerine yalnızca birkaç değişkeni değiştirse ne olur?"
   3: "Bu kavramlar 'özgüllük (specificity) yönetimi', 'kaskad katmanları (@layer)' ve 'düşük özgüllüklü bileşen sınıfları' olarak bilinir."
+method_leaks:
+  - "@layer"
+  - ":where("
+  - "--btn-"
+  - "btn--"

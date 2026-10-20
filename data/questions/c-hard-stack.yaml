@@ -27,3 +27,6 @@ hint_ladder:
   1: "Belleği büyütürken eski veriye ne oluyor?"
   2: "realloc başarısız olduğunda elinde hangi pointer kalıyor?"
   3: "Bu kavram 'geçici pointer ile güvenli realloc' olarak bilinir."
+method_leaks:
+  - "tmp"
+  - "geçici pointer"

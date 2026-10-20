@@ -28,3 +28,9 @@ hint_ladder:
   1: "Çöp toplayıcı, sizin dizinizde tutulan düşmanları 'kullanımda' olarak görebiliyor mu?"
   2: "Dalga boyutu baştan bilindiğine göre dizi eleman eklendikçe kaç kez büyüyor ve her büyümede ne oluyor?"
   3: "Bu kavramlar 'UPROPERTY ile GC kökü oluşturma' ve 'kapasiteyi önceden ayırma (Reserve)' olarak bilinir."
+method_leaks:
+  - "uproperty"
+  - "reserve"
+  - "tweakobjectptr"
+  - "tobjectptr"
+  - "isvalid"

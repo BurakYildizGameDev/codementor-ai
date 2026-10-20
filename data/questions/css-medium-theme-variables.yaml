@@ -24,3 +24,7 @@ hint_ladder:
   1: "Marka rengini değiştirmek istesen kaç dosyada kaç satırı düzenlemen gerekiyor?"
   2: "Kullanıcı açık temayı seçmiş ama işletim sistemi koyu temada; hangi kuralın kazanacağını ne belirliyor?"
   3: "Bu kavramlar 'CSS özel özellikleri (değişkenler)' ve 'prefers-color-scheme medya sorgusu' olarak bilinir."
+method_leaks:
+  - "prefers-color-scheme"
+  - "var(--"
+  - ":root"

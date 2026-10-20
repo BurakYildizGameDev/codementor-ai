@@ -20,3 +20,10 @@ hint_ladder:
   1: "Gözleri kapalı biri sayfanı dinleseydi, fotoğraf hakkında ne duyardı?"
   2: "Ekran okuyucu bir öğenin ne olduğunu hangi bilgilerden anlar: etiketinden mi, görünüşünden mi?"
   3: "Bu kavram 'anlamsal HTML ve alternatif metin' olarak bilinir; yardımcı teknolojiler yapıyı etiketlerden okur."
+method_leaks:
+  - "alt="
+  - "<main"
+  - "<header"
+  - "aria"
+  - "lang="
+  - "<img"

@@ -26,3 +26,8 @@ hint_ladder:
   1: "Transform'u doğrudan taşıdığında fizik motoru çarpışmayı ne zaman fark ediyor?"
   2: "Ekran 144 FPS'te, fizik saniyede 50 adımda çalışıyorsa tek seferlik bir tuş basışını fizik adımında okumak her basışı yakalar mı?"
   3: "Bu kavramlar 'fizik güncellemesiyle kare güncellemesinin ayrılması (FixedUpdate)' ve 'girdiyi karede okuyup fizik adımında uygulama' olarak bilinir."
+method_leaks:
+  - "fixedupdate"
+  - "moveposition"
+  - "addforce"
+  - "_jumprequested"

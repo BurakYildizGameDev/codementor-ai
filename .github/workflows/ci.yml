@@ -43,6 +43,8 @@ jobs:
           key: zig-${{ runner.os }}-${{ hashFiles('codementor.toml') }}
       - if: runner.os == 'Linux' && steps.zig-cache.outputs.cache-hit != 'true'
         run: uv run codementor toolchain install zig
+      - if: runner.os == 'Linux' && steps.zig-cache.outputs.cache-hit != 'true'
+        run: uv run python tools/prune_zig.py ~/.codementor/toolchain/zig
       # Lint ve tip kontrolü platformdan bağımsız; bir kez yeter
       - if: runner.os == 'Linux'
         run: uv run ruff check .
@@ -60,10 +62,14 @@ jobs:
         env:
           CODEMENTOR_REQUIRE_ROSLYN: "1"
           CODEMENTOR_REQUIRE_ZIG: "1"
-      # Windows runner'daki g++ (MinGW) ilk çağrıda 10 sn'yi aşıyor, clang++ MSVC hedefli;
-      # derleyici testleri Linux'ta koşar (PROGRESS "Sonraya")
+      # Windows runner'daki g++ (MinGW) ilk çağrıda soğuk başlangıç (antivirüs taraması) yaşar;
+      # clang için --target=x86_64-w64-mingw32 eklenmiştir.
       - if: runner.os == 'Windows'
-        run: uv run pytest -m "not live and not compiler"
+        shell: powershell
+        run: |
+          if (Get-Command g++ -ErrorAction SilentlyContinue) { & g++ --version }
+          if (Get-Command clang -ErrorAction SilentlyContinue) { & clang --version }
+          uv run pytest -m "not live and not compiler"
 
   # Windows masaüstü paketi (Faz 23): tek dosya exe + onedir zip artefakt olarak indirilir.
   # PR'larda derlenmez (birkaç dakika); main push'unda ve elle tetiklemede çalışır.

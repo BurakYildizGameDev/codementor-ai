@@ -27,3 +27,7 @@ hint_ladder:
   1: "const Matrix& alan bir fonksiyon içinde m(0, 0) değerini okuyabiliyor musun? Derleyici ne diyor?"
   2: "Aynı erişim fonksiyonunun hem okuma hem yazma için iki sürümü nasıl ayırt edilir?"
   3: "Bu kavramlar 'const doğruluğu' ve 'const aşırı yükleme' olarak bilinir."
+method_leaks:
+  - ") const"
+  - "const double& operator"
+  - "std::vector<double>"

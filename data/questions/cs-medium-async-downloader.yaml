@@ -28,3 +28,8 @@ hint_ladder:
   1: "Arayüz iş parçacığında .Result ile bir görevi beklerken, görevin devamı hangi iş parçacığında çalışmak istiyor?"
   2: "Yüz adres için yüz bağlantı nesnesi oluşturup atarsan işletim sistemindeki soketlere ne olur?"
   3: "Bu kavramlar 'senkron üzerinden asenkron kilitlenmesi (sync-over-async deadlock)' ve 'HttpClient yeniden kullanımı' olarak bilinir."
+method_leaks:
+  - "semaphoreslim"
+  - "cancellationtoken"
+  - "task.whenall"
+  - "configureawait"

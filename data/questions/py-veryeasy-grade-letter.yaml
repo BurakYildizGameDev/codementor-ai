@@ -25,3 +25,7 @@ hint_ladder:
   1: "Tam 80 puanla fonksiyonun hangi harfi döndürüyor? Tam 90 ile?"
   2: "Fonksiyona 105 ya da 'seksen' verildiğinde ne oluyor?"
   3: "Bu kavramlar 'sınır değer hatası' ve 'girdi doğrulama' olarak bilinir."
+method_leaks:
+  - ">= 90"
+  - "elif"
+  - "bisect"

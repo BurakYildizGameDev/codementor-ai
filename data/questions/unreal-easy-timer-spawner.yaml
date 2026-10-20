@@ -26,3 +26,8 @@ hint_ladder:
   1: "Yenileme noktası yok edildikten iki saniye sonra bekleyen işin çalışırsa hangi nesneye erişir?"
   2: "Her karede bir sayaç azaltmak yerine motora 'şu kadar saniye sonra beni çağır' demenin yolu var mı?"
   3: "Bu kavramlar 'zamanlayıcı yönetimi (FTimerHandle)' ve 'EndPlay'de kaynak temizleme' olarak bilinir."
+method_leaks:
+  - "settimer"
+  - "cleartimer"
+  - "ftimerhandle"
+  - "endplay"

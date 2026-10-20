@@ -24,3 +24,9 @@ hint_ladder:
   1: "Tarayıcı bir görselin boyutunu dosya inmeden önce bilmiyorsa, altındaki metni nereye yerleştirir? Dosya inince ne olur?"
   2: "Ekran okuyucu bir süs ayracına geldiğinde ne okumalı? Hiçbir şey belirtmezsen ne okur?"
   3: "Bu kavramlar 'düzen kayması (CLS) önleme', 'tembel yükleme' ve 'duyarlı görseller (srcset)' olarak bilinir."
+method_leaks:
+  - "loading="
+  - "alt=\"\""
+  - "<figure"
+  - "srcset"
+  - "width="

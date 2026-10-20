@@ -26,3 +26,8 @@ hint_ladder:
   1: "On bin müşteri ve bir milyon siparişte her müşteri için tüm siparişleri dolaşırsan kaç karşılaştırma yaparsın?"
   2: "Sipariş dizisini iki kez dolaştığında veritabanı sorgusu kaç kez çalışıyor?"
   3: "Bu kavramlar 'ertelenmiş yürütme (deferred execution)' ve 'tek geçişte gruplama' olarak bilinir."
+method_leaks:
+  - "groupby"
+  - "tolist"
+  - "todictionary"
+  - "dictionary<"

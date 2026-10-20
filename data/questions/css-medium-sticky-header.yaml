@@ -23,3 +23,7 @@ hint_ladder:
   1: "Bir bölüme bağlantıyla gittiğinde tarayıcı o bölümü ekranın en üstüne kaydırıyor; orada şu an ne var?"
   2: "Menünün z-index'i 1000 olduğu halde neden bir kod bloğunun altında kalıyor olabilir? Değerler hangi bağlam içinde karşılaştırılıyor?"
   3: "Bu kavramlar 'yapışkan konumlandırma', 'kaydırma kenar payı (scroll-margin)' ve 'yığın bağlamı (stacking context)' olarak bilinir."
+method_leaks:
+  - "position: sticky"
+  - "scroll-margin-top"
+  - "isolation"

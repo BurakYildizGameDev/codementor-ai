@@ -25,3 +25,8 @@ hint_ladder:
   1: "Oyun 120 FPS'te çalışırken her karede 1 derece dönen platform bir saniyede kaç derece döner? 30 FPS'te?"
   2: "Hızı 0 olan yüz platformun her karede çağrılan bir fonksiyonu var mı? Bunu açıp kapatan ayar hangisi?"
   3: "Bu kavram 'kare hızından bağımsız hareket (DeltaTime ile ölçekleme)' olarak bilinir."
+method_leaks:
+  - "deltatime"
+  - "addactorlocalrotation"
+  - "bcanevertick"
+  - "setactortickenabled"

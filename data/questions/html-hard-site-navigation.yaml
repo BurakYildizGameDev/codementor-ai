@@ -26,3 +26,8 @@ hint_ladder:
   1: "Klavyeyle gezinen biri her sayfa değiştirdiğinde içeriğe ulaşmak için kaç kez Tab'a basmak zorunda?"
   2: "Ekran okuyucu 'Burslar' bağlantısına geldiğinde bunun şu anki sayfa olduğunu nereden anlar? Renk yeterli mi?"
   3: "Bu kavramlar 'içeriğe atla bağlantısı (skip link)' ve 'aria-current ile bulunulan sayfa' olarak bilinir."
+method_leaks:
+  - "aria-current"
+  - "<nav"
+  - "#main"
+  - "<details"

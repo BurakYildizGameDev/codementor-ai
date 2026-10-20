@@ -23,3 +23,8 @@ hint_ladder:
   1: "Tarayıcı ayarlarından yazı boyutunu 'çok büyük' yaptığında 16px olarak verdiğin metin ne kadar büyüyor?"
   2: "27 inçlik bir ekranda tam genişlikte bir satırı okuyup bir sonrakinin başını bulmak ne kadar kolay?"
   3: "Bu kavramlar 'göreli yazı birimleri (rem/em)' ve 'satır uzunluğu (ölçü)' olarak bilinir."
+method_leaks:
+  - "65ch"
+  - "1.6"
+  - "max-width"
+  - "1.125rem"

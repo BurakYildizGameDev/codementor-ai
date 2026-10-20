@@ -26,3 +26,7 @@ hint_ladder:
   1: "Liste boşken toplamı eleman sayısına bölen satır ne yapıyor?"
   2: "Gün sayısını bulurken her gün için ortalamayı yeniden hesaplarsan liste uzunluğu iki katına çıkınca iş kaç katına çıkar?"
   3: "Bu kavramlar 'boş koleksiyon durumu' ve 'döngü dışına çıkarılabilen hesap (loop-invariant)' olarak bilinir."
+method_leaks:
+  - "if not values"
+  - "statistics"
+  - "fmean"

@@ -26,3 +26,7 @@ hint_ladder:
   1: "Bir vector'den ortadaki bir elemanı sildiğinde elindeki yineleyiciye ve ondan sonraki elemanlara ne olur?"
   2: "Yüz bin elemanı tek tek sildiğinde her silmede kaç eleman yer değiştiriyor? Silinecekleri tek geçişte ayırmak mümkün mü?"
   3: "Bu kavramlar 'yineleyici geçersizleşmesi' ve 'erase-remove deyimi' olarak bilinir."
+method_leaks:
+  - "remove_if"
+  - "erase_if"
+  - "erase-remove"

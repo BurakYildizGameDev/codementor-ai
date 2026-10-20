@@ -27,3 +27,7 @@ hint_ladder:
   1: "Bir Buffer kopyalandığında iki nesne aynı belleği mi paylaşıyor?"
   2: "Kopyalardan biri yok edildiğinde diğerinin gösterdiği bellek ne durumda kalıyor?"
   3: "Bu kavramlar 'Rule of Three/Five' ve kaynak yönetimini standart türlere bırakan 'Rule of Zero' olarak bilinir."
+method_leaks:
+  - "rule of"
+  - "unique_ptr"
+  - "std::vector<double>"

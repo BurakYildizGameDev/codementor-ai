@@ -18,6 +18,10 @@ constraints:
 expected:
   time: { per_operation: "1" }
   space: "1"
+sample_io:
+  - input: "10 + 5"
+    output: '15'
+    explanation: "10 ile 5 toplanır."
 concept_tags: [state-machine, input-validation, stdin, undefined-behavior]
 checklist_extra:
   - "Giriş fonksiyonunun dönüş değeri hiç kontrol ediliyor mu?"
@@ -28,3 +32,7 @@ hint_ladder:
   1: "Kullanıcı sayı yerine 'abc' yazdığında giriş fonksiyonu ne döndürüyor ve 'abc' nereye gidiyor?"
   2: "Okunamayan karakterler giriş tamponunda kalırsa bir sonraki okuma denemesi neyle karşılaşır?"
   3: "Bu kavramlar 'giriş fonksiyonunun dönüş değerini doğrulama' ve 'giriş tamponunu taşınabilir şekilde boşaltma' olarak bilinir."
+method_leaks:
+  - "fflush"
+  - "getchar"
+  - "while ((c"

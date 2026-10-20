@@ -90,6 +90,9 @@ def test_clang_only(tmp_path: Path, dll: Path) -> None:
     assert chain.c.kind == "clang"
     assert chain.cpp is not None
     assert chain.cpp.name == "clang++"
+    if os.name == "nt":
+        assert "--target=x86_64-w64-mingw32" in chain.c.command
+        assert "--target=x86_64-w64-mingw32" in chain.cpp.command
 
 
 def test_roslyn_needs_dotnet_and_dll(tmp_path: Path, dll: Path) -> None:

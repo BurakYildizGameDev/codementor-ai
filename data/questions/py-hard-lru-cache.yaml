@@ -27,3 +27,8 @@ hint_ladder:
   1: "Kullanım sırasını bir listede tutup her get'te anahtarı listede arayıp taşırsan, n anahtarda bu kaç adım sürer?"
   2: "Hem anahtarla doğrudan erişim hem de sıralı ekleme/çıkarma veren bir yapı nasıl kurulabilir?"
   3: "Bu kavram 'LRU önbelleği (karma tablo + çift yönlü bağlı liste)' olarak bilinir."
+method_leaks:
+  - "ordereddict"
+  - "move_to_end"
+  - "popitem"
+  - "bağlı liste"

@@ -24,3 +24,8 @@ hint_ladder:
   1: "Ekran okuyucu Çarşamba 10.00 hücresine geldiğinde 'Fizik' dışında ne söylemeli? Bu bilgiyi nereden alır?"
   2: "Başlık hücresinin satıra mı sütuna mı ait olduğunu tarayıcıya nasıl söylersin?"
   3: "Bu kavramlar 'erişilebilir veri tablosu (th, scope, caption)' olarak bilinir."
+method_leaks:
+  - "scope="
+  - "<caption"
+  - "<thead"
+  - "rowspan"

@@ -22,3 +22,8 @@ hint_ladder:
   1: "Ekran okuyucu sayfadaki tüm bağlantıları bir liste olarak okursa, beş kez 'buraya tıklayın' duyan biri neyi seçeceğini nasıl bilir?"
   2: "Yeni sekmede açılan bir site, açılan pencere üzerinden seni açan sayfaya ne yapabilir?"
   3: "Bu kavramlar 'anlamlı bağlantı metni' ve 'rel=noopener ile sekme ilişkisini açıkça kesme' (güncel tarayıcılar bunu varsayılan yapar) olarak bilinir."
+method_leaks:
+  - "noopener"
+  - "rel="
+  - "download"
+  - "target="

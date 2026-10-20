@@ -13,6 +13,7 @@ Süre aşımı ya da işçi hatası **error** tanısına çevrilir: politika ana
 from __future__ import annotations
 
 import sys
+import threading
 
 from pydantic import ValidationError
 
@@ -44,6 +45,26 @@ FAILURE_MESSAGE = (
 
 log = get_logger("codementor.tier0")
 _frozen_warned = False  # exe uyarısı her analizde değil, bir kez
+_global_pool: object | None = None
+_pool_lock = threading.Lock()
+
+
+def get_tier0_pool(max_workers: int = 1) -> object:
+    global _global_pool
+    with _pool_lock:
+        if _global_pool is None:
+            from codementor.validation.tier0_pool import Tier0WorkerPool
+
+            _global_pool = Tier0WorkerPool(max_workers=max_workers)
+        return _global_pool
+
+
+def close_tier0_pool() -> None:
+    global _global_pool
+    with _pool_lock:
+        if _global_pool is not None and hasattr(_global_pool, "close"):
+            _global_pool.close()
+            _global_pool = None
 
 
 def is_frozen() -> bool:
@@ -57,7 +78,7 @@ def worker_argv() -> list[str]:
 
 
 def check_syntax(code: NormalizedCode, settings: ValidationSettings) -> Tier0Result:
-    """Tier 0: yalıtım açıksa alt süreçte, değilse süreç içinde `run_tier0`."""
+    """Tier 0: yalıtım açıksa alt süreçte (veya sıcak havuzda), değilse süreç içinde `run_tier0`."""
     if not settings.tier0_isolation:
         return run_tier0(code)
     if is_frozen():
@@ -66,6 +87,12 @@ def check_syntax(code: NormalizedCode, settings: ValidationSettings) -> Tier0Res
             log.warning("tier0_isolation_unsupported", reason="frozen")
             _frozen_warned = True
         return run_tier0(code)
+    if settings.tier0_warm_workers > 0:
+        pool = get_tier0_pool(settings.tier0_warm_workers)
+        from codementor.validation.tier0_pool import Tier0WorkerPool
+
+        assert isinstance(pool, Tier0WorkerPool)
+        return pool.check_syntax(code, settings.tier0_timeout_s)
     limits = ProcessLimits(timeout_s=settings.tier0_timeout_s, memory_mb=settings.tier0_memory_mb)
     result = run_process(worker_argv(), code.model_dump_json(), limits)
     return _parse(result, settings.tier0_timeout_s)

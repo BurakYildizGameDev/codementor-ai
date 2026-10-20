@@ -22,3 +22,8 @@ hint_ladder:
   1: "Ekran okuyucu kullanan biri sayfadaki başlıklar listesini açtığında hangi yapıyı görür?"
   2: "Malzemelerin sırası önemli mi? Peki yapılış adımlarının? Bu farkı HTML'de nasıl anlatırsın?"
   3: "Bu kavramlar 'başlık hiyerarşisi' ve 'sıralı/sırasız liste anlamı' olarak bilinir."
+method_leaks:
+  - "<ol"
+  - "<ul"
+  - "<h2"
+  - "<time"

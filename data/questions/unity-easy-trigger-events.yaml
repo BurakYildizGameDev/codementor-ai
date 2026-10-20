@@ -28,3 +28,9 @@ hint_ladder:
   1: "Kapı nesnesi yok edildikten sonra bölge tekrar tetiklenirse ne olur?"
   2: "Bir nesne bildirimleri dinlemeye başladığında, dinlemeyi ne zaman ve nerede bırakması gerekir?"
   3: "Bu kavramlar 'aboneliği nesnenin yaşam döngüsüyle eşleştirme' ve 'sarkan dinleyici (lapsed listener)' olarak bilinir."
+method_leaks:
+  - "ondisable"
+  - "ondestroy"
+  - "-="
+  - "action"
+  - "unityevent"

@@ -23,3 +23,8 @@ hint_ladder:
   1: "Fare kullanmayan biri sayfada Tab'a bastığında hangi düğmenin seçili olduğunu nasıl anlıyor?"
   2: "Açık gri zemin üzerindeki beyaz metni güneş altında telefondan okuyabilir misin? Bunu ölçmenin bir yolu var mı?"
   3: "Bu kavramlar 'görünür odak göstergesi' ve 'renk kontrast oranı' olarak bilinir."
+method_leaks:
+  - ":focus-visible"
+  - ":hover"
+  - ":disabled"
+  - "outline-offset"

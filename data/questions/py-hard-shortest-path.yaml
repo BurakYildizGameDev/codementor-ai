@@ -27,3 +27,8 @@ hint_ladder:
   1: "Yüz bin elemanlı bir listenin başından eleman çıkarmak kaç elemanın kaymasına yol açar?"
   2: "Bir istasyona ilk ulaştığında oraya nereden geldiğini kaydedersen, rotayı sonunda nasıl kurarsın?"
   3: "Bu kavramlar 'genişlik öncelikli arama (BFS)' ve 'çift uçlu kuyruk (deque)' olarak bilinir."
+method_leaks:
+  - "deque"
+  - "popleft"
+  - "bfs"
+  - "came_from"

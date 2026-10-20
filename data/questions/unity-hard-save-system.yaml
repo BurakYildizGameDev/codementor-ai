@@ -30,3 +30,9 @@ hint_ladder:
   1: "Oyun dosyanın yarısını yazmışken kapanırsa diskte ne kalır? Bir sonraki açılışta ne olur?"
   2: "Unity API'lerinin hangileri ana iş parçacığı dışından çağrılamaz; veriyi hazırlamakla diske yazmayı ayırabilir misin?"
   3: "Bu kavramlar 'atomik dosya değiştirme (geçici dosyaya yazıp yeniden adlandırma)' ve 'sürümlü, savunmacı serileştirme' olarak bilinir."
+method_leaks:
+  - "persistentdatapath"
+  - "file.replace"
+  - ".tmp"
+  - "jsonutility"
+  - "task.run"

@@ -17,6 +17,10 @@ constraints:
 expected:
   time: { build_report: "n" }
   space: "n"
+sample_io:
+  - input: "n = 5"
+    output: '["1", "2", "Fizz", "4", "Buzz"]'
+    explanation: "1-5 arası FizzBuzz."
 concept_tags: [string-building, allocation, gc]
 checklist_extra:
   - "Döngünün her turunda kaç yeni string nesnesi oluşuyor?"
@@ -26,3 +30,7 @@ hint_ladder:
   1: "Döngünün her turunda sonuç metnine ekleme yaptığınızda bellekte ne oluşuyor?"
   2: "C#'ta string'ler değiştirilemez (immutable) ise, her eklemede önceki içeriğe ne oluyor? Toplam kopyalama miktarı n ile nasıl büyür?"
   3: "Bu kavramlar 'değiştirilemez metin birleştirmenin karesel maliyeti' ve 'değiştirilebilir metin tamponu' olarak bilinir."
+method_leaks:
+  - "stringbuilder"
+  - "string.join"
+  - "string.concat"

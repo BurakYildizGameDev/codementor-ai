@@ -24,3 +24,8 @@ hint_ladder:
   1: "Ekran 1000 pikselden 999 piksele inerken kaç kural değişiyor? 7 kart ya da 13 kart olunca ne oluyor?"
   2: "'Süperkalifragilistikekspialidozus' gibi tek kelimelik bir ürün adı dar bir kartta nereye sığar?"
   3: "Bu kavramlar 'kendiliğinden sığan ızgara (auto-fill ve minmax)' ve 'uzun kelimeleri kırma' olarak bilinir."
+method_leaks:
+  - "auto-fill"
+  - "minmax"
+  - "overflow-wrap"
+  - "object-fit"

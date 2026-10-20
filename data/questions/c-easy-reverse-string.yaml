@@ -16,6 +16,10 @@ constraints:
 expected:
   time: { reverse: "n" }
   space: "1"
+sample_io:
+  - input: "merhaba"
+    output: 'abahrem'
+    explanation: "Metin ters çevrilir."
 concept_tags: [strings, loop-invariant, performance, edge-cases]
 checklist_extra:
   - "Döngü koşulunda her yinelemede metnin uzunluğu yeniden mi hesaplanıyor?"
@@ -26,3 +30,5 @@ hint_ladder:
   1: "Döngünüz her tur başında hangi değeri yeniden hesaplıyor ve bunun maliyeti ne?"
   2: "Döngü boyunca metnin uzunluğu değişiyor mu? Değişmiyorsa onu kaç kez hesaplamak gerekir?"
   3: "Bu kavram 'döngüde değişmeyen ifadeyi döngü dışına alma' (loop-invariant code motion) olarak bilinir."
+method_leaks:
+  - "strlen"

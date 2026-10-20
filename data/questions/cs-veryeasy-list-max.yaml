@@ -26,3 +26,8 @@ hint_ladder:
   1: "Liste boşken metodunun ilk satırı ne yapıyor?"
   2: "Tüm puanlar negatifken 'şimdiye kadarki en iyi' değişkeni hangi değerle başlıyor?"
   3: "Bu kavramlar 'boş koleksiyon durumu' ve 'yanlış nöbetçi başlangıç değeri' olarak bilinir."
+method_leaks:
+  - "players[0]"
+  - "maxby"
+  - "orderbydescending"
+  - "count == 0"

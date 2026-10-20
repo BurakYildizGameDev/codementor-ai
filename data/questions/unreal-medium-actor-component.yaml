@@ -26,3 +26,7 @@ hint_ladder:
   1: "Canı dolu 300 aktörün bileşeni her karede ne yapıyor?"
   2: "Bir bileşenin her kare güncellenmesi ne zaman gerekli, ne zaman değil? Bunu kim kontrol ediyor?"
   3: "Bu kavramlar 'Tick'i koşula bağlı açıp kapatma' ve 'zamanlayıcı tabanlı güncelleme' olarak bilinir."
+method_leaks:
+  - "bcanevertick"
+  - "setcomponenttickenabled"
+  - "timer"

@@ -21,3 +21,9 @@ hint_ladder:
   1: "Ekran daraldığında kartlarının genişliğini hangi kural belirliyor?"
   2: "Bir kuralın diğerini ezmesi için !important dışında hangi yolların var?"
   3: "Bu kavram 'duyarlı tasarım ve medya sorguları' olarak bilinir; düzen ekran genişliğine göre değişir."
+method_leaks:
+  - "flex"
+  - "grid"
+  - "@media"
+  - "focus-visible"
+  - "minmax"

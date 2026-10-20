@@ -27,3 +27,8 @@ hint_ladder:
   1: "Bağladığın fonksiyon hiç çağrılmıyorsa, motor o fonksiyonun adını nereden öğreniyor?"
   2: "Oyuncu aynı karede iki kez çarpışma bildirimi üretirse paketin canı kaç kez veriliyor?"
   3: "Bu kavramlar 'dinamik delege bağlama (AddDynamic + UFUNCTION)' ve 'tek seferlik etkileşim koruması' olarak bilinir."
+method_leaks:
+  - "adddynamic"
+  - "ufunction()"
+  - "bcollected"
+  - "cast<"

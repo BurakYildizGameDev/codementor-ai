@@ -108,16 +108,28 @@ def test_reference_paths_point_to_private(bank: QuestionBank) -> None:
         assert q.reference_solution_path == f"private/solutions/{q.id}{extensions[q.language]}"
 
 
-@pytest.mark.parametrize("question_id", sorted(METHOD_LEAKS))
+@pytest.mark.parametrize("question_id", sorted(MATRIX))
 def test_prompts_do_not_reveal_method(bank: QuestionBank, question_id: str) -> None:
     q = bank.get(question_id)
     text = " ".join([q.title, q.prompt, *q.constraints]).lower()
-    for term in METHOD_LEAKS[question_id]:
+    assert q.method_leaks, f"{question_id}: soru verisinde method_leaks tanımlı olmalı"
+    for term in q.method_leaks:
         assert term.lower() not in text, f"{question_id}: '{term}' yöntemi ele veriyor"
 
 
-def test_leak_table_covers_all_questions() -> None:
+def test_leak_table_covers_all_questions(bank: QuestionBank) -> None:
     assert set(METHOD_LEAKS) == set(MATRIX)
+    for q in bank:
+        assert len(q.method_leaks) >= 1, f"{q.id} method_leaks boş olamaz"
+
+
+def test_sample_io_structure_and_coverage(bank: QuestionBank) -> None:
+    with_samples = [q for q in bank if q.sample_io]
+    assert len(with_samples) >= 6, "En az 6 soruda sample_io tanımlı olmalı"
+    for q in with_samples:
+        for s in q.sample_io:
+            assert s.input.strip(), f"{q.id}: örnek girdi boş olamaz"
+            assert s.output.strip(), f"{q.id}: örnek çıktı boş olamaz"
 
 
 def test_reference_solution_uses_hidden_method(bank: QuestionBank) -> None:
@@ -133,7 +145,8 @@ def test_reference_solution_uses_hidden_method(bank: QuestionBank) -> None:
         if not path.is_file():
             continue
         solution = path.read_text(encoding="utf-8").lower()
-        assert any(term.lower() in solution for term in METHOD_LEAKS[q.id]), q.id
+        terms = q.method_leaks or METHOD_LEAKS[q.id]
+        assert any(term.lower() in solution for term in terms), q.id
         checked += 1
     if checked == 0:
         pytest.skip("private/solutions yok (CI)")

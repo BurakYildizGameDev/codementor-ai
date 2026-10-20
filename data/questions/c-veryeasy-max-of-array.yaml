@@ -26,3 +26,8 @@ hint_ladder:
   1: "Girilen sayıların hepsi -5 ile -1 arasındaysa en büyük değer değişkeni hangi değerle başlıyor ve sonunda ne yazdırıyor?"
   2: "Döngünün son turunda hangi indekse erişiyorsun; dizinin son geçerli indeksi hangisi?"
   3: "Bu kavramlar 'hatalı başlangıç değeri' ve 'bir fazla hata (off-by-one)' olarak bilinir."
+method_leaks:
+  - "values[0]"
+  - "int_min"
+  - "int_max"
+  - "ilk eleman"

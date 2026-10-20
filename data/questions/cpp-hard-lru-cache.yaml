@@ -27,3 +27,8 @@ hint_ladder:
   1: "Bir öğenin kullanım sırasını güncellediğinizde, onu bulmak için sakladığınız bilgiye ne oluyor?"
   2: "Kapsayıcıda bir eleman silindiğinde veya taşındığında hangi iterator'lar geçerliliğini yitirir?"
   3: "Bu kavram 'iterator geçersizleşmesi (iterator invalidation)' olarak bilinir; her kapsayıcının bu konudaki garantisi farklıdır."
+method_leaks:
+  - "unordered_map"
+  - "std::list"
+  - "splice"
+  - "bağlı liste"

@@ -26,3 +26,8 @@ hint_ladder:
   1: "Yüz taret her karede sahnedeki tüm nesneleri ararsa saniyede kaç arama yapılır?"
   2: "Düşmanlar doğduğunda ve yok olduğunda bunu taretlere haber veren bir liste tutulabilir mi?"
   3: "Bu kavramlar 'nesne referanslarını önbelleğe alma' ve 'kayıt listesi (registry) deseni' olarak bilinir."
+method_leaks:
+  - "sqrmagnitude"
+  - "registry"
+  - "comparetag"
+  - "static readonly list"

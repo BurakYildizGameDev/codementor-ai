@@ -26,3 +26,7 @@ hint_ladder:
   1: "Oyun 144 FPS'te çalışırken Update saniyede kaç kez çağrılıyor ve nesne o bir saniyede kaç derece dönüyor?"
   2: "Konuma her karede küçük bir değer eklersen, kayan nokta hataları saatler sonra ne yapar?"
   3: "Bu kavram 'kare hızından bağımsız hareket (deltaTime ile ölçekleme)' olarak bilinir."
+method_leaks:
+  - "time.deltatime"
+  - "mathf.sin"
+  - "_startposition"

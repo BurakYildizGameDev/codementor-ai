@@ -26,3 +26,8 @@ hint_ladder:
   1: "Nesne devre dışı bırakılıp yeniden etkinleştirildiğinde kaç tane çıkarma döngün çalışıyor?"
   2: "Döngünün her turunda bekleme için oluşturduğun nesne çöp toplayıcıya ne kadar iş bırakıyor?"
   3: "Bu kavramlar 'eşyordam (coroutine) yaşam döngüsü' ve 'bekleme nesnesini önbelleğe alma' olarak bilinir."
+method_leaks:
+  - "stopcoroutine"
+  - "waitforseconds"
+  - "ondisable"
+  - "startcoroutine"

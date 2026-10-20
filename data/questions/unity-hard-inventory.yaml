@@ -26,3 +26,8 @@ hint_ladder:
   1: "Oyun modundan çıktığınızda envanter asset'inin içeriğine ne oluyor?"
   2: "UI'ı güncelleyen kod hangi sıklıkla çalışıyor ve her seferinde ne oluşturuyor?"
   3: "Bu kavramlar 'SO verisinin çalışma zamanı kopyası' ve 'olay güdümlü UI güncellemesi' olarak bilinir."
+method_leaks:
+  - "hashset"
+  - "dictionary"
+  - "instantiate("
+  - "event"

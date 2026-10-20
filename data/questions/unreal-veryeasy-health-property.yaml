@@ -27,3 +27,8 @@ hint_ladder:
   1: "Canı 10 olan düşmana 25 hasar verilirse can kaç olur? Sonra 5 iyileşme gelirse düşman diriliyor mu?"
   2: "Aynı karede iki mermi ölü düşmana çarparsa ölüm olayın kaç kez tetikleniyor?"
   3: "Bu kavramlar 'değeri sınırlama (clamp)' ve 'tek seferlik durum geçişi' olarak bilinir."
+method_leaks:
+  - "fmath::clamp"
+  - "editanywhere"
+  - "blueprintreadonly"
+  - "bisdead"

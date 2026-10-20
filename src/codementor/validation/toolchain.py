@@ -66,7 +66,10 @@ def _first(names: tuple[str, ...], path: str) -> CompilerTool | None:
     for name in names:
         exe = _which(name, path)
         if exe:
-            return CompilerTool(name=name, kind=_KIND[name], command=[exe])
+            command = [exe]
+            if os.name == "nt" and _KIND[name] == "clang":
+                command.append("--target=x86_64-w64-mingw32")
+            return CompilerTool(name=name, kind=_KIND[name], command=command)
     return None
 
 

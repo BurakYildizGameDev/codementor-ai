@@ -29,3 +29,8 @@ hint_ladder:
   1: "Kapatılan bir pencere abonelikten çıkmayı unutursa onu bellekte kim tutuyor?"
   2: "Bir işleyici çalışırken başka bir iş parçacığı aynı listeye abone eklerse foreach ne yapar?"
   3: "Bu kavramlar 'olay aboneliği kaynaklı bellek sızıntısı', 'zayıf referans (WeakReference)' ve 'anlık görüntü üzerinde yayın' olarak bilinir."
+method_leaks:
+  - "weakreference"
+  - "conditionalweaktable"
+  - "toarray"
+  - "idisposable"

@@ -34,7 +34,7 @@ REFERENCE_ROOT = "private"
 HINT_LEVELS = (1, 2, 3)
 
 # Mentorluk motoruna ait, öğrenciye/API'ye verilmeyen alanlar (Question'da, QuestionPublic'te yok)
-MENTOR_FIELDS = frozenset({"concept_tags", "checklist_extra", "hint_ladder"})
+MENTOR_FIELDS = frozenset({"concept_tags", "checklist_extra", "hint_ladder", "method_leaks"})
 
 
 def _check_bigo(value: str) -> str:
@@ -63,6 +63,14 @@ class ExpectedComplexity(StrictModel):
     space: BigOText
 
 
+class SampleIO(StrictModel):
+    """Problem için örnek girdi ve beklenen çıktı (öğrencinin problemi anlaması için)."""
+
+    input: str = Field(description="Örnek girdi (stdin veya argüman temsili)")
+    output: str = Field(description="Örnek çıktı (stdout veya dönüş değeri temsili)")
+    explanation: str | None = Field(default=None, description="İsteğe bağlı açıklama")
+
+
 class QuestionPublic(StrictModel):
     """Öğrenciye (API, CLI) verilen soru: yalnızca problem tanımı.
 
@@ -79,6 +87,9 @@ class QuestionPublic(StrictModel):
     title: NonEmptyText = Field(max_length=120)
     prompt: NonEmptyText
     constraints: list[NonEmptyText] = Field(min_length=1)
+    sample_io: list[SampleIO] = Field(
+        default_factory=list, description="Örnek girdi/çıktı listesi (öğrenciye gösterilir)"
+    )
     expected: ExpectedComplexity | None = Field(
         default=None,
         description="Hedef karmaşıklık; HTML/CSS görevlerinde ve isteğe bağlı olarak kullanıcı "
@@ -108,6 +119,10 @@ class Question(QuestionPublic):
     hint_ladder: dict[int, str]
     reference_solution_path: str | None = Field(
         default=None, description="Yalnızca K5 sızıntı korumasında okunur; asla dışarı verilmez"
+    )
+    method_leaks: list[str] = Field(
+        default_factory=list,
+        description="Çözüm yöntemini ele veren terimler (prompt veya kısıtlarda bulunmamalı)",
     )
 
     @field_validator("hint_ladder")
@@ -235,6 +250,7 @@ class UserQuestionDraft(StrictModel):
     constraints: Annotated[list[ShortUserText], BeforeValidator(_clean_lines)] = Field(
         default_factory=list, max_length=MAX_USER_ITEMS
     )
+    sample_io: list[SampleIO] = Field(default_factory=list, max_length=MAX_USER_ITEMS)
     expected_time: OptionalBigO = None
     expected_space: OptionalBigO = None
     concept_tags: Annotated[list[Tag], BeforeValidator(_clean_lines)] = Field(
@@ -275,11 +291,13 @@ class UserQuestionDraft(StrictModel):
             title=self.title,
             prompt=self.prompt,
             constraints=self.constraints or [DEFAULT_USER_CONSTRAINT],
+            sample_io=self.sample_io,
             expected=expected,
             origin="user",
             concept_tags=list(dict.fromkeys(self.concept_tags)) or [DEFAULT_USER_TAG],
             hint_ladder=dict(zip(HINT_LEVELS, hints, strict=True)),
             reference_solution_path=None,
+            method_leaks=[],
         )
 
     @classmethod

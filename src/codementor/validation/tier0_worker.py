@@ -18,7 +18,23 @@ def main() -> int:
 
     Akışlar bayt olarak UTF-8 okunur/yazılır: Windows'ta borunun metin kodlaması yerel kod
     sayfasıdır ve Türkçe tanılar bozulurdu (`runner` UTF-8 gönderir ve çözer).
+    `--pool` / `--loop`: havuz modunda stdin'den satır satır JSON okur ve stdout'a
+    satır satır JSON yazar.
     """
+    if "--pool" in sys.argv[1:] or "--loop" in sys.argv[1:]:
+        while True:
+            line = sys.stdin.buffer.readline()
+            if not line:
+                break
+            text = line.decode("utf-8").strip()
+            if not text:
+                continue
+            code = NormalizedCode.model_validate_json(text)
+            out = run_tier0(code).model_dump_json().encode("utf-8") + b"\n"
+            sys.stdout.buffer.write(out)
+            sys.stdout.buffer.flush()
+        return 0
+
     code = NormalizedCode.model_validate_json(sys.stdin.buffer.read().decode("utf-8"))
     sys.stdout.buffer.write(run_tier0(code).model_dump_json().encode("utf-8"))
     sys.stdout.buffer.flush()

@@ -27,3 +27,8 @@ hint_ladder:
   1: "Dört gigabaytlık bir dosyayı readlines() ile okursan program ne kadar bellek kullanır?"
   2: "Okuma 3 milyonuncu satırda hata verirse, açtığın dosyayı hangi satır kapatıyor?"
   3: "Bu kavramlar 'akış halinde (satır satır) okuma' ve 'bağlam yöneticisi (with) ile kaynak yönetimi' olarak bilinir."
+method_leaks:
+  - "with open"
+  - "errors="
+  - "most_common"
+  - "counter"

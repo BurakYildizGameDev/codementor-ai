@@ -26,3 +26,8 @@ hint_ladder:
   1: "Pencere açıkken Tab tuşuna art arda basan bir kullanıcı sonunda nereye ulaşıyor?"
   2: "Tarayıcının pencere davranışını (odak, Esc, arka planı etkisizleştirme) hazır veren bir öğesi var mı?"
   3: "Bu kavramlar 'kalıcı (modal) diyalog' ve 'odak yönetimi' olarak bilinir."
+method_leaks:
+  - "<dialog"
+  - "showmodal"
+  - "aria-labelledby"
+  - "method=\"dialog\""

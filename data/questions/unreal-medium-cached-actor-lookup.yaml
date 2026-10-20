@@ -26,3 +26,8 @@ hint_ladder:
   1: "Sahnede 2000 aktör varken her karede tüm aktörleri sınıfına göre ararsan saniyede kaç aktöre bakarsın?"
   2: "Etkileşimli nesneler doğduklarında ve yok olduklarında kendilerini bir listeye ekleyip çıkarabilir mi?"
   3: "Bu kavramlar 'kayıt listesi (registry)' ve 'zayıf nesne işaretçisi (TWeakObjectPtr)' olarak bilinir."
+method_leaks:
+  - "getallactorsofclass"
+  - "tweakobjectptr"
+  - "registry"
+  - "sizesquared"

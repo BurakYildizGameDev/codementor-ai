@@ -14,6 +14,10 @@ constraints:
 expected:
   time: { word_count: "n" }
   space: "n"
+sample_io:
+  - input: "elma armut elma"
+    output: "{\"elma\": 2, \"armut\": 1}"
+    explanation: "Kelimeler sayılır."
 concept_tags: [hashing, strings, performance, edge-cases]
 checklist_extra:
   - "Her kelime için listede arama yapılıyor mu, yoksa sözlükle sabit sürede mi sayılıyor?"
@@ -23,3 +27,8 @@ hint_ladder:
   1: "Bir kelimeyi daha önce gördüğünü anlamak için her seferinde ne kadar iş yapıyorsun?"
   2: "Kelimeleri tuttuğun yapıda arama yapmak, yapı büyüdükçe nasıl yavaşlıyor?"
   3: "Bu kavram 'karma tablosu ile sabit sürede arama' olarak bilinir; Python'da dict bunu sağlar."
+method_leaks:
+  - "counter"
+  - "defaultdict"
+  - "karma"
+  - "hash"

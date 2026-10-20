@@ -25,3 +25,8 @@ hint_ladder:
   1: "Bir milyon kelimede sonucu her adımda 'yeni kelime + eski sonuç' diye kurarsan toplam kaç karakter kopyalanır?"
   2: "Döngüde bir kelimeyi dolaşırken o kelimenin kendisini mi, bir kopyasını mı kullanıyorsun?"
   3: "Bu kavramlar 'gereksiz kopyalar' ve 'başa ekleyerek dizgi kurmanın karesel maliyeti' olarak bilinir."
+method_leaks:
+  - "rbegin"
+  - "std::istringstream"
+  - "const auto&"
+  - "reverse("

@@ -24,3 +24,8 @@ hint_ladder:
   1: "Bir kartın genişliğini her karede değiştirdiğinde tarayıcı yanındaki kartlar için ne yapmak zorunda kalıyor?"
   2: "Hangi özellikler değiştiğinde tarayıcı yalnızca hazır katmanı taşıyıp bileştirebilir?"
   3: "Bu kavramlar 'bileştirici (compositor) dostu animasyon (transform, opacity)' ve 'prefers-reduced-motion' olarak bilinir."
+method_leaks:
+  - "transform"
+  - "opacity"
+  - "prefers-reduced-motion"
+  - "will-change"
