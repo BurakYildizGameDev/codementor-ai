@@ -21,7 +21,7 @@ import time
 from collections.abc import Callable
 
 import pytest
-from hypothesis import given
+from hypothesis import example, given
 from hypothesis import settings as hyp_settings
 from hypothesis import strategies as st
 
@@ -250,6 +250,10 @@ def test_comment_stripping_matches_legacy_pattern(code: str) -> None:
 
 
 @given(st.text(alphabet=st.sampled_from(list("ab(){}/*\"'\\@\n ;1_=.")), max_size=120))
+# Kapanmayan `/*`'tan sonraki yorum/metin de silinir (hypothesis'in bulduğu karşı örnek)
+@example("/*//")
+@example("/*a // b\nc")
+@example("/* 'x' /*")
 @hyp_settings(deadline=None)
 def test_comment_stripping_matches_legacy_pattern_on_random_text(code: str) -> None:
     assert strip_comments_and_strings(code) == _LEGACY_COMMENTS_STRINGS.sub(" ", code)

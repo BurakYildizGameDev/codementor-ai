@@ -154,6 +154,15 @@ sahte çalıştırıcı) — eski kodla bu makinede **WinError 32** ile kırmız
 - `desktop/bridge.py:165` **değişmedi:** beklenmeyen hata ayrıntısı kullanıcının kendi makinesindeki yerel
   log'a yazılıyor (kod zaten o kullanıcının, sırlar `register_secret` ile maskeli); hata ayıklama değeri ağır basıyor.
 
+**Tam test sırasında bulunan — `verify/leak_guard.strip_comments_and_strings`:** hypothesis eşdeğerlik testi
+(`test_comment_stripping_matches_legacy_pattern_on_random_text`) `"/*//"` karşı örneğini buldu: tarayıcı
+kapanmayan `/*` görünce metnin **geri kalanını aynen** bırakıyordu; eski desen o konumda eşleşmeyip sonraki
+karakterden sürdüğü için `//…` yorumu ve metin sabitleri yine siliniyordu. Sonuç: referans çözümde kapanmayan
+`/*`'tan sonraki yorum/metindeki Türkçe sözcükler tanımlayıcı sayılabiliyordu (sızıntı korumasında yanlış
+pozitif). Düzeltme: o konumda yalnız `/` yazılıp ilerleniyor; "bundan sonra `*/` yok" bilgisi saklandığı için
+tarama doğrusal kalıyor (`/*a` × 13 000 bütçe testi geçiyor). Karşı örnek ve iki benzeri `@example` olarak
+sabitlendi; eski kodla kırmızı.
+
 ## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
 
 **Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken

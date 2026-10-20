@@ -141,6 +141,7 @@ def strip_comments_and_strings(code: str) -> str:
     doubles, singles = _body_closers(code)
     out: list[str] = []
     i, n = 0, len(code)
+    block_closes = True  # bu konumdan sonra `*/` var mı; bir kez yoksa hiç yoktur (doğrusal)
     while i < n:
         c = code[i]
         if c == "/" and code[i + 1 : i + 2] in _COMMENT_OPEN:
@@ -148,10 +149,15 @@ def strip_comments_and_strings(code: str) -> str:
                 end = code.find("\n", i)
                 i = n if end < 0 else end
             else:
-                close = code.find("*/", i + 2)
-                if close < 0:  # kapanmayan blok yorum: geri kalan metin aynen kalır
-                    out.append(code[i:])
-                    break
+                close = code.find("*/", i + 2) if block_closes else -1
+                if close < 0:
+                    # Kapanmayan blok yorum: desen bu konumda eşleşmez ve bir sonraki karakterden
+                    # sürer (`/*//x` içindeki `//x` yine yorumdur; eskiden geri kalanı aynen
+                    # bırakılıyordu — hypothesis eşdeğerlik testi yakaladı)
+                    block_closes = False
+                    out.append(c)
+                    i += 1
+                    continue
                 i = close + 2
             out.append(" ")
         elif c in "\"'" or (c == "@" and code[i + 1 : i + 2] == '"'):
