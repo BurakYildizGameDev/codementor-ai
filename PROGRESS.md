@@ -125,7 +125,7 @@ platform varsayımlarını yakaladı (ürün kodu değişmedi):
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-23 kapandı;
+- ~~**Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-23 kapandı;
   iş sırası `KALAN_ISLER.md` 14-23):**
   - ~~Yüksek: `validation/tier0_pool.py` sıcak işçileri düz `Popen` (bellek/ortam/cwd sınırı yok,
     işçi sayısı sınırsız, tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, mesajlar şablonla
@@ -144,7 +144,7 @@ platform varsayımlarını yakaladı (ürün kodu değişmedi):
   - ~~Düşük (iş 21): `RateLimiter._records` sınırsız, `mimari.md:1126` hız sınırı çelişkisi,
     `sessions.updated_at` NULL budanmıyor, `PruneReport` models/ dışında~~ → **KAPANDI (iş 21)**; ayrıca
     `root_path` arkasında API anahtarı atlanması bulundu ve kapandı.
-    (README/ZAYIF satır sayısı testleri artık toleranslı → iş 23 kapandı.)
+    (README/ZAYIF satır sayısı testleri artık toleranslı → iş 23 kapandı.)~~ → **KAPANDI (2026-10-20): tüm alt maddeler kapandı (iş 14-23).**
 - ~~**Zamanlama testleri kırılgan (iş 3 derin doğrulamasından çıktı, 2026-10-18)**~~ → **KAPANDI (iş 4b,
   2026-10-18):** eşik değişmedi (1,5 sn, ADR-0024); ölçüm ısınma + 3 koşunun en hızlısına çevrildi ve
   yanına **göreli büyüme** testleri eklendi (2× girdi ≤ 3× süre). Kasıtlı karesel yavaşlatma O1'i
@@ -170,10 +170,10 @@ platform varsayımlarını yakaladı (ürün kodu değişmedi):
 - ~~**`providers/cli_agent.py` 420 satır (kapanış denetimi, 2026-10-16)**~~ → **KAPANDI (G8,
   `0472603`, kullanıcı talimatı)**: `cli_agent.py` **345 satır**; sonuç ayrıştırma + kimlik hatası
   `providers/cli_result.py`'de (104 satır), adlar yeniden dışa aktarılır (`tests/` değişmedi).
-- **Public öncesi zorunlu (kullanıcı, 2026-10-13):** Y2 — `tests/fixtures/llm_responses/unity03_reference.cs`
+- ~~**Public öncesi zorunlu (kullanıcı, 2026-10-13):** Y2 — `tests/fixtures/llm_responses/unity03_reference.cs`
   bankadaki unity-03 referans çözümüyle (`private/`) karşılaştırılacak; aynı/benzerse yapay bir
   çözümle değiştirilip golden'lar yeniden üretilecek. GitHub'da secret scanning, push protection,
-  Dependabot alerts açılacak (P13).
+  Dependabot alerts açılacak (P13).~~ → **TAŞINDI (2026-10-20): kullanıcı işi, `KALAN_ISLER.md` U2 (Y2) ve U3 (GitHub ayarları).**
 - ~~CPP-OWN-001 akış duyarlı eşleşme: erken `return`/istisna yolunda atlanan `delete` öneri yerine hata sayılsın (Faz 52 denetimi).~~ → **KAPANDI (Faz H2; kaydı 2026-10-18'de tazelendi — KALAN_ISLER iş 5 dilim 1):** davranış H2'de geldi ama o gün yalnız 4 fixture'la sınanıyordu. Doğrulama genişletmesi: `fixtures/CPP-OWN-001/positive/` altına 6 fixture (`goto_skip`, `loop_break_skip`, `loop_continue_skip`, `nested_block_return` → hata; `loop_pair`, `jump_outside_pair` → öneri) + `tests/rules/test_finding_kinds.py`'de 3 birim test (çift aralığı sınırları, aynı dosyada iki tür). Mutasyon: erken çıkış taraması devre dışı → 7 kırmızı, aşırı duyarlı (aralık yerine kapsam) → 8 kırmızı; ikisi de geri alınınca yeşil, `src/` değişmedi.
 - ~~Faz 51 denetimi: `RunConfig` etiket/veri seti sürümü taşımıyor; eski koşular yeni etiketlerle sessizce yeniden puanlanabiliyor (etiket özeti `RunConfig`'e + `compare` dipnotu). Ters yön: bellek erişimi olmayan `memory_safety` etiketleri (CPP-OWN-001 çıplak `new[]`: dev `cpp-009`, `cpp-105`, test `cpp-006`) yeni tanıma uymuyor → Faz 52 (kural bazında öneri türü) ile birlikte ele alınmalı. Etiketlerde serbest metin sezgisi yerine yapısal `boundary:` alanı.~~ → **KAPANDI (İş 7, 2026-10-20):** `RunConfig.dataset_version` eklendi (`d1+<hash>`); `compare_table` dipnotu ve uyuşmazlık uyarısı eklendi; `ExpectedFinding.boundary` alanı yapısal hâle getirildi; `cpp-009`'a `boundary: ownership_scope` işlendi.
 - ~~Faz 49: `sessions` tablosu da sınırsız büyüyor (oturum başına bir satır); eski oturumları `updated_at`'e göre budamak.~~ → **KAPANDI (Faz F):** `prune_old_sessions` eklendi. ~~Tier 1 derleyici sürümü önbellek imzasında yok.~~ (Faz B: araç kimliği + dosya boyutu/zamanı)
@@ -184,24 +184,24 @@ platform varsayımlarını yakaladı (ürün kodu değişmedi):
   sürümü ayrı madde (Faz 51 denetimi) olarak duruyor.
 - ~~Faz 49 denetimi Ü9: eksik sütunlu eski şema (`OperationalError`) ve bozuk `created_at` için şema göçü yok; `list_analyses` korunmuyor.~~ → **KAPANDI (İş 8, 2026-10-20):** `Database._migrate`'e `SCHEMA_DB_VERSION = 2` ile eksik sütun denetimi ve `ALTER TABLE` göçü eklendi; `cache._list_analyses_fallback` bozuk `created_at` durumunda `list_analyses`/`list_analyses_page`'in çökmesini engeller.
 - ~~Faz 48 denetimi~~ (**Faz B'de kapandı**): süre Geçiş B (Sokratik) sırasında dolarsa doğrulanmış Geçiş A sonucu da atılıyor; bulguları koruyup yalnız Sokratik kısmı şablona düşürmek `run_pass_b is None` yoluyla tutarlı olur (`run_llm_passes` kısmi sonuç döndürmeli).
-- Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001). ~~Claude Opus canlı dev ölçümü~~ → yapıldı (2026-10-05).
-- Eval: `select_part` etiket değişikliğine duyarlı; parça atamasını kimlik özetiyle sabitlemek ya da sonuç dosyasına parça kimliklerini yazıp birleştirmede eksik/çakışanı uyarmak.
-- Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.
+- ~~Faz 36: kural bazında öneri türü (doğru eşleşmiş `new`/`delete` için CPP-OWN-001, `Reserve` yok UE-MEM-001, `with` dışı `open` PY-RES-001). ~~Claude Opus canlı dev ölçümü~~ → yapıldı (2026-10-05).~~ → **KAPANDI: KALAN_ISLER iş 7 (`Rule.kind`, ADR-0022) — 2026-10-20 doğrulandı.**
+- ~~Eval: `select_part` etiket değişikliğine duyarlı; parça atamasını kimlik özetiyle sabitlemek ya da sonuç dosyasına parça kimliklerini yazıp birleştirmede eksik/çakışanı uyarmak.~~ → **KAPANDI: iş 10 (`part_signature`, `check_parts_coverage`) — 2026-10-20 doğrulandı.**
+- ~~Faz 37: kullanıcının keyring'inde kalmış eski OpenAI/DeepSeek anahtarlarını temizleme seçeneği.~~ → **KAPANDI: `KeyStore.purge_legacy` + Bağlantılar düğmesi — 2026-10-20 doğrulandı.**
 - ~~Faz 34: dev setini büyütmek~~ → yapıldı (2026-10-04, dev 96). Kalan: few-shot'ların zayıf modelde etkisi.
-- Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde). ~~Doğrulama kararlarını eval sonucuna yazıp düşürülenlerin TP/FP dağılımını ölçmek~~ → Faz 39.
-- Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).
+- ~~Faz 35: few-shot örneklerine `certainty` alanı eklemek (şu an yalnız kural metninde). ~~Doğrulama kararlarını eval sonucuna yazıp düşürülenlerin TP/FP dağılımını ölçmek~~ → Faz 39.~~ → **KAPANDI: iş 10 (few-shot `certainty: high`) — 2026-10-20 doğrulandı.**
+- ~~Faz 30: web soru seçicisinde filtre sonucu boşsa 'eşleşen soru yok' mesajı (şu an yalnız 'Serbest mod' seçeneği kalıyor).~~ → **KAPANDI: "Bu filtrelerle eşleşen soru yok." (`Controls.test.tsx`) — 2026-10-20 doğrulandı.**
 - ~~Faz 30: `validate` ile `load_reference` aynı çözüm yolu doğrulayıcısını paylaşsın (validate şu an yalnız `is_file()`); dağıtımda `private/` olmadığı için `reference_solution_unreadable` uyarısı her soru bağlamlı analizde loglanıyor, düzeyi `debug` olabilir.~~ → Faz 31.
-- Faz 30: yöntem işaretlerini (`METHOD_LEAKS`) soru verisine taşıyıp `validate`'e eklemek; eski soruların kontrol listesi seçimini kilitleyen bir anlık görüntü testi.
-- Faz 30: Unreal stub'ına sık türler (`Super` için sınıf içi typedef deseni, `FMath`, `EEndPlayReason`, `FHitResult`, `UPrimitiveComponent`, `USphereComponent`, dinamik delege makroları, `GetWorldTimerManager`); şu an referans çözümler bile yalnız tavsiye uyarılarıyla geçiyor.
+- ~~Faz 30: yöntem işaretlerini (`METHOD_LEAKS`) soru verisine taşıyıp `validate`'e eklemek; eski soruların kontrol listesi seçimini kilitleyen bir anlık görüntü testi.~~ → **KAPANDI: `Question.method_leaks` (iş 12) + Faz J anlık görüntü testi — 2026-10-20 doğrulandı.**
+- ~~Faz 30: Unreal stub'ına sık türler (`Super` için sınıf içi typedef deseni, `FMath`, `EEndPlayReason`, `FHitResult`, `UPrimitiveComponent`, `USphereComponent`, dinamik delege makroları, `GetWorldTimerManager`); şu an referans çözümler bile yalnız tavsiye uyarılarıyla geçiyor.~~ → **KAPANDI (2026-10-20): stub'a bileşen/aktör türleri, `UGameplayStatics`, `EEndPlayReason`, `StaticClass`; `Super` Tier 1'de UHT gibi typedef'le (`unreal_super_typedefs`); 24 Unreal örneğinde temiz geçen 2 → 4.**
 - Faz 30: soru bankası için öğretmen/kullanıcı içerik incelemesi ve sorulara örnek giriş/çıkış alanı.
-- Faz 29: kurulu zig sürümünü `codementor.toml` ile karşılaştırıp masaüstünde "güncelle" önermek (işaret dosyasında sürüm/sha var, okunmuyor).
-- Faz 29: indirilen zig'den yerel hedef dışındaki libc başlıklarını budamak (382 MB → tahminen <150 MB).
-- Faz 29: tek dosya exe gömülü RoslynCheck.exe'yi %TEMP%'e açıyor; AppLocker/antivirüs engellerse `/health/ready`'de araç hatası. Gerekirse onedir dağıtımı ya da kullanıcı dizinine kopyalama.
-- Faz 26: API hız sınırı (istemci başına, süreçler arası doğru); web arayüzünün API anahtarı göndermesi.
-- Faz 26: SQLite çağrılarını da iş parçacığına almak (bağlantı başına iş parçacığı ya da havuz).
-- Faz 25: OpenAI katı mod kısıtlarını canlı anahtarla doğrulayıp `SchemaAdapter.openai_strict`'te desteklenenleri korumak.
+- ~~Faz 29: kurulu zig sürümünü `codementor.toml` ile karşılaştırıp masaüstünde "güncelle" önermek (işaret dosyasında sürüm/sha var, okunmuyor).~~ → **KAPANDI: Faz F (F9) `needs_update` + masaüstü güncelle — 2026-10-20 doğrulandı.**
+- ~~Faz 29: indirilen zig'den yerel hedef dışındaki libc başlıklarını budamak (382 MB → tahminen <150 MB).~~ → **KAPANDI: iş 12 `toolchain_prune.prune_zig_directory` — 2026-10-20 doğrulandı.**
+- ~~Faz 29: tek dosya exe gömülü RoslynCheck.exe'yi %TEMP%'e açıyor; AppLocker/antivirüs engellerse `/health/ready`'de araç hatası. Gerekirse onedir dağıtımı ya da kullanıcı dizinine kopyalama.~~ → **BİLİNÇLİ (2026-10-20): release onedir zip'i de veriyor (AppLocker/antivirüs ortamında o kullanılır); tek dosya kolaylık için kalıyor.**
+- ~~Faz 26: API hız sınırı (istemci başına, süreçler arası doğru); web arayüzünün API anahtarı göndermesi.~~ → **KAPANDI: Faz E hız sınırı + `X-API-Key` (web istemcisi gönderiyor, `client.test.ts`) — 2026-10-20 doğrulandı.**
+- ~~Faz 26: SQLite çağrılarını da iş parçacığına almak (bağlantı başına iş parçacığı ya da havuz).~~ → **BİLİNÇLİ (2026-10-20): liste/silme uçları senkron `def` (FastAPI iş parçacığı havuzu); analiz yolundaki çağrılar ms düzeyinde ve `reserve_attempt`/iptalde `release_attempt` Faz 19/49 atomiklik garantilerinin içinde — iş parçacığına taşımanın getirisi küçük, riski gerçek.**
+- ~~Faz 25: OpenAI katı mod kısıtlarını canlı anahtarla doğrulayıp `SchemaAdapter.openai_strict`'te desteklenenleri korumak.~~ → **GEÇERSİZ: OpenAI sağlayıcısı kaldırıldı (ADR-0021); Gemini katı modu ADR-0020'de — 2026-10-20.**
 - ~~Faz 25: masaüstü ve web raporunda tahmini token/maliyet gösterimi (şu an yalnız CLI alt satırı ve JSON).~~ → Faz 33.
-- Faz 25: agy canlı doğrulaması (oturum var; `allow_tool_agent = true` ile tek analiz).
+- ~~Faz 25: agy canlı doğrulaması (oturum var; `allow_tool_agent = true` ile tek analiz).~~ → **KAPANDI: Faz 63'te agy uçtan uca canlı çalıştı — 2026-10-20 doğrulandı.**
 - ~~Faz 24: arama büyük/küçük harf ve "tam sözcük" seçenekleri, değiştir (Ctrl+H); bırakılan klasördeki kaynak dosyalarını listeleme.~~ → Faz 33.
 - ~~Faz 24: toml'a yazıldıktan sonra masaüstü tercihlerindeki aynı geçersiz kılmalar gereksizleşir (zararsız); "toml'dan yeniden yükle" düğmesi yok.~~ → Faz 33.
 - ~~Faz 23: `reference_solution_path` (`private/solutions/`) hâlâ çalışma dizinine göre; soru dosyasının ya da kaynak kökünün dizinine göre çözülmeli (sızıntı testi buna göre güncellenmeli).~~ → Faz 31.
@@ -210,32 +210,32 @@ platform varsayımlarını yakaladı (ürün kodu değişmedi):
 - ~~Faz 21 denetimi O3: kurallar sıcak yolu fonksiyon adıyla eşliyordu.~~ → Faz 32'de fonksiyon kimliğiyle eşleştirme yapıldı.
 - ~~Faz 21: `rules_version` yalnız `rules/*.py` hash'i; `analysis/` ve `data/call_costs.yaml` değişiklikleri önbellek anahtarına yansımıyor (bayat önbellek riski).~~ → Faz 31.
 - ~~Faz 21: `log.exception` izi sınırsız ve CLI'da WARNING düzeyinde stderr'e basılır; kural istisna mesajı kullanıcı kodu parçası içerebilir (§12) — iz DEBUG'a ya da kısaltılmış mesaja alınabilir. `captured_logs` teardown'u önceki yapılandırmayı değil varsayılanı geri yükler.~~ → Faz 31.
-- Faz 21: `file_value_types` ad çakışması (`struct Hit` + başka ad alanında `class Hit`) nadir yanlış negatif; yalnız arayüzden türeyen `class A : IFoo` sıcak sayılır (muhafazakâr).
-- Faz 21'den kalan işler Faz 32'de kısmen kapandı: C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray` alanları ve CS-PERF-001 `IList` çözüldü. ~~C-MEM-003 akış duyarlılığı~~ (Faz 57'de çözüldü). Açık: döngüde `std::string +`/C# `string +=` karesel ipucu (Sonraya).
+- ~~Faz 21: `file_value_types` ad çakışması (`struct Hit` + başka ad alanında `class Hit`) nadir yanlış negatif; yalnız arayüzden türeyen `class A : IFoo` sıcak sayılır (muhafazakâr).~~ → **BİLİNÇLİ (2026-10-20): çözüm ad alanı/`using` çözümlemesi ister; belirsizlikte struct'ı "heap ayırma" diye raporlamak yanlış öneri olurdu (precision öncelikli, Faz 35/39); nadir.**
+- ~~Faz 21'den kalan işler Faz 32'de kısmen kapandı: C-MEM-001 aynı dosyadaki kullanıcı fonksiyonu, UE-GC-001 `TArray` alanları ve CS-PERF-001 `IList` çözüldü. ~~C-MEM-003 akış duyarlılığı~~ (Faz 57'de çözüldü). Açık: döngüde `std::string +`/C# `string +=` karesel ipucu (Sonraya).~~ → **KAPANDI: Faz 32 `_accumulations` — döngüde `s += x` (C#) / `s = s + x` (C++) `n^2` ipucu verir (2026-10-20 canlı denendi).**
 - ~~Faz 16: eval veri setine Python/HTML/CSS örnekleri ve ölçüm~~ → Faz 18'de yapıldı.
 - ~~Faz 18: Tier 0 `</div>` kör noktası~~ → Faz 20'de HTML-STD-003 ile bulgu olarak.
 - ~~Faz 20: HTML-STD-003 kaçırmaları (Faz 56): dosya sonunda bitmemiş `<div`, `<p><span>a<div>`, DOCTYPE'sız belgede `table`/`p`, aynı satırdaki farklı ihlaller, katalog açıklaması.~~ → Faz 56'da çözüldü.
-- HTML-STD-003: adoption agency (biçimlendirme öğesi yeniden kurulumu), foster parenting ve `form`/`button` kapsam ayrıntıları modellenmiyor (Faz 56 bilinen sınır).
+- ~~HTML-STD-003: adoption agency (biçimlendirme öğesi yeniden kurulumu), foster parenting ve `form`/`button` kapsam ayrıntıları modellenmiyor (Faz 56 bilinen sınır).~~ → **BİLİNÇLİ (2026-10-20): HTML ayrıştırma algoritmasının köşe kuralları; öğretim kodunda nadir, yanlış pozitif riski yüksek (Faz 56 kararı).**
 - ~~Kural motoru: bulgu sayısına üst sınır yok (600 satırlık kötü niyetli girdi 600 bulgu üretip prompt'a gidebilir).~~ → Faz 31.
 - ~~Faz 18: `codementor eval check-drafts` Windows konsolunda (cp1254) çöküyor~~ → Faz 27 (konsol UTF-8).
 - ~~Faz 18: eski veri seti etiketlerine Faz 17 bulguları (`c-008` 4. satır `memory_safety` C-MEM-003, `csharp-009` 11. satır `garbage_collection` CS-ALLOC-002) eklenmeli mi? (test etiketleri de etkilenebilir; kullanıcı kararı)~~ → **KAPANDI (2026-10-20):** iki etiket de Faz 21'de eklenmiş (`label.yaml` notu "Faz 21: Faz 17 kuralı"); madde bayattı.
 - Faz 18: HTML precision (%22) için işaretleme prompt'unda bulgu ölçütü ("iyi uygulama önerisi" ile "sorun" ayrımı); kategori tanımları (`design` vs `edge_case`). Ayar yalnız dev'de yapılmalı.
-- Faz 18: `eval breakdown` tablosuna gecikme/token sütunları; `breakdown` etiketleri koşu anındaki değil güncel veri setinden alıyor.
+- ~~Faz 18: `eval breakdown` tablosuna gecikme/token sütunları; `breakdown` etiketleri koşu anındaki değil güncel veri setinden alıyor.~~ → **KAPANDI: gecikme/token sütunları var; etiket uyumsuzluğu iş 7 `dataset_version` uyarısıyla — 2026-10-20 doğrulandı.**
 - ~~Faz 16: HTML etiket dengesi denetimi~~ → Faz 20 (statik kural).
-- Faz 16: Python için few-shot örnekleri; JS (tarayıcı) desteği HTML ile birlikte istenebilir.
-- Faz 15: Bağlantılar'da Ollama modelini indirme (`ollama pull`) düğmesi ve ilerleme göstergesi.
+- ~~Faz 16: Python için few-shot örnekleri; JS (tarayıcı) desteği HTML ile birlikte istenebilir.~~ → **KAPANDI: Python few-shot'ları var (`python_none_*`); JS desteği yeni dil özelliği, kapsam dışı — 2026-10-20.**
+- ~~Faz 15: Bağlantılar'da Ollama modelini indirme (`ollama pull`) düğmesi ve ilerleme göstergesi.~~ → **KAPANDI: Faz F (F10) `ollama pull` düğmesi + iptal — 2026-10-20 doğrulandı.**
 - ~~Faz 15: Masaüstü tercihleri ile `codementor.toml` arasında "toml'a yaz" seçeneği.~~ → Faz 24
-- Faz 14: exe imzası yok; Windows SmartScreen ilk açılışta uyarabilir (kod imzalama sertifikası + Inno Setup kurulum paketi).
+- ~~Faz 14: exe imzası yok; Windows SmartScreen ilk açılışta uyarabilir (kod imzalama sertifikası + Inno Setup kurulum paketi).~~ → **BİLİNÇLİ (2026-10-20): kod imzalama sertifikası ücretli; README SmartScreen uyarısını anlatıyor, release SHA256SUMS veriyor.**
 - ~~Faz 14: CI'da Windows exe derleme işi (artefakt olarak zip); şu an elle `make exe`.~~ → Faz 23
 - ~~Faz 14: analiz iptali yok~~ → Faz 19'da yapıldı.
 - ~~Faz 19: Tier 1 derleyici/çalıştırma sürecine iptal olayı iletilmiyor~~ → Faz 24 (durdurulan analizde Tier 1 kendi zaman aşımına kadar sürebilir; arayüz bu sırada yeni analizi bildirimle reddeder).
 - ~~Faz 14: editörde arama (Ctrl+F), son dosyalar menüsü, sürükle-bırak ile dosya açma (tkinterdnd2).~~ → Faz 24
-- Faz 14: onefile açılışı arşiv çözme nedeniyle birkaç saniye; hızlı açılış için onedir zip önerilir.
+- ~~Faz 14: onefile açılışı arşiv çözme nedeniyle birkaç saniye; hızlı açılış için onedir zip önerilir.~~ → **KAPANDI: release onedir zip'i de yayımlıyor — 2026-10-20 doğrulandı.**
 - ~~Faz 5/6 öncesi: tree-sitter ayrıştırmasına süre sınırı; 40 KB girdide yüzlerce ms ölçülmüştü.~~ → Faz 55'te kapatıldı (ADR-0024): süreç içi iptal 0.25.2'de kullanılamıyor; boyut/eşzamanlılık sınırları + gerileme testiyle idare, C# gramer yavaşlaması kabul edildi.
 - ~~Tier 0: kapanmamış blok varken dosya sonuna uzanan ERROR düğümleri özete dönüşüyor; bağımsız gerçek hata ayrıca raporlanmayabilir (D2; Faz 55).~~ → Faz 55'te çözüldü (`trailing_semicolon_gap`).
 - ~~`mask_non_code` C++ raw string (`R"(...)"`) içindeki tırnak/yorum/ayraçları doğru maskelemiyor (Faz 55).~~ → Faz 55'te çözüldü (delimiter sınırlı maskeleme).
 - ~~C# 11 raw string (`"""…"""`) maskelemesi (Faz 55'te kapsam dışı bırakıldı).~~ → Faz H3'te yapıldı (`mask_non_code(text, language)`; `$`/`$$` önekleri ve kapanış tırnağı dizisi dahil).
-- `mask_non_code` bir `language` parametresi aldı (Faz H3, C# 11 ham metni için) ama C++ ham metni yolu bilinçli olarak dilden bağımsız kaldı: Python/C# dosyasındaki `R"(…)` görünümü ham metin sayılıp içeriği maskelenir. Etkisi yalnızca `using_std`/`using_linq` sinyalleriyle sınırlı (Python'da kullanılmıyor); C++ yolunu dille sınırlamak gerekirse `language is Language.CPP` koşulu eklenir.
+- ~~`mask_non_code` bir `language` parametresi aldı (Faz H3, C# 11 ham metni için) ama C++ ham metni yolu bilinçli olarak dilden bağımsız kaldı: Python/C# dosyasındaki `R"(…)` görünümü ham metin sayılıp içeriği maskelenir. Etkisi yalnızca `using_std`/`using_linq` sinyalleriyle sınırlı (Python'da kullanılmıyor); C++ yolunu dille sınırlamak gerekirse `language is Language.CPP` koşulu eklenir.~~ → **KAPANDI (2026-10-20): C++ ham metin yolu yalnız C++ ve dil bilinmezken (`59202d6`).**
 - ~~Tier 0 parse'ı sert zaman aşımıyla alt süreçte izole etmek (ADR-0024 sonucu)~~ → Faz 59'da yapıldı (ADR-0025; varsayılan kapalı).
 - ~~Tier 0 yalıtımında sıcak işçi havuzu (her analizde ~280 ms süreç açma maliyeti; yüksek yükte) (Faz 59).~~
   → **KAPANDI** (Faz J iş 12; güvenlik sınırı KALAN_ISLER iş 14, ADR-0032).
@@ -256,43 +256,43 @@ platform varsayımlarını yakaladı (ürün kodu değişmedi):
   sayılmıyor (bayt aralığı; aynı satırdaki LINQ dışı lambda bulgu kalır, `positive/closure_next_to_linq.cs`);
   C-MEM-003'ün akış biçimleri fixture+test ile sabitlendi (denetim tahsisten önceyse sayılmaz, tek
   dallı denetim diğer yolu kapatmaz, koşulda kullanım; `negative/guard_forms_in_branches.c`).
-- `test_toolchain_install.py` tam koşuda bir kez 4 testle aralıklı düştü (Faz 57); tek başına yeşil. Tekrarlarsa paylaşılan geçici dizin/yarış incelenmeli. → Faz 58'de çözüldü (Windows tarayıcı kilidi; `_rename` yeniden denemesi).
+- ~~`test_toolchain_install.py` tam koşuda bir kez 4 testle aralıklı düştü (Faz 57); tek başına yeşil. Tekrarlarsa paylaşılan geçici dizin/yarış incelenmeli. → Faz 58'de çözüldü (Windows tarayıcı kilidi; `_rename` yeniden denemesi).~~ → **KAPANDI: Faz 58 (`_rename` yeniden denemesi).**
 - ~~C-MEM-001: aynı dosyadaki kullanıcı fonksiyonuna geçirilen işaretçi (`print_arr(arr, n)`) sahiplik aktarımı sayılıyor (sık kaçırma)~~ → **KAPANDI (Faz 32 + iş 5 dilim 2, 2026-10-18):** aynı dosyada tanımlı okuyucu yardımcıya vermek kaçış sayılmıyor (`_borrowers`) ve ödünç artık **zincir boyunca** yayılıyor (`_MAX_BORROW_ROUNDS = 8` sabit noktası; `positive/passed_to_reader_chain.c`, `test_c_memory_flow.py`). Bilinçli sınırlar (kaçırma): aynı değişkene iki kez `malloc`, gölgeleme, `realloc`, yalnız bildirimli/çift adlı yardımcı ve işaretçiyi döndüren/saklayan yardımcı.
 - ~~UNITY-GC-001: dosyada tanımlı kullanıcı `struct`'ı için `new Hit(3)` yanlış bulgu (değer tipi)~~ → **KAPANDI (Faz 21 + iş 5 dilim 3, 2026-10-18):** `analysis/_memory.py` `file_value_types` dosyadaki `struct`/`record struct` adlarını topluyor (fixture `negative/user_struct_new.cs`, `negative/value_types_in_update.cs`); dosyada tanımlı **sınıf** için bulgu sürüyor. Ayrıca closure bastırması satır bazlı olmaktan çıktı (bkz. üstteki Faz 17 satırı).
 - ~~UE-GC-001: `TArray<AActor*>`/`TMap<..., UObject*>` kapsayıcı alanları kaçırılıyor; UCLASS olmayan sınıfta (`FPlain`) öneri `UPROPERTY` değil `TStrongObjectPtr`/`FGCObject` olmalı~~ → **KAPANDI (Faz 32 + iş 5 dilim 4, 2026-10-18):** tek katman Faz 32'de gelmişti; **iç içe** kapsayıcı (`TMap<FName, TArray<UObject*>>`) da sayılıyor (`_MAX_CONTAINER_DEPTH = 2`, `type_descriptor` açılıyor). `TWeakObjectPtr`/`TSoftObjectPtr`/`TStrongObjectPtr` kapsam dışı (`negative/gc_safe_wrappers.h`); UCLASS/USTRUCT olmayan tipte soru `_UNREFLECTED` metnini kullanıyor.
 - ~~CS-PERF-001: `IList`/`IReadOnlyList`/`ICollection` tipli değişkenler maliyet tablosunda çözülmüyor (kaçırma).~~ → Faz H2: `IList` → `List.Contains` (Faz 21), `IReadOnlyList.Contains` → `Enumerable.Contains` (LINQ) düzeltildi; `ICollection` bilinçli kaçırma (örnek metot).
 - ~~Kural motoru: çöken kuralın istisna izi loglanmıyor; structlog (Faz 10) ile `log.exception` eklenmeli.~~ → Faz 21/31.
-- Sıcak yol tespiti sınıf tabanını (MonoBehaviour / UCLASS) da denetlemeli (Faz 5 olgusu).
-- Faz 7: OpenAI katı modu bugün `maxLength`, `maxItems`, `pattern`, `minimum`, `maximum` destekliyor; `SchemaAdapter` kısıt temizliğini sağlayıcıya göre ayırabilir (şu an hepsi çıkarılıyor, K5 doğruluyor).
-- Faz 7: `ProviderResult`'a yanıt veren sağlayıcının yeteneği (şema zorlandı mı) eklenebilir; fallback sonrası K5 için.
-- Faz 7: `FakeReply` bir dataclass olarak `providers/fake.py`'de (Pydantic şeması değil, test düzeneği); gerekirse `models/`'e taşınabilir.
+- ~~Sıcak yol tespiti sınıf tabanını (MonoBehaviour / UCLASS) da denetlemeli (Faz 5 olgusu).~~ → **BİLİNÇLİ (2026-10-20): Faz 21 `engine_inert_members` tabanı olmayan tipleri eler; tabanı denetlemek kullanıcının kendi `MonoBehaviour` türevi tabanında yanlış negatif üretir (yorumda gerekçesi var).**
+- ~~Faz 7: OpenAI katı modu bugün `maxLength`, `maxItems`, `pattern`, `minimum`, `maximum` destekliyor; `SchemaAdapter` kısıt temizliğini sağlayıcıya göre ayırabilir (şu an hepsi çıkarılıyor, K5 doğruluyor).~~ → **GEÇERSİZ: OpenAI kaldırıldı (ADR-0021) — 2026-10-20.**
+- ~~Faz 7: `ProviderResult`'a yanıt veren sağlayıcının yeteneği (şema zorlandı mı) eklenebilir; fallback sonrası K5 için.~~ → **KAPANDI: Faz G7 `ProviderResult.schema_enforced` — 2026-10-20 doğrulandı.**
+- ~~Faz 7: `FakeReply` bir dataclass olarak `providers/fake.py`'de (Pydantic şeması değil, test düzeneği); gerekirse `models/`'e taşınabilir.~~ → **BİLİNÇLİ (2026-10-20): test düzeneği, şema değil; `models/` yalnız şemalar için (AGENTS.md).**
 - ~~Faz 7: token tahmini ve `pricing.yaml` maliyet tahmini (mimari §13)~~ → Faz 25.
 - ~~Faz 4 `run_process` çıplak `argv[0]`~~ → çözüldü (2026-09-29): yalnızca mutlak yol, `test_bare_or_relative_executable_rejected`.
 - ~~CLI ajanları: gerçek `run_process` ile uçtan uca test~~ → Faz 25; agy canlı doğrulaması hâlâ açık (oturum var).
 - ~~Faz 8: `call_costs.yaml`'a C# `RemoveAll`/`RemoveAt(0)`/`Insert(0, …)` maliyetleri (golden'da `Remove: O(1)` ipucu).~~ → `RemoveAll`/`RemoveAt`/`Insert` tabloda `n` idi (Faz 21); Faz H3'te argümana duyarlı ayrım eklendi: `RemoveAt(xs.Count - 1)` → `1`, `Insert(xs.Count, …)` → `1*`.
 - ~~Faz 8 denetim D3 (`&lt;` kanıtı)~~ → Faz 9'da çözüldü (`normalize_evidence`).
 - ~~Faz 8 denetim D2: `prompt_version` her build'de şablon dosyalarını okuyor~~ → Faz 26.
-- Faz 8 denetim D8: ~~`prompts.dir`~~ Faz 23'te çözüldü; demo'nun golden dizini (`tests/golden/prompts`, geliştirici aracı) hâlâ çalışma dizinine göre.
+- ~~Faz 8 denetim D8: ~~`prompts.dir`~~ Faz 23'te çözüldü; demo'nun golden dizini (`tests/golden/prompts`, geliştirici aracı) hâlâ çalışma dizinine göre.~~ → **KAPANDI (2026-10-20): demo `GOLDEN_DIR` depo kökünden (`216d92e`).**
 - Faz 8: prompt'ların `claude_cli` ile canlı karşılaştırması (analysis vs single_pass) Faz 12 eval'inde; token tahmininin gerçek `usage` ile kalibrasyonu.
 - ~~Faz 9: sızıntı korumasını `reasoning_steps` ve LLM açıklamalarına genişletmek~~ → Faz 10'da yapıldı.
 - ~~Faz 9: `guiding_questions` öğelerine şemada `max_length`~~ → Faz 27.
 - ~~Faz 10: `prompt_version` mtime önbelleği~~ → Faz 26.
 - ~~Faz 10: CLI ilerleme göstergesi yalnızca aşama adını gösteriyor; token/süre canlı gösterilebilir.~~ → Faz 33.
 - ~~Faz 11: senkron aşamaları `asyncio.to_thread`'e taşımak~~ → Faz 24 (Tier 1) + Faz 26 (Tier 0, olgular); SQLite Sonraya.
-- Faz 11: API anahtarı / hız sınırlama (§12); yerel olmayan bağlamada zorunlu kılınabilir. (Faz 13 kararı: v1'de yok, README Sınırlamalar.)
+- ~~Faz 11: API anahtarı / hız sınırlama (§12); yerel olmayan bağlamada zorunlu kılınabilir. (Faz 13 kararı: v1'de yok, README Sınırlamalar.)~~ → **KAPANDI: Faz E `api.api_key` + IP başına hız sınırı — 2026-10-20 doğrulandı.**
 - ~~CLI ajanı iptali~~ → Faz 19'da yapıldı.
 - ~~Faz 5 hatası (csharp-011): `foreach` koleksiyon ifadesindeki çağrı döngü içinde sayılıyordu → `high` O(n²)~~ → çözüldü (2026-09-30, kullanıcı isteğiyle Faz 12 içinde): `_context.contexts` döngü başlığında bir kez değerlendirilen alanlara (`initializer`, `right`: C `for` başlatıcısı, C++ range-for, C# `foreach`) dış bağlamı verir; `tests/fixtures/complexity/on_{foreach_header_call,range_for_header_call,for_initializer_strlen}` + koşuldaki `strlen` için `on2_strlen_condition`. Dev static-only Big-O %88 → %92.
-- Çağrı maliyeti tablosu eksikleri (eval notları): `std::memset`/`memcpy` (n), `UGameplayStatics::GetAllActorsOfClass` (n), `TArray::Remove` (n); `std::string operator+` / C# `string +=` döngüde karesel (şu an n).
+- ~~Çağrı maliyeti tablosu eksikleri (eval notları): `std::memset`/`memcpy` (n), `UGameplayStatics::GetAllActorsOfClass` (n), `TArray::Remove` (n); `std::string operator+` / C# `string +=` döngüde karesel (şu an n).~~ → **KAPANDI: `memset`/`memcpy`/`GetAllActorsOfClass`/`TArray::Remove` `call_costs.yaml`'da; string birikimi Faz 32 — 2026-10-20 doğrulandı.**
 - ~~Faz 12: eval'e `guard_interventions` metriği~~ → Faz 22 Aşama A.
 - ~~Faz 12: `eval analyze` aracı (kategorisiz eşleşme, önem filtreli precision, örnek bazında FP/FN); `compare` statik satırında injection direncini "—" göstermeli.~~ → Faz 22A / Faz 31.
 - Faz 12: precision iyileştirme — `design` bulgularını yalnızca soru gereksinimi varken üretmek, `low` bulguları raporda ayrı göstermek; kategori belirsizliği (sıfıra bölme `edge_case`/`undefined_behavior`, null `edge_case`/`memory_safety`) için prompt'ta kategori tanımları. Değişiklik sonrası dev'de yeniden ölçülmeli (test artık kullanıldı).
-- Faz 12: few-shot 0/1 ablasyonu (§14.4) koşulmadı. → Faz 34.
+- ~~Faz 12: few-shot 0/1 ablasyonu (§14.4) koşulmadı. → Faz 34.~~ → **KAPANDI: Faz 34.**
 - CI Windows işi (2026-09-30): `windows-latest`'te g++ (MinGW) ilk derlemede 10 sn sınırını aşıyor (`test_cpp_type_error_failed` → `timeout`); clang++ varsayılan MSVC hedefli olduğundan Unreal stub denetimi `tool_error` ile atlanıyor (2 test). Ürün zarif atlıyor ama Windows'ta clang için `--target=x86_64-w64-mingw32` / başlık yolu ve soğuk başlangıç süresi ele alınmalı; o zamana kadar Windows CI `-m "not live and not compiler"`.
 - ~~Faz 13: README için GIF demo~~ → Faz 26 (Pillow).
 - ~~Faz 13: Web UI'da indirme, sağlayıcı ve mod seçimi~~ → Faz 26.
 - ~~Faz 13: Monaco'yu tembel yükleme~~ → Faz 26.
 - ~~Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri~~ → Faz 26.
 - ~~Faz F (F8 denetimi): `desktop/connections.py` 402 satır (> 400, AGENTS.md)~~ → F12'de oturum açma akışı `desktop/login.py`'ye çıkarılınca **366 satıra** indi (400 satır kuralı sağlanıyor); `KeyStore`/katalog taşıma önerisi gereksiz kaldı.
-- Faz F (F11 kapsamı): `history_controller.open_history` kaydı hâlâ ana iş parçacığında okuyor (`get_analysis`/`get_row` + `runtime.load_source`) ve diskten kod yüklüyor; F11 yalnız liste/silme/temizleme ile sınırlı tutuldu, kayıt açmayı da arka plana almak Sonraya.
+- ~~Faz F (F11 kapsamı): `history_controller.open_history` kaydı hâlâ ana iş parçacığında okuyor (`get_analysis`/`get_row` + `runtime.load_source`) ve diskten kod yüklüyor; F11 yalnız liste/silme/temizleme ile sınırlı tutuldu, kayıt açmayı da arka plana almak Sonraya.~~ → **KAPANDI (2026-10-20): `open_history` de arka planda (`20a1eb1`).**
 - tree-sitter 0.26 uyumu — **upstream bekleniyor (kök neden bulundu, 2026-10-20):** py-tree-sitter 0.26.0'da `Point` referans sayımı fazla düşürülüyor (tree-sitter/py-tree-sitter#472; düzeltme ana dalda, 0.26.1 yayımlanmadı — #500). Bizde `node.start_point.row` erişimiyle tetikleniyor (Windows 0xC0000005, Linux segfault; `test_parsers.py::test_tree_sitter_binding_is_memory_safe` yakalıyor). Kaldırma koşulu: 0.26.1+ yayımlanınca `pyproject` sınırı ve `dependabot.yml` ignore kaldırılır, bu sonda testi yeşil olmalı. Geçici çözüm (tüm `start_point` kullanımını yeniden yazmak) değmez.
-- Faz F (F12): macOS'ta `open -a Terminal <cli>` ek argümanları (ör. `claude auth login`) Terminal uygulamasına geçirmez; `osascript -e 'tell application "Terminal" to do script "…"'` ile argümanlı sürüm Sonraya (şimdilik CLI argümansız açılıp kendi oturum açma akışını başlatıyor).
+- ~~Faz F (F12): macOS'ta `open -a Terminal <cli>` ek argümanları (ör. `claude auth login`) Terminal uygulamasına geçirmez; `osascript -e 'tell application "Terminal" to do script "…"'` ile argümanlı sürüm Sonraya (şimdilik CLI argümansız açılıp kendi oturum açma akışını başlatıyor).~~ → **KAPANDI (2026-10-20): `osascript` ile argümanlı komut (`e2cda35`); gerçek macOS denemesi KALAN_ISLER U5.**
