@@ -10,6 +10,11 @@ updates:
     groups:
       python-minor:
         update-types: [minor, patch]
+    ignore:
+      # tree-sitter 0.26: Linux CI'da test_parsers kırmızı + segfault (PR #7, 2026-10-20);
+      # pyproject'teki `<0.26` sınırı bilinçli. Uyum ayrı işte denenir (PROGRESS "Sonraya").
+      - dependency-name: tree-sitter
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/web"

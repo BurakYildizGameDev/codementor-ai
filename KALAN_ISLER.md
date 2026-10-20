@@ -498,6 +498,9 @@
 ### [ ] 👤 U4. `v0.1.1` etiketi ve release
 - Etiket atılınca `release.yml` otomatik çalışır (sürüm denetimi → test → exe → duman testi →
   `SHA256SUMS` → CHANGELOG bölümüyle release). Sürüm kaynağı `codementor.__version__` = 0.1.1.
+- Not (2026-10-20): `v0.1.1` 3ef973c'de zaten atıldı ve release yayında; sonraki sürüm yeni etiket
+  ister. Dependabot #1 ile `release.yml`'daki upload/download-artifact ana sürüm atladı — bu yol
+  yalnız etiketle koşar, ilk etikette izlenmeli (bozulursa release oluşmaz, yarım yayın olmaz).
 
 ### [ ] 👤 U5. Canlı ölçümler ve elle denemeler
 - agy canlı doğrulaması (oturum var) · Gemini/Codex/Claude canlı doğrulama (anahtar/kota) ·
@@ -522,8 +525,8 @@
 
 - Bulgu kimlikleri ve ayrıntı: `docs/BulgularVeDuzeltilecekler.md` (§1 özet, §4 orta, §5 düşük,
   §6 public hazırlığı P1-P13, §8 eksik testler, §9 önerilen özellikler, §10 faz planı A-J).
-- Faz notları: `docs/gelistirme-gunlugu/PROGRESS-faz-A-J.md` (A-K, iş 1-23); "Sonraya" (120
-  madde, 41 açık): `PROGRESS.md`.
+- Faz notları: `docs/gelistirme-gunlugu/PROGRESS-faz-A-J.md` (A-K, iş 1-23); "Sonraya" (121
+  madde, 42 açık): `PROGRESS.md`.
 - Faz planı ve fazların kabul kriterleri: `docs/UYGULAMA_PLANI.md`.
 - Bu dosya **yaşayan listedir**: iş bitince `[x]` yapılır + `PROGRESS.md`'ye işlenir; ayrıntılı
   gerekçe buraya kopyalanmaz, kaynağına bağlantı verilir.

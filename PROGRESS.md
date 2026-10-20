@@ -74,6 +74,23 @@
 | J5 | ✅ (Faz J denetimi küçük maddeleri; test-only) | faz/j5-test-hijyeni | 2026-10-17 | Cline / — |
 | I (dilim 1) | ✅ (yargıç + parçalar + fewshot) | faz/i-eval-altyapi | 2026-10-20 | Antigravity / — |
 
+## Bağımlılıklar — Dependabot PR'ları (#1, #3, #5, #6, #7; 2026-10-20)
+
+- **#7 (python-minor, 12 paket) olduğu gibi alınmadı:** Dependabot `tree-sitter>=0.25.2,<0.26` sınırını
+  `<0.27`'ye genişletmişti; 0.26.0 ile Linux CI'da `test_parsers` kırmızı ve ardından segfault (çıkış 139).
+  Sınır korundu, diğer 11 paket `uv lock --upgrade-package` ile güncellendi (pydantic 2.14.1,
+  pydantic-settings 2.16.1, fastapi 0.143.3 — PR'daki sürüm; serbest yükseltme 0.156'ya atlıyordu —,
+  ruff 0.17.1, mypy 2.4.0 ve diğerleri); #5 (`types-jsonschema`) aynı kilitte. `dependabot.yml`'a
+  tree-sitter minor/major için `ignore` eklendi (her hafta yeniden önerilmesin).
+- **#1 (Actions ana sürümleri), #6 (npm-minor), #3 (jsdom 30)** cherry-pick edildi; #3 ile #6
+  `web/package*.json`'da çakıştı → #6 temel alındı, jsdom ^30.1.2 yazılıp kilit `npm install` ile yeniden
+  üretildi (`npm ci` tutarlı). Not: jsdom 30'un alt bağımlılıkları Node ≥24.15 istiyor (bu makinede
+  24.13.1 uyarı verdi; CI en güncel 24.x).
+- **Doğrulama:** ruff (0.17.1 ile yeni uyarı yok), mypy 2.4.0 strict temiz, tam paket yeşil; web
+  gen:types farksız, typecheck, 57 vitest, build; `npm audit --omit=dev --audit-level=high` geçiyor
+  (yalnız 2 düşük: monaco-editor → dompurify, önceden de vardı). `release.yml`'daki upload/download-artifact
+  ana sürümleri yalnız etiketle koşar → ilk etikette doğrulanmalı (KALAN_ISLER U4).
+
 ## Son durum (2026-10-20)
 
 - Faz 0-63 ve public öncesi Faz A-K bitti; `KALAN_ISLER.md` ajan işleri (1-23) kapandı. Son oturumda
@@ -256,4 +273,5 @@
 - ~~Faz 13: `YAPILANLAR.md`'ye Faz 8–12 özetleri~~ → Faz 26.
 - ~~Faz F (F8 denetimi): `desktop/connections.py` 402 satır (> 400, AGENTS.md)~~ → F12'de oturum açma akışı `desktop/login.py`'ye çıkarılınca **366 satıra** indi (400 satır kuralı sağlanıyor); `KeyStore`/katalog taşıma önerisi gereksiz kaldı.
 - Faz F (F11 kapsamı): `history_controller.open_history` kaydı hâlâ ana iş parçacığında okuyor (`get_analysis`/`get_row` + `runtime.load_source`) ve diskten kod yüklüyor; F11 yalnız liste/silme/temizleme ile sınırlı tutuldu, kayıt açmayı da arka plana almak Sonraya.
+- tree-sitter 0.26 uyumu: Dependabot #7'de 0.26.0 Linux CI'da `test_parsers`'ı kırdı ve segfault verdi; `pyproject` `<0.26` ve `dependabot.yml` ignore ile sabit. Değişiklik notlarına bakılıp (Faz 55'teki read-callback/progress_callback segfault'u ile ilişkili olabilir) ayrı dalda denenmeli.
 - Faz F (F12): macOS'ta `open -a Terminal <cli>` ek argümanları (ör. `claude auth login`) Terminal uygulamasına geçirmez; `osascript -e 'tell application "Terminal" to do script "…"'` ile argümanlı sürüm Sonraya (şimdilik CLI argümansız açılıp kendi oturum açma akışını başlatıyor).

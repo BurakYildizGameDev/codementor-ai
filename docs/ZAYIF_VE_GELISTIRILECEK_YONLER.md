@@ -403,7 +403,7 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
   - Modüller arası bağımlılıklar katman sınırını zorluyordu; `report/usage.py` 62 satır ve yalnız
     `models/` içe aktarıyor — **kapandı** (Faz G).
   - Ertelenen küçük hatalar `PROGRESS.md` "Sonraya" bölümünde (denetim notları arşivde) birikiyor
-    (41 açık madde / 120 madde; "açık" = üstü çizili olmayan tek düzey madde).
+    (42 açık madde / 121 madde; "açık" = üstü çizili olmayan tek düzey madde).
 - **Neden önemli:** Büyüyen dosyalar ve biriken "sonraya"lar, yeni özellik eklemeyi yavaşlatır ve
   hata riskini artırır. Pencere testlerinin Linux'ta koşmaması, masaüstü gerilemelerinin CI'da
   yakalanmamasına yol açabilir.
@@ -571,7 +571,7 @@ Projeyi bir sonraki seviyeye en çok taşıyacak tek adım. Küçük, etik ve te
 | Deneyim | Yardımsız kurulum başarısı | ölçülmedi | ≥ %80 | pilot |
 | Erişim | Anahtar/abonelik gerektirmeyen çalışan yol | yok (yerel model ölçülmedi) | en az bir yol, kalite eşiğiyle | Faz I |
 | Kod sağlığı | 400 satırı aşan dosya (boş satır hariç) | 0 (en büyük 396) | 0 | `wc -l` |
-| Kod sağlığı | "Sonraya" madde sayısı (açık) | 41 (120 madde) | < 30 | PROGRESS |
+| Kod sağlığı | "Sonraya" madde sayısı (açık) | 42 (121 madde) | < 30 | PROGRESS |
 
 ---
 
