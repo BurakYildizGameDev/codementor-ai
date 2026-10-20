@@ -61,6 +61,7 @@ class ConnectionsController:
         self.vaulted = load_vault_keys(app.settings.providers, store)
         self.view: ConnectionsView | None = None
         self.download_cancellation: Cancellation | None = None
+        self._pull_cancellations: dict[str, Cancellation] = {}
 
     def actions(self) -> CardActions:
         return CardActions(
@@ -163,6 +164,11 @@ class ConnectionsController:
 
     # --- Ollama model indirme (Faz F, F10) -----------------------------------------------
 
+    @property
+    def is_pulling(self) -> bool:
+        """En az bir `ollama pull` indirmesi sürüyor mu."""
+        return bool(self._pull_cancellations)
+
     def pull_model(self, name: str) -> None:
         """Seçili modeli `ollama pull` ile indirir; doğrulama anında, indirme arka planda.
 
@@ -177,10 +183,31 @@ class ConnectionsController:
             self._card_message(name, str(exc), False)
             self.app.toast(str(exc))
             return
+        cancellation = Cancellation()
+        self._pull_cancellations[name] = cancellation
         self._card_message(name, f"{model} indiriliyor… (bu birkaç dakika sürebilir)", True)
-        self.app.bridge.submit(f"pull:{name}", lambda _emit: run_ollama_pull(model, argv))
+
+        def _pull(_emit: Emit) -> PullOutcome:
+            try:
+                return run_ollama_pull(model, argv, cancel=cancellation.event)
+            except TypeError:
+                return run_ollama_pull(model, argv)
+
+        self.app.bridge.submit(
+            f"pull:{name}",
+            _pull,
+            cancellation=cancellation,
+        )
+
+    def cancel_pull(self, name: str) -> None:
+        """Süren model indirmesini iptal eder."""
+        cancellation = self._pull_cancellations.pop(name, None)
+        if cancellation is not None:
+            cancellation.cancel()
+        self.app.bridge.cancel(f"pull:{name}")
 
     def _on_pull(self, name: str, message: Message) -> None:
+        self._pull_cancellations.pop(name, None)
         if message.kind == "result" and isinstance(message.payload, PullOutcome):
             outcome = message.payload
         else:  # köprü istisnayı metne çevirdi

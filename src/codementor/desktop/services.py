@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -32,8 +33,8 @@ from codementor.validation.toolchain_install import (
 _MB = 1024 * 1024
 _C_FAMILY = ("c", "cpp", "unreal")
 
-# F10: `ollama pull` — model adı yalnız bu karakterlerden oluşur; argv liste, kabuk yok.
-OLLAMA_MODEL_RE = re.compile(r"^[A-Za-z0-9._:/-]+$")
+# F10: `ollama pull` — model adı harf/rakamla başlamalıdır; argv liste, kabuk yok.
+OLLAMA_MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]*$")
 OLLAMA_PULL_TIMEOUT_S = 3600  # büyük modeller dakikalarca inebilir
 _PULL_LIMITS = ProcessLimits(
     timeout_s=OLLAMA_PULL_TIMEOUT_S, memory_mb=2048, limit_address_space=False
@@ -99,14 +100,27 @@ def ollama_pull_argv(model: str, search_path: str) -> list[str]:
     return [str(found), "pull", name]
 
 
-def run_ollama_pull(model: str, argv: list[str], runner: Runner | None = None) -> PullOutcome:
+def run_ollama_pull(
+    model: str,
+    argv: list[str],
+    runner: Runner | None = None,
+    cancel: threading.Event | None = None,
+) -> PullOutcome:
     """Doğrulanmış `argv`'yi çalıştırır ve sonucu Türkçe özetler (F10).
 
     Gerçek `ollama` süreci yalnız `runner` ile başlatılır; çağıran (denetleyici) bunu arka plan
     işine verir, testler sahte bir `runner` geçirir. Hata beklenen bir sonuçtur: istisna değil,
     `PullOutcome.ok = False` döner (köprünün genel hata metni kullanıcıya anlamsız gelirdi).
+    `cancel` verilirse ve tetiklenirse süreç sonlandırılır ve sonuç iptal olarak döner.
     """
-    result = (runner or run_process)(argv, "", _PULL_LIMITS)
+    call_runner = runner or run_process
+    try:
+        result = call_runner(argv, "", _PULL_LIMITS, cancel=cancel)
+    except TypeError:
+        # Eski test runner'ları veya ek parametre almayan sahte runner'lar için yedek
+        result = call_runner(argv, "", _PULL_LIMITS)
+    if result.cancelled:
+        return PullOutcome(False, "İndirme iptal edildi.")
     if result.error:
         return PullOutcome(False, f"İndirme başlatılamadı: {result.error}")
     if result.timed_out:

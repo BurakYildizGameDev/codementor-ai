@@ -23,13 +23,36 @@ DEFAULT_DB_PATH = Path.home() / ".codementor" / "codementor.db"
 MEMORY = ":memory:"
 # Oturum denemesi `INSERT … ON CONFLICT DO UPDATE … RETURNING` kullanır (Faz 49)
 MIN_SQLITE = (3, 35)
-SCHEMA_DB_VERSION = 1
+SCHEMA_DB_VERSION = 2
 
 
 def _migrate(connection: Any, current: int) -> None:
-    """Veritabanı şema göçü (Faz F, D19)."""
-    if current < 1:
-        connection.execute(text(f"PRAGMA user_version = {SCHEMA_DB_VERSION}"))
+    """Veritabanı şema göçü (Faz F, D19; Faz 49 Ü9)."""
+    cursor = connection.execute(text("PRAGMA table_info(analyses)"))
+    existing_cols = {row[1] for row in cursor.fetchall()}
+    if existing_cols:  # Tablo zaten varsa eksik sütunları ekle
+        expected = {
+            "question_id": "VARCHAR",
+            "session_id": "VARCHAR",
+            "provider": "VARCHAR",
+            "model": "VARCHAR",
+            "early_exit": "BOOLEAN DEFAULT 0",
+            "degraded": "BOOLEAN DEFAULT 0",
+            "tokens_in": "INTEGER DEFAULT 0",
+            "tokens_out": "INTEGER DEFAULT 0",
+            "latency_ms": "INTEGER DEFAULT 0",
+            "report_json": "TEXT DEFAULT '{}'",
+        }
+        for col_name, col_type in expected.items():
+            if col_name not in existing_cols:
+                connection.execute(text(f"ALTER TABLE analyses ADD COLUMN {col_name} {col_type}"))
+
+    cursor_sessions = connection.execute(text("PRAGMA table_info(sessions)"))
+    existing_sessions_cols = {row[1] for row in cursor_sessions.fetchall()}
+    if existing_sessions_cols and "updated_at" not in existing_sessions_cols:
+        connection.execute(text("ALTER TABLE sessions ADD COLUMN updated_at TIMESTAMP"))
+
+    connection.execute(text(f"PRAGMA user_version = {SCHEMA_DB_VERSION}"))
 
 
 def utcnow() -> datetime:

@@ -6,6 +6,7 @@ import os
 import stat
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import httpx
@@ -13,7 +14,8 @@ import pytest
 import respx
 
 from codementor.config import Settings
-from codementor.desktop import connections
+from codementor.desktop import connections, runtime
+from codementor.desktop.bridge import Cancellation
 from codementor.desktop.connections import (
     KeyStore,
     KeyStoreError,
@@ -27,6 +29,7 @@ from codementor.desktop.connections import (
     probe,
     try_connection,
 )
+from codementor.desktop.connections_controller import ConnectionsController
 from codementor.desktop.services import OllamaPullError, ollama_pull_argv, run_ollama_pull
 from codementor.models.desktop import DesktopPrefs, ProviderOverride
 from codementor.models.provider import GenerationOptions
@@ -438,10 +441,15 @@ def test_ollama_pull_runner_gets_validated_argv(tmp_path: Path) -> None:
         "a\nb",
         "kötü:model",
         "qwen&del",
+        "/x",
+        "../x",
+        "-flag",
+        ".hidden",
+        ":model",
     ],
 )
 def test_ollama_pull_rejects_unsafe_model_names(model: str, tmp_path: Path) -> None:
-    """F10: model adı `^[A-Za-z0-9._:/-]+$` dışındaysa reddedilir (süreç başlamaz)."""
+    """F10/İş 9: model adı geçerli kalıp dışındaysa reddedilir (süreç başlamaz)."""
     _fake_ollama(tmp_path / "bin")
     with pytest.raises(OllamaPullError):
         ollama_pull_argv(model, str(tmp_path / "bin"))
@@ -463,3 +471,62 @@ def test_ollama_pull_failure_outcome_is_turkish() -> None:
     assert not outcome.ok
     assert "başarısız" in outcome.message.lower()
     assert "manifest" in outcome.message
+
+
+def test_ollama_pull_error_outcome_is_turkish() -> None:
+    """F10/İş 9: süreç başlatılamazsa hata Türkçe gösterilir."""
+    runner = SequenceRunner(ProcessResult(None, "", "", error="erişim engellendi"))
+    outcome = run_ollama_pull(OLLAMA_MODEL, ["/opt/ollama", "pull", OLLAMA_MODEL], runner=runner)
+    assert not outcome.ok
+    assert "başlatılamadı" in outcome.message
+    assert "erişim engellendi" in outcome.message
+
+
+def test_ollama_pull_timeout_outcome_is_turkish() -> None:
+    """F10/İş 9: indirme zaman aşımına uğrarsa Türkçe zaman aşımı metni döner."""
+    runner = SequenceRunner(ProcessResult(None, "", "", timed_out=True))
+    outcome = run_ollama_pull(OLLAMA_MODEL, ["/opt/ollama", "pull", OLLAMA_MODEL], runner=runner)
+    assert not outcome.ok
+    assert "zaman aşımı" in outcome.message
+
+
+def test_ollama_pull_cancelled_outcome_is_turkish() -> None:
+    """F10/İş 9: indirme iptal edildiğinde Türkçe iptal metni döner."""
+    runner = SequenceRunner(ProcessResult(None, "", "", cancelled=True))
+    outcome = run_ollama_pull(OLLAMA_MODEL, ["/opt/ollama", "pull", OLLAMA_MODEL], runner=runner)
+    assert not outcome.ok
+    assert "iptal edildi" in outcome.message
+
+
+def test_controller_cancel_pull(settings: Settings, store: KeyStore) -> None:
+    """F10/İş 9: cancel_pull süren görevin iptalini tetikler ve bayrağı temizler."""
+    from codementor.desktop.bridge import Bridge
+
+    fake_app = SimpleNamespace(settings=settings, bridge=Bridge())
+    ctrl = ConnectionsController(fake_app, store)  # type: ignore[arg-type]
+    cancellation = Cancellation()
+    ctrl._pull_cancellations["ollama"] = cancellation
+    assert ctrl.is_pulling
+    ctrl.cancel_pull("ollama")
+    assert cancellation.cancelled
+    assert not ctrl.is_pulling
+
+
+def test_runtime_confirm_close_checks_pulling(settings: Settings, store: KeyStore) -> None:
+    """F10/İş 9: model indirmesi sürerken kapatma onay ister."""
+    from codementor.desktop.bridge import Bridge
+
+    fake_app = SimpleNamespace(
+        files=SimpleNamespace(is_dirty=False),
+        analyze_view=SimpleNamespace(busy=False),
+        connections=None,
+        confirm=lambda *_a, **_k: False,
+        settings=settings,
+        bridge=Bridge(),
+    )
+    ctrl = ConnectionsController(fake_app, store)  # type: ignore[arg-type]
+    fake_app.connections = ctrl
+    ctrl._pull_cancellations["ollama"] = Cancellation()
+    assert runtime.confirm_close(fake_app) is False  # type: ignore[arg-type]
+    ctrl._pull_cancellations.clear()
+    assert runtime.confirm_close(fake_app) is True  # type: ignore[arg-type]

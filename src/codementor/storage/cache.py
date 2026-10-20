@@ -9,14 +9,15 @@ uymayan eski `report_json` yok sayılır (geçmiş/GET çökmez); `max_analyses`
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime
 
-from sqlalchemy import and_, case, func, or_
+from sqlalchemy import and_, case, func, or_, text
 from sqlmodel import col, delete, select
 
 from codementor.log import get_logger
 from codementor.models.report import AnalysisReport
 from codementor.models.usage import UsageTotals
-from codementor.storage.db import MEMORY, AnalysisRow, Database
+from codementor.storage.db import MEMORY, AnalysisRow, Database, utcnow
 
 log = get_logger("codementor.storage")
 
@@ -101,13 +102,49 @@ def get_row(db: Database, analysis_id: str) -> AnalysisRow | None:
         return row
 
 
+def _list_analyses_fallback(db: Database, limit: int = 50) -> list[AnalysisRow]:
+    """Bozuk `created_at` veya şema uyuşmazlığında satırları tek tek güvenle okur (Faz 49 Ü9)."""
+    valid_rows: list[AnalysisRow] = []
+    try:
+        with db.engine.connect() as conn:
+            cursor = conn.execute(
+                text(
+                    "SELECT id, created_at, cache_key, language, engine, question_id, "
+                    "session_id, provider, model, early_exit, degraded, tokens_in, "
+                    "tokens_out, latency_ms, report_json "
+                    "FROM analyses ORDER BY rowid DESC LIMIT :limit"
+                ),
+                {"limit": limit},
+            )
+            for row in cursor.mappings():
+                d = dict(row)
+                if isinstance(d.get("created_at"), str):
+                    try:
+                        d["created_at"] = datetime.fromisoformat(d["created_at"])
+                    except ValueError:
+                        d["created_at"] = utcnow()
+                elif d.get("created_at") is None:
+                    d["created_at"] = utcnow()
+                try:
+                    valid_rows.append(AnalysisRow.model_validate(d))
+                except Exception:
+                    continue
+    except Exception as exc:
+        log.warning("list_analyses_fallback_failed", error=str(exc))
+    return valid_rows
+
+
 def list_analyses(db: Database, limit: int = 50) -> list[AnalysisRow]:
     """En yeni kayıtlı analizler (masaüstü geçmiş ekranı); rapor gövdesi ayrıca çözülür."""
-    with db.session() as session:
-        rows = session.exec(
-            select(AnalysisRow).order_by(col(AnalysisRow.created_at).desc()).limit(limit)
-        ).all()
-    return list(rows)
+    try:
+        with db.session() as session:
+            rows = session.exec(
+                select(AnalysisRow).order_by(col(AnalysisRow.created_at).desc()).limit(limit)
+            ).all()
+        return list(rows)
+    except Exception as exc:
+        log.warning("list_analyses_recovering", error=str(exc))
+        return _list_analyses_fallback(db, limit=limit)
 
 
 def list_analyses_page(
@@ -125,40 +162,44 @@ def list_analyses_page(
     arama yapar (% ve _ jokerleri kaçışlanır).
     `limit + 1` satır çekilir; fazlası varsa `next_cursor` son döndürülen satırın kimliğidir.
     """
-    with db.session() as session:
-        query = select(AnalysisRow).order_by(
-            col(AnalysisRow.created_at).desc(), col(AnalysisRow.id).desc()
-        )
-        if search is not None and search.strip():
-            clean = search.strip().replace("/", "//").replace("%", "/%").replace("_", "/_")
-            pattern = f"%{clean}%"
-            query = query.where(
-                or_(
-                    col(AnalysisRow.question_id).ilike(pattern, escape="/"),
-                    col(AnalysisRow.language).ilike(pattern, escape="/"),
-                    col(AnalysisRow.provider).ilike(pattern, escape="/"),
-                )
+    try:
+        with db.session() as session:
+            query = select(AnalysisRow).order_by(
+                col(AnalysisRow.created_at).desc(), col(AnalysisRow.id).desc()
             )
-        if before is not None:
-            before_row = session.get(AnalysisRow, before)
-            if before_row is None:
-                return [], None
-            query = query.where(
-                or_(
-                    col(AnalysisRow.created_at) < before_row.created_at,
-                    and_(
-                        col(AnalysisRow.created_at) == before_row.created_at,
-                        col(AnalysisRow.id) < before_row.id,
-                    ),
+            if search is not None and search.strip():
+                clean = search.strip().replace("/", "//").replace("%", "/%").replace("_", "/_")
+                pattern = f"%{clean}%"
+                query = query.where(
+                    or_(
+                        col(AnalysisRow.question_id).ilike(pattern, escape="/"),
+                        col(AnalysisRow.language).ilike(pattern, escape="/"),
+                        col(AnalysisRow.provider).ilike(pattern, escape="/"),
+                    )
                 )
-            )
-        rows = list(session.exec(query.limit(limit + 1)).all())
-        has_more = len(rows) > limit
-        items = rows[:limit]
-        for r in items:
-            session.expunge(r)
-        next_cursor = items[-1].id if has_more and items else None
-        return items, next_cursor
+            if before is not None:
+                before_row = session.get(AnalysisRow, before)
+                if before_row is None:
+                    return [], None
+                query = query.where(
+                    or_(
+                        col(AnalysisRow.created_at) < before_row.created_at,
+                        and_(
+                            col(AnalysisRow.created_at) == before_row.created_at,
+                            col(AnalysisRow.id) < before_row.id,
+                        ),
+                    )
+                )
+            rows = list(session.exec(query.limit(limit + 1)).all())
+            has_more = len(rows) > limit
+            items = rows[:limit]
+            for r in items:
+                session.expunge(r)
+            next_cursor = items[-1].id if has_more and items else None
+            return items, next_cursor
+    except Exception as exc:
+        log.warning("list_analyses_page_recovering", error=str(exc))
+        return _list_analyses_fallback(db, limit=limit), None
 
 
 def save_analysis(

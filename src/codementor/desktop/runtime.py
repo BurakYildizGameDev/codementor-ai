@@ -142,7 +142,11 @@ def confirm_close(app: App) -> bool:
         "Kaydedilmemiş değişiklik", "Değişiklikler kaybolacak. Devam edilsin mi?", parent=app
     ):
         return False
-    busy = app.analyze_view.busy or app.connections.download_cancellation is not None
+    busy = (
+        app.analyze_view.busy
+        or app.connections.download_cancellation is not None
+        or app.connections.is_pulling
+    )
     if not busy:
         return True
     return app.confirm("Çıkış", "Analiz (ya da indirme) sürüyor. Çıkılsın mı?", parent=app)
