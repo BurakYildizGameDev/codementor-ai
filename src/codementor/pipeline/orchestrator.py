@@ -301,7 +301,17 @@ class Orchestrator:
         verify = stages.VerifyArgs(
             code, static.findings, static.facts_input.hint, run.context, reference, settings
         )
-        llm = LLMSession(provider, settings, timer)
+        verify_provider = None
+        if settings.pipeline.verify_provider:
+            try:
+                verify_provider = (self.provider_factory or self._build_provider)(
+                    settings.pipeline.verify_provider
+                )
+            except ProviderError as exc:
+                run.warnings.append(
+                    f"Doğrulama sağlayıcısı ({settings.pipeline.verify_provider}) kurulamadı: {exc}"
+                )
+        llm = LLMSession(provider, settings, timer, verify_provider=verify_provider)
         mode = self._mode(run.request)
         limit = settings.pipeline.analysis_timeout_s
         remaining = self._remaining(run, limit)

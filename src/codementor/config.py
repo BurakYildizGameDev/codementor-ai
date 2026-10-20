@@ -95,6 +95,7 @@ class ValidationSettings(BaseModel):
     tier0_timeout_s: float = Field(default=5, gt=0)
     # Linux'ta RLIMIT_AS sanal alanı sayar: Python + grammar'lar için 256 MB alt sınır
     tier0_memory_mb: int = Field(default=1024, ge=256)
+    tier0_warm_workers: int = Field(default=0, ge=0)
 
 
 class PipelineSettings(BaseModel):
@@ -110,6 +111,10 @@ class PipelineSettings(BaseModel):
     # Faz 63: masaüstünde bir LLM geçişi bu kadar saniyeyi aşınca "model hâlâ yazıyor, Durdur'a
     # basıp başka model seçebilirsin" uyarısı gösterilir; None kapatır
     slow_llm_hint_s: float | None = Field(default=60, gt=0)
+    # Faz I / İş 11 (ADR-0031): model profili; "small" profilde sıkı kalite kapısı ve bulgu tavanı
+    model_profile: Literal["small", "standard"] = "standard"
+    # Faz I / İş 11 (ADR-0031): doğrulama geçişini yönlendirecek bağımsız sağlayıcı adı
+    verify_provider: str | None = None
 
 
 class DataSettings(BaseModel):
@@ -226,6 +231,9 @@ class OllamaConfig(ProviderConfig):
     timeout_s: int = Field(default=120, ge=1)  # yerel: 120 sn
     think: bool | None = Field(
         default=None, description="Akıl yürütme modelleri (deepseek-r1) için `think`"
+    )
+    profile: Literal["small", "standard"] | None = Field(
+        default=None, description="Faz I (ADR-0031): model boyutu profili"
     )
 
 

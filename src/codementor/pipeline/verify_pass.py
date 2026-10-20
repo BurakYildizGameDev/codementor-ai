@@ -43,14 +43,20 @@ async def run_pass_verify(
         for stage in VERIFY_STAGES:
             llm.timer.skip(stage, "Doğrulanacak model bulgusu yok")
         return verification, 0
+    active_provider = llm.verify_provider
+    active_provider_name = (
+        llm.settings.pipeline.verify_provider if active_provider is not None else provider
+    )
     try:
         with llm.timer.stage("prompt_v"):
             built = build_verify_messages(
                 VerifyPromptInput(code=verify.code, question=verify.question, findings=targets),
                 settings=llm.settings,
-                provider=provider,
+                provider=active_provider_name,
             )
-        parsed = await call_structured(llm, "llm_v", built, LLMVerifyOutput)
+        parsed = await call_structured(
+            llm, "llm_v", built, LLMVerifyOutput, provider=active_provider
+        )
     except (ProviderError, PromptBudgetError, PromptTemplateError) as exc:
         llm.fail_part(f"{VERIFY_FAILED} ({exc})")
         return verification, 0

@@ -15,7 +15,6 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel
 
 from codementor.models.enums import PipelineMode, has_complexity
-from codementor.models.findings import issues_only
 from codementor.models.llm_output import (
     LLMAnalysisOutput,
     LLMMarkupAnalysisOutput,
@@ -23,7 +22,7 @@ from codementor.models.llm_output import (
     LLMSocraticOutput,
 )
 from codementor.models.pipeline import Stage
-from codementor.models.prompts import BuiltPrompt, MentoringProfile, SocraticPromptInput
+from codementor.models.prompts import BuiltPrompt, MentoringProfile
 from codementor.models.report import SocraticResult
 from codementor.models.verification import AnalysisVerification, RepairReason, SocraticVerification
 from codementor.pipeline.llm_session import LLMSession
@@ -38,7 +37,9 @@ from codementor.prompts.builder import (
     build_socratic_messages,
 )
 from codementor.prompts.templates import PromptTemplateError
-from codementor.providers.base import ProviderError
+from codementor.providers.base import LLMProvider, ProviderError
+from codementor.verify.complexity_policy import apply_complexity_policy
+from codementor.verify.sanity import apply_sanity_checks
 from codementor.verify.schema_check import check_schema
 
 __all__ = [
@@ -52,6 +53,7 @@ __all__ = [
     "LLMOutcome",
     "LLMSession",
     "PassA",
+    "build_socratic_messages",
     "call_structured",
     "run_llm_passes",
     "run_pass_a",
@@ -201,14 +203,19 @@ async def run_pass_b(
 
 
 async def call_structured[M: BaseModel](
-    llm: LLMSession, stage: Stage, built: BuiltPrompt, model: type[M]
+    llm: LLMSession,
+    stage: Stage,
+    built: BuiltPrompt,
+    model: type[M],
+    *,
+    provider: LLMProvider | None = None,
 ) -> M | None:
     """Yanıtı şemaya uydur (`max_repair_attempts` kez onarımlı); olmazsa None.
 
     Onarım sırasında kurulan prompt yalnızca bu çağrıya hizmet eder; çağıranlar tek kullanımlık
     `BuiltPrompt` dönüşünü kullanmıyordu (D9), bu yüzden dönüş yalnız ayrıştırılmış sonuç.
     """
-    result = await llm.call(stage, built, model)
+    result = await llm.call(stage, built, model, provider=provider)
     for attempt in range(llm.settings.pipeline.max_repair_attempts + 1):
         parsed, check = check_schema(model, parsed=result.parsed, raw_text=result.raw_text)
         if parsed is not None:
@@ -219,7 +226,7 @@ async def call_structured[M: BaseModel](
         built = build_repair_messages(
             built, raw_text=result.raw_text, errors=check.errors, settings=llm.settings
         )
-        result = await llm.call(stage, built, model)
+        result = await llm.call(stage, built, model, provider=provider)
     return None
 
 
@@ -287,6 +294,21 @@ async def run_llm_passes(
             timer.skip(stage, "Geçiş A doğrulanamadı")
         return LLMOutcome(verification=None, socratic=None)
     verification = pass_a.verification
+
+    # Faz I / İş 11 (ADR-0031): Bulgu sağduyu denetimi (ters denetim çelişkisi ve tavan)
+    p_name = settings.pipeline.model_profile
+    sane_findings, sanity_warns = apply_sanity_checks(verification.findings, p_name)
+    if len(sane_findings) != len(verification.findings) or sanity_warns:
+        verification = verification.model_copy(
+            update={"findings": sane_findings, "warnings": [*verification.warnings, *sanity_warns]}
+        )
+    # Faz I / İş 11 (ADR-0031): Karmaşıklık politikası (küçük modelde statik ipucu önceliği)
+    if verification.complexity is not None:
+        new_comp, comp_warns = apply_complexity_policy(verification.complexity, p_name)
+        if comp_warns:
+            verification = verification.model_copy(
+                update={"complexity": new_comp, "warnings": [*verification.warnings, *comp_warns]}
+            )
     # O2 (§5.4.2): K5 bulgu attıysa ya da karmaşıklık kurtarıldıysa tek geçişin soruları
     # doğrulanmamış içeriğe dayanıyor olabilir: ayrı Geçiş B
     if pass_a.rescued or verification.evidence_ratio < 1:
@@ -303,8 +325,10 @@ async def run_llm_passes(
             timer.skip(stage, "Bulgu doğrulama kapalı")
     # Y4: Geçiş B'nin hatası doğrulanmış bulguları silmez; sorular şablona düşer
     try:
-        checked = await _socratic(
-            llm, verify, verification, pass_a, profile, attempt, first, provider
+        from codementor.pipeline.socratic_pass import run_pass_socratic
+
+        checked = await run_pass_socratic(
+            llm, verify, verification, pass_a.output, profile, attempt, first, provider
         )
     except (ProviderError, PromptBudgetError, PromptConfigError, PromptTemplateError) as exc:
         llm.incomplete = True
@@ -316,51 +340,3 @@ async def run_llm_passes(
     if checked.result is None:  # denetim O-2: sızıntı yüzünden tüm sorular atıldı → şablon
         llm.incomplete = True
     return LLMOutcome(verification, checked.result, list(checked.warnings))
-
-
-async def _socratic(
-    llm: LLMSession,
-    verify: VerifyArgs,
-    verification: AnalysisVerification,
-    pass_a: PassA,
-    profile: MentoringProfile,
-    attempt: int,
-    first: LLMSocraticOutput | None,
-    provider: str | None,
-) -> SocraticVerification | None:
-    """Geçiş B: prompt + çağrı. Karmaşıklık yalnız doğrulandıysa prompt'a girer (kurtarılan
-    çelişkili karmaşıklık soruya taşınmasın)."""
-    complexity = (
-        pass_a.output.complexity
-        if isinstance(pass_a.output, LLMAnalysisOutput) and verification.complexity is not None
-        else None
-    )
-    prompt = SocraticPromptInput(
-        code=verify.code,
-        question=verify.question,
-        findings=issues_only(verification.findings),
-        complexity=complexity,
-        attempt=attempt,
-    )
-
-    def rebuild(abstract: bool) -> BuiltPrompt:
-        """D7: sızıntıdan sonraki yeniden üretim için prompt (soyut soru notuyla).
-
-        Her kurulum `prompt_b` süresi ölçülür; yeniden üretimde aynı aşama ikinci kez
-        ölçülür (`stage_latency_ms` son pencereyi taşır).
-        """
-        with llm.timer.stage("prompt_b"):
-            return build_socratic_messages(
-                prompt, settings=llm.settings, provider=provider, abstract=abstract
-            )
-
-    initial = rebuild(False)
-    return await run_pass_b(
-        llm,
-        initial,
-        verify,
-        profile.hint_level,
-        first,
-        name_concept=profile.name_concept,
-        rebuild=rebuild,
-    )

@@ -58,6 +58,8 @@ class LLMSession:
     # yedeğe düşebilir; maliyet her çağrı grubunu kendi fiyatıyla hesaplar
     # (bkz. `cost.cost_of_stages`). Aşama bazlı toplam `stage_tokens`'ta kalır (rapor alanı).
     stage_usage: dict[tuple[str, str, str], TokenSplit] = field(default_factory=dict)
+    # Faz I / İş 11 (ADR-0031): isteğe bağlı bağımsız doğrulama geçişi sağlayıcısı
+    verify_provider: LLMProvider | None = None
 
     def fail_part(self, warning: str) -> None:
         """LLM'in bir kısmı başarısız: uyarı yazılır, rapor önbelleğe alınmaz."""
@@ -65,10 +67,16 @@ class LLMSession:
         self.incomplete = True
 
     async def call(
-        self, stage: Stage, built: BuiltPrompt, model: type[BaseModel]
+        self,
+        stage: Stage,
+        built: BuiltPrompt,
+        model: type[BaseModel],
+        *,
+        provider: LLMProvider | None = None,
     ) -> ProviderResult:
         with self.timer.stage(stage):
-            result = await self.provider.generate_structured(
+            active_provider = provider or self.provider
+            result = await active_provider.generate_structured(
                 built.messages, model, GenerationOptions()
             )
             usage = self._usage(built, result)
