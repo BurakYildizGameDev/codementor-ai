@@ -63,13 +63,15 @@ jobs:
           CODEMENTOR_REQUIRE_ROSLYN: "1"
           CODEMENTOR_REQUIRE_ZIG: "1"
       # Windows runner'daki g++ (MinGW) ilk çağrıda soğuk başlangıç (antivirüs taraması) yaşar;
-      # clang için --target=x86_64-w64-mingw32 eklenmiştir.
+      # clang için --target=x86_64-w64-mingw32 eklenmiştir. Derleyici testleri 2026-10-20'den beri
+      # Windows'ta da koşar (g++ 15 / clang 20 ile yeşil denendi; zig/Roslyn burada kurulu değil,
+      # o testler atlanır ve Linux işinde zorunludur).
       - if: runner.os == 'Windows'
         shell: powershell
         run: |
           if (Get-Command g++ -ErrorAction SilentlyContinue) { & g++ --version }
           if (Get-Command clang -ErrorAction SilentlyContinue) { & clang --version }
-          uv run pytest -m "not live and not compiler"
+          uv run pytest -m "not live"
 
   # Windows masaüstü paketi (Faz 23): tek dosya exe + onedir zip artefakt olarak indirilir.
   # PR'larda derlenmez (birkaç dakika); main push'unda ve elle tetiklemede çalışır.

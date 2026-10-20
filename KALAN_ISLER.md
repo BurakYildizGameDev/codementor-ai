@@ -526,7 +526,7 @@
 - Bulgu kimlikleri ve ayrıntı: `docs/BulgularVeDuzeltilecekler.md` (§1 özet, §4 orta, §5 düşük,
   §6 public hazırlığı P1-P13, §8 eksik testler, §9 önerilen özellikler, §10 faz planı A-J).
 - Faz notları: `docs/gelistirme-gunlugu/PROGRESS-faz-A-J.md` (A-K, iş 1-23); "Sonraya" (121
-  madde, 6 açık; 2026-10-20 triyajı): `PROGRESS.md`.
+  madde, 5 açık; 2026-10-20 triyajı): `PROGRESS.md`.
 - Faz planı ve fazların kabul kriterleri: `docs/UYGULAMA_PLANI.md`.
 - Bu dosya **yaşayan listedir**: iş bitince `[x]` yapılır + `PROGRESS.md`'ye işlenir; ayrıntılı
   gerekçe buraya kopyalanmaz, kaynağına bağlantı verilir.
