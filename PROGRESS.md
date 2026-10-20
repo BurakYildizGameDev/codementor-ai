@@ -74,6 +74,27 @@
 | J5 | ✅ (Faz J denetimi küçük maddeleri; test-only) | faz/j5-test-hijyeni | 2026-10-17 | Cline / — |
 | I (dilim 1) | ✅ (yargıç + parçalar + fewshot) | faz/i-eval-altyapi | 2026-10-20 | Antigravity / — |
 
+## Kod — Tam tarama bulgusu #1: sağduyu filtresi geçerli bulguları siliyordu (2026-10-20)
+
+> Tam tarama (ruff/mypy/pytest + kod-denetci) sonrası en acil madde. Kalan bulgular "Sonraya"da.
+
+**Sorun:** `verify/sanity.py` ters denetim filtresi (ADR-0031 Karar 2) kanıtta *gerçek denetim*
+değil herhangi bir `<`, `>`, `==`, `null`, `None` arıyordu; baştaki `\b` tüm alternatiflere
+uygulandığından sonuç boşluğa bağlıydı. `for(int i=0;i<=n;i++)`, `cout<<a[n];`,
+`while(i<n) … a[i+1]` kanıtlı "sınır kontrol edilmiyor" bulguları **tüm profillerde** düşüyordu;
+aynı satır boşluklu yazılınca korunuyordu. Ters yönde `elif n <= 0:` gerçek denetimi kaçırılıyordu.
+
+**Yapılanlar:** Kalıp ADR metnine çekildi: yalnızca `if` / `else if` / `elif` / `assert`
+(`Debug.Assert` dahil). Eşleşmeden önce dize/karakter sabitleri ve yorumlar (`//`, `/* */`, `#`)
+siliniyor; `printf("if …")`, `// if n is 0`, `ifstream` denetim sayılmıyor. İmza ve profil
+davranışı aynı; ADR sapması yok. `test_regex_budget` ilk sürümü yakaladı (kapanmayan `/*` 2,1 sn,
+`"\` zinciri 3,1 sn — karesel): kapanışlar isteğe bağlı yapıldı (dize satır sonunda, blok yorum
+metin sonunda biter) → bütçe içinde.
+
+**Testler:** `tests/unit/verify/test_sanity.py` 4 → 22 (10 korunmalı + 7 düşürülmeli parametreli vaka,
+standard profilde sıkışık taşma bulgusunun korunduğu bir `apply_sanity_checks` testi). Eski kodla
+11 vaka kırmızı, yeni kodla 22/22 yeşil.
+
 ## Belge — Kalan işler listesi ve sayı tazeleme (doküman-only; 2026-10-17)
 
 > Faz J5 kapanışından sonra yapılan "yapılması gerekenler" taramasının çıktısı kayda geçirildi.
@@ -1523,6 +1544,26 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1 düzeltildi):**
+  - Yüksek: `validation/tier0_pool.py` sıcak işçileri `runner.run_process` yerine düz `Popen`
+    → bellek sınırı/ortam süzme/boş cwd yok, eşzamanlı işçi sınırsız; havuzun ADR'si yok (ADR-0025:58
+    hâlâ "Sonraya" diyor). Yalnız `tier0_warm_workers > 0` iken.
+  - Orta: güvenilmeyen toml `storage.max_analyses` / `session_retention_days` / `data.checklists_dir`
+    serbest (`config.py` `_UNTRUSTED_SECTION_KEYS`) → global geçmiş budanabilir.
+  - Orta: `verify/complexity_policy.py` `O(n^2)` (≠ `parse_bigo` gösterimi), `is_optimal`
+    yeniden hesaplanmıyor, `agreement` zorla `agrees`.
+  - Orta: `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i satır referansı sayıyor; tekrar
+    algılayıcı sayı dizilerini dejenerasyon sanıyor; `pipeline/socratic_pass.py:73` kapı uyarıları
+    soru listesi değişmezse kayboluyor.
+  - Orta: `web/src/types/question_public.ts` bayat (`sample_io` yok; `npm run gen:types`).
+  - Orta: `tests/network_guard.py` Windows Proactor `ConnectEx` yolunu yakalamıyor;
+    `python_check.py` `warnings.catch_warnings` iş parçacığı güvenli değil; havuz hata mesajları
+    şablon önekiyle eşleşmiyor; `eval/judge.py` + `judge.j2` girdileri `guard`'sız; Codex iptalinde
+    `TemporaryDirectory` temizlik hatası iptali maskeleyebilir.
+  - Düşük: havuz tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, `RateLimiter._records`
+    sınırsız, `mimari.md:1126` hız sınırı çelişkisi, `sessions.updated_at` NULL budanmıyor,
+    `toolchain_prune.py:40` `PruneReport` models/ dışında. (README/ZAYIF "~39 bin" → "~40 bin"
+    satır sayısı bu committe düzeltildi; büyüdükçe yine kırılır — tolerans payı düşünülebilir.)
 - ~~**Zamanlama testleri kırılgan (iş 3 derin doğrulamasından çıktı, 2026-10-18)**~~ → **KAPANDI (iş 4b,
   2026-10-18):** eşik değişmedi (1,5 sn, ADR-0024); ölçüm ısınma + 3 koşunun en hızlısına çevrildi ve
   yanına **göreli büyüme** testleri eklendi (2× girdi ≤ 3× süre). Kasıtlı karesel yavaşlatma O1'i

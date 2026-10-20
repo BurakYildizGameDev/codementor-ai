@@ -397,7 +397,7 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
   - 400 satır kuralını aşan dosya yok (boş satırlar sayılmaz): en büyükler `config.py` 398
     ve `analysis/extractor.py` 396. Faz F/G'de bölünenler artık sınırın altında: `pipeline/orchestrator.py` 360,
     `desktop/app.py` 350, `pipeline/passes.py` 302.
-  - ~28 bin satır kaynak, ~39 bin satır test; tek geliştirici.
+  - ~28 bin satır kaynak, ~40 bin satır test; tek geliştirici.
   - Masaüstü (CustomTkinter) testleri gerçek Tk penceresi açıyor: yavaş ve Linux CI'da atlanıyor
     (pencere testleri yalnız Windows'ta koşuyor).
   - Modüller arası bağımlılıklar katman sınırını zorluyordu; `report/usage.py` 62 satır ve yalnız
@@ -571,7 +571,7 @@ Projeyi bir sonraki seviyeye en çok taşıyacak tek adım. Küçük, etik ve te
 | Deneyim | Yardımsız kurulum başarısı | ölçülmedi | ≥ %80 | pilot |
 | Erişim | Anahtar/abonelik gerektirmeyen çalışan yol | yok (yerel model ölçülmedi) | en az bir yol, kalite eşiğiyle | Faz I |
 | Kod sağlığı | 400 satırı aşan dosya (boş satır hariç) | 0 (en büyük 396) | 0 | `wc -l` |
-| Kod sağlığı | "Sonraya" madde sayısı (açık) | 42 (119 madde) | < 30 | PROGRESS |
+| Kod sağlığı | "Sonraya" madde sayısı (açık) | 43 (120 madde) | < 30 | PROGRESS |
 
 ---
 

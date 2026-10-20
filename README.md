@@ -477,7 +477,7 @@ CODEMENTOR_E2E_LIVE=1 npx playwright test live   # web/ içinde; gerçek API ve 
 uv run codementor eval run --split dev --provider claude_cli --mode two_pass
 ```
 
-**Test disiplini:** ~39 bin satır test (~28 bin satır kaynak koda karşı): birim, entegrasyon,
+**Test disiplini:** ~40 bin satır test (~28 bin satır kaynak koda karşı): birim, entegrasyon,
 golden prompt anlık görüntüleri, hypothesis özellik testleri, her kural için pozitif/negatif
 fixture'lar, 40 KB kötü niyetli girdiyle doğrusal zaman testleri, Playwright e2e. Testler ağa
 çıkmaz; CI Ubuntu ve Windows'ta koşar, her `main` koşusu exe'yi de derler.

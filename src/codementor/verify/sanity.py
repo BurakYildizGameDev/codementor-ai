@@ -11,10 +11,16 @@ import re
 from codementor.models.enums import FindingSource, Severity
 from codementor.models.findings import Finding
 
-# Kanıt satırında bir koşullu kontrol/guard olduğuna işaret eden kalıplar
-_GUARD_EVIDENCE_RE = re.compile(
-    r"\b(if\s*\(|if\s+|switch\s*\(|assert\b|guard\b|\bnull\b|\bnullptr\b|\bNone\b|[!=]=|[<>]=?)",
-    re.IGNORECASE,
+# Kanıt satırında gerçek bir denetim yapısı (ADR-0031: `if (...)`): if / else if / elif / assert.
+# Tek başına karşılaştırma (`<`, `<=`, `==`) veya `null` denetim değildir; `for(i=0;i<=n;i++)` gibi
+# taşma kanıtlarını halüsinasyon sanıp düşürmemek için bunlar bilerek kalıba alınmaz.
+_GUARD_EVIDENCE_RE = re.compile(r"\b(?:el)?if\b|\bassert\b", re.IGNORECASE)
+
+# Denetim aranmadan önce silinen dize/karakter sabitleri ve yorumlar (`// if n is 0` denetim değil).
+# Kapanmayan dize satır sonunda, kapanmayan `/*` metin sonunda biter (kapanış isteğe bağlı): aksi
+# halde her açılış sona kadar tarayıp başarısız olur ve süre karesel büyür (§12, regex bütçesi).
+_NOISE_RE = re.compile(
+    r"\"(?:\\.|[^\"\\\n])*\"?|'(?:\\.|[^'\\\n])*'?|//[^\n]*|/\*[\s\S]*?(?:\*/|\Z)|#[^\n]*"
 )
 
 # Açıklamada "kontrol edilmiyor / eksik" iddiasına işaret eden kalıplar
@@ -37,7 +43,9 @@ def is_guard_hallucination(description: str, evidence: str) -> bool:
     """Kanıt satırı bizzat bir kontrol iken 'kontrol edilmiyor' iddiası var mı denetler."""
     if not description or not evidence:
         return False
-    return bool(_MISSING_CHECK_RE.search(description) and _GUARD_EVIDENCE_RE.search(evidence))
+    if not _MISSING_CHECK_RE.search(description):
+        return False
+    return bool(_GUARD_EVIDENCE_RE.search(_NOISE_RE.sub(" ", evidence)))
 
 
 def apply_sanity_checks(

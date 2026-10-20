@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from codementor.models.enums import AuditCategory, FindingKind, FindingSource, Severity
 from codementor.models.findings import Finding
 from codementor.verify.sanity import apply_sanity_checks, is_guard_hallucination
@@ -58,6 +60,59 @@ def test_is_guard_hallucination_false_for_valid_issues() -> None:
         description="Dizi boyutu kontrol edilmiyor, doğrudan elemana erişiliyor.",
         evidence="return array[index];",
     )
+
+
+_MISSING = "Dizi sınırı kontrol edilmiyor."
+
+
+@pytest.mark.parametrize(
+    "evidence",
+    [
+        # Boşluksuz yazılmış karşılaştırmalar denetim değildir (eski kalıp bunları düşürüyordu)
+        "for(int i=0;i<=n;i++) a[i]=0;",
+        "cout<<a[n];",
+        "while(i<n) sum += a[i+1];",
+        "std::vector<int> v(n);",
+        "return p->next == nullptr;",
+        # `if` içeren tanımlayıcı, dize sabiti ve yorum denetim sayılmaz
+        "ifstream f(path);",
+        'printf("if empty\\n"); x = a[n];',
+        "x = a[n]; // if n is 0",
+        "x = a[n]  # if n is 0",
+        "x = a[n]; /* assert later */",
+    ],
+)
+def test_is_guard_hallucination_keeps_unguarded_evidence(evidence: str) -> None:
+    assert not is_guard_hallucination(description=_MISSING, evidence=evidence)
+
+
+@pytest.mark.parametrize(
+    "evidence",
+    [
+        "if(ptr==NULL)return;",
+        "} else if (n < 0) {",
+        "if x is None:",
+        "elif n <= 0:",
+        "assert(n > 0);",
+        "assert idx < len(arr)",
+        "Debug.Assert(index < items.Length);",
+    ],
+)
+def test_is_guard_hallucination_detects_real_guards(evidence: str) -> None:
+    assert is_guard_hallucination(description=_MISSING, evidence=evidence)
+
+
+def test_apply_sanity_checks_keeps_compact_overflow_in_standard_profile() -> None:
+    overflow = _make_finding(
+        "F-LLM-1",
+        evidence="for(int i=0;i<=n;i++) a[i]=0;",
+        description="Döngü sınırı kontrol edilmiyor; son adımda a[n] yazılıyor.",
+    )
+
+    findings, warnings = apply_sanity_checks([overflow], model_profile="standard")
+
+    assert [f.id for f in findings] == ["F-LLM-1"]
+    assert not any("çeliştiği için düşürüldü" in w for w in warnings)
 
 
 def test_apply_sanity_checks_drops_hallucinations_and_keeps_static() -> None:
