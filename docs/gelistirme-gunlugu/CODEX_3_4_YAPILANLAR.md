@@ -22,10 +22,10 @@ verildi; `codementor.toml` değiştirilmedi.
 
 | Parça | P / R / F1 | FP / FN | Öneri | p50 (sn) | Token ort. | Sonuç |
 |---|---:|---:|---:|---:|---:|---|
-| 1/4 | 71 / 65 / 68 | 7 / 9 | 0 | 20,2 | 38 687 | [`20261003T231139_codex_gpt-6-luna_two_pass_part1-4_dev.json`](../../eval/results/20261003T231139_codex_gpt-6-luna_two_pass_part1-4_dev.json) |
-| 2/4 | 84 / 80 / 82 | 3 / 4 | 1 | 19,0 | 37 761 | [`20261003T231927_codex_gpt-6-luna_two_pass_part2-4_dev.json`](../../eval/results/20261003T231927_codex_gpt-6-luna_two_pass_part2-4_dev.json) |
-| 3/4 | 79 / 79 / 79 | 4 / 4 | 0 | 19,8 | 39 501 | [`20261003T223953_codex_gpt-6-luna_two_pass_part3-4_dev.json`](../../eval/results/20261003T223953_codex_gpt-6-luna_two_pass_part3-4_dev.json) |
-| 4/4 | 81 / 85 / 83 | 5 / 4 | 0 | 18,2 | 41 074 | [`20261003T224706_codex_gpt-6-luna_two_pass_part4-4_dev.json`](../../eval/results/20261003T224706_codex_gpt-6-luna_two_pass_part4-4_dev.json) |
+| 1/4 | 71 / 65 / 68 | 7 / 9 | 0 | 20,2 | 38 687 | [`20261003T231139_codex_gpt-6-luna_two_pass_part1-4_dev.json`](../../eval/results/arsiv/20261003T231139_codex_gpt-6-luna_two_pass_part1-4_dev.json) |
+| 2/4 | 84 / 80 / 82 | 3 / 4 | 1 | 19,0 | 37 761 | [`20261003T231927_codex_gpt-6-luna_two_pass_part2-4_dev.json`](../../eval/results/arsiv/20261003T231927_codex_gpt-6-luna_two_pass_part2-4_dev.json) |
+| 3/4 | 79 / 79 / 79 | 4 / 4 | 0 | 19,8 | 39 501 | [`20261003T223953_codex_gpt-6-luna_two_pass_part3-4_dev.json`](../../eval/results/arsiv/20261003T223953_codex_gpt-6-luna_two_pass_part3-4_dev.json) |
+| 4/4 | 81 / 85 / 83 | 5 / 4 | 0 | 18,2 | 41 074 | [`20261003T224706_codex_gpt-6-luna_two_pass_part4-4_dev.json`](../../eval/results/arsiv/20261003T224706_codex_gpt-6-luna_two_pass_part4-4_dev.json) |
 | **Birleşik 96** | **79 / 77 / 78** | **19 / 21** | **1** | — | — | dört sonuç dosyasından, güncel etiketlerle |
 
 Birleşik ölçümde 70 doğru hata tahmini, 89 hata tahmini ve 91 etiketli hata vardır. Dört koşuda

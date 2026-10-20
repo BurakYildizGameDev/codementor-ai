@@ -465,3 +465,9 @@ R −2,4 … +5,6, F1 −1,8 … +7,8. Değişim anlamlı değil, gerileme yok.
   (PROGRESS Sonraya, "Kategori-ötesi yakın yineleme").
 - Token: Geçiş A tahmini (`estimate_messages`) gerçek girdinin medyan 0,48'i. Onarımsız 53
   örnekte gerçek ≈ 1,64 × tahmin + 1379 (r = 0,998) → `CHARS_PER_TOKEN` 3 → 2 (ADR-0033).
+
+> 2026-10-21: README yalnız güncel koşuları gösterir. Bu belgede anılan eski sonuç dosyaları
+> `eval/results/arsiv/` altına taşındı. Statik dev/test koşuları güncel kurallarla yenilendi:
+> dev 100 / 57 / 73, test 86 / 56 / 68. Testteki 5 FP sonradan eklenen kuralların etiket dışı
+> bulgularıdır (`c-006:8`, `c-016:12` NULL denetimi; `cpp-006:3,12` elle ömür; `cpp-015:9`
+> döngüde `s = s + x`).

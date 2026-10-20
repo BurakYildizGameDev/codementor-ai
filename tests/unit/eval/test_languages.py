@@ -185,7 +185,7 @@ def test_eval_run_language_filter_applied_before_limit(
 def test_old_result_without_languages_loads() -> None:
     """Faz 18 öncesi sonuç dosyalarında `languages` alanı yok; varsayılan boş liste."""
     results = Path(__file__).resolve().parents[3] / "eval" / "results"
-    old = results / "20260930T181653_claude_cli_claude-opus-5-5_two_pass_test.json"
+    old = results / "arsiv" / "20260930T181653_claude_cli_claude-opus-5-5_two_pass_test.json"
     data = json.loads(old.read_text(encoding="utf-8"))
     assert "languages" not in data["config"]
     (result,) = load_results([old])

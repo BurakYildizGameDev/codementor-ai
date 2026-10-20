@@ -1068,7 +1068,7 @@ tekrarlanabilir bir release'ten gelsin.
       (`validation/tier1.py::_column_unit_unsupported`). Tier 0 karakter saymaya devam eder.
       Testler: `tests/unit/test_tier1.py` (argv + yeniden deneme), `tests/compiler/test_tier1_compiler.py`
 - [ ] HTML-STD-003: adoption agency, foster parenting (bilinen sınır; değerlendirme)
-- [x] Statik dev eval yeniden koşulur (`eval/results/20261016T212522_static_none_static_dev.json`);
+- [x] Statik dev eval yeniden koşulur (`eval/results/arsiv/20261016T212522_static_none_static_dev.json`);
       README kural sayısı (41, Faz H1) ve "Yalnızca statik" dev satırı (`100 / 57 / 73`) güncellendi —
       **Faz H4** (test bölümü `--final` olmadan koşulmadı)
 - [x] **Faz H denetimi — CSS-ACC-001 aşırı susturma KAPANDI (`faz/h-denetim`):** `rules/css.py`'deki

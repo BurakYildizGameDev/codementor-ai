@@ -331,7 +331,7 @@
 ### H4 — statik dev ölçümü — ✅ (`0fb7162`)
 - Değişen dosyalar: `README.md` (dev eval bloğu `eval compare` çıktısından yeniden üretildi + özet
   satır), `docs/ZAYIF_VE_GELISTIRILECEK_YONLER.md` §4.8, `PROGRESS.md`,
-  `eval/results/20261016T212522_static_none_static_dev.json` (yeni sonuç dosyası; eskiler silinmedi).
+  `eval/results/arsiv/20261016T212522_static_none_static_dev.json` (yeni sonuç dosyası; eskiler silinmedi).
 - Yeni testler: yok (ölçüm maddesi); `tests/unit/eval/test_readme_table.py` **değiştirilmedi** ve yeşil.
 - Karar/not: yalnızca statik dev (96 örnek): precision **%100 → %100** (H1'in yeni kuralları yanlış
   pozitif üretmiyor), recall %55,2 → **%57,5**, F1 %71,1 → **%73,0**, Big-O %97/%97, erken çıkış
@@ -358,7 +358,7 @@
      `_is_large`, kural sınıfı) `rules/cpp_perf.py`'ye taşındı → `cpp.py` **338**, `cpp_perf.py` **360**
      satır. Taşınan blok birebir aynı; mevcut fixture/test **değişmedi**, yalnız kullanılmayan
      `strip_templates` içe aktarımı temizlendi ve iki modülün docstring'i konu ayrımını yazıyor.
-- **Ölçüm:** statik dev yeniden koşuldu (`eval/results/20261017T161712_static_none_static_dev.json`):
+- **Ölçüm:** statik dev yeniden koşuldu (`eval/results/arsiv/20261017T161712_static_none_static_dev.json`):
   precision **%100** ve recall **%57,5** (0,5747) **değişmedi**, F1 %73,0, Big-O %97/%97, erken çıkış
   %100/%100, p50 0,14 sn (H4: 0,13 sn — makine gürültüsü). README'nin `dev` bloğu sonuç dosyalarından
   yeniden üretildi; `tests/unit/eval/test_readme_table.py` **değiştirilmedi** ve yeşil.
@@ -514,7 +514,7 @@
   → `3624 passed, 17 skipped, 6 deselected in 124.19s` (toplama hatası yok)
 - Eval (yalnızca statik dev, 96 örnek):
   `uv run codementor eval run --split dev --static-only` →
-  `eval/results/20261016T212522_static_none_static_dev.json`; denetim P/R/F1 **100% / 57% / 73%**,
+  `eval/results/arsiv/20261016T212522_static_none_static_dev.json`; denetim P/R/F1 **100% / 57% / 73%**,
   Big-O 97% / 97%, erken çıkış 100% / 100%, sızan 0%, p50 0.1 / p95 0.8 sn
 - `uv run pytest tests/unit/eval/test_readme_table.py -q` → `5 passed in 0.39s`
 - `git diff` (H4): `README.md` **2 satır eklendi** (yeni statik satır + sürüm satırı), kod dosyası yok.
@@ -529,7 +529,7 @@
   düzeltme öncesi katalog testi düşüyordu)
 - Satır sayıları: `rules/cpp.py` → **338**, `rules/cpp_perf.py` → **360**, `rules/css.py` → 294 (< 400)
 - Eval (yalnızca statik dev, 96 örnek): `uv run codementor eval run --split dev --static-only` →
-  `eval/results/20261017T161712_static_none_static_dev.json`; denetim P/R/F1 **100% / 57% / 73%**
+  `eval/results/arsiv/20261017T161712_static_none_static_dev.json`; denetim P/R/F1 **100% / 57% / 73%**
   (precision ve recall H4 ile birebir aynı: 0,5747), Big-O 97% / 97%, erken çıkış 100% / 100%, p50 0.1 /
   p95 0.9 sn
 - `uv run pytest tests/unit/eval/test_readme_table.py -q` → `5 passed` (README `dev` bloğu +2 satır:

@@ -59,16 +59,20 @@ Details (Turkish): [docs/mimari.md](docs/mimari.md) · decisions: [docs/adr/](do
 
 ## Results (summary)
 
-| Metric | Claude Opus (`claude_cli`) | Static only (no LLM) |
+| Metric | Claude Opus (`claude_cli`, two_pass) | Static only (no LLM) |
 |---|---|---|
-| Audit P / R / F1, dev 96 | **79 / 97 / 87** | 100 / 55 / 71 |
+| Audit P / R / F1, dev 96 | **79 / 97 / 87** | 100 / 57 / 73 |
+| Audit P / R / F1, test 70 | not measured | 86 / 56 / 68 |
 | Early exit P / R | 100% / 100% | 100% / 100% |
+| Big-O exact / class (dev) | 97% / 97% | 97% / 97% |
 | Solution leakage | 0% | — |
 | Prompt-injection resistance | 100% | — |
+| Latency p50 / p95 | 19 / 40 s | 0.1 / 0.6 s |
 
-Static rules are precise but find few issues; the LLM lifts recall from 55% to 92–96%. The
-test split was intentionally not re-run after dev tuning (its table is an older measurement).
-Small data: one test sample is worth ~2–3 points. Full tables: [README.md](README.md#sonuçlar).
+Measured 2026-10-20/21 (prompt `v1+fc8f4d72`, rules r3). Static rules are precise but find few
+issues; the LLM lifts recall from 57% to 97%. Claude was not run on the test split with the
+current prompt; older measurements were removed (archived under `eval/results/arsiv/`). Small
+data: one dev sample is worth ~1 point. Full tables: [README.md](README.md#sonuçlar).
 
 ## Quick start
 

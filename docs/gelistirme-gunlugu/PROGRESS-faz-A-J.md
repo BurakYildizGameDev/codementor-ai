@@ -1225,7 +1225,7 @@ boşluk** bulundu: delege bildirimleri analizi tamamen düşürüyordu.
 ### Faz H — H4: statik dev ölçümü (kayıt: 2026-10-16)
 
 - **Koşu:** `uv run codementor eval run --split dev --static-only` (LLM yok, ağ yok) →
-  `eval/results/20261016T212522_static_none_static_dev.json` (96 örnek).
+  `eval/results/arsiv/20261016T212522_static_none_static_dev.json` (96 örnek).
   Eski sonuç dosyaları **silinmedi** (devir kuralı); karşılaştırma `eval compare` ile.
 - **Önce/sonra (yalnızca statik, dev 96):**
 
@@ -1312,7 +1312,7 @@ devirde kapsam dışı/isteğe bağlı (§9, §10).
 - **Testler:** 2 yeni fixture (`CSS-ACC-001/positive/global_focus_visible_override.css`,
   `…/negative/bare_both.css`) → `pytest -m "not live"` **3717 → 3719 geçti** (16 atlandı, 6 seçilmedi,
   4:12). Fixture'lar otomatik bulunur; test kodu değişmedi.
-- **Ölçüm:** statik dev yeniden koşuldu (`eval/results/20261017T161712_static_none_static_dev.json`):
+- **Ölçüm:** statik dev yeniden koşuldu (`eval/results/arsiv/20261017T161712_static_none_static_dev.json`):
   precision **%100** (değişmedi), recall **%57,5** (0,5747 — değişmedi), F1 **%73,0**, Big-O %97/%97,
   erken çıkış %100/%100, p50 0,14 sn. README `eval-table:dev` bloğu sonuç dosyalarından yeniden
   üretildi; `tests/unit/eval/test_readme_table.py` değişmedi ve yeşil.

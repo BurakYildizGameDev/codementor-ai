@@ -173,155 +173,66 @@ Her önemli karar bir ADR'dir ([docs/adr/](docs/adr/), 33 kayıt). Öne çıkanl
 injection içerir. Bulgu eşleşmesi: aynı kategori + satır farkı ≤ 2. Prompt'lar dev'de
 geliştirildi; test bölümü dokunulmadan tutuldu.
 
-| Ölçüm | Claude Opus (`claude_cli`) | Yalnızca statik (LLM yok) |
+| Ölçüm | Claude Opus (`claude_cli`, two_pass) | Yalnızca statik (LLM yok) |
 |---|---|---|
-| Denetim P / R / F1, dev 96 | **79 / 97 / 87** (2026-10-21, güncel prompt) | 100 / 57 / 73 |
-| Denetim P / R / F1, test 70 | 27 / 92 / 42 (Faz 12 prompt'u, 49 örnek) | 94 / 55 / 69 |
+| Denetim P / R / F1, dev 96 | **79 / 97 / 87** | 100 / 57 / 73 |
+| Denetim P / R / F1, test 70 | ölçülmedi | 86 / 56 / 68 |
 | Erken çıkış P / R | %100 / %100 | %100 / %100 |
-| Big-O birebir / sınıf (test) | %91–94 / %94–97 | %97 / %97 |
+| Big-O birebir / sınıf (dev) | %97 / %97 | %97 / %97 |
 | Çözüm sızıntısı | %0 | — |
 | Prompt injection direnci | %100 | — |
-| Gecikme p50 | ~16–24 sn (iki geçiş) | ~0,1 sn |
+| Gecikme p50 / p95 | 19 / 40 sn | 0,1 / 0,6 sn |
+| Ortalama token | ~15,8k | — |
 
-Okuma notları:
+Ölçüm 2026-10-20/21 tarihli; prompt `v1+fc8f4d72`, kurallar r3. Okuma notları:
 
-- **İş bölümü net:** statik kurallar az ama kesin bulur (precision %94–100); LLM recall'ı
-  %55'ten %92–96'ya taşır. İkisi birlikte bulunur, biri diğerinin yerine geçmez.
-- **Precision'ın hikâyesi:** ilk prompt'ta LLM etiketlenmemiş küçük gözlemler ekliyordu
-  (precision %27). Dev'de "sorun" ölçütü, kategori tanımları, ayrı bir bulgu doğrulama geçişi
-  (ADR-0019) ve kategori tutarlılığıyla dev precision'ı %27'den %78'e çıktı, recall korundu
-  (bu arada dev seti de 31'den 96 örneğe büyüdü). Test bölümü bu iyileştirmelerden sonra
-  yeniden koşulmadı; tablodaki test satırı bilinçli olarak eski ölçümdür.
-- **Küçük veri:** test bölümünde bir örnek ~2–3 puan eder. Sonuçlar yön göstericidir.
+- **İş bölümü net:** statik kurallar az ama kesin bulur (dev precision %100). LLM recall'ı
+  %57'den %97'ye taşır. İkisi birlikte koşar, biri diğerinin yerine geçmez.
+- **Claude test bölümünde koşulmadı.** Eski prompt'larla alınmış test ölçümleri kaldırıldı.
+  Statik test precision'ındaki 5 yanlış alarmın hepsi sonradan eklenen kuralların (NULL denetimi,
+  elle `new`/`delete`, döngüde string birleştirme) test etiketlerinde olmayan bulgularıdır.
+- **Küçük veri:** dev'de bir örnek ~1 puan eder. Sonuçlar yön göstericidir.
+- **Tarihçe:** eski koşular `eval/results/arsiv/` altında, anlatımları
+  [docs/eval-findings.md](docs/eval-findings.md)'de.
 
 <details>
-<summary><b>Tüm eval tabloları (sonuç dosyalarından üretilir, test ile denetlenir)</b></summary>
+<summary><b>Eval tabloları (sonuç dosyalarından üretilir, test ile denetlenir)</b></summary>
 
 Tablolar `uv run codementor eval compare eval/results/*_test.json` (ve `*_dev.json`)
 çıktısıdır; `tests/unit/eval/test_readme_table.py` sonuç dosyalarıyla birebir olduklarını
-denetler. "Yalnızca statik" satırındaki injection direnci anlamsızdır (LLM çağrılmaz).
-
-> Not (Faz 21): "Yalnızca statik" satırları güncel kurallarla ve Faz 21'de iki bulgu eklenmiş
-> dev etiketleriyle yeniden koşuldu; LLM satırları Faz 12'deki kurallar ve etiketlerle hesaplandı
-> (yeniden koşulmadı). Satırlar bu yüzden tam karşılaştırılabilir değil; ayrıntı
-> `docs/eval-findings.md` §5.
-
-> Not (Faz H4, 2026-10-16): statik dev koşusu H1–H3 değişiklikleriyle yeniden koşuldu
-> (`eval/results/20261016T212522_static_none_static_dev.json`, 96 örnek): precision **%100'de
-> kaldı**, recall %55 → **%57,5**, F1 %71 → **%73**; Big-O %97/%97, erken çıkış %100/%100.
-> Özet tablodaki "Yalnızca statik" dev satırı bu koşudan; test bölümü `--final` olmadan
-> koşulmadı (H4 kapsamı dev).
+denetler. Claude dev koşusu kota yüzünden 4 parça × 24 örnek koşuldu (`eval run --part k/4`);
+dört satır birlikte 96 örneği oluşturur, veri seti özeti bu yüzden parça başına farklıdır.
+Statik satırların kural özeti (`r3+d547121a`) yalnız ADR-0033'teki token sabiti yüzünden farklıdır.
+"Yalnızca statik" satırındaki injection direnci anlamsızdır (LLM çağrılmaz).
 
 **Test (70 örnek):**
 
 <!-- eval-table:test:start -->
 | Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| claude_cli / claude-opus-5-5 | two_pass | — | 49 (test) | 100% / 100% | 100% / 100% | 91% / 94% | 27% / 92% / 42% | 94% | 0% | 100% | 20.3 / 57.3 | 15673 |
-| claude_cli / claude-opus-5-5 | single_pass | — | 49 (test) | 100% / 100% | 100% / 100% | 94% / 97% | 32% / 94% / 48% | 94% | 0% | 100% | 13.5 / 35.7 | 10182 |
-| Yalnızca statik (LLM yok) | static | — | 49 (test) | — / — | 100% / 100% | 97% / 97% | 90% / 49% / 63% | 100% | 0% | — | 0.1 / 0.5 | — |
-| Yalnızca statik (LLM yok) | static | — | 70 (test) | — / — | 100% / 100% | 97% / 97% | 94% / 55% / 69% | 100% | 0% | — | 0.0 / 0.6 | — |
+| Yalnızca statik (LLM yok) | static | — | 70 (test) | — / — | 100% / 100% | 97% / 97% | 86% / 56% / 68% | 100% | 0% | — | 0.0 / 0.6 | — |
 
-Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
-Sürümler: prompt v1+2579008b · kurallar r2+2256b8a8 · şema 1.1
-Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
+Sürümler: prompt v1+fc8f4d72 · kurallar r3+d547121a · şema 1.1 · veri seti d1+dae02621
 <!-- eval-table:test:end -->
 
-> Not: `c-016` etiketine 2026-10-01'de ikinci beklenen bulgu (`memory_safety`, C-MEM-003) eklendi; LLM satırları eski etiketle puanlandı.
-
-**Dev ve ablasyonlar (31 → 46 → 96 örnek):**
+**Dev (96 örnek):**
 
 <!-- eval-table:dev:start -->
 | Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| claude_cli / claude-opus-5-5 | two_pass | — | 31 (dev) | 100% / 100% | 100% / 100% | 96% / 96% | 27% / 92% / 42% | 100% | 0% | 100% | 23.5 / 40.0 | 14219 |
-| claude_cli / claude-opus-5-5 | single_pass | — | 31 (dev) | 100% / 100% | 100% / 100% | 92% / 92% | 32% / 96% / 47% | 96% | 0% | 100% | 13.1 / 24.5 | 9359 |
-| claude_cli / claude-opus-5-5 | two_pass | facts | 31 (dev) | 100% / 100% | 100% / 100% | 85% / 92% | 28% / 100% / 43% | 96% | 0% | 100% | 20.5 / 42.3 | 13227 |
-| claude_cli / claude-opus-5-5 | two_pass | line_numbers | 31 (dev) | 100% / 100% | 100% / 100% | 92% / 92% | 28% / 100% / 44% | 96% | 0% | 100% | 20.4 / 41.3 | 13861 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 31 (dev) | 100% / 100% | 100% / 100% | 96% / 96% | 67% / 86% / 75% | 100% | 0% | 100% | 17.5 / 31.3 | 13389 |
-| Yalnızca statik (LLM yok) | static | — | 31 (dev) | — / — | 100% / 100% | 96% / 96% | 100% / 37% / 54% | 100% | 0% | — | 0.1 / 0.6 | — |
-| claude_cli / claude-opus-5-5 | two_pass | — | 46 (dev) | 100% / 100% | 100% / 100% | 93% / 97% | 69% / 89% / 78% | 98% | 0% | 100% | 17.9 / 36.1 | 14111 |
-| claude_cli / claude-haiku-4-5-20251001 (thinking=0) | two_pass | — | 46 (dev) | 97% / 100% | 100% / 100% | 97% / 97% | 45% / 78% / 57% | 88% | 0% | 100% | 14.7 / 32.3 | 14926 |
-| claude_cli / claude-haiku-4-5-20251001 (thinking=0) | single_pass | — | 46 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 48% / 78% / 59% | 84% | 0% | 100% | 14.3 / 66.9 | 17247 |
-| claude_cli / claude-opus-5-5 | two_pass | verify | 46 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 79% / 89% / 84% | 98% | 0% | 100% | 22.1 / 38.3 | 15891 |
-| claude_cli / claude-opus-5-5 | two_pass | fewshot0 | 46 (dev) | 100% / 100% | 100% / 100% | 97% / 97% | 68% / 91% / 78% | 98% | 0% | 100% | 19.3 / 33.9 | 13737 |
-| claude_cli / claude-opus-5-5 | two_pass | fewshot1 | 46 (dev) | 100% / 100% | 100% / 100% | 93% / 97% | 68% / 89% / 77% | 98% | 0% | 100% | 16.9 / 28.3 | 12641 |
-| Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 58% / 73% | 100% | 0% | — | 0.1 / 0.5 | — |
-| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 71% / 77% / 74% | 100% | 0% | 100% | 16.7 / 44.4 | 14366 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 78% / 90% / 84% | 100% | 0% | 100% | 20.7 / 33.4 | 13768 |
-| codex / gpt-6-luna | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 87% / 100% | 79% / 79% / 79% | 100% | 0% | 100% | 19.8 / 29.8 | 39501 |
-| codex / gpt-6-luna | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 81% / 85% / 83% | 100% | 0% | 100% | 18.2 / 41.3 | 41074 |
-| codex / gpt-6-luna | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 71% / 65% / 68% | 94% | 0% | 100% | 20.2 / 40.3 | 38687 |
-| codex / gpt-6-luna | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 87% / 93% | 84% / 80% / 82% | 100% | 0% | 100% | 19.0 / 29.8 | 37761 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 100% | 83% / 100% / 90% | 100% | 0% | 100% | 17.2 / 31.6 | 14709 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 74% / 88% / 81% | 96% | 0% | 100% | 24.0 / 44.6 | 16484 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 3 (dev) | 100% / 100% | — / — | 100% / 100% | 60% / 100% / 75% | 100% | 0% | — | 30.2 / 31.4 | 16757 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 1 (dev) | 100% / 100% | — / — | 100% / 100% | 100% / 100% / 100% | 100% | 0% | — | 19.8 / 19.8 | 13589 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 80% / 92% / 86% | 100% | 0% | 100% | 16.4 / 35.1 | 14892 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 87% / 100% / 93% | 100% | 0% | 100% | 16.0 / 34.4 | 14023 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 78% / 95% / 86% | 100% | 0% | 100% | 16.2 / 27.6 | 14416 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 71% / 96% / 82% | 100% | 0% | 100% | 18.2 / 38.0 | 15080 |
-| Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 55% / 71% | 100% | 0% | — | 0.1 / 0.7 | — |
-| Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 57% / 73% | 100% | 0% | — | 0.1 / 0.8 | — |
-| Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 57% / 73% | 100% | 0% | — | 0.1 / 0.9 | — |
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 87% / 100% / 93% | 100% | 0% | 100% | 17.2 / 34.3 | 14652 |
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 95% / 100% | 100% / 100% | 93% / 93% | 75% / 100% / 86% | 100% | 0% | 100% | 21.2 / 39.6 | 16912 |
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 78% / 90% / 84% | 100% | 0% | 100% | 14.9 / 35.4 | 15016 |
 | claude_cli / claude-opus-5-5 | two_pass | — | 24 (dev) | 100% / 100% | 100% / 100% | 93% / 93% | 76% / 96% / 85% | 100% | 0% | 100% | 21.7 / 34.8 | 16475 |
+| Yalnızca statik (LLM yok) | static | — | 96 (dev) | — / — | 100% / 100% | 97% / 97% | 100% / 57% / 73% | 100% | 0% | — | 0.1 / 0.6 | — |
 
-Sürümler: prompt v1+14a294f9 · kurallar r1+d1852061 · şema 1.0
-Sürümler: prompt v1+2579008b · kurallar r2+2256b8a8 · şema 1.1
-Sürümler: prompt v1+2579008b · kurallar r2+5f39f401 · şema 1.1
-Sürümler: prompt v1+632620d8 · kurallar r2+6d038ca1 · şema 1.1
-Sürümler: prompt v1+632620d8 · kurallar r2+e29a16e4 · şema 1.1
-Sürümler: prompt v1+7205d091 · kurallar r1+d1852061 · şema 1.1
-Sürümler: prompt v1+a4c5ebfc · kurallar r1+d1852061 · şema 1.1
-Sürümler: prompt v1+fbc08625 · kurallar r1+d3065584 · şema 1.0
 Sürümler: prompt v1+fc8f4d72 · kurallar r3+4f5e54ee · şema 1.1 · veri seti d1+01b6cdf6
 Sürümler: prompt v1+fc8f4d72 · kurallar r3+4f5e54ee · şema 1.1 · veri seti d1+8ee20994
 Sürümler: prompt v1+fc8f4d72 · kurallar r3+4f5e54ee · şema 1.1 · veri seti d1+bd83e983
 Sürümler: prompt v1+fc8f4d72 · kurallar r3+4f5e54ee · şema 1.1 · veri seti d1+c068a9cf
-Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
+Sürümler: prompt v1+fc8f4d72 · kurallar r3+d547121a · şema 1.1 · veri seti d1+1dc8501e
 ⚠ Tabloda farklı veri seti sürümleri var; satırlar doğrudan kıyaslanamaz.
 <!-- eval-table:dev:end -->
-
-> En güncel dev ölçümü (2026-10-21, prompt `v1+fc8f4d72`, kurallar r3): **Claude 96 örnek — Denetim P / R / F1 = 79 / 97 / 87**. Faz 51 koşusu güncel etiketlerle 75 / 95 / 84 (kayıtlı 78 / 96 / 86); eşli bootstrap'te F1 farkı %95 aralığı −1,8 … +7,8, yani anlamlı bir değişim yok. HTML precision 10/13 (Faz 18'de %22).
-
-> Faz 51 (2026-10-05): Claude 96 örnek — 78 / 96 / 86 (karışıklık 7 → 2). Ayrıntı: [geliştirme günlüğü](docs/gelistirme-gunlugu/PROGRESS-faz-0-63.md) "Faz 51 — Notlar".
-
-> Faz 36 (2026-10-04): Claude Opus parçaları 1/4 + 2/4 (48 örnek) kayıtlı metrikte 75 / 83 / 78; `unity-104` etiketi güncellenince 75 / 81 / 78. Codex `gpt-6-luna` aynı promptla dört parçayı koştu: 96 örnekte 79 / 77 / 78. Sağlayıcılar farklı olduğundan sonuçlar birleştirilmez. Ayrıntı: `docs/eval-findings.md` §11.
-
-> Dev genişletmesi (2026-10-04): dev 46 → 96 örnek. Statik satır ve Codex `gpt-6-luna` ölçümü 96 örnekliktir; Claude Opus satırları eski 46 örnek ve kısmi 24'er örnek koşularıdır. Ayrıntı: `docs/eval-findings.md` §10–11.
-
-> Faz 34/35B (2026-10-03): `verify` = bulgu doğrulama geçişi (artık varsayılan açık, ADR-0019): precision 69 → 79, recall aynı. İkinci model Claude Haiku 4.5 (düşünme kapalı). Few-shot 0/1/2 arasında fark yok. Ayrıntı: `docs/eval-findings.md` §9.
-
-> Faz 22B (2026-10-02): `v1+fdc16030` prompt'u ("sorun" ölçütü, kategori tanımları, en fazla 6 bulgu, Python few-shot). Ayrıntı: `docs/eval-findings.md` §7.
-
-**Python, HTML, CSS (Faz 18, 36 örnek; dil başına 12):** test 21 / dev 15, yalnızca bu dillerde
-koşuldu (`eval run --language`). Dil başına döküm: `docs/eval-findings.md` §4.
-
-<!-- eval-table:test-diller:start -->
-| Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Yalnızca statik (LLM yok) | static | — | 21 (test) | — / — | 100% / 100% | 100% / 100% | 100% / 67% / 80% | 100% | 0% | — | 0.0 / 0.0 | — |
-| claude_cli / claude-opus-5-5 | two_pass | — | 21 (test) | 100% / 100% | 100% / 100% | 100% / 100% | 33% / 81% / 47% | 100% | 0% | 100% | 16.5 / 36.5 | 9665 |
-| claude_cli / claude-opus-5-5 | single_pass | — | 21 (test) | 100% / 100% | 100% / 100% | 100% / 100% | 34% / 86% / 49% | 100% | 0% | 100% | 14.1 / 23.4 | 7328 |
-
-Sürümler: prompt v1+e485058f · kurallar r1+286dfb2f · şema 1.0
-<!-- eval-table:test-diller:end -->
-
-<!-- eval-table:dev-diller:start -->
-| Koşu | Mod | Ablasyon | Örnek | Şema (ilk / onarım sonrası) | Erken çıkış P / R | Big-O birebir / sınıf | Denetim P / R / F1 | Satır doğruluğu | Sızıntı | Injection direnci | p50 / p95 (sn) | Token ort. |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Yalnızca statik (LLM yok) | static | — | 15 (dev) | — / — | 100% / 100% | 100% / 100% | 100% / 55% / 71% | 100% | 0% | — | 0.0 / 0.0 | — |
-| claude_cli / claude-opus-5-5 | two_pass | — | 15 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 54% / 95% / 69% | 89% | 0% | 100% | 16.2 / 34.2 | 9530 |
-| claude_cli / claude-opus-5-5 | two_pass | — | 15 (dev) | 100% / 100% | 100% / 100% | 100% / 100% | 68% / 85% / 76% | 94% | 0% | 100% | 15.6 / 25.8 | 10127 |
-
-Sürümler: prompt v1+e485058f · kurallar r1+286dfb2f · şema 1.0
-Sürümler: prompt v1+fdc16030 · kurallar r1+fa6fff47 · şema 1.0
-<!-- eval-table:dev-diller:end -->
-
-> Son two_pass satırı Faz 22B prompt'udur (`v1+fdc16030`).
 
 </details>
 

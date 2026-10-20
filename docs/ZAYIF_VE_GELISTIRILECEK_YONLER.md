@@ -85,7 +85,7 @@ gerçek kullanıcı, geniş kural seti) geride kalınmasından geliyor.
   olgular prompt'tan çıkarılınca Big-O birebir doğruluk %96 → %85 düşüyor (ablasyon kanıtı).
 - **Sızıntı koruması kodda, prompt'ta değil:** çıktı denetleniyor, çözüm sızdıran soru yeniden üretiliyor.
 - **Ölçüm disiplini:** 166 elle etiketlenmiş örnek, dev/test ayrımı, sonuç dosyalarından üretilen ve testle
-  denetlenen README tabloları. Dev'de precision %27 → %78, recall korunarak.
+  denetlenen README tabloları. Dev'de precision %27 → %79, recall korunarak (2026-10-21).
 - **Güvenlik düşüncesi:** kod çalıştırılmıyor; derleyici yalıtımı; include koruması; prompt injection
   fixture'ları; tehdit modeli (`SECURITY.md`); birden fazla bağımsız güvenlik denetimi.
 - **Mühendislik:** mypy strict, 3.700+ test, ağsız testler, ADR kültürü, otomatik ve doğrulanmış release.
@@ -146,12 +146,12 @@ Her başlık aynı yapıda: **Durum** (bugün ne var) · **Neden önemli** · **
 
 - **Durum:** 166 elle etiketlenmiş örnek (dev 96 / test 70). Ana sonuçlar `claude-opus-5-5` (`claude_cli`)
   için. Claude Haiku 4.5 ve Codex `gpt-6-luna` yalnız dev'in bir kısmında ölçüldü; Ollama, Gemini ve
-  Anthropic API hiç ölçülmedi. **Test bölümündeki LLM satırı Faz 12'nin eski prompt'uyla** (precision %27);
-  sonraki iyileştirmelerden sonra test yeniden koşulmadı (bilinçli: test bölümü "son bir kez" koşulacak).
+  Anthropic API hiç ölçülmedi. **Test bölümünde güncel prompt'la LLM ölçümü yok.** Faz 12'nin eski
+  prompt'uyla alınmış satır (precision %27) 2026-10-21'de README'den kaldırıldı (`eval/results/arsiv/`);
+  test bilinçli olarak "son bir kez" koşulacak.
 - **Neden önemli:** Küçük veride bir örnek ~2-3 puan eder; sonuçların güven aralığı geniş. Tek model
-  ağırlıklı ölçüm, "başka modelle de çalışır mı" sorusunu cevapsız bırakır. Eski test satırı README'de
-  okuyucuyu yanıltabilir (precision 27 görüp projeyi zayıf sanabilir ya da dev'deki 78'i genellenebilir
-  sanabilir).
+  ağırlıklı ölçüm, "başka modelle de çalışır mı" sorusunu cevapsız bırakır. Test bölümünde LLM
+  rakamı olmadığı için dev'deki 79'un genellenip genellenmediği bilinmiyor.
 - **Kanıt:** `README.md` Sonuçlar tablosu ve okuma notları; `eval/results/`.
 - **İyileştirme:**
   1. **Test bölümünü güncel prompt'la bir kez koş** ve README'yi güncelle (dev'e dokunmadan; test
@@ -573,7 +573,7 @@ Projeyi bir sonraki seviyeye en çok taşıyacak tek adım. Küçük, etik ve te
 | Deneyim | Yardımsız kurulum başarısı | ölçülmedi | ≥ %80 | pilot |
 | Erişim | Anahtar/abonelik gerektirmeyen çalışan yol | yok (yerel model ölçülmedi) | en az bir yol, kalite eşiğiyle | Faz I |
 | Kod sağlığı | 400 satırı aşan dosya (boş satır hariç) | 0 (en büyük 396) | 0 | `wc -l` |
-| Kod sağlığı | "Sonraya" madde sayısı (açık) | 3 (122 madde) | < 30 | PROGRESS |
+| Kod sağlığı | "Sonraya" madde sayısı (açık) | 4 (123 madde) | < 30 | PROGRESS |
 
 ---
 

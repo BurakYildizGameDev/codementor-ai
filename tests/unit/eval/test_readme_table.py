@@ -1,8 +1,8 @@
 """README'deki eval tabloları `eval/results/` dosyalarıyla birebir (Faz 13 kabul kriteri).
 
 Tablo elle yazılmaz: `codementor eval compare <dosyalar>` çıktısı işaretler arasına konur.
-Sonuç dosyası değişirse ya da tablo elle düzenlenirse bu test düşer. Dil filtreli koşular
-(`eval run --language`, Faz 18) ayrı `{bölüm}-diller` tablosundadır.
+Sonuç dosyası değişirse ya da tablo elle düzenlenirse bu test düşer. Eski koşular
+`eval/results/arsiv/` altındadır ve tablolara girmez; dil filtreli deneme koşuları da girmez.
 """
 
 from __future__ import annotations
@@ -29,20 +29,7 @@ def _blocks() -> dict[str, str]:
     return {m["split"]: m["body"].strip() for m in BLOCK.finditer(text)}
 
 
-BLOCKS = ["test", "dev", "test-diller", "dev-diller"]
-# `-diller` blokları yalnızca Faz 18'in Python/HTML/CSS koşularını gösterir; başka bir dil
-# filtresiyle yapılan deneme koşusu iki tabloya da girmez
-NEW_LANGUAGES = {"python", "html", "css"}
-# Ana tablolar C ailesidir: filtresiz eski koşular ve `--language c --language cpp
-# --language csharp` ile yeniden koşulan statik satırlar (Faz 21)
-C_FAMILY = {"c", "cpp", "csharp"}
-
-
-def _block_of(languages: set[str]) -> str:
-    if languages == NEW_LANGUAGES:
-        return "diller"
-    # yalnız filtresiz ya da C ailesinin tamamı; `--language c` gibi deneme koşuları dışarıda
-    return "" if not languages or languages == C_FAMILY else "diğer"
+BLOCKS = ["test", "dev"]
 
 
 def test_readme_has_test_and_dev_tables() -> None:
@@ -51,11 +38,10 @@ def test_readme_has_test_and_dev_tables() -> None:
 
 @pytest.mark.parametrize("block", BLOCKS)
 def test_readme_eval_table_matches_results(block: str) -> None:
-    split, _, kind = block.partition("-")
     results = [
         r
-        for r in load_results(sorted(RESULTS.glob(f"*_{split}.json")))
-        if _block_of(set(r.config.languages)) == kind
+        for r in load_results(sorted(RESULTS.glob(f"*_{block}.json")))
+        if not r.config.languages  # dil filtreli deneme koşuları tabloya girmez
     ]
     assert results, f"{block}: sonuç dosyası yok"
     expected = compare_table(results).strip()

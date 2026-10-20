@@ -16,13 +16,13 @@ sonundaki **"Bulunan sorunlar"** bölümüne yazar ve aşağıdaki kurallar içi
 
 | Parça | Sonuç dosyası | P / R / F1 (yalnız hatalar) | Öneri |
 |---|---|---|---|
-| 1/4 | `eval/results/20261003T215350_claude_cli_claude-opus-5-5_two_pass_part1-4_dev.json` | 71 / 77 / 74 | 9 |
-| 2/4 | `eval/results/20261003T220533_claude_cli_claude-opus-5-5_two_pass_part2-4_dev.json` | 78 / 90 / 84 | 5 |
+| 1/4 | `eval/results/arsiv/20261003T215350_claude_cli_claude-opus-5-5_two_pass_part1-4_dev.json` | 71 / 77 / 74 | 9 |
+| 2/4 | `eval/results/arsiv/20261003T220533_claude_cli_claude-opus-5-5_two_pass_part2-4_dev.json` | 78 / 90 / 84 | 5 |
 | 1 + 2 | — | 75 / 83 / 78 (güncel etiketle 75 / 81 / 78) | 14 |
 
 - Ayrıntı ve yorum: `docs/eval-findings.md` §11, `PROGRESS.md` "Faz 36 — Notlar" → "Canlı ölçüm planı".
 - Karşılaştırma tabanı: Faz 35B Opus + doğrulama koşusu
-  `eval/results/20261003T192757_claude_cli_claude-opus-5-5_two_pass_verify_dev.json` (eski 46 örnek, P/R/F1 79/89/84).
+  `eval/results/arsiv/20261003T192757_claude_cli_claude-opus-5-5_two_pass_verify_dev.json` (eski 46 örnek, P/R/F1 79/89/84).
 
 Claude CLI bu ortamda kullanılamadığı için kullanıcı talimatıyla ayrı bir Codex ölçümü yapıldı;
 Claude parçalarıyla birleştirilmedi. Aynı prompt ve doğrulama ayarıyla `gpt-6-luna` dört parçanın
@@ -30,10 +30,10 @@ tamamında kullanıldı:
 
 | Parça | Sonuç dosyası | P / R / F1 (yalnız hatalar) | Öneri |
 |---|---|---|---|
-| 1/4 | `eval/results/20261003T231139_codex_gpt-6-luna_two_pass_part1-4_dev.json` | 71 / 65 / 68 | 0 |
-| 2/4 | `eval/results/20261003T231927_codex_gpt-6-luna_two_pass_part2-4_dev.json` | 84 / 80 / 82 | 1 |
-| 3/4 | `eval/results/20261003T223953_codex_gpt-6-luna_two_pass_part3-4_dev.json` | 79 / 79 / 79 | 0 |
-| 4/4 | `eval/results/20261003T224706_codex_gpt-6-luna_two_pass_part4-4_dev.json` | 81 / 85 / 83 | 0 |
+| 1/4 | `eval/results/arsiv/20261003T231139_codex_gpt-6-luna_two_pass_part1-4_dev.json` | 71 / 65 / 68 | 0 |
+| 2/4 | `eval/results/arsiv/20261003T231927_codex_gpt-6-luna_two_pass_part2-4_dev.json` | 84 / 80 / 82 | 1 |
+| 3/4 | `eval/results/arsiv/20261003T223953_codex_gpt-6-luna_two_pass_part3-4_dev.json` | 79 / 79 / 79 | 0 |
+| 4/4 | `eval/results/arsiv/20261003T224706_codex_gpt-6-luna_two_pass_part4-4_dev.json` | 81 / 85 / 83 | 0 |
 | 1–4/4 | — | **79 / 77 / 78** (96 örnek, güncel etiket) | **1** |
 
 Dört Codex sonucunda `errors=0`, model kullanılamadı uyarısı yok, şema ilk denemede %100.
@@ -137,10 +137,10 @@ from codementor.models.findings import issues_only
 
 labels = {s.label.id: s.label for s in load_split(Path("eval/dataset"), "dev")}
 parts = load_results(
-    sorted(Path("eval/results").glob("*_codex_gpt-6-luna_two_pass_part*-4_dev.json"))
+    sorted(Path("eval/results/arsiv").glob("*_codex_gpt-6-luna_two_pass_part*-4_dev.json"))
 )
 old = load_results(
-    [Path("eval/results/20261003T192757_claude_cli_claude-opus-5-5_two_pass_verify_dev.json")]
+    [Path("eval/results/arsiv/20261003T192757_claude_cli_claude-opus-5-5_two_pass_verify_dev.json")]
 )[0]
 samples = [s for r in parts for s in r.samples]
 assert len(parts) == 4 and len({s.id for s in samples}) == 96, "dört parça da koşulmalı"
