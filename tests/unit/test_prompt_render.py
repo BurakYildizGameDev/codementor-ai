@@ -69,7 +69,7 @@ def test_code_too_large_raises(tmp_path: Path) -> None:
     big = "\n".join(f"int v{i} = {i};" for i in range(500))
     inp = analysis_input(tmp_path, code=unity_code(big))
     with pytest.raises(PromptBudgetError, match=r"^Kod token bütçesine sığmıyor"):
-        build_analysis_messages(inp, settings=_tight(2048))
+        build_analysis_messages(inp, settings=_tight(3072))
 
 
 def test_repair_messages_include_errors(tmp_path: Path) -> None:
@@ -185,7 +185,7 @@ def test_error_blames_non_trimmable_sections_when_code_fits(tmp_path: Path) -> N
     small = "\n".join(f"int x{i} = {i};" for i in range(100))  # kod tek başına sığar
     inp = analysis_input(tmp_path, code=unity_code(small))
     with pytest.raises(PromptBudgetError, match="kırpılamayan bölümler") as info:
-        build_analysis_messages(inp, settings=_tight(2048))
+        build_analysis_messages(inp, settings=_tight(3072))
     assert info.value.code_tokens is not None
     assert info.value.code_tokens < info.value.budget
 
@@ -197,14 +197,14 @@ def test_budget_uses_smallest_provider_in_chain(tmp_path: Path) -> None:
             "default": "claude_cli",
             "fallback": ["ollama"],
             "claude_cli": {"context_tokens": 200_000},
-            "ollama": {"num_ctx": 8192},
+            "ollama": {"num_ctx": 12288},
         },
     )
     built = build_analysis_messages(analysis_input(tmp_path), settings=settings)
     only_ollama = build_analysis_messages(
         analysis_input(tmp_path), settings=settings, provider="claude_cli→ollama"
     )
-    assert built.budget_tokens == only_ollama.budget_tokens < 8192
+    assert built.budget_tokens == only_ollama.budget_tokens < 12288
 
 
 # --- Onarım: bütçe ve veri çerçevesi (denetim O3, O4) ----------------------------------------

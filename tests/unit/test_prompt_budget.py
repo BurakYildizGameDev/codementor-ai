@@ -13,6 +13,7 @@ from codementor.config import Settings, load_settings
 from codementor.models.llm_output import LLMAnalysisOutput
 from codementor.models.provider import ChatMessage
 from codementor.prompts.budget import (
+    CHARS_PER_TOKEN,
     TRIM_ORDER,
     PromptBudgetError,
     PromptConfigError,
@@ -33,8 +34,9 @@ def test_estimate_tokens_monotonic(a: str, b: str) -> None:
 
 def test_estimate_tokens_is_conservative() -> None:
     assert estimate_tokens("") == 0
-    assert estimate_tokens("abc") == 1
-    assert estimate_tokens("x" * 300) == 100
+    assert estimate_tokens("ab") == 1
+    assert estimate_tokens("abc") == 2  # yukarı yuvarlanır
+    assert estimate_tokens("x" * 300) == 150
 
 
 def test_trim_order_matches_architecture() -> None:
@@ -42,7 +44,7 @@ def test_trim_order_matches_architecture() -> None:
     assert TRIM_ORDER == ("fewshots", "checklist", "facts", "static_findings")
 
 
-SECTION_SIZE = 300  # karakter; ≈ 100 token
+SECTION_SIZE = 300  # karakter; ≈ 150 token
 
 
 Render = Callable[[Mapping[str, int]], list[ChatMessage]]
@@ -53,7 +55,7 @@ def _render_factory(calls: list[dict[str, int]]) -> tuple[dict[str, int], Render
 
     def render(levels: Mapping[str, int]) -> list[ChatMessage]:
         calls.append(dict(levels))
-        parts = ["CODE" * 100]  # kod: ≈ 134 token, asla kırpılmaz
+        parts = ["CODE" * 100]  # kod: ≈ 200 token, asla kırpılmaz
         for name, top in max_levels.items():
             parts.append(name[0] * SECTION_SIZE * (top - levels[name]))
         return [ChatMessage(role="user", content="".join(parts))]
@@ -76,7 +78,7 @@ def test_trim_order_fewshot_then_checklist_then_facts() -> None:
     full = estimate_messages(render({k: 0 for k in max_levels}))
     calls.clear()
     # few-shot'ın ikisi ve kontrol listesinin biri gidince sığar
-    budget = full - 3 * (SECTION_SIZE // 3)
+    budget = full - 3 * (SECTION_SIZE // CHARS_PER_TOKEN)
     _, trimmed = fit_to_budget(render, max_levels, budget=budget)
     assert trimmed == ["fewshots", "checklist"]
     assert calls[-1] == {"fewshots": 2, "checklist": 1, "facts": 0, "static_findings": 0}
@@ -92,7 +94,7 @@ def test_facts_trimmed_before_static_findings() -> None:
     _, trimmed = fit_to_budget(
         render,
         max_levels,
-        budget=full - 7 * (SECTION_SIZE // 3),
+        budget=full - 7 * (SECTION_SIZE // CHARS_PER_TOKEN),
     )
     assert trimmed == ["fewshots", "checklist", "facts", "static_findings"]
 

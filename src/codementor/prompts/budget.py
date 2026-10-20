@@ -12,9 +12,10 @@ from codementor.config import ProviderConfig, Settings
 from codementor.models.provider import ChatMessage
 from codementor.providers.factory import chain_names, unknown_provider_reason
 
-# Kod tokenlaştırıcıları İngilizce metinde ~4, kod ve Türkçede ~3 karakter/token verir;
-# temkinli olmak için 3 (fazla tahmin, taşmadan iyidir).
-CHARS_PER_TOKEN = 3
+# Temkinli tahmin (fazla tahmin, taşmadan iyidir). Canlı dev ölçümünde (claude_cli, 2026-10-21)
+# Türkçe şablon + numaralı kod ~1,8 karakter/token çıktı; eski 3 girdiyi ~yarı yarıya düşük
+# tahmin ediyordu (ADR-0033).
+CHARS_PER_TOKEN = 2
 MESSAGE_OVERHEAD_TOKENS = 4
 MIN_PROMPT_TOKENS = 1024  # bundan azı yapılandırma hatasıdır (kodu suçlamayalım)
 

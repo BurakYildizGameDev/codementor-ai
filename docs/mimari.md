@@ -449,8 +449,10 @@ Sistem prompt'unun çekirdek kuralları (özet):
 - Kod bütçeye sığmıyorsa istek reddedilir (kod asla kırpılmaz; kırpılmış kod yanlış analiz üretir).
 - Bütçe, prompt'un gidebileceği her sağlayıcının (varsayılan + fallback) en darıdır: bağlam
   (`context_tokens`, yoksa `num_ctx`, yoksa `prompts.default_context_tokens`) − çıktı payı − şema.
-  `limits.max_bytes` (40 KB ≈ 15k token) sınırındaki kod için en dar sağlayıcıda ~20k token
+  `limits.max_bytes` (40 KB ≈ 20k token) sınırındaki kod için en dar sağlayıcıda ~24k token
   prompt bütçesi gerekir (Ollama'da `num_ctx = 32768`).
+- Sayım yaklaşıktır: 2 karakter/token (ADR-0033; canlı ölçümde Türkçe şablon + numaralı kod
+  ~1,8 karakter/token).
 
 ### 5.5 K4 — Sağlayıcı Adaptörü
 
@@ -1552,6 +1554,7 @@ Her ADR `docs/adr/NNNN-baslik.md` olarak tutulur: Bağlam · Karar · Sonuçlar 
 | ADR-0030 | `LLMProvider.primary_name` protokol üyesi | Önbellek kararı zincirin ilk halkasına bakmalı; sağlayıcıya özel `chain` alanını yoklamak yerine protokol üyesi (ortak `NamedProvider` tabanı) ([docs/adr/0030](adr/0030-primary-name-protokolu.md)) |
 | ADR-0031 | Küçük modeller için deterministik Sokratik kalite kapısı ve sağduyu korumaları | Küçük modellerin ürettiği döngüsel dejenerasyonu, kopya soruları, ters denetim çelişkilerini ve yanlış karmaşıklığı deterministik kurallarla filtreleme ([docs/adr/0031](adr/0031-kucuk-modeller-icin-deterministik-sokratik-kalite-kapisi.md)) |
 | ADR-0032 | Tier 0 sıcak işçi havuzu soğuk yolla aynı güvenlik sınırında | Sıcak işçi `runner` parçalarıyla başlar (ortam izin listesi, boş cwd, Job Object/rlimit), 100 istekte geri dönüşüm (birikimli CPU sınırı), canlı işçi sınırı, meşgulken soğuk yol ([docs/adr/0032](adr/0032-tier0-sicak-isci-havuzu.md)) |
+| ADR-0033 | Token tahmini 3 değil 2 karakter/token | Canlı ölçümde eski tahmin Geçiş A girdisinin ~yarısıydı (r = 0,998, ~1,8 karakter/token); bütçe denetimi taşan prompt'u geçirebiliyordu ([docs/adr/0033](adr/0033-token-tahmini-iki-karakter.md)) |
 
 ---
 
