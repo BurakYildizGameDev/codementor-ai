@@ -4,6 +4,7 @@ import { ComplexityCard } from "./components/ComplexityCard";
 import { Controls } from "./components/Controls";
 import { FindingList } from "./components/FindingList";
 import { HistoryPanel } from "./components/HistoryPanel";
+import { QuestionDetails } from "./components/QuestionDetails";
 import { ReportDownload } from "./components/ReportDownload";
 import { SocraticPanel } from "./components/SocraticPanel";
 import { StageProgress } from "./components/StageProgress";
@@ -224,6 +225,7 @@ export default function App() {
           />
         </Suspense>
         <aside className="panel">
+          <QuestionDetails question={questions.find((q) => q.id === questionId)} />
           {error && (
             <div className="card error" role="alert">
               <p>{error}</p>

@@ -98,6 +98,12 @@ kapı geçip uyardığında uyarı soru listesi değişmese de rapora taşınıy
 ADR-0031 Karar 1'e tarihli not (n-gram boyu 3/4/5 kodla hizalandı). **Testler:** `test_socratic_gate.py`
 +3 (11 parametreli vaka), yeni `test_socratic_pass_gate.py` (4); eski kodla 4 vaka kırmızı.
 
+**İş 16 — Web tipleri ve soru ayrıntısı:** `npm run gen:types` (`question_public.ts`'e `sample_io` /
+`SampleIO`; CI'nin `git diff --exit-code -- src/types` adımı push'ta kırılırdı). Arayüz seçili sorunun
+metnini hiç göstermiyordu: yeni `QuestionDetails` kartı (başlık, metin, kısıtlar, örnek girdi/beklenen
+çıktı + açıklama) yan panelin başında. **Testler:** `QuestionDetails.test.tsx` (3); web 54 → 57 test,
+`tsc` ve `vite build` temiz. Playwright e2e bu makinede koşulmadı (CI'da koşar).
+
 ## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
 
 **Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken
@@ -1603,7 +1609,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-15 kapandı;
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-16 kapandı;
   iş sırası `KALAN_ISLER.md` 14-23):**
   - ~~Yüksek: `validation/tier0_pool.py` sıcak işçileri düz `Popen` (bellek/ortam/cwd sınırı yok,
     işçi sayısı sınırsız, tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, mesajlar şablonla
@@ -1614,7 +1620,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
     yeniden hesaplanmıyor~~ → **KAPANDI (#4, 2026-10-20)**; `agreement="agrees"` bilinçli korundu.
   - ~~Orta (iş 15): `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i satır referansı sayıyor; tekrar
     algılayıcı sayı dizilerini dejenerasyon sanıyor; kapı uyarıları kayboluyor~~ → **KAPANDI (iş 15).**
-  - Orta (iş 16): `web/src/types/question_public.ts` bayat (`sample_io` yok; `npm run gen:types`).
+  - ~~Orta (iş 16): `web/src/types/question_public.ts` bayat (`sample_io` yok)~~ → **KAPANDI (iş 16).**
   - Orta (iş 17): `tests/network_guard.py` Windows Proactor `ConnectEx` yolunu yakalamıyor.
   - Orta (iş 18): `python_check.py` `warnings.catch_warnings` iş parçacığı güvenli değil.
   - Orta (iş 19): `eval/judge.py` + `judge.j2` girdileri `guard`'sız, hata yönetimi zayıf.

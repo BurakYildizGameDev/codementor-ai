@@ -16,6 +16,22 @@ export type Language = "c" | "cpp" | "csharp" | "python" | "html" | "css";
  */
 export type Origin = "builtin" | "user";
 export type Prompt = string;
+/**
+ * İsteğe bağlı açıklama
+ */
+export type Explanation = string | null;
+/**
+ * Örnek girdi (stdin veya argüman temsili)
+ */
+export type Input = string;
+/**
+ * Örnek çıktı (stdout veya dönüş değeri temsili)
+ */
+export type Output = string;
+/**
+ * Örnek girdi/çıktı listesi (öğrenciye gösterilir)
+ */
+export type SampleIo = SampleIO[];
 export type Title = string;
 export type Version = number;
 
@@ -38,6 +54,7 @@ export interface QuestionPublic {
   language: Language;
   origin?: Origin;
   prompt: Prompt;
+  sample_io?: SampleIo;
   title: Title;
   version: Version;
 }
@@ -50,4 +67,12 @@ export interface ExpectedComplexity {
 }
 export interface Time {
   [k: string]: string;
+}
+/**
+ * Problem için örnek girdi ve beklenen çıktı (öğrencinin problemi anlaması için).
+ */
+export interface SampleIO {
+  explanation?: Explanation;
+  input: Input;
+  output: Output;
 }

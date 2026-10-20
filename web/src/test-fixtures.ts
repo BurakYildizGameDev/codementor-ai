@@ -86,6 +86,7 @@ export const QUESTIONS: QuestionPublic[] = [
     prompt: "Bir dizinin toplamını hesapla.",
     constraints: ["n ≤ 10^5"],
     expected: { time: { sum: "n" }, space: "1" },
+    sample_io: [{ input: "3\n1 2 3", output: "6", explanation: "1 + 2 + 3" }],
   },
 ];
 

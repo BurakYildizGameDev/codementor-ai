@@ -424,7 +424,7 @@
   gerekirse ADR-0031 notu.
 - **Boyut:** küçük-orta.
 
-### [ ] 🤖 16. Web tip senkronu ve örnek giriş/çıkış gösterimi (tarama #6)
+### [x] 🤖 16. Web tip senkronu ve örnek giriş/çıkış gösterimi (tarama #6) — ✅ **BİTTİ 2026-10-20**
 - **Sorun:** `web/src/types/question_public.ts` bayat (`sample_io`, `SampleIO` yok); API gönderiyor ama
   arayüz göstermiyor. Şema→TS kaymasını yakalayan test yok.
 - **Kapsam:** `npm run gen:types`; soru panelinde örnekler; CI/test: `gen:types` sonrası `git diff --exit-code`.
