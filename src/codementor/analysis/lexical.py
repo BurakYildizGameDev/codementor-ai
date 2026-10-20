@@ -130,14 +130,16 @@ def mask_non_code(text: str, language: Language | None = None) -> str:
     """Yorum ve metin sabiti içeriklerini boşlukla maskeler; uzunluk ve satırlar korunur.
 
     `language=Language.CSHARP` verilirse C# 11 ham metinleri (üç ve daha fazla tırnakla
-    açılan biçim) de maske girer; başka dillerde ve `None`'da davranış değişmez
-    (C++ ham metni her zaman işlenir).
+    açılan biçim) de maske girer. C++ ham metni (`R"d(…)d"`) yalnız C++'ta ve dil bilinmezken
+    (`None`: algılama, include koruması — muhafazakâr) işlenir; Python'da `R"(" + x + ")"`
+    iki ayrı metindir, C++ yolu aradaki kodu maskelerdi.
     """
     parts: list[str] = []
     cursor = 0
     i = 0
     n = len(text)
     csharp = language is Language.CSHARP
+    cpp_raw = language is None or language is Language.CPP
     while i < n:
         c = text[i]
         if c == "/" and i + 1 < n and text[i + 1] in "/*":
@@ -155,7 +157,7 @@ def mask_non_code(text: str, language: Language | None = None) -> str:
         elif c == '"' or (c == "'" and (i == 0 or text[i - 1] not in _WORD_CHARS)):
             # `'` bir sözcük karakterinden sonra geliyorsa C++14 basamak ayırıcısıdır (1'000)
             verbatim = c == '"' and i > 0 and text[i - 1] == "@"
-            raw = -1 if c != '"' or verbatim else _raw_open(text, i)
+            raw = -1 if c != '"' or verbatim or not cpp_raw else _raw_open(text, i)
             if raw >= 0:  # C++ ham metni: kaçış yok, `)delim"` ile biter, satır sonu taşır
                 delim = text[i + 1 : raw]
                 close = _raw_string_end(text, raw, delim)

@@ -273,3 +273,18 @@ def test_csharp_mask_preserves_length_and_newlines(code: str) -> None:
     assert [i for i, c in enumerate(masked) if c == "\n"] == [
         i for i, c in enumerate(code) if c == "\n"
     ]
+
+
+@pytest.mark.parametrize("language", [Language.PYTHON, Language.C, Language.CSHARP])
+def test_cpp_raw_string_path_only_for_cpp(language: Language) -> None:
+    """Sonraya #27: `R"(" + x + ")"` C++ dışında iki ayrı metindir; aradaki kod maskelenmez."""
+    text = 'p = R"(" + x + ")"\n'
+    masked = mask_non_code(text, language)
+    assert masked == 'p = R" " + x + " "\n'
+
+
+@pytest.mark.parametrize("language", [Language.CPP, None])
+def test_cpp_raw_string_kept_for_cpp_and_unknown(language: Language | None) -> None:
+    """C++ ve dil bilinmezken (algılama, include koruması) ham metin yolu aynen çalışır."""
+    text = 'p = R"(" + x + ")"\n'
+    assert mask_non_code(text, language) == 'p = R"(         )"\n'
