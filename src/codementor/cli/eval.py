@@ -314,10 +314,23 @@ def judge_cmd(
     name = provider or settings.providers.default
     from codementor.eval.judge import judge_run_result, judge_summary_markdown
     from codementor.eval.runner import _default_factory
+    from codementor.prompts.templates import PromptTemplateError
 
     factory = _default_factory(settings)
     llm = factory(name)
-    reports = asyncio.run(judge_run_result(result, samples, llm))
+    failed: list[str] = []
+    try:
+        reports = asyncio.run(
+            judge_run_result(result, samples, llm, prompts_dir=settings.prompts.dir, errors=failed)
+        )
+    except PromptTemplateError as exc:
+        console.print(f"[red]Hata:[/red] {escape(str(exc))}")
+        raise typer.Exit(EXIT_SYSTEM_ERROR) from exc
+    if failed:
+        console.print(
+            f"[yellow]Uyarı:[/yellow] {len(failed)} örnek yargılanamadı (bozuk yanıt ya da "
+            f"sağlayıcı hatası): {escape(', '.join(failed))}"
+        )
     text = judge_summary_markdown(reports)
     if out is not None:
         with system_errors(console, "çıktı yazılamadı"):

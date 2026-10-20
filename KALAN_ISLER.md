@@ -444,7 +444,7 @@
 - **Kapsam:** kilit ya da `compile` uyarılarını alt süreçte/ayrı mekanizmayla toplamak + eşzamanlı test.
 - **Boyut:** küçük.
 
-### [ ] 🤖 19. Eval yargıcı sağlamlığı (tarama #11)
+### [x] 🤖 19. Eval yargıcı sağlamlığı (tarama #11) — ✅ **BİTTİ 2026-10-20**
 - **Sorun:** `prompts/v1/judge.j2` `{{ code }}`/`{{ q }}` `guard`'sız ve ```` ``` ```` çitli (çit kırılır,
   model çıktısı yargıca talimat verebilir) · `judge.py` özel `_environment`'ı doğrudan çağırıyor,
   `TemplateError` → `PromptTemplateError` değil · `settings.prompts.dir` yok sayılıyor

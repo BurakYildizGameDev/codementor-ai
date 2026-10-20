@@ -10,13 +10,17 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
+from pydantic import ValidationError
+
+from codementor.log import get_logger
 from codementor.models.eval import RunResult, Sample, SocraticJudgeReport
 from codementor.models.provider import ChatMessage, GenerationOptions
 from codementor.paths import resource_path
-from codementor.prompts.templates import _environment
-from codementor.providers.base import LLMProvider
+from codementor.prompts.templates import PromptTemplateError, render
+from codementor.providers.base import LLMProvider, ProviderError
 
 DEFAULT_PROMPTS_DIR = resource_path("prompts/v1")
+log = get_logger("codementor.eval.judge")
 
 
 def render_judge_prompt(
@@ -27,10 +31,13 @@ def render_judge_prompt(
     next_step_hint: str,
     prompts_dir: Path | None = None,
 ) -> str:
-    """Yargıç LLM için değerlendirme istemini şablondan üretir."""
-    env = _environment(prompts_dir or DEFAULT_PROMPTS_DIR)
-    template = env.get_template("judge.j2")
-    return template.render(
+    """Yargıç LLM için değerlendirme istemini şablondan üretir.
+
+    Kod ve mentor çıktısı `guard` süzgecinden geçer (§12); şablon hataları `PromptTemplateError`.
+    """
+    return render(
+        prompts_dir or DEFAULT_PROMPTS_DIR,
+        "judge.j2",
         code=code,
         language=language,
         flaw_concept=flaw_concept,
@@ -83,8 +90,13 @@ async def judge_run_result(
     samples: dict[str, Sample],
     provider: LLMProvider,
     prompts_dir: Path | None = None,
+    errors: list[str] | None = None,
 ) -> dict[str, SocraticJudgeReport]:
-    """Bir `RunResult` içindeki geçerli Sokratik çıktıları değerlendirir."""
+    """Bir `RunResult` içindeki geçerli Sokratik çıktıları değerlendirir.
+
+    Tek örneğin bozuk yanıtı ya da sağlayıcı hatası koşuyu düşürmez: örnek atlanır, loglanır ve
+    kimliği `errors`'a eklenir (o ana dek harcanan yargıç tokenlarının sonucu kaybolmaz).
+    """
     reports: dict[str, SocraticJudgeReport] = {}
     for item in result.samples:
         if item.report is None or item.report.socratic is None:
@@ -95,17 +107,30 @@ async def judge_run_result(
         sample = samples.get(item.id)
         if sample is None:
             continue
-        report = await evaluate_socratic_quality(
-            provider=provider,
-            code=sample.code,
-            language=sample.label.language.value,
-            flaw_concept=socratic.key_flaw_concept,
-            questions=socratic.guiding_questions,
-            next_step_hint=socratic.next_step_hint or "",
-            prompts_dir=prompts_dir,
-        )
+        try:
+            report = await evaluate_socratic_quality(
+                provider=provider,
+                code=sample.code,
+                language=sample.label.language.value,
+                flaw_concept=socratic.key_flaw_concept,
+                questions=socratic.guiding_questions,
+                next_step_hint=socratic.next_step_hint or "",
+                prompts_dir=prompts_dir,
+            )
+        except PromptTemplateError:
+            raise  # kurulum hatası: her örnek aynı şekilde düşer, sessizce atlanmaz
+        except (ValidationError, ProviderError, ValueError) as exc:
+            log.warning("judge_sample_failed", sample=item.id, error_type=type(exc).__name__)
+            if errors is not None:
+                errors.append(item.id)
+            continue
         reports[item.id] = report
     return reports
+
+
+def _cell(text: str) -> str:
+    """Markdown tablo hücresi: `|` kaçırılır, satır sonları boşluğa çevrilir."""
+    return " ".join(text.split()).replace("|", "\\|")
 
 
 def judge_summary_markdown(reports: dict[str, SocraticJudgeReport]) -> str:
@@ -122,8 +147,8 @@ def judge_summary_markdown(reports: dict[str, SocraticJudgeReport]) -> str:
     for sample_id, r in sorted(reports.items()):
         leak = "✓" if r.leakage_free else "✗"
         row = (
-            f"| {sample_id} | {r.pedagogical_value.score} | {r.code_relevance.score} | "
-            f"{r.socratic_depth.score} | {leak} | {r.overall_score:.1f} | {r.summary} |"
+            f"| {_cell(sample_id)} | {r.pedagogical_value.score} | {r.code_relevance.score} | "
+            f"{r.socratic_depth.score} | {leak} | {r.overall_score:.1f} | {_cell(r.summary)} |"
         )
         lines.append(row)
     mean_score = sum(r.overall_score for r in reports.values()) / len(reports)
