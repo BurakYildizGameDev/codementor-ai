@@ -453,7 +453,7 @@
 - **Dosyalar:** `src/codementor/eval/judge.py`, `prompts/v1/judge.j2`, `src/codementor/cli/eval.py`, eval testleri.
 - **Boyut:** küçük-orta.
 
-### [ ] 🤖 20. Codex iptalinde geçici dizin temizliği (tarama #7, OLASI)
+### [x] 🤖 20. Codex iptalinde geçici dizin temizliği (tarama #7, doğrulandı) — ✅ **BİTTİ 2026-10-20**
 - **Sorun:** `providers/codex_cli.py:195` `TemporaryDirectory` `ignore_cleanup_errors` olmadan; iptalde süreç
   0,1 sn daha yaşarken Windows WinError 32 → `PermissionError` `CancelledError`'ı maskeler, dizin sızar.
 - **Kapsam:** `ignore_cleanup_errors=True` + süreç bitişini bekleme; iptal testi. **Boyut:** küçük.

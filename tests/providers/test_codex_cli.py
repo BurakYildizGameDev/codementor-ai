@@ -9,6 +9,7 @@ import asyncio
 import json
 import sys
 import threading
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -266,3 +267,44 @@ def test_hint_numbers_need_word_boundaries(detail: str) -> None:
 )
 def test_hint_numbers_match_with_word_boundaries(detail: str, error: type[Exception]) -> None:
     assert isinstance(_classify(detail), error)
+
+
+@dataclass
+class LingeringRunner:
+    """İptali gördükten sonra çalışma dizinindeki dosyayı bir süre daha açık tutar (gerçek codex
+    süreci `--cd workdir` ile öldürülene dek); Windows'ta bu sürede dizin silinemez."""
+
+    started: threading.Event = field(default_factory=threading.Event)
+    workdir: Path | None = None
+
+    def __call__(
+        self,
+        argv: Sequence[str],
+        stdin: str,
+        limits: ProcessLimits,
+        *,
+        extra_env: Mapping[str, str] | None = None,
+        cancel: threading.Event | None = None,
+    ) -> ProcessResult:
+        argv = list(argv)
+        self.workdir = Path(argv[argv.index("--cd") + 1])
+        assert cancel is not None
+        with (self.workdir / "session.log").open("w", encoding="utf-8") as handle:
+            self.started.set()
+            cancel.wait(10)
+            handle.write("kapanıyor")
+            time.sleep(0.3)  # ağaç öldürülene dek dosya açık
+        return ProcessResult(None, "", "", cancelled=True)
+
+
+async def test_cancel_waits_for_process_before_removing_workdir() -> None:
+    """Tam tarama #7: iptal `CancelledError` olarak kalır (Windows'ta `PermissionError` değil),
+    çalışma dizini sızmaz."""
+    runner = LingeringRunner()
+    task = asyncio.create_task(_run(_provider(runner)))  # type: ignore[arg-type]  # sahte çalıştırıcı
+    assert await asyncio.to_thread(runner.started.wait, 5)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert runner.workdir is not None
+    assert not runner.workdir.exists()

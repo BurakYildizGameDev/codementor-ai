@@ -131,6 +131,14 @@ atlanmasın). `judge_summary_markdown` hücrelerde `|` kaçırıyor, satır sonu
 hatasında çıkış 3. **Testler:** `test_judge.py` 7 → 13; eski kodla 6 kırmızı. Not: `judge.j2`
 değiştiği için `prompt_version` özeti değişti (önbellek ve eval karşılaştırmaları yeni sürümü görür).
 
+**İş 20 — Codex iptalinde geçici dizin:** iptalde `cancel.set()` sonrası `with` hemen çıkıyor, codex süreci
+(`--cd workdir`) dizinde dosya açıkken `TemporaryDirectory` silmeye çalışıyordu → Windows'ta
+`PermissionError: [WinError 32]` `CancelledError`'ın yerine geçiyor (iptal 500/sağlayıcı hatasına dönüşür),
+dizin sızıyordu. Artık iş parçacığı görevi `shield` ile bekleniyor; iptalde olay set edilip çalıştırıcının
+ağacı öldürüp dönmesi (≤10 sn) beklenip `CancelledError` yeniden yükseltiliyor; `ignore_cleanup_errors=True`
+yedek. **Test:** `test_cancel_waits_for_process_before_removing_workdir` (iptalden sonra 0,3 sn dosya tutan
+sahte çalıştırıcı) — eski kodla bu makinede **WinError 32** ile kırmızı, yeni kodla yeşil ve dizin silinmiş.
+
 ## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
 
 **Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken
@@ -1636,7 +1644,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-19 kapandı;
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 ve KALAN_ISLER 14-20 kapandı;
   iş sırası `KALAN_ISLER.md` 14-23):**
   - ~~Yüksek: `validation/tier0_pool.py` sıcak işçileri düz `Popen` (bellek/ortam/cwd sınırı yok,
     işçi sayısı sınırsız, tutamak/zombi sızıntısı, `close_tier0_pool` çağrılmıyor, mesajlar şablonla
@@ -1651,7 +1659,7 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
   - ~~Orta (iş 17): `tests/network_guard.py` Windows Proactor `ConnectEx` yolunu yakalamıyor~~ → **KAPANDI (iş 17).**
   - ~~Orta (iş 18): `python_check.py` `warnings.catch_warnings` iş parçacığı güvenli değil~~ → **KAPANDI (iş 18).**
   - ~~Orta (iş 19): `eval/judge.py` + `judge.j2` girdileri `guard`'sız, hata yönetimi zayıf~~ → **KAPANDI (iş 19).**
-  - Orta (iş 20): Codex iptalinde `TemporaryDirectory` temizlik hatası iptali maskeleyebilir.
+  - ~~Orta (iş 20): Codex iptalinde `TemporaryDirectory` temizlik hatası iptali maskeleyebilir~~ → **KAPANDI (iş 20).**
   - Düşük (iş 21): `RateLimiter._records` sınırsız, `mimari.md:1126` hız sınırı çelişkisi,
     `sessions.updated_at` NULL budanmıyor, `toolchain_prune.py:40` `PruneReport` models/ dışında.
     (README/ZAYIF satır sayıları ölçüme göre güncel; büyüdükçe yine kırılır → iş 23.)

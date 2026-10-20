@@ -59,6 +59,8 @@ from codementor.validation.runner import ProcessResult, Runner, run_process
 
 NAME = "codex"
 SCHEMA_FILE = "schema.json"
+# İptalde çalıştırıcının süreç ağacını öldürüp dönmesi için üst sınır (iptal 0,1 sn'de görülür)
+_CANCEL_DRAIN_S = 10.0
 # D4: HTTP kodları kelime sınırlı regex; çıplak `"429"` "line 4291" ile de eşleşiyordu.
 Hint = str | re.Pattern[str]
 _LOGIN_HINTS: tuple[Hint, ...] = (
@@ -192,16 +194,25 @@ class CodexCliProvider(NamedProvider):
 
         async def once() -> ProviderResult:
             cancel = threading.Event()
-            with tempfile.TemporaryDirectory(prefix="codementor-codex-") as tmp:
+            # ignore_cleanup_errors: yedek; asıl önlem iptalde sürecin bitmesini beklemek
+            with tempfile.TemporaryDirectory(
+                prefix="codementor-codex-", ignore_cleanup_errors=True
+            ) as tmp:
                 workdir = Path(tmp)
                 (workdir / SCHEMA_FILE).write_text(schema, encoding="utf-8")
                 argv = self.build_argv(executable, workdir, model)
-                try:
-                    result = await asyncio.to_thread(
+                work = asyncio.ensure_future(
+                    asyncio.to_thread(
                         self.runner, argv, stdin, limits, extra_env=profile_env(), cancel=cancel
                     )
+                )
+                try:
+                    result = await asyncio.shield(work)
                 except asyncio.CancelledError:
+                    # Codex `--cd workdir` ile dizinde dosya açık tutar: süreç ağacı ölmeden dizin
+                    # silinirse Windows'ta WinError 32 iptali `PermissionError`'a çevirirdi
                     cancel.set()
+                    await asyncio.wait({work}, timeout=_CANCEL_DRAIN_S)
                     raise
             return self._result(result, model, start)
 
