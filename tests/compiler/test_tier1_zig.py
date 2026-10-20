@@ -142,6 +142,48 @@ def test_zig_unreal_stub(name: str, chain: Toolchain) -> None:
     assert result.status in (CompilationStatus.PASSED, CompilationStatus.WARNING)
 
 
+UNREAL_SUPER = """#include "Pickup.h"
+#include "Kismet/GameplayStatics.h"
+
+UCLASS()
+class MYGAME_API APickup : public AActor
+{
+    GENERATED_BODY()
+public:
+    APickup()
+    {
+        Sphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
+        Sphere->InitSphereRadius(50.0f);
+        Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+        Mesh->SetupAttachment(Sphere);
+    }
+    virtual void BeginPlay() override
+    {
+        Super::BeginPlay();
+        TArray<AActor*> Found;
+        UGameplayStatics::GetAllActorsOfClass(this, AActor::StaticClass(), Found);
+        if (ACharacter* Hero = UGameplayStatics::GetPlayerCharacter(this, 0))
+        {
+            Hero->GetCharacterMovement()->MaxWalkSpeed = 900.0f;
+        }
+    }
+    virtual void EndPlay(const EEndPlayReason::Type Reason) override
+    {
+        Super::EndPlay(Reason);
+    }
+private:
+    USphereComponent* Sphere = nullptr;
+    UStaticMeshComponent* Mesh = nullptr;
+};
+"""
+
+
+def test_zig_unreal_super_and_components_pass_cleanly(chain: Toolchain) -> None:
+    """Sonraya #9: `Super` (UHT typedef'i) ve sık bileşen/oyun türleri stub'la temiz geçer."""
+    result = _run(_code(UNREAL_SUPER, Language.CPP, Engine.UNREAL), chain)
+    assert result.status is CompilationStatus.PASSED, result.diagnostics
+
+
 def test_self_contained_roslyn_syntax_error(roslyn_chain: Toolchain) -> None:
     assert roslyn_chain.csharp is not None
     assert roslyn_chain.csharp.origin == "bundled"

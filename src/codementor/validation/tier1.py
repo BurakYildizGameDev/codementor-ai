@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 import threading
 
-from codementor.analysis.parsers import neutralize_unreal_macros
+from codementor.analysis.parsers import neutralize_unreal_macros, unreal_super_typedefs
 from codementor.config import ValidationSettings
 from codementor.log import get_logger, scrub
 from codementor.models.enums import MARKUP_LANGUAGES, CompilationStatus, Engine, Language
@@ -79,6 +79,17 @@ def _blank_local_includes(text: str) -> str:
     Motor başlıkları (`CoreMinimal.h`, `*.generated.h`) yerel olarak yoktur; yerlerini stub tutar.
     """
     return _LOCAL_INCLUDE.sub(lambda m: " " * len(m.group()), text)
+
+
+def _with_super(prepared: str, original: str) -> str:
+    """Unreal: UHT'nin `GENERATED_BODY()` ile eklediği `typedef <Taban> Super;` (stub bilemez).
+
+    Ekler satır sonu içermez (satır numaraları kaymaz); konumlar `original` üzerinde hesaplanır,
+    `prepared` aynı uzunlukta boşaltıldığından geçerlidir.
+    """
+    for position, declaration in reversed(unreal_super_typedefs(original)):
+        prepared = prepared[:position] + declaration + prepared[position:]
+    return prepared
 
 
 def _roslyn_env(memory_mb: int) -> dict[str, str]:
@@ -161,7 +172,7 @@ def _command(
         argv += ["-include", str(stub.resolve())]
         # Tier 0 ile aynı ön işlem (`*_API`, yansıma makroları) + yerel include'lar;
         # hepsi aynı uzunlukta boşlukla: satır/kolon kaymaz
-        stdin = _blank_local_includes(neutralize_unreal_macros(stdin))
+        stdin = _with_super(_blank_local_includes(neutralize_unreal_macros(stdin)), code.text)
         # derleyiciye giden son metin de denetlenir: dönüşüm yeni yönerge üretmemeli
         guarded = _guard(stdin, tool)
         if guarded is not None:

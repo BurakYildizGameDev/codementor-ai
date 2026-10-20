@@ -257,6 +257,8 @@ Amaç: Sözdizimi hatalı kodu **LLM'e göndermeden** yakalamak ve kullanıcıya
 - Makrolar: `UCLASS(...)`, `USTRUCT(...)`, `UENUM(...)`, `UPROPERTY(...)`, `UFUNCTION(...)`, `GENERATED_BODY()`, `GENERATED_UCLASS_BODY()` → boş makro.
 - Tipler: `int32`, `uint8`, `FString`, `FName`, `FVector`, `UObject`, `AActor`, `UActorComponent`, `TArray<T>`, `TMap<K,V>`, `TSet<T>`, `TObjectPtr<T>`, `TSharedPtr<T>`, `TWeakObjectPtr<T>` için minimal bildirimler.
 - Faz H3 ekleri: `FMath` (`Clamp`, `Abs`, `Max`, `Min`, `Sqrt`), `FHitResult`, `FTimerHandle`/`FTimerManager` + `GetWorldTimerManager()`, `DECLARE_DYNAMIC_MULTICAST_DELEGATE*` makroları (delege alanı olarak kullanılabilen struct üretir).
+- 2026-10-20 ekleri: bileşen hiyerarşisi (`USceneComponent` → `UPrimitiveComponent` → `UShapeComponent`/`USphereComponent`/`UBoxComponent`, `UStaticMeshComponent`), `APawn`/`ACharacter` + `UCharacterMovementComponent`, `UGameplayStatics`, `EEndPlayReason` ve `EndPlay(Type)`, `UObject::StaticClass()`/`CreateDefaultSubobject<T>()`.
+- `Super`: UHT, `GENERATED_BODY()` ile her türetilmiş sınıfa `typedef <Taban> Super;` ekler; stub bunu bilemez. Tier 1, snippet'te tanımlı tek düz tabanlı ve `GENERATED_*BODY` içeren sınıfların `{`'inden hemen sonra aynı satıra bu typedef'i ekler (`analysis/parsers.unreal_super_typedefs`; satır numaraları kaymaz). Sınıf tanımı snippet'te yoksa (`AFoo::Tick` sınıf dışı tanımı) `Super` tanımsız kalır — uyarı tavsiye niteliğindedir.
 
 Delege bildirimleri (`DECLARE_DYNAMIC_MULTICAST_DELEGATE_*(...)`; dosya kapsamında `;` ile biter)
 tree-sitter tarafından ayrıştırılamadığı için **yalnızca ayrıştırma yolunda** boşaltılır; Tier 1'de

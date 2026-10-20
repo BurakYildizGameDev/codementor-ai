@@ -249,15 +249,19 @@ def test_unreal_argv_has_stub_and_local_includes_blanked() -> None:
     assert argv[argv.index("-include") + 1] == str(STUB.resolve())
     assert argv[-1] == "-"
     assert not any(a.startswith("-I") for a in argv)
-    # satır ve kolonlar kaymaz; yalnızca yerel include satırları boşaltılır
-    assert len(stdin) == len(code.text)
+    # satırlar kaymaz; yalnızca yerel include satırları boşaltılır. Tek ek: UHT'nin `Super`
+    # typedef'i sınıfın `{` satırına, satır sonu olmadan (Sonraya #9)
     assert stdin.count("\n") == code.text.count("\n")
     assert "#include" not in stdin
     # Tier 0 ile aynı makro nötrleştirme: yansıma makroları gider, kod yerinde kalır
     lines = stdin.split("\n")
     assert "UCLASS" not in stdin
     assert "GENERATED_BODY" not in stdin
-    assert lines[3] == "class AEnemy : public AActor {"
+    assert lines[3] == "class AEnemy : public AActor { typedef AActor Super;"
+    original = code.text.split("\n")
+    assert [len(line) for i, line in enumerate(lines) if i != 3] == [
+        len(line) for i, line in enumerate(original) if i != 3
+    ]
     assert lines[5].strip() == "int32 Health = 100;"
     assert lines[5].index("int32") == code.text.split("\n")[5].index("int32")
 

@@ -40,7 +40,24 @@ TYPES = [
 ]
 
 # Faz H3: analiz sırasında en sık karşılaşılan ek tipler ve makrolar
-EXTRA_TYPES = ["FMath", "FHitResult", "FTimerHandle", "FTimerManager", "FRotator", "FTransform"]
+EXTRA_TYPES = [
+    "FMath",
+    "FHitResult",
+    "FTimerHandle",
+    "FTimerManager",
+    "FRotator",
+    "FTransform",
+    # Sonraya #9: sık bileşen/aktör türleri ve oyun yardımcıları
+    "USceneComponent",
+    "UPrimitiveComponent",
+    "USphereComponent",
+    "UBoxComponent",
+    "UStaticMeshComponent",
+    "UCharacterMovementComponent",
+    "APawn",
+    "ACharacter",
+    "UGameplayStatics",
+]
 DELEGATE_MACROS = [
     "DECLARE_DYNAMIC_MULTICAST_DELEGATE",
     "DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam",
@@ -127,3 +144,10 @@ def test_stub_has_no_includes_outside_standard_library(stub: str) -> None:
     includes = re.findall(r"^#include\s+(\S+)", stub, re.MULTILINE)
     assert includes
     assert all(inc.startswith("<") and "/" not in inc for inc in includes)
+
+
+def test_end_play_reason_and_static_class(stub: str) -> None:
+    """Sonraya #9: `EndPlay(EEndPlayReason::Type)` imzası ve `AActor::StaticClass()`."""
+    assert re.search(r"^namespace EEndPlayReason \{", stub, re.MULTILINE)
+    assert "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason)" in stub
+    assert "static UClass* StaticClass()" in stub

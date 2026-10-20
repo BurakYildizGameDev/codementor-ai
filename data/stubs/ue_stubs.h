@@ -297,7 +297,11 @@ class UClass;
 
 class UObject {
 public:
+    // Gerçekte her UCLASS kendi `StaticClass`'ını alır; tek tanım türetilenlere de yeter (Sonraya #9)
+    static UClass* StaticClass() { return nullptr; }
     UClass* GetClass() const { return nullptr; }
+    template <typename T>
+    T* CreateDefaultSubobject(const wchar_t* Name) { (void)Name; return nullptr; }
     virtual ~UObject() = default;
     UWorld* GetWorld() const { return nullptr; }
     FName GetFName() const { return FName(); }
@@ -312,11 +316,23 @@ class UActorComponent;
 enum ELevelTick { LEVELTICK_TimeOnly, LEVELTICK_ViewportsOnly, LEVELTICK_All, LEVELTICK_PauseTick };
 struct FActorComponentTickFunction {};
 
+namespace EEndPlayReason {
+enum Type { Destroyed, LevelTransition, EndPlayInEditor, RemovedFromWorld, Quit };
+}
+
+class USceneComponent;
+
 class AActor : public UObject {
 public:
     virtual void BeginPlay() {}
     virtual void EndPlay() {}
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) { (void)EndPlayReason; }
     virtual void Tick(float DeltaSeconds) { (void)DeltaSeconds; }
+    float GetGameTimeSinceCreation() const { return 0.0f; }
+    FVector GetActorForwardVector() const { return FVector(); }
+    bool SetActorRotation(const FRotator& NewRotation) { (void)NewRotation; return true; }
+    void SetActorTickEnabled(bool bEnabled) { (void)bEnabled; }
+    USceneComponent* RootComponent = nullptr;
     FVector GetActorLocation() const { return FVector(); }
     bool SetActorLocation(const FVector& NewLocation) { (void)NewLocation; return true; }
     FRotator GetActorRotation() const { return FRotator(); }
@@ -344,6 +360,47 @@ public:
         static FTimerManager Manager;
         return Manager;
     }
+    struct FComponentTickFunction { bool bCanEverTick = false; };
+    FComponentTickFunction PrimaryComponentTick;
+};
+
+// ---------------------------------------------------------------- Bileşen ve aktör hiyerarşisi
+class USceneComponent : public UActorComponent {
+public:
+    FVector GetComponentLocation() const { return FVector(); }
+    void SetWorldLocation(const FVector& NewLocation) { (void)NewLocation; }
+    void SetRelativeLocation(const FVector& NewLocation) { (void)NewLocation; }
+    void SetupAttachment(USceneComponent* Parent) { (void)Parent; }
+};
+class UPrimitiveComponent : public USceneComponent {
+public:
+    void SetSimulatePhysics(bool bSimulate) { (void)bSimulate; }
+    void AddImpulse(const FVector& Impulse) { (void)Impulse; }
+};
+class UShapeComponent : public UPrimitiveComponent {};
+class USphereComponent : public UShapeComponent {
+public:
+    void InitSphereRadius(float Radius) { (void)Radius; }
+    void SetSphereRadius(float Radius) { (void)Radius; }
+    float GetScaledSphereRadius() const { return 0.0f; }
+};
+class UBoxComponent : public UShapeComponent {
+public:
+    void SetBoxExtent(const FVector& Extent) { (void)Extent; }
+};
+class UStaticMeshComponent : public UPrimitiveComponent {};
+
+class UCharacterMovementComponent : public UActorComponent {
+public:
+    float MaxWalkSpeed = 600.0f;
+    float JumpZVelocity = 420.0f;
+};
+
+class APawn : public AActor {};
+class ACharacter : public APawn {
+public:
+    UCharacterMovementComponent* GetCharacterMovement() const { return nullptr; }
+    virtual void Jump() {}
 };
 
 class UWorld : public UObject {
@@ -418,3 +475,20 @@ template <typename To, typename From>
 To* Cast(From* Source) { (void)Source; return nullptr; }
 
 inline bool IsValid(const UObject* Object) { return Object != nullptr; }
+
+class UGameplayStatics {
+public:
+    static void GetAllActorsOfClass(const UObject* WorldContextObject,
+                                    TSubclassOf<AActor> ActorClass, TArray<AActor*>& OutActors) {
+        (void)WorldContextObject; (void)ActorClass; (void)OutActors;
+    }
+    static APawn* GetPlayerPawn(const UObject* WorldContextObject, int PlayerIndex) {
+        (void)WorldContextObject; (void)PlayerIndex; return nullptr;
+    }
+    static ACharacter* GetPlayerCharacter(const UObject* WorldContextObject, int PlayerIndex) {
+        (void)WorldContextObject; (void)PlayerIndex; return nullptr;
+    }
+    static float GetTimeSeconds(const UObject* WorldContextObject) {
+        (void)WorldContextObject; return 0.0f;
+    }
+};

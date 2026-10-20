@@ -61,6 +61,14 @@ _MACRO_CALL = re.compile(r"\b(?:" + "|".join(UNREAL_MACROS) + r")\s*\(")
 # Ad türevleri serbest bırakılır (`_OneParam`, `_TwoParams`, `_RetVal_OneParam` ...).
 _DELEGATE_MACRO_CALL = re.compile(r"\bDECLARE_DYNAMIC_MULTICAST_DELEGATE\w*\s*\(")
 _API_MACRO = re.compile(r"\b[A-Z][A-Z0-9_]*_API\b")
+# UHT `GENERATED_BODY()` ile sınıfa `typedef <Taban> Super;` ekler; stub bunu bilemez (Sonraya #9).
+# Tek, düz (şablonsuz) tabanın adı yakalanır; ek tabanlar `,` sonrası sınırlı biçimde geçilir.
+_DERIVED_CLASS = re.compile(
+    r"\b(?:class|struct)\s+(?:[A-Z][A-Z0-9_]*_API\s+)?[A-Za-z_]\w*\s*(?:final\s*)?:\s*"
+    r"(?:(?:public|protected|private|virtual)\s+){0,2}"
+    r"([A-Za-z_]\w*(?:::[A-Za-z_]\w*){0,4})\s*(?:,[^{};]{0,300})?\{"
+)
+_GENERATED_BODY = re.compile(r"\bGENERATED_\w*BODY\b")
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,6 +149,24 @@ def neutralize_unreal_macros(text: str, *, delegates: bool = False) -> str:
         cursor = end
     parts.append(text[cursor:])
     return "".join(parts)
+
+
+def unreal_super_typedefs(text: str) -> list[tuple[int, str]]:
+    """UHT'nin eklediği `typedef <Taban> Super;` bildirimleri (yalnız derleyici yolu).
+
+    (konum, metin) çiftleri; konum sınıf gövdesinin `{` karakterinden hemen sonrasıdır ve metin
+    satır sonu içermez: satır numaraları kaymaz. Yalnız gövdesinde `GENERATED_*BODY` geçen,
+    tek düz tabanlı türetilmiş sınıflar (şablon tabanda typedef geçersiz olurdu). Konumlar
+    `neutralize_unreal_macros` çıktısında da geçerlidir (aynı uzunlukta boşaltma).
+    """
+    masked = mask_non_code(text)
+    matches = list(_DERIVED_CLASS.finditer(masked))
+    found: list[tuple[int, str]] = []
+    for index, match in enumerate(matches):
+        until = matches[index + 1].start() if index + 1 < len(matches) else len(masked)
+        if _GENERATED_BODY.search(masked, match.end(), until):
+            found.append((match.end(), f" typedef {match.group(1)} Super;"))
+    return found
 
 
 def iter_nodes(root: Node, descend: Callable[[Node], bool] = lambda _: True) -> Iterator[Node]:
