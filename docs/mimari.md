@@ -1280,6 +1280,7 @@ codementor-ai/
 │   └── eval-findings.md
 ├── src/codementor/
 │   ├── config.py
+│   ├── config_providers.py  sağlayıcı ayar modelleri (config.py yeniden dışa aktarır)
 │   ├── paths.py       kaynak kökü, göreli yol çözümü (Faz 23, ADR-0016)
 │   ├── models/        enums.py  request.py  facts.py  findings.py  llm_output.py  report.py  bigo.py  usage.py (Faz G6)
 │   ├── ingest/        normalize.py  detect.py

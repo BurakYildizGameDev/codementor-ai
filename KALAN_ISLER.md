@@ -467,7 +467,7 @@
   `root_path` arkasında `/v1/` öneki, `desktop/bridge.py:165` `str(exc)[:300]` loglaması.
 - **Boyut:** küçük (madde başına).
 
-### [ ] 🤖 22. Büyük dosyaları böl
+### [x] 🤖 22. Büyük dosyaları böl — ✅ **BİTTİ 2026-10-20**
 - `src/codementor/config.py` boş olmayan **400** satırda (sınırda; öneri: katman/güven mantığı →
   `config_layers.py`). Testlerde 400'ü aşanlar: `desktop/test_app.py`, `unit/test_extractor.py`,
   `unit/test_models.py`, `providers/test_cli_agent.py`, `unit/test_toolchain_install.py`,

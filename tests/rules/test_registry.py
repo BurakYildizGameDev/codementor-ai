@@ -13,7 +13,7 @@ from codementor.rules import applicable_rules
 from codementor.rules.base import Rule, RuleContext
 from codementor.rules.registry import register_rule, unregister_rule
 from tests.rules._fixtures import FIXTURES
-from tests.rules.test_engine import run
+from tests.rules.engine_support import run
 
 UNITY_FIXTURE = FIXTURES / "UNITY-GC-001" / "positive" / "list_in_update.cs"
 

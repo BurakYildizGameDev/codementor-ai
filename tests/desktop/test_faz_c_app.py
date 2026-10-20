@@ -14,7 +14,7 @@ from codementor.desktop import runtime
 from codementor.desktop.app import App
 from codementor.desktop.connections import KeyStore
 from codementor.models.report import SocraticResult
-from tests.desktop.test_app import _open
+from tests.desktop.app_support import _open
 
 
 @pytest.fixture

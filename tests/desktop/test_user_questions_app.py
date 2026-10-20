@@ -15,7 +15,7 @@ from codementor.desktop.connections import KeyStore
 from codementor.desktop.views.questions_view import MINE
 from codementor.models.enums import Engine, Language
 from codementor.models.questions import DEFAULT_USER_HINTS
-from tests.desktop.test_app import _open, pump
+from tests.desktop.app_support import _open, pump
 
 VALUES = {
     "title": "Dizideki en büyük iki sayı",

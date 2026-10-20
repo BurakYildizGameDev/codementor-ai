@@ -32,12 +32,19 @@ StateFactory = Callable[..., ApiState]
 try:
     import tkinter  # noqa: F401
 except ImportError:
+    HAS_TK = False
     collect_ignore = [
         "test_app.py",
+        "test_app_2.py",
+        "test_app_3.py",
+        "test_app_4.py",
+        "test_app_5.py",
         "test_user_questions_app.py",
         "test_faz_c_app.py",
         "test_launch_db.py",
     ]
+else:
+    HAS_TK = True
 
 
 def scripted() -> FakeProvider:
@@ -130,3 +137,11 @@ def vault() -> FakeVault:
 @pytest.fixture
 def store(vault: FakeVault) -> KeyStore:
     return KeyStore(vault)
+
+
+# Bölünmüş test dosyalarının fixture'ları (KALAN_ISLER iş 22). Pencere fixture'ları Tk ister:
+# Tk'siz Python'da `test_app*.py` zaten toplanmaz, içe aktarım da yapılmaz.
+from tests.desktop.connections_support import anyio_backend  # noqa: E402, F401
+
+if HAS_TK:
+    from tests.desktop.app_support import app, no_stop_guard, stalled_app  # noqa: F401

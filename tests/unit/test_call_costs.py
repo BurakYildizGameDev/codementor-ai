@@ -11,7 +11,7 @@ from codementor.analysis.call_costs import CallCostError, CostResolver, load_cal
 from codementor.models.bigo import parse_cost
 from codementor.models.enums import Engine, Language
 from codementor.models.facts import CallCostTable
-from tests.unit.test_extractor import _facts
+from tests.unit.extractor_support import _facts
 
 DATA = Path(__file__).resolve().parents[2] / "data" / "call_costs.yaml"
 

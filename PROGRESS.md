@@ -163,6 +163,26 @@ pozitif). Düzeltme: o konumda yalnız `/` yazılıp ilerleniyor; "bundan sonra 
 tarama doğrusal kalıyor (`/*a` × 13 000 bütçe testi geçiyor). Karşı örnek ve iki benzeri `@example` olarak
 sabitlendi; eski kodla kırmızı.
 
+**İş 22 — Büyük dosyalar bölündü:**
+- `src/codementor/config.py` 400 → **357**: sağlayıcı ayar modelleri (`ProviderConfig` … `ProvidersSettings`,
+  `ANTHROPIC_DEFAULT_MAX_TOKENS`) yeni `config_providers.py`'ye (76); `config.py` tek import + `__all__` ile
+  yeniden dışa aktarıyor (mevcut `from codementor.config import CodexConfig` değişmedi, mypy strict temiz).
+  Testlerin monkeypatch ettiği `_default_*` işlevleri `config.py`'de kaldı. `src/` altında 400'ü aşan dosya yok
+  (en büyük `analysis/extractor.py` 396).
+- Testlerde boş olmayan 400'ü aşan 9 dosya betikle (ast) bölündü: `desktop/test_app.py` (1413 → 5 parça),
+  `test_connections`, `providers/test_cli_agent`, `rules/test_engine`, `unit/test_extractor`, `test_models`,
+  `test_toolchain_install`, `test_storage`, `test_bigo` (her biri 2 parça). Sabit/yardımcı/fixture'lar aynı
+  dizinde `<ad>_support.py`'de; fixture'lar dizin `conftest.py`'sinden içe aktarılıyor (yeni
+  `tests/unit/conftest.py`, `tests/rules/conftest.py`; masaüstünde Tk'li fixture'lar yalnız Tk varken,
+  `collect_ignore` `test_app_2..5.py`'yi de kapsıyor). 7 bağımlı test dosyasının içe aktarımları `_support`'a
+  yönlendirildi. **Doğrulama:** toplanan test kimlikleri (fonksiyon düzeyi, 4064 + 6 seçilmemiş) bölmeden önce
+  ve sonra **birebir aynı** (`diff` boş); hiçbir dosya 400'ü aşmıyor; tam paket yeşil.
+- Belgeler: `mimari.md` §16 dizin listesi, ZAYIF "en büyük" satırları; ölçüm `tests/` 40 842 → README/ZAYIF
+  "~41 bin satır test".
+- Not: tam koşulardan birinde `test_config_cli_faz_c.py::test_writer_reads_bom_and_writes_without` bir kez
+  kırıldı, tek başına ve 40 tekrarda (0/40) tekrarlanmadı — Windows'ta atomik `os.replace` sırasında dosya
+  kilidi (antivirüs/indeksleyici) olası; tekrarlarsa izlenmeli.
+
 ## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
 
 **Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken

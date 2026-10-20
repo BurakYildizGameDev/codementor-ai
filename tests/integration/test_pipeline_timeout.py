@@ -25,8 +25,8 @@ from tests.integration.conftest import (
     orchestrator,
     socratic_reply,
 )
+from tests.providers.cli_agent_support import EXE
 from tests.providers.contract import SleepRecorder
-from tests.providers.test_cli_agent import EXE
 from tests.providers.test_cli_agent_cancel import BlockingRunner
 
 pytestmark = pytest.mark.anyio

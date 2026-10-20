@@ -16,8 +16,8 @@ from codementor.providers import RetryPolicy
 from codementor.providers.cli_agent import CliAgentProvider
 from codementor.providers.factory import FallbackProvider
 from codementor.validation.runner import ProcessLimits, ProcessResult
+from tests.providers.cli_agent_support import EXE, MESSAGES
 from tests.providers.contract import SleepRecorder
-from tests.providers.test_cli_agent import EXE, MESSAGES
 
 pytestmark = pytest.mark.anyio
 

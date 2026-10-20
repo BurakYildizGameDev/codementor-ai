@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from codementor.models.enums import Language
 from codementor.rules.html_balance import Imbalance, UnbalancedTag, imbalances
-from tests.rules.test_engine import run_text
+from tests.rules.engine_support import run_text
 
 
 def test_stray_end_tag_uses_its_own_question() -> None:
