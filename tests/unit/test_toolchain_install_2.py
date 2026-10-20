@@ -193,10 +193,15 @@ def test_needs_update_false_on_missing_or_broken_marker(tmp_path: Path) -> None:
     assert needs_update(settings) is False
 
 
-def test_needs_update_false_without_configured_source(tmp_path: Path) -> None:
+def test_needs_update_false_without_configured_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Faz F (F9): bu platform için kaynak yoksa (adres/sha256) güncelleme önerilmez."""
     settings = _settings(tmp_path, _wheel())
     _fake_install(settings, version="0.15.0", sha256="0" * 64)
+    # Kaynak listesi yalnız PLATFORM (linux-x86_64): Linux CI'da host tam o platform olduğundan
+    # host'u kaynak listesinde olmayan bir platforma sabitle.
+    monkeypatch.setattr(toolchain_install, "platform_key", lambda: "macos-aarch64")
     assert needs_update(settings) is False  # host platformu kaynak listesinde yok
     assert needs_update(settings, platform="linux-aarch64") is False
 

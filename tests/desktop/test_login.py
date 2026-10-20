@@ -23,7 +23,9 @@ from codementor.desktop.login import (
     open_login_console,
 )
 
-EXE = sys.executable  # var olan mutlak bir çalıştırılabilir (CLI yerine; çalıştırılmaz)
+# Var olan mutlak bir çalıştırılabilir (CLI yerine; çalıştırılmaz). `resolve_executable` sembolik
+# bağlantıyı çözer: Linux venv'inde `.venv/bin/python` → `/usr/bin/python3.x`.
+EXE = str(Path(sys.executable).resolve())
 CLI = "/usr/local/bin/claude"
 LOGIN_ARGS = ("auth", "login")
 
