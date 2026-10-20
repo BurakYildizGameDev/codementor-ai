@@ -304,7 +304,8 @@ async def run_llm_passes(
         )
     # Faz I / İş 11 (ADR-0031): Karmaşıklık politikası (küçük modelde statik ipucu önceliği)
     if verification.complexity is not None:
-        new_comp, comp_warns = apply_complexity_policy(verification.complexity, p_name)
+        expected = verify.question.expected if verify.question else None
+        new_comp, comp_warns = apply_complexity_policy(verification.complexity, p_name, expected)
         if comp_warns:
             verification = verification.model_copy(
                 update={"complexity": new_comp, "warnings": [*verification.warnings, *comp_warns]}

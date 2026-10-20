@@ -74,6 +74,22 @@
 | J5 | ✅ (Faz J denetimi küçük maddeleri; test-only) | faz/j5-test-hijyeni | 2026-10-17 | Cline / — |
 | I (dilim 1) | ✅ (yargıç + parçalar + fewshot) | faz/i-eval-altyapi | 2026-10-20 | Antigravity / — |
 
+## Kod — Tam tarama bulgusu #4: karmaşıklık politikası tutarsız rapor üretiyordu (2026-10-20)
+
+**Sorun:** `verify/complexity_policy.py` küçük profilde zamanı statik ipucuyla değiştirirken
+`display_time`'ı ham `O(n^2)` yazıyordu (normal yol `parse_bigo(...).display` → `O(n²)`) ve
+`is_optimal`'ı modelin eski zamanına göre bırakıyordu: model `n` (optimal), ipucu `n^2` → rapor
+"O(n^2), optimal".
+
+**Yapılanlar:** Gösterim ve gerekçe notu `parse_bigo(...).display`; `is_optimal` ipucundan
+`verify/complexity.is_optimal` ile yeniden hesaplanıyor (normal yol ve `degraded_complexity` ile aynı);
+`passes.py` sorunun `expected`'ını geçiriyor. **Bilinçli karar:** `agreement="agrees"` korundu (zaman
+artık ipucunun kendisi; çatışma notta ve `meta.warnings`'te), `confidence` analiz geneli skor olduğu
+için değişmedi, `optimal_time_target` modelin iddiası olarak kaldı.
+
+**Testler:** `test_complexity_policy.py` 3 → 7 (gösterim, iki yönde optimallik, sorusuz `None`);
+eski kodla 4 kırmızı. `README`/`ZAYIF` "~28 bin satır kaynak" → **~29 bin** (ölçüm 28 506).
+
 ## Kod — Tam tarama bulgusu #3: güvenilmeyen toml geçmişi budayabiliyordu (2026-10-20)
 
 **Sorun:** ADR-0029 listesi `storage`'da yalnız `db_path`'i, `data`'da yalnız `user_questions_dir`'i
@@ -1563,14 +1579,14 @@ Kaynak: `docs/BulgularVeDuzeltilecekler.md` Y1, D13, P3. Dal `faz/a1-guvenlik`te
 ## Sonraya (kapsam dışı fikirler)
 > 📋 Ajan ile yapılabilecek işlerin öncelikli listesi ve durumu: [KALAN_ISLER.md](KALAN_ISLER.md).
 > Bu bölüm fikirlerin kaynağıdır; iş sırası ve kabul kriterleri KALAN_ISLER.md'de tutulur.
-- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3 düzeltildi):**
+- **Tam tarama kalan bulguları (kod-denetci, 2026-10-20; #1, #3, #4 düzeltildi):**
   - Yüksek: `validation/tier0_pool.py` sıcak işçileri `runner.run_process` yerine düz `Popen`
     → bellek sınırı/ortam süzme/boş cwd yok, eşzamanlı işçi sınırsız; havuzun ADR'si yok (ADR-0025:58
     hâlâ "Sonraya" diyor). Yalnız `tier0_warm_workers > 0` iken.
   - ~~Orta: güvenilmeyen toml `storage.max_analyses` / `session_retention_days` / `data.checklists_dir`
     serbest~~ → **KAPANDI (#3, 2026-10-20).**
-  - Orta: `verify/complexity_policy.py` `O(n^2)` (≠ `parse_bigo` gösterimi), `is_optimal`
-    yeniden hesaplanmıyor, `agreement` zorla `agrees`.
+  - ~~Orta: `verify/complexity_policy.py` `O(n^2)` (≠ `parse_bigo` gösterimi), `is_optimal`
+    yeniden hesaplanmıyor~~ → **KAPANDI (#4, 2026-10-20)**; `agreement="agrees"` bilinçli korundu.
   - Orta: `verify/socratic_gate.py` `_LINE_REF_RE` "lineer"i satır referansı sayıyor; tekrar
     algılayıcı sayı dizilerini dejenerasyon sanıyor; `pipeline/socratic_pass.py:73` kapı uyarıları
     soru listesi değişmezse kayboluyor.
