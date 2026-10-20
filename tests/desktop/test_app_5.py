@@ -14,10 +14,11 @@ from typing import Any
 import customtkinter as ctk
 import pytest
 
-from codementor.desktop import history_controller
+from codementor.desktop import history_controller, runtime
 from codementor.desktop.app import App
 from codementor.desktop.bridge import Cancellation
 from codementor.desktop.views import history_view as history_view_module
+from codementor.models.enums import Language
 from codementor.storage import cache
 from codementor.storage.db import AnalysisRow
 from tests.desktop.app_support import (
@@ -303,3 +304,61 @@ def test_history_clear_runs_off_main_thread(app: App, monkeypatch: pytest.Monkey
     assert seen == [False]
     assert app.history_view._rows == []
     assert app.prefs.recent_files == []
+
+
+def _stored_row(app: App, analysis_id: str, language: str) -> None:
+    row = AnalysisRow(
+        id=analysis_id,
+        created_at=datetime.now(UTC),
+        cache_key=f"key_{analysis_id}",
+        language=language,
+        engine="standalone",
+        question_id=None,
+        session_id=None,
+        provider="fake",
+        model="fake",
+        early_exit=False,
+        degraded=False,
+        tokens_in=1,
+        tokens_out=1,
+        latency_ms=1,
+        report_json='{"eski": "sema"}',
+    )
+    with app.core.database().session() as session:
+        session.add(row)
+        session.commit()
+
+
+def test_open_history_reads_off_main_thread(app: App, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sonraya #40: kayıt ve saklanan kod ana iş parçacığında okunmaz; UI sonra güncellenir."""
+    analysis_id = "01J40OPENBACKGROUND00000001"
+    _stored_row(app, analysis_id, "cpp")
+    runtime.save_source(analysis_id, "int y = 2;\n", app.prefs_dir)
+    readers: list[str] = []
+    real_get_row = history_controller.get_row
+
+    def spy(db: Any, wanted: str) -> Any:
+        readers.append(threading.current_thread().name)
+        return real_get_row(db, wanted)
+
+    monkeypatch.setattr(history_controller, "get_row", spy)
+    app.open_history(analysis_id)
+    assert app._opening_analysis_id == analysis_id
+    pump(app, lambda: app._opening_analysis_id is None)
+    assert readers
+    assert threading.main_thread().name not in readers
+    assert app.analyze_view.editor.get() == "int y = 2;\n"
+    assert app.analyze_view.language is Language.CPP
+
+
+def test_open_history_twice_last_one_wins(app: App) -> None:
+    """Art arda iki açma: köprü kuşağı eskisinin sonucunu atar, son seçilen gösterilir."""
+    first, second = "01J40OPENTWICE000000000001", "01J40OPENTWICE000000000002"
+    for analysis_id, text in ((first, "int a;\n"), (second, "int b;\n")):
+        _stored_row(app, analysis_id, "c")
+        runtime.save_source(analysis_id, text, app.prefs_dir)
+    app.open_history(first)
+    app.open_history(second)
+    pump(app, lambda: app._opening_analysis_id is None)
+    pump(app, lambda: app._shown_analysis_id == second, timeout=5)
+    assert app.analyze_view.editor.get() == "int b;\n"

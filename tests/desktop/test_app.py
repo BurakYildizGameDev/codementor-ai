@@ -27,6 +27,7 @@ from tests.desktop.app_support import (
     _toast,
     analyze,
     next_hint,
+    open_and_wait,
     pump,
     pump_history,
 )
@@ -81,7 +82,7 @@ def test_history_reopens_report_with_code(app: App) -> None:
     pump_history(app)  # F11: liste arka plan iş parçacığında okunur
     assert app.history_view.list.winfo_children()
 
-    app.open_history(report.analysis_id)
+    open_and_wait(app, report.analysis_id)
     assert app.current_view == "analyze"
     assert app.analyze_view.editor.get() == LINKED_LIST
     assert app.analyze_view.report == report
@@ -190,7 +191,7 @@ def test_delete_history_incompatible_report_resets_shown_analysis(
         session.commit()
     runtime.save_source(analysis_id, "int a = 1;\n", prefs_dir)
 
-    app.open_history(analysis_id)
+    open_and_wait(app, analysis_id)
     assert app._shown_analysis_id == analysis_id
     assert app.analyze_view.report is None  # şema uyumsuz
 

@@ -17,6 +17,7 @@ from codementor.desktop import runtime
 from codementor.desktop.bridge import Emit, Message
 from codementor.desktop.services import render_export
 from codementor.models.enums import Engine, Language
+from codementor.models.report import AnalysisReport
 from codementor.report.usage import usage_totals_label
 from codementor.storage.cache import (
     clear_analyses,
@@ -37,7 +38,8 @@ _EXPORT_SUFFIX = {"md": ".md", "sarif": ".sarif", "json": ".json"}
 PAGE_TASK = "history"
 DELETE_TASK = "history_delete"
 CLEAR_TASK = "history_clear"
-HISTORY_TASKS = (PAGE_TASK, DELETE_TASK, CLEAR_TASK)
+OPEN_TASK = "history_open"  # Sonraya #40: kayıt açma da arka planda
+HISTORY_TASKS = (PAGE_TASK, DELETE_TASK, CLEAR_TASK, OPEN_TASK)
 
 
 @dataclass(frozen=True)
@@ -57,6 +59,16 @@ class HistoryDeleted:
 
     analysis_id: str
     deleted: bool
+
+
+@dataclass(frozen=True)
+class HistoryOpened:
+    """Arka planda okunan kayıt: rapor (uyumluysa) ya da yalnız satır + saklanan kod (#40)."""
+
+    analysis_id: str
+    report: AnalysisReport | None
+    row: AnalysisRow | None
+    code: str | None
 
 
 @dataclass(frozen=True)
@@ -150,7 +162,10 @@ def handle(app: App, message: Message) -> None:
     """Köprüden gelen geçmiş sonuçlarını ana iş parçacığında arayüze uygular (F11)."""
     if message.kind == "error":  # köprü istisnayı Türkçe metne çevirdi
         text = str(message.payload)
-        if message.task == PAGE_TASK:
+        if message.task == OPEN_TASK:
+            app._opening_analysis_id = None
+            app.toast(text)
+        elif message.task == PAGE_TASK:
             app.history_view.apply_error(text)
         else:
             app.history_view.refresh()  # hata sonrası liste "Yükleniyor…"da kalmaz (F11)
@@ -169,6 +184,8 @@ def handle(app: App, message: Message) -> None:
         _apply_deleted(app, payload)
     elif isinstance(payload, HistoryCleared):
         _apply_cleared(app, payload)
+    elif isinstance(payload, HistoryOpened):
+        _apply_opened(app, payload)
 
 
 def _apply_deleted(app: App, result: HistoryDeleted) -> None:
@@ -194,51 +211,62 @@ def _apply_cleared(app: App, result: HistoryCleared) -> None:
 
 
 def open_history(app: App, analysis_id: str) -> None:
-    """Seçilen geçmiş analizini açar ve editör ile sonuç panellerini günceller (Faz F)."""
+    """Seçilen geçmiş analizini açar (Faz F; Sonraya #40: kayıt ve kod arka planda okunur).
+
+    Kaydedilmemiş değişiklik onayı ana iş parçacığında sorulur; rapor, satır ve saklanan kod
+    `Bridge` iş parçacığında okunur, editör ve sonuç panelleri `handle` ile güncellenir.
+    Art arda iki açmada köprü kuşağı eskisinin sonucunu atar.
+    """
     if not app.files.confirm_discard():
         return
-    report = get_analysis(app.core.database(), analysis_id)
-    if report is not None:
-        app._shown_analysis_id = analysis_id
-        view = app.analyze_view
-        view.select(report.language, report.engine, report.question_id)
-        code = runtime.load_source(analysis_id, app.prefs_dir)
-        view.editor.set(code or "// Bu analizin kodu saklanmamış.\n", report.language)
-        app.files.current_path = None
-        app.files.is_dirty = False
-        app.tracker.reset()
-        app.tracker.finish()
-        view.reset_results()
-        view.show_report(report)
-        app.navigate("analyze")
-        return
+    db = app.core.database()
+    prefs_dir = app.prefs_dir
 
-    row = get_row(app.core.database(), analysis_id)
-    if row is None:
+    def work(_emit: Emit) -> HistoryOpened:
+        report = get_analysis(db, analysis_id)
+        row = None if report is not None else get_row(db, analysis_id)
+        code = runtime.load_source(analysis_id, prefs_dir) if report or row else None
+        return HistoryOpened(analysis_id, report, row, code)
+
+    app._opening_analysis_id = analysis_id
+    app.bridge.submit(OPEN_TASK, work)
+
+
+def _apply_opened(app: App, result: HistoryOpened) -> None:
+    app._opening_analysis_id = None
+    if result.report is None and result.row is None:
         app.toast("Bu analiz artık bulunamıyor.")
         return
-
-    app._shown_analysis_id = analysis_id
     view = app.analyze_view
-    try:
-        lang = Language(row.language)
-    except ValueError:
-        lang = view.language
-    try:
-        eng = Engine(row.engine)
-    except ValueError:
-        eng = view.engine
-
-    view.select(lang, eng, row.question_id)
-    code = runtime.load_source(analysis_id, app.prefs_dir)
-    view.editor.set(code or "// Bu analizin kodu saklanmamış.\n", lang)
+    app._shown_analysis_id = result.analysis_id
+    if result.report is not None:
+        language, engine = result.report.language, result.report.engine
+        question_id = result.report.question_id
+    else:
+        assert result.row is not None
+        language = _enum(Language, result.row.language, view.language)
+        engine = _enum(Engine, result.row.engine, view.engine)
+        question_id = result.row.question_id
+    view.select(language, engine, question_id)
+    view.editor.set(result.code or "// Bu analizin kodu saklanmamış.\n", language)
     app.files.current_path = None
     app.files.is_dirty = False
     app.tracker.reset()
     app.tracker.finish()
     view.reset_results()
-    app.toast(
-        "Bu rapor farklı bir CodeMentor sürümüyle oluşturulduğu için gösterilemiyor. "
-        "Kodu editöre açtım; yeniden denetleyebilirsin."
-    )
+    if result.report is not None:
+        view.show_report(result.report)
+    else:
+        app.toast(
+            "Bu rapor farklı bir CodeMentor sürümüyle oluşturulduğu için gösterilemiyor. "
+            "Kodu editöre açtım; yeniden denetleyebilirsin."
+        )
     app.navigate("analyze")
+
+
+def _enum[E: (Language, Engine)](kind: type[E], value: str, fallback: E) -> E:
+    """Kayıttaki dil/motor değeri; tanınmazsa mevcut seçim korunur (Faz 60)."""
+    try:
+        return kind(value)
+    except ValueError:
+        return fallback

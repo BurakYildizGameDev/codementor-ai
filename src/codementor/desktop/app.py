@@ -82,6 +82,7 @@ class App(ctk.CTk):  # type: ignore[misc]
         self._last_question_id: str | None = None
         self._last_counted: bool | None = None
         self._shown_analysis_id: str | None = None
+        self._opening_analysis_id: str | None = None  # geçmiş kaydı arka planda açılıyor (#40)
         self.confirm: Callable[..., bool] = messagebox.askyesno
 
         self.title("CodeMentor AI")

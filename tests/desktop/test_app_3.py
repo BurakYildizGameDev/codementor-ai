@@ -22,6 +22,7 @@ from codementor.validation.toolchain_install import InstallCancelledError, Toolc
 from tests.desktop.app_support import (
     _compilers_message,
     _toast,
+    open_and_wait,
     pump,
 )
 
@@ -266,7 +267,7 @@ def test_finding_list_groups_suggestions(app: App) -> None:
 
 def test_open_history_missing_record_shows_not_found_toast(app: App) -> None:
     """Faz 60: Kayıt hiç yoksa 'Bu analiz artık bulunamıyor.' mesajı gösterilir."""
-    app.open_history("01JNONEXISTENT9999999999999")
+    open_and_wait(app, "01JNONEXISTENT9999999999999")
     assert "Bu analiz artık bulunamıyor." in _toast(app)
 
 
@@ -298,7 +299,7 @@ def test_open_history_incompatible_report_loads_code_and_clears_results(app: App
     test_code = "int x = 42;\n"
     runtime.save_source(analysis_id, test_code, app.prefs_dir)
 
-    app.open_history(analysis_id)
+    open_and_wait(app, analysis_id)
     assert app.current_view == "analyze"
     assert app.analyze_view.editor.get() == test_code
     assert app.analyze_view.language == Language.C
@@ -332,7 +333,7 @@ def test_open_history_incompatible_report_missing_source_falls_back(app: App) ->
         session.commit()
 
     # Kaynak dosya kasıtlı olarak oluşturulmadı
-    app.open_history(analysis_id)
+    open_and_wait(app, analysis_id)
     assert app.current_view == "analyze"
     assert "saklanmamış" in app.analyze_view.editor.get()
     assert app.analyze_view.language == Language.CPP

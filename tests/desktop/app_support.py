@@ -75,6 +75,12 @@ def pump(app: App, until: Callable[[], bool], timeout: float = 30) -> None:
         time.sleep(0.02)
 
 
+def open_and_wait(app: App, analysis_id: str) -> None:
+    """Sonraya #40: geçmiş kaydı arka planda açılır; sonuç arayüze uygulanana kadar bekler."""
+    app.open_history(analysis_id)
+    pump(app, lambda: app._opening_analysis_id is None)
+
+
 def pump_history(app: App) -> None:
     """Faz F (F11): geçmiş listesi arka planda okunur; yükleme bitene kadar bekler."""
     pump(app, lambda: not app.history_view.loading)

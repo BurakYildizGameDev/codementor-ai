@@ -22,6 +22,7 @@ from codementor.storage.db import AnalysisRow
 from tests.desktop.app_support import (
     _toast,
     analyze,
+    open_and_wait,
     pump,
     pump_history,
 )
@@ -54,7 +55,7 @@ def test_open_history_incompatible_report_invalid_language_preserves_selection(a
         session.add(row)
         session.commit()
 
-    app.open_history(analysis_id)
+    open_and_wait(app, analysis_id)
     assert app.current_view == "analyze"
     assert app.analyze_view.language == prev_lang
     assert "farklı bir CodeMentor sürümüyle" in _toast(app)
