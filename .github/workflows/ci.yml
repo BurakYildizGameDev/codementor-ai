@@ -24,11 +24,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
       - run: uv sync --locked
       # C# Tier 1 (Roslyn) derleyici testleri Linux'ta koşsun (Faz 27); atlanırsa test başarısız
       - if: runner.os == 'Linux'
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73  # v6.1.0
         with:
           dotnet-version: "10.0.x"
       - if: runner.os == 'Linux'
@@ -83,11 +83,11 @@ jobs:
       PYTHONIOENCODING: utf-8  # runner konsolu cp1252; Türkçe çıktı çökertmesin
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
       - run: uv sync --locked
       # Roslyn denetleyicisi pakete girsin: self-contained tek dosya, kullanıcıda dotnet
       # gerekmez (Faz 29; Faz 27'de dotnet'e bağlıydı)
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73  # v6.1.0
         with:
           dotnet-version: "10.0.x"
       - run: dotnet publish tools/roslyn-check -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o tools/roslyn-check/sc
